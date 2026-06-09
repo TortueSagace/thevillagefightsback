@@ -28,6 +28,16 @@ public class GunCombatGoal extends Goal {
     private static final double FLAME_OFF_SQR = 6.5 * 6.5;   // 42.25
     private static final int RETARGET_INTERVAL = 5; // ticks between target re-scans
 
+    // Desperation: a defender that is badly hurt OR swarmed lobs a grenade and flees (natural panic AI)
+    // for a few seconds, then snaps back to gun combat.
+    private static final float DESPERATE_HEALTH_FRAC = 0.5F;  // health below half of max
+    private static final int DESPERATE_ENEMY_COUNT = 5;       // OR this many hostiles...
+    private static final double DESPERATE_ENEMY_RANGE = 10.0; // ...within this many blocks
+    private static final int DESPERATE_SCAN_INTERVAL = 10;    // ticks between (throttled) swarm scans
+    private static final int FLEE_TICKS = 60;                 // flee for 3 seconds
+    private static final int GRENADE_FUSE = 40;              // grenade life before it detonates (~2s)
+    private static final int GRENADE_COOLDOWN = 200;          // ~10s between panic grenades
+
     private final PathfinderMob shooter;
     private final boolean isVillager;
     private final ItemStack rangedGun;
@@ -39,6 +49,11 @@ public class GunCombatGoal extends Goal {
     private int rangedCooldown;
     private int closeCooldown;
     private boolean usingClose; // weapon choice, with hysteresis (fired from cached stacks, not the hand)
+
+    private long fleeUntil = Long.MIN_VALUE;          // game time until which we yield to natural flee AI
+    private long grenadeCooldownUntil = Long.MIN_VALUE; // game time before which we won't throw again
+    private long hostileScanTick = Long.MIN_VALUE;    // last swarm-scan time (throttle)
+    private int nearbyHostiles;                       // cached swarm-scan result
 
     public GunCombatGoal(PathfinderMob shooter, ResourceLocation rangedId, float rangedBonus,
                          ResourceLocation closeId, float closeBonus) {
@@ -66,6 +81,7 @@ public class GunCombatGoal extends Goal {
     @Override
     public boolean canUse() {
         if (rangedGun.isEmpty() && closeGun.isEmpty()) return false;
+        if (isFleeing()) return false; // mid-panic: let the natural flee AI run, don't re-engage
         if (shooter.tickCount % RETARGET_INTERVAL != 0) return false; // throttle scans
         this.target = acquireTarget();
         return target != null;
@@ -73,7 +89,26 @@ public class GunCombatGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
+        if (isFleeing()) return false; // desperation: yield to natural panic/flee behaviour
         return inSight(this.target);
+    }
+
+    /** True while a desperation grenade-and-flee is in progress (we stay disengaged from combat). */
+    private boolean isFleeing() {
+        return shooter.level().getGameTime() < fleeUntil;
+    }
+
+    /**
+     * Desperate = badly hurt (&lt; half health) OR swarmed ({@value #DESPERATE_ENEMY_COUNT}+ hostiles
+     * within {@value #DESPERATE_ENEMY_RANGE} blocks). The swarm scan is throttled to keep it cheap.
+     */
+    private boolean isDesperate(long now) {
+        if (shooter.getHealth() < shooter.getMaxHealth() * DESPERATE_HEALTH_FRAC) return true;
+        if (now - hostileScanTick >= DESPERATE_SCAN_INTERVAL) {
+            hostileScanTick = now;
+            nearbyHostiles = GunUtil.countHostilesWithin(shooter, DESPERATE_ENEMY_RANGE);
+        }
+        return nearbyHostiles >= DESPERATE_ENEMY_COUNT;
     }
 
     @Override
@@ -96,6 +131,18 @@ public class GunCombatGoal extends Goal {
     public void tick() {
         LivingEntity t = this.target;
         if (t == null) return;
+
+        // Desperation: badly hurt or swarmed -> lob JEG's grenade and flee for a few seconds. We return
+        // immediately (no hold-ground / no panic-memory wipe this tick); canContinueToUse() then yields us
+        // next tick so the mob's natural panic AI takes over until fleeUntil passes.
+        long now = shooter.level().getGameTime();
+        if (now >= grenadeCooldownUntil && isDesperate(now)) {
+            GunUtil.aimAt(shooter, t);                 // face the threat so the lob goes toward it
+            GunUtil.throwGrenade(shooter, GRENADE_FUSE);
+            fleeUntil = now + FLEE_TICKS;
+            grenadeCooldownUntil = now + GRENADE_COOLDOWN;
+            return;
+        }
 
         // Hold ground and face the target. Villagers are brain-driven and would flee, so (only for
         // villagers) erase the panic-trigger memories before the brain ticks so panic never fires.

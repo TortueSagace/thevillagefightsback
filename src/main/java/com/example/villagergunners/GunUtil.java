@@ -25,6 +25,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import ttv.migami.jeg.common.Gun;
 import ttv.migami.jeg.entity.ai.AIGunEvent;
+import ttv.migami.jeg.entity.throwable.ThrowableGrenadeEntity;
 import ttv.migami.jeg.item.GunItem;
 
 /** Helpers for handing out JEG guns, firing them from mobs, and finding hostiles. */
@@ -38,6 +39,9 @@ public final class GunUtil {
 
     // Soft integration with Mace Combat Backport (mace_port): its wind charge.
     public static final ResourceLocation WIND_CHARGE = new ResourceLocation("mace_port", "wind_charge");
+
+    // JEG's throwable fragmentation grenade -- summoned (not recreated) when a defender is desperate.
+    public static final ResourceLocation GRENADE = new ResourceLocation("jeg", "grenade");
 
     // Fixed UUID so re-applying the follow-range boost on world reload is idempotent.
     private static final UUID FOLLOW_RANGE_BOOST_UUID = UUID.fromString("c0ffee00-0000-4000-8000-000000000001");
@@ -165,5 +169,35 @@ public final class GunUtil {
             }
         }
         return nearest;
+    }
+
+    /** Count living hostiles ({@link Enemy}) within {@code range} blocks of the mob (no line-of-sight needed). */
+    public static int countHostilesWithin(Mob mob, double range) {
+        double rangeSqr = range * range;
+        AABB box = mob.getBoundingBox().inflate(range);
+        return mob.level().getEntitiesOfClass(LivingEntity.class, box,
+                e -> e instanceof Enemy && e.isAlive() && e != mob
+                        && mob.distanceToSqr(e) <= rangeSqr).size();
+    }
+
+    /**
+     * Summon JEG's own fragmentation grenade from the mob and lob it forward along the mob's facing.
+     * This does NOT recreate the grenade -- it spawns JEG's {@link ThrowableGrenadeEntity} with the mob
+     * as owner, so JEG's native cook/explosion/fire logic runs. {@code fuseTicks} is the grenade's life
+     * before it detonates. Server-side only.
+     */
+    public static void throwGrenade(Mob shooter, int fuseTicks) {
+        Level level = shooter.level();
+        if (level.isClientSide()) return;
+        // Owner = shooter; spawns at the shooter's eyes (vanilla ThrowableProjectile constructor).
+        ThrowableGrenadeEntity grenade = new ThrowableGrenadeEntity(level, shooter, fuseTicks);
+        // Gentle forward lob so it lands a few blocks ahead (toward the threat the mob is facing), not on
+        // the mob's own feet as it turns to flee.
+        grenade.shootFromRotation(shooter, shooter.getXRot(), shooter.getYRot(), 0.0F, 0.5F, 1.0F);
+        level.addFreshEntity(grenade);
+
+        // Pull the pin: play the grenade's throw sound so the toss reads clearly.
+        level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.4F, 1.6F);
     }
 }
