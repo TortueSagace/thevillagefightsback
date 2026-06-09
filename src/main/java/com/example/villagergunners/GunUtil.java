@@ -7,9 +7,12 @@ import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -32,6 +35,9 @@ public final class GunUtil {
     public static final ResourceLocation MINIGUN = new ResourceLocation("jeg", "minigun");
     public static final ResourceLocation FLAMETHROWER = new ResourceLocation("jeg", "flamethrower");
     public static final ResourceLocation ROCKET_LAUNCHER = new ResourceLocation("jeg", "rocket_launcher");
+
+    // Soft integration with Mace Combat Backport (mace_port): its wind charge.
+    public static final ResourceLocation WIND_CHARGE = new ResourceLocation("mace_port", "wind_charge");
 
     // Fixed UUID so re-applying the follow-range boost on world reload is idempotent.
     private static final UUID FOLLOW_RANGE_BOOST_UUID = UUID.fromString("c0ffee00-0000-4000-8000-000000000001");
