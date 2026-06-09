@@ -50,6 +50,15 @@ public class VillageGravemindBlock extends Block {
         GravemindData data = GravemindData.get(sl.getServer());
         ItemStack held = player.getItemInHand(hand);
 
+        // DEBUG/admin: right-click with a stick to instantly paste the computed wall (bypasses builders).
+        if (held.is(Items.STICK)) {
+            int n = GravemindEvents.debugPasteWall(sl, pos);
+            player.displayClientMessage(Component.literal(n < 0
+                    ? "§c[debug] no wall: not enough beds nearby"
+                    : "§e[debug] pasted §a" + n + "§e wall blocks"), false);
+            return InteractionResult.CONSUME;
+        }
+
         if (held.is(Items.EMERALD) && !data.isMaxLevel()) {
             int donated = held.getCount();
             int gained = data.addEmeralds(donated);

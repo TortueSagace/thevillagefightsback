@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.example.villagergunners.wall.WallBlock;
+import com.example.villagergunners.wall.WallPlan;
+import com.example.villagergunners.wall.WallPlanner;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -53,8 +57,80 @@ public final class GravemindEvents {
 
         GravemindData data = GravemindData.get(server);
         spawnInVillages(server, data);
+        driveWalls(server, data);
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
+    }
+
+    private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a gravemind for the wall plan
+
+    /**
+     * For each gravemind: compute its defensive wall plan once (from the surrounding bed cluster), then
+     * each pass re-check whether the wall has been completed (by the builders) and, when it has, remove
+     * the temporary climb scaffolds and announce it.
+     */
+    private static void driveWalls(MinecraftServer server, GravemindData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+
+            WallPlan plan = data.getWallPlan(gp);
+            if (plan == null) {
+                WallPlan computed = WallPlanner.plan(level, gp, collectBeds(level, gp.pos()));
+                if (computed != null) {
+                    data.putWallPlan(computed);
+                    broadcast(server, "§7The Village Gravemind marks out a defensive wall §8("
+                            + computed.blocks().size() + " blocks)§7 — villagers, to work.");
+                }
+                continue;
+            }
+            if (!plan.isComplete() && plan.recheckCompletion(level)) {
+                cleanupScaffolds(level, plan);
+                data.setDirty();
+                broadcast(server, "§aThe village wall is complete.");
+            }
+        }
+    }
+
+    /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the gravemind. */
+    private static List<BlockPos> collectBeds(ServerLevel level, BlockPos center) {
+        List<BlockPos> beds = new ArrayList<>();
+        level.getPoiManager()
+                .getInRange(h -> h.is(PoiTypes.HOME), center, BED_SCAN_RADIUS, PoiManager.Occupancy.ANY)
+                .forEach(record -> beds.add(record.getPos().immutable()));
+        return beds;
+    }
+
+    /** Remove any temporary scaffolding the builders left while pillaring up to high courses. */
+    private static void cleanupScaffolds(ServerLevel level, WallPlan plan) {
+        for (BlockPos p : plan.scaffoldTemp()) {
+            if (level.getBlockState(p).is(net.minecraft.world.level.block.Blocks.SCAFFOLDING)) {
+                level.setBlock(p, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        plan.scaffoldTemp().clear();
+    }
+
+    /**
+     * DEBUG/admin: instantly stamp a gravemind's entire computed wall into the world (bypassing the
+     * builders), computing the plan first if needed. Returns the block count, or -1 if there aren't enough
+     * beds yet. Triggered by right-clicking the gravemind with a stick.
+     */
+    public static int debugPasteWall(ServerLevel level, BlockPos gravemindPos) {
+        GlobalPos gp = GlobalPos.of(level.dimension(), gravemindPos.immutable());
+        GravemindData data = GravemindData.get(level.getServer());
+        WallPlan plan = data.getWallPlan(gp);
+        if (plan == null) {
+            plan = WallPlanner.plan(level, gp, collectBeds(level, gravemindPos));
+            if (plan == null) return -1;
+            data.putWallPlan(plan);
+        }
+        int placed = 0;
+        for (WallBlock wb : plan.blocks()) {
+            level.setBlock(wb.pos(), wb.toState(), 3);
+            placed++;
+        }
+        return placed;
     }
 
     /** Place a gravemind at the centre (meeting point / bell) of each loaded village, once. */
@@ -72,12 +148,29 @@ public final class GravemindEvents {
     private static void tryPlaceGravemind(ServerLevel level, GravemindData data, BlockPos center) {
         GlobalPos key = GlobalPos.of(level.dimension(), center.immutable());
         if (data.isServiced(key)) return;
-        // Place on the surface directly above the village centre column.
-        BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center);
-        if (!level.getBlockState(surface).canBeReplaced()) return;
-        if (!level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) return;
-        level.setBlock(surface, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
+        // The exact meeting-point column is usually topped by the BELL (whose top isn't a solid face), so
+        // we search the columns AROUND it for the nearest open ground spot near the bell's height.
+        BlockPos spot = findGravemindSpot(level, center);
+        if (spot == null) return; // no good spot yet; retry next scan
+        level.setBlock(spot, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
+        broadcast(level.getServer(), "§5A Village Gravemind has risen at the heart of a village §8(near "
+                + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
+    }
+
+    /** Nearest open ground spot within 3 blocks of the village centre, close to the centre's height. */
+    private static BlockPos findGravemindSpot(ServerLevel level, BlockPos center) {
+        BlockPos best = null;
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
+                if (Math.abs(surface.getY() - center.getY()) > 5) continue;                   // skip roofs / cliffs
+                if (!level.getBlockState(surface).canBeReplaced()) continue;                   // open spot
+                if (!level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) continue;
+                if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
+            }
+        }
+        return best;
     }
 
     /** Once per day at sunset: +1 emerald per villager/guard alive within {@value #INCOME_RADIUS} blocks. */
