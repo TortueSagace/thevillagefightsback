@@ -100,12 +100,14 @@ public final class GunnerEvents {
         GunUtil.extendFollowRange(guard, FOLLOW_RANGE);
         guard.goalSelector.addGoal(1, new GunCombatGoal(
                 guard, GunUtil.MINIGUN, MINIGUN_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
+        guard.goalSelector.addGoal(2, new FlareRallyGoal(guard));
     }
 
     private static void armGolem(IronGolem golem) {
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
+        golem.goalSelector.addGoal(2, new FlareRallyGoal(golem));
     }
 
     /**
