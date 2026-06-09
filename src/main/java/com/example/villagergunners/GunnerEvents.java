@@ -13,17 +13,21 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -57,6 +61,10 @@ public final class GunnerEvents {
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+
+    // JEG's "fire grenade" -- the molotov cocktail; guards have a chance to drop one on death.
+    private static final ResourceLocation MOLOTOV = new ResourceLocation("jeg", "molotov_cocktail");
+    private static final float GUARD_MOLOTOV_DROP_CHANCE = 0.5F;
 
     /** Arm villagers / iron golems / guards whenever they join a level (including world reload). */
     @SubscribeEvent
@@ -139,6 +147,19 @@ public final class GunnerEvents {
         if (isAlly(event.getEntity()) && event.getNewTarget() != null && isAlly(event.getNewTarget())) {
             event.setCanceled(true);
         }
+    }
+
+    /** A killed guard has a 50% chance to drop a fire grenade (JEG molotov cocktail). */
+    @SubscribeEvent
+    public static void onLivingDrops(LivingDropsEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide()) return;
+        if (!isGuard(entity)) return;
+        if (entity.getRandom().nextFloat() >= GUARD_MOLOTOV_DROP_CHANCE) return;
+        Item molotov = ForgeRegistries.ITEMS.getValue(MOLOTOV);
+        if (molotov == null) return; // JEG not present / item missing -> no drop
+        event.getDrops().add(new ItemEntity(entity.level(),
+                entity.getX(), entity.getY(), entity.getZ(), new ItemStack(molotov)));
     }
 
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */
