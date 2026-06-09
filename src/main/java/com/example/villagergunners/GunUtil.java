@@ -98,6 +98,28 @@ public final class GunUtil {
         }
     }
 
+    /** True if Mace Combat Backport's wind charge is present (soft dependency). */
+    public static boolean windChargeAvailable() {
+        return ForgeRegistries.ENTITY_TYPES.containsKey(WIND_CHARGE);
+    }
+
+    /**
+     * Throw a Mace Combat Backport wind charge straight down at the shooter's feet (for the visual
+     * "pogo" effect). Returns true if one was spawned. The actual upward launch is applied directly to
+     * the mob by the caller, since iron golems' knockback resistance would otherwise shrug off the burst.
+     */
+    public static boolean throwWindChargeDown(Mob shooter) {
+        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(WIND_CHARGE);
+        if (type == null) return false;
+        Entity e = type.create(shooter.level());
+        if (!(e instanceof AbstractHurtingProjectile proj)) return false;
+        proj.setOwner(shooter);
+        proj.moveTo(shooter.getX(), shooter.getY() + 0.5, shooter.getZ(), shooter.getYRot(), 90.0F);
+        proj.shootFromRotation(shooter, 90.0F, shooter.getYRot(), 0.0F, 1.5F, 0.0F); // 90 pitch = straight down
+        shooter.level().addFreshEntity(proj);
+        return true;
+    }
+
     /** A gun's fire-rate (ticks between shots) from its data, or {@code fallback}. */
     public static int fireRate(ItemStack gunStack, int fallback) {
         if (gunStack.getItem() instanceof GunItem gunItem) {
