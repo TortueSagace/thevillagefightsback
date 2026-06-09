@@ -30,12 +30,13 @@ public final class VillagerGunnersClient {
                     0.0F, 0.4F, -0.4F, 180.0F, 0.0F, 0.0F, 1.0F, ItemDisplayContext.GROUND));
         }
 
-        // Iron golem: no vanilla item layer exists, so anchor to the right arm. Offsets are a starting
-        // point and likely need tuning from a screenshot.
+        // Iron golem: no vanilla item layer. Anchor to right_arm. NOTE: the right_arm PIVOT is at
+        // x=0 (centre); the visible arm box is at x -13..-9 and 30px long. So we offset to the arm
+        // box and down to the hand. Big golem -> scale the gun up. (Orientation may need tuning.)
         LivingEntityRenderer<IronGolem, IronGolemModel<IronGolem>> golem = event.getRenderer(EntityType.IRON_GOLEM);
         if (golem != null) {
             golem.addLayer(new HeldGunLayer<>(golem, GunUtil.ROCKET_LAUNCHER, "right_arm",
-                    0.0F, 1.4F, 0.2F, 0.0F, 0.0F, 0.0F, 1.0F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND));
+                    -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND));
         }
     }
 }

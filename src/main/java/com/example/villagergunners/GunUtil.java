@@ -29,6 +29,7 @@ public final class GunUtil {
     private GunUtil() {}
 
     public static final ResourceLocation REVOLVER = new ResourceLocation("jeg", "revolver");
+    public static final ResourceLocation MINIGUN = new ResourceLocation("jeg", "minigun");
     public static final ResourceLocation FLAMETHROWER = new ResourceLocation("jeg", "flamethrower");
     public static final ResourceLocation ROCKET_LAUNCHER = new ResourceLocation("jeg", "rocket_launcher");
 
@@ -39,6 +40,19 @@ public final class GunUtil {
     public static ItemStack makeGun(ResourceLocation id) {
         Item item = ForgeRegistries.ITEMS.getValue(id);
         return item == null ? ItemStack.EMPTY : new ItemStack(item);
+    }
+
+    /**
+     * Build a JEG gun ItemStack with bonus damage. JEG's performGunAttack adds the stack's
+     * "AdditionalDamage" NBT to the projectile's base damage, so this makes the gun hit harder
+     * (and partly offsets damage-over-life falloff on guns like the minigun).
+     */
+    public static ItemStack makeGun(ResourceLocation id, float additionalDamage) {
+        ItemStack stack = makeGun(id);
+        if (!stack.isEmpty() && additionalDamage != 0.0F) {
+            stack.getOrCreateTag().putFloat("AdditionalDamage", additionalDamage);
+        }
+        return stack;
     }
 
     /**
