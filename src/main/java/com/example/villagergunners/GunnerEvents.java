@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
+import com.example.villagergunners.goal.TntFleeGoal;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -80,6 +81,8 @@ public final class GunnerEvents {
         }
         if (hasGoal(villager, GunCombatGoal.class)) return; // goals are re-added each load
         GunUtil.extendFollowRange(villager, FOLLOW_RANGE);
+        // Priority 0 (above combat): drop TNT and flee when standing on From Another World infection.
+        villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new GunCombatGoal(
                 villager, GunUtil.REVOLVER, REVOLVER_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
     }

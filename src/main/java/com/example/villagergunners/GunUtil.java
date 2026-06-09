@@ -12,6 +12,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -20,6 +21,7 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -42,6 +44,10 @@ public final class GunUtil {
 
     // JEG's throwable fragmentation grenade -- summoned (not recreated) when a defender is desperate.
     public static final ResourceLocation GRENADE = new ResourceLocation("jeg", "grenade");
+
+    // From Another World mod namespace. FAW is NOT a dependency, so its "infection" blocks (assimilated/
+    // "converted" sculk, gore, tentacles, ...) are matched by namespace string rather than class.
+    public static final String FAW_NAMESPACE = "fromanotherworld";
 
     // Fixed UUID so re-applying the follow-range boost on world reload is idempotent.
     private static final UUID FOLLOW_RANGE_BOOST_UUID = UUID.fromString("c0ffee00-0000-4000-8000-000000000001");
@@ -199,5 +205,36 @@ public final class GunUtil {
         // Pull the pin: play the grenade's throw sound so the toss reads clearly.
         level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
                 net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.4F, 1.6F);
+    }
+
+    /**
+     * True if the entity is standing on (or inside) a block from From Another World -- i.e. the block it
+     * rests on, or the block at its feet, belongs to the {@value #FAW_NAMESPACE} namespace. Matched by
+     * namespace so FAW stays a non-dependency; no-ops when FAW is not installed.
+     */
+    public static boolean isOnFawBlock(Entity e) {
+        Level level = e.level();
+        return isFawBlock(e.getBlockStateOn()) || isFawBlock(level.getBlockState(e.blockPosition()));
+    }
+
+    private static boolean isFawBlock(BlockState state) {
+        if (state == null || state.isAir()) return false;
+        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        return id != null && FAW_NAMESPACE.equals(id.getNamespace());
+    }
+
+    /**
+     * Prime a vanilla TNT block at the igniter's feet, owned by the igniter. Owner attribution means the
+     * blast's damage source resolves back to the igniter (an ally), so the mod's ally-immunity in
+     * {@code onLivingHurt} spares fellow defenders while the blast still hurts hostiles and clears blocks.
+     */
+    public static void primeTnt(LivingEntity igniter, int fuse) {
+        Level level = igniter.level();
+        if (level.isClientSide()) return;
+        PrimedTnt tnt = new PrimedTnt(level, igniter.getX(), igniter.getY(), igniter.getZ(), igniter);
+        tnt.setFuse(fuse);
+        level.addFreshEntity(tnt);
+        level.playSound(null, tnt.getX(), tnt.getY(), tnt.getZ(),
+                net.minecraft.sounds.SoundEvents.TNT_PRIMED, SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 }
