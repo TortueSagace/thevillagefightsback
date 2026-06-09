@@ -160,12 +160,10 @@ public final class GravemindEvents {
     public static int debugPasteWall(ServerLevel level, BlockPos gravemindPos) {
         GlobalPos gp = GlobalPos.of(level.dimension(), gravemindPos.immutable());
         GravemindData data = GravemindData.get(level.getServer());
-        WallPlan plan = data.getWallPlan(gp);
-        if (plan == null) {
-            plan = WallPlanner.plan(level, gp, collectVillagePoints(level, gravemindPos));
-            if (plan == null) return -1;
-            data.putWallPlan(plan);
-        }
+        data.removeWallPlan(gp); // always recompute with the current logic, then paste
+        WallPlan plan = WallPlanner.plan(level, gp, collectVillagePoints(level, gravemindPos));
+        if (plan == null) return -1;
+        data.putWallPlan(plan);
         int placed = 0;
         for (WallBlock wb : plan.blocks()) {
             level.setBlock(wb.pos(), wb.toState(), 3);

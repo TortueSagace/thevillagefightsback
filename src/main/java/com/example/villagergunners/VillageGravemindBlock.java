@@ -109,7 +109,9 @@ public class VillageGravemindBlock extends Block {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!level.isClientSide && !newState.is(this)) {
             GravemindData data = GravemindData.get(((ServerLevel) level).getServer());
-            data.removeBlock(GlobalPos.of(level.dimension(), pos.immutable()));
+            GlobalPos key = GlobalPos.of(level.dimension(), pos.immutable());
+            data.removeBlock(key);
+            data.removeWallPlan(key); // forget the wall plan too -> replacing the gravemind recomputes it fresh
         }
         super.onRemove(state, level, pos, newState, moved);
     }
