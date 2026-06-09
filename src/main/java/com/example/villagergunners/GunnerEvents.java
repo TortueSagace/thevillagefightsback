@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -122,10 +123,29 @@ public final class GunnerEvents {
         }
     }
 
+    /**
+     * Hard ally immunity: villagers, iron golems, and guards must NEVER target one another. Their
+     * native AI (e.g. HurtByTargetGoal after rocket splash) tries to; we cancel any such target change.
+     */
+    @SubscribeEvent
+    public static void onChangeTarget(LivingChangeTargetEvent event) {
+        if (isAlly(event.getEntity()) && event.getNewTarget() != null && isAlly(event.getNewTarget())) {
+            event.setCanceled(true);
+        }
+    }
+
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         if (event.getEntity().level().isClientSide()) return;
+
+        // No friendly fire among defenders (e.g. rocket splash hitting an allied golem/villager).
+        if (isAlly(event.getEntity()) && event.getSource().getEntity() != null
+                && isAlly(event.getSource().getEntity())) {
+            event.setCanceled(true);
+            return;
+        }
+
         if (!(event.getEntity() instanceof Villager villager)) return;
         DamageSource src = event.getSource();
         if (src.getEntity() instanceof Player player) {
@@ -146,6 +166,11 @@ public final class GunnerEvents {
 
     private static boolean isGuard(Entity e) {
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+    }
+
+    /** Defenders that must never fight each other: villagers, iron golems, and guards. */
+    private static boolean isAlly(Entity e) {
+        return e instanceof Villager || e instanceof IronGolem || isGuard(e);
     }
 
     private static boolean hasGoal(Mob mob, Class<?> goalClass) {

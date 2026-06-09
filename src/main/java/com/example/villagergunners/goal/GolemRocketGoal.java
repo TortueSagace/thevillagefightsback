@@ -11,22 +11,20 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 
 /**
- * Iron golem combat behaviour: stay at range and rocket the target, ONLY when no villager or other
- * iron golem is within {@link #ALLY_RADIUS} blocks of the target (so the splash never hits allies).
+ * Iron golem ranged behaviour: rocket a hostile when it can do so SAFELY, otherwise step aside and let
+ * the golem's native melee AI handle it. "Safely" = the target is a hostile ({@link Enemy}) within
+ * [MIN_RANGE, SEE_RANGE], in line of sight, with NO villager/golem within {@link #ALLY_RADIUS} of it.
  *
- * The goal owns movement for the whole [0, SEE_RANGE] engagement (priority 0, MOVE flag) so the
- * golem's native melee goal can never reclaim it and walk the golem into point-blank range -- when
- * the target gets closer than {@link #FIRE_MIN} the golem backs away to regain a safe standoff
- * instead of rocketing itself. "Hostile" targeting is the golem's native one (any Enemy but creeper).
+ * The goal only activates when it can actually fire, so a point-blank target (too close to rocket) is
+ * left to the golem's melee goal (the golem punches it) instead of the goal awkwardly holding/kiting.
+ * We still set the target when one is found so the native melee/approach goals have something to act on.
  */
 public class GolemRocketGoal extends Goal {
     private static final double SEE_RANGE = 30.0;
-    private static final double FIRE_MIN = 8.0;        // don't rocket closer than this (splash self-safety)
-    private static final double REPOSITION_TO = 12.0;  // back away to this standoff (> FIRE_MIN = hysteresis)
-    private static final double ALLY_RADIUS = 5.0;     // no ally within this of the target
+    private static final double MIN_RANGE = 8.0;       // below this, melee instead of rocket (splash safety)
+    private static final double ALLY_RADIUS = 5.0;     // no villager/golem within this of the target
     private static final int ROCKET_COOLDOWN = 60;     // ticks between rockets (~3s)
     private static final int ALLY_SCAN_INTERVAL = 5;   // ticks between (expensive) ally scans
     private static final int RETARGET_INTERVAL = 5;    // ticks between hostile re-scans
@@ -43,15 +41,19 @@ public class GolemRocketGoal extends Goal {
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
-    /**
-     * Stay engaged for the whole [0,30] range + LOS so the goal keeps the MOVE flag from melee.
-     * Restricted to hostiles ({@link Enemy}) so the golem never rockets a player (even if the golem's
-     * native HurtByTargetGoal makes a player its target -- it'll just melee them, vanilla-style).
-     */
-    private boolean engageable(LivingEntity t) {
+    /** A hostile we care about: alive Enemy within detection range. */
+    private boolean isValidHostile(LivingEntity t) {
         return t != null && t.isAlive() && t instanceof Enemy
-                && golem.distanceToSqr(t) <= SEE_RANGE * SEE_RANGE
-                && golem.getSensing().hasLineOfSight(t);
+                && golem.distanceToSqr(t) <= SEE_RANGE * SEE_RANGE;
+    }
+
+    /** Can we rocket this target right now (in range band, LOS, no ally near it)? */
+    private boolean canFire(LivingEntity t) {
+        if (!isValidHostile(t)) return false;
+        double d2 = golem.distanceToSqr(t);
+        if (d2 < MIN_RANGE * MIN_RANGE) return false;        // too close -> melee handles it
+        if (!golem.getSensing().hasLineOfSight(t)) return false;
+        return noAllyNearTarget(t);
     }
 
     /** The golem "knows" ally positions around the target even without seeing them. Throttled. */
@@ -69,19 +71,22 @@ public class GolemRocketGoal extends Goal {
     @Override
     public boolean canUse() {
         if (rocket.isEmpty()) return false;
-        if (engageable(golem.getTarget())) return true;
-        // No usable target yet: actively scan for the nearest hostile in range + LOS (throttled),
-        // so the golem detects threats promptly instead of waiting on its native target goal.
-        if (golem.tickCount % RETARGET_INTERVAL != 0) return false;
-        LivingEntity found = GunUtil.findNearestHostile(golem, SEE_RANGE);
-        if (found == null) return false;
-        golem.setTarget(found);
-        return true;
+        LivingEntity cur = golem.getTarget();
+        if (!isValidHostile(cur)) {
+            // Acquire the nearest visible hostile (throttled) and set it as the target so the golem's
+            // melee/approach goals can act on it even when we can't rocket it.
+            if (golem.tickCount % RETARGET_INTERVAL == 0) {
+                LivingEntity found = GunUtil.findNearestHostile(golem, SEE_RANGE);
+                if (found != null) golem.setTarget(found);
+            }
+            cur = golem.getTarget();
+        }
+        return canFire(cur);   // only ACTIVATE when we can cleanly rocket; else native melee takes over
     }
 
     @Override
     public boolean canContinueToUse() {
-        return engageable(golem.getTarget());
+        return canFire(golem.getTarget());
     }
 
     @Override
@@ -91,40 +96,21 @@ public class GolemRocketGoal extends Goal {
 
     @Override
     public void stop() {
-        golem.getNavigation().stop();
+        golem.getNavigation().stop(); // keep the target so native melee can finish the job
     }
 
     @Override
     public void tick() {
         LivingEntity t = golem.getTarget();
         if (t == null) return;
+        golem.getNavigation().stop(); // hold ground at range and fire
         golem.getLookControl().setLookAt(t, 30.0F, 30.0F);
-
-        if (cooldown > 0) cooldown--;
-
-        boolean allyBlocks = !noAllyNearTarget(t);
-        if (allyBlocks) {
-            // An ally is too near the target: never rocket. Hold position (don't melee-rush either).
-            golem.getNavigation().stop();
+        if (cooldown > 0) {
+            cooldown--;
             return;
         }
-
-        double d2 = golem.distanceToSqr(t);
-        if (d2 < FIRE_MIN * FIRE_MIN) {
-            // Too close to rocket safely -> back away from the target to regain standoff.
-            Vec3 away = golem.position().subtract(t.position());
-            if (away.lengthSqr() < 1.0e-4) away = new Vec3(1, 0, 0);
-            Vec3 dest = t.position().add(away.normalize().scale(REPOSITION_TO));
-            golem.getNavigation().moveTo(dest.x, dest.y, dest.z, 1.0D);
-            return;
-        }
-
-        // In the firing band with a clear shot: hold ground, aim, and fire on cooldown.
-        golem.getNavigation().stop();
-        if (cooldown <= 0) {
-            GunUtil.aimAt(golem, t);
-            GunUtil.fire(golem, t, rocket, 0.0F); // 0 spread = perfect precision
-            cooldown = ROCKET_COOLDOWN;
-        }
+        GunUtil.aimAt(golem, t);
+        GunUtil.fire(golem, t, rocket, 0.0F);
+        cooldown = ROCKET_COOLDOWN;
     }
 }
