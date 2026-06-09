@@ -160,6 +160,10 @@ public final class GravemindEvents {
         BlockPos spot = replaceable ? under : findGravemindSpot(level, bell);
         if (spot == null) return; // no good spot yet; retry next scan
 
+        // One gravemind per area: skip if another already exists within 100 blocks (overlapping
+        // villages / extra bells). Not marked serviced, so it self-heals if that gravemind is removed.
+        if (hasGravemindWithin(level, data, spot, 100.0)) return;
+
         level.setBlock(spot, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
         broadcast(level.getServer(), "§5A Village Gravemind has risen at the heart of a village §8(near "
@@ -179,6 +183,15 @@ public final class GravemindEvents {
             }
         }
         return best;
+    }
+
+    /** True if a gravemind already exists within {@code radius} blocks of {@code pos} in this level. */
+    private static boolean hasGravemindWithin(ServerLevel level, GravemindData data, BlockPos pos, double radius) {
+        double r2 = radius * radius;
+        for (GlobalPos gp : data.blocks()) {
+            if (gp.dimension().equals(level.dimension()) && gp.pos().distSqr(pos) <= r2) return true;
+        }
+        return false;
     }
 
     /** Once per day at sunset: +1 emerald per villager/guard alive within {@value #INCOME_RADIUS} blocks. */
