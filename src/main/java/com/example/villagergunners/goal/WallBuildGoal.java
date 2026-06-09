@@ -32,6 +32,7 @@ public class WallBuildGoal extends Goal {
     private static final int STUCK_TICKS = 50;         // no approach progress for this long => stuck
     private static final int MAX_PILLAR = 12;          // scaffold-tower height cap before giving up
     private static final int PLACE_DELAY = 8;          // brief "working" pause before a block appears
+    private static final float TOUGH_HARDNESS = 25.0F; // blocks at/above this hardness can't be dug (obsidian=50)
 
     private enum Phase { APPROACH, PILLAR, PLACE }
 
