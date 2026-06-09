@@ -1,7 +1,12 @@
 package com.example.villagergunners;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+
+import com.example.villagergunners.wall.WallPlan;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -34,6 +39,7 @@ public class GravemindData extends SavedData {
     private long lastIncomeDay = Long.MIN_VALUE;
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed gravemind blocks
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a gravemind
+    private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
 
     public GravemindData() {}
 
@@ -83,6 +89,13 @@ public class GravemindData extends SavedData {
     public boolean isServiced(GlobalPos center) { return servicedCenters.contains(center); }
     public void addServiced(GlobalPos center) { if (servicedCenters.add(center)) setDirty(); }
 
+    // --- defensive wall plans (one per gravemind) ---
+
+    public Collection<WallPlan> wallPlans() { return wallPlans.values(); }
+    public WallPlan getWallPlan(GlobalPos gravemind) { return wallPlans.get(gravemind); }
+    public void putWallPlan(WallPlan plan) { wallPlans.put(plan.gravemind(), plan); setDirty(); }
+    public void removeWallPlan(GlobalPos gravemind) { if (wallPlans.remove(gravemind) != null) setDirty(); }
+
     // --- persistence ---
 
     public static GravemindData load(CompoundTag tag) {
@@ -92,6 +105,11 @@ public class GravemindData extends SavedData {
         d.lastIncomeDay = tag.contains("lastIncomeDay") ? tag.getLong("lastIncomeDay") : Long.MIN_VALUE;
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "serviced", d.servicedCenters);
+        ListTag walls = tag.getList("wallPlans", Tag.TAG_COMPOUND);
+        for (int i = 0; i < walls.size(); i++) {
+            WallPlan plan = WallPlan.load(walls.getCompound(i));
+            d.wallPlans.put(plan.gravemind(), plan);
+        }
         return d;
     }
 
@@ -102,6 +120,9 @@ public class GravemindData extends SavedData {
         tag.putLong("lastIncomeDay", lastIncomeDay);
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "serviced", servicedCenters);
+        ListTag walls = new ListTag();
+        for (WallPlan plan : wallPlans.values()) walls.add(plan.save());
+        tag.put("wallPlans", walls);
         return tag;
     }
 
