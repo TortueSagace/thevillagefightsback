@@ -2,6 +2,7 @@ package com.example.villagergunners.goal;
 
 import java.util.EnumSet;
 
+import com.example.villagergunners.FlareRally;
 import com.example.villagergunners.GunUtil;
 import com.example.villagergunners.GunnerEvents;
 
@@ -27,6 +28,11 @@ public class GunCombatGoal extends Goal {
     private static final double FLAME_ON_SQR = 5.0 * 5.0;    // 25.0
     private static final double FLAME_OFF_SQR = 6.5 * 6.5;   // 42.25
     private static final int RETARGET_INTERVAL = 5; // ticks between target re-scans
+
+    // Reinforcement flare: while fighting and swarmed, shoot a flare up and rally idle defenders.
+    private static final double FLARE_HOSTILE_RANGE = 20.0; // count hostiles within this many blocks
+    private static final int FLARE_HOSTILE_COUNT = 5;       // need at least this many to call for help
+    private static final int FLARE_SCAN_INTERVAL = 10;      // ticks between (throttled) swarm scans
 
     // Desperation: a defender that is badly hurt OR swarmed lobs a grenade and flees (natural panic AI)
     // for a few seconds, then snaps back to gun combat.
@@ -136,6 +142,16 @@ public class GunCombatGoal extends Goal {
         // immediately (no hold-ground / no panic-memory wipe this tick); canContinueToUse() then yields us
         // next tick so the mob's natural panic AI takes over until fleeUntil passes.
         long now = shooter.level().getGameTime();
+
+        // Reinforcement flare: swarmed while fighting and no flare in the last 30s -> shoot one straight
+        // up and set a rally point. The cheap cooldown check gates the (throttled) hostile scan.
+        if (FlareRally.canFire(now) && shooter.tickCount % FLARE_SCAN_INTERVAL == 0
+                && GunUtil.countHostilesWithin(shooter, FLARE_HOSTILE_RANGE) >= FLARE_HOSTILE_COUNT) {
+            if (GunUtil.fireFlareUp(shooter)) {
+                FlareRally.set(shooter.level(), shooter.getX(), shooter.getEyeY(), shooter.getZ(), now);
+            }
+        }
+
         if (now >= grenadeCooldownUntil && isDesperate(now)) {
             GunUtil.aimAt(shooter, t);                 // face the threat so the lob goes toward it
             GunUtil.throwGrenade(shooter, GRENADE_FUSE);

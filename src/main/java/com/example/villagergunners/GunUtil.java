@@ -38,6 +38,7 @@ public final class GunUtil {
     public static final ResourceLocation MINIGUN = new ResourceLocation("jeg", "minigun");
     public static final ResourceLocation FLAMETHROWER = new ResourceLocation("jeg", "flamethrower");
     public static final ResourceLocation ROCKET_LAUNCHER = new ResourceLocation("jeg", "rocket_launcher");
+    public static final ResourceLocation FLARE_GUN = new ResourceLocation("jeg", "flare_gun");
 
     // Soft integration with Mace Combat Backport (mace_port): its wind charge.
     public static final ResourceLocation WIND_CHARGE = new ResourceLocation("mace_port", "wind_charge");
@@ -127,6 +128,36 @@ public final class GunUtil {
         proj.moveTo(shooter.getX(), shooter.getY() + 0.5, shooter.getZ(), shooter.getYRot(), 90.0F);
         proj.shootFromRotation(shooter, 90.0F, shooter.getYRot(), 0.0F, 1.5F, 0.0F); // 90 pitch = straight down
         shooter.level().addFreshEntity(proj);
+        return true;
+    }
+
+    /**
+     * Fire a JEG flare gun straight up above the shooter's head (a reinforcement signal). Returns true
+     * if fired. JEG derives a generic mob's shot direction from its rotation, so we pitch the shooter
+     * straight up for the shot and restore its rotation afterwards.
+     */
+    public static boolean fireFlareUp(Mob shooter) {
+        Level level = shooter.level();
+        if (level.isClientSide()) return false;
+        ItemStack flareGun = makeGun(FLARE_GUN);
+        if (!(flareGun.getItem() instanceof GunItem gunItem)) return false;
+        Gun gun = gunItem.getModifiedGun(flareGun);
+        if (gun == null) return false;
+
+        LivingEntity aimTarget = shooter.getTarget() != null ? shooter.getTarget() : shooter;
+        float oldXRot = shooter.getXRot();
+        float oldYRot = shooter.getYRot();
+        shooter.setXRot(-90.0F);                 // straight up
+        shooter.setYHeadRot(shooter.getYRot());
+        AIGunEvent.performGunAttack(shooter, aimTarget, flareGun, gun, 0.0F);
+        shooter.setXRot(oldXRot);                // restore so the next combat shot aims normally
+        shooter.setYHeadRot(oldYRot);
+
+        ResourceLocation fireSound = gun.getSounds() != null ? gun.getSounds().getFire() : null;
+        if (fireSound != null) {
+            level.playSound(null, shooter.getX(), shooter.getY() + shooter.getEyeHeight(), shooter.getZ(),
+                    SoundEvent.createVariableRangeEvent(fireSound), SoundSource.HOSTILE, 1.2F, 1.0F);
+        }
         return true;
     }
 

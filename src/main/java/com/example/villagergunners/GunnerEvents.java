@@ -3,6 +3,7 @@ package com.example.villagergunners;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.villagergunners.goal.FlareRallyGoal;
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
 import com.example.villagergunners.goal.TntFleeGoal;
@@ -85,6 +86,7 @@ public final class GunnerEvents {
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new GunCombatGoal(
                 villager, GunUtil.REVOLVER, REVOLVER_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
+        villager.goalSelector.addGoal(2, new FlareRallyGoal(villager)); // run to reinforcement flares
     }
 
     private static void armGuard(PathfinderMob guard) {
