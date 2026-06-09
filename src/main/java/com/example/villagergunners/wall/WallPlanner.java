@@ -99,14 +99,16 @@ public final class WallPlanner {
     private static void expandColumn(Col col, int surfaceY, List<WallBlock> out) {
         int base = surfaceY + 1;                 // wall sits ON the ground (one above the top solid block)
         Direction o = col.outward;
+        Direction in = o.getOpposite();          // toward the village interior
         boolean loophole = (col.s % 5 == 2);     // a firing slit every 5 blocks
         boolean ladder = (col.s % 15 == 0);      // a climb ladder every 15 blocks
         boolean merlon = (col.s % 2 == 0);       // battlements: alternating merlon / gap
+        boolean torch = (col.s % 6 == 3) && !ladder; // light the inside face (not on ladder columns)
 
         // Stairs form the loophole. FACING points toward the raised step; we face it INWARD so the open
         // notch (and thus the firing slit) opens OUTWARD. (Verify visually via the Phase-2 debug paste;
         // if the slit faces the wrong way, flip this single value to `o`.)
-        Direction stairFacing = o.getOpposite();
+        Direction stairFacing = in;
 
         out.add(cobble(col.x, base, col.z, 0));
         out.add(loophole ? stair(col.x, base + 1, col.z, 1, stairFacing, false)
@@ -119,12 +121,17 @@ public final class WallPlanner {
         if (ladder) {
             // Ladders climb the wall's INSIDE face: a ladder cell one block toward the interior, supported
             // by the cobble curtain behind it, facing the interior.
-            Direction in = o.getOpposite();
             BlockPos wall = new BlockPos(col.x, base, col.z);
             for (int c = 0; c <= 3; c++) {
                 BlockPos lp = wall.relative(in).above(c);
                 out.add(new WallBlock(lp, WallBlock.BlockType.LADDER, in, false, c));
             }
+        }
+
+        if (torch) {
+            // A wall torch on the inside face at chest height, supported by the cobble curtain behind it.
+            BlockPos tp = new BlockPos(col.x, base + 3, col.z).relative(in);
+            out.add(new WallBlock(tp, WallBlock.BlockType.TORCH, in, false, 3));
         }
     }
 
@@ -147,10 +154,10 @@ public final class WallPlanner {
     private static int surfaceY(LevelReader level, int x, int z, int minY) {
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
         while (y > minY) {
-            if (isSolid(level, x, y, z)) {
+            if (isSurface(level, x, y, z)) {
                 int yy = y - 1;
                 int gap = 0;
-                while (yy > minY && !isSolid(level, x, yy, z)) { yy--; gap++; }
+                while (yy > minY && !isSurface(level, x, yy, z)) { yy--; gap++; }
                 if (gap >= FLOAT_GAP && yy > minY) { y = yy; continue; } // floating island -> descend
                 return y;                                                // real ground
             }
@@ -159,10 +166,15 @@ public final class WallPlanner {
         return y;
     }
 
-    private static boolean isSolid(LevelReader level, int x, int y, int z) {
-        BlockPos p = new BlockPos(x, y, z);
-        BlockState s = level.getBlockState(p);
-        return s.isFaceSturdy(level, p, Direction.UP);
+    /**
+     * A block that counts as the standable ground surface. Uses the heightmap's own "blocks motion"
+     * notion (which includes partial ground blocks like dirt paths and farmland) rather than a full-face
+     * sturdiness test -- otherwise a column over a dirt path would skip past the path to the dirt below it
+     * and the wall would land inside the path block, leaving a hole.
+     */
+    private static boolean isSurface(LevelReader level, int x, int y, int z) {
+        BlockState s = level.getBlockState(new BlockPos(x, y, z));
+        return s.blocksMotion() || !s.getFluidState().isEmpty();
     }
 
     // --- 2D helpers (convex hull, offset, rasterization) ---

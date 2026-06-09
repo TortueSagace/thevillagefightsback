@@ -25,6 +25,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
@@ -64,19 +65,25 @@ public final class GravemindEvents {
 
     private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a gravemind for the wall plan
 
+    private static final int COBBLE_SCAN_RADIUS = 80; // survey cobblestone this far (horizontally) for the wall
+    private static final int COBBLE_Y_BAND = 10;      // ... within +/- this many blocks of the gravemind's height
+    private static final double ENSURE_GOAL_RADIUS = 96.0; // give villagers within this the build goal
+
     /**
-     * For each gravemind: compute its defensive wall plan once (from the surrounding bed cluster), then
-     * each pass re-check whether the wall has been completed (by the builders) and, when it has, remove
-     * the temporary climb scaffolds and announce it.
+     * For each gravemind: compute its defensive wall plan once (from the surrounding village footprint),
+     * make sure nearby villagers carry the build goal, and each pass re-check whether the wall has been
+     * completed (by the builders) and, when it has, remove the temporary climb scaffolds and announce it.
      */
     private static void driveWalls(MinecraftServer server, GravemindData data) {
+        boolean trySurvey = server.getTickCount() % 200 == 0; // the cobblestone survey is heavy; throttle it
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
 
             WallPlan plan = data.getWallPlan(gp);
             if (plan == null) {
-                WallPlan computed = WallPlanner.plan(level, gp, collectBeds(level, gp.pos()));
+                if (!trySurvey) continue;
+                WallPlan computed = WallPlanner.plan(level, gp, collectVillagePoints(level, gp.pos()));
                 if (computed != null) {
                     data.putWallPlan(computed);
                     broadcast(server, "§7The Village Gravemind marks out a defensive wall §8("
@@ -84,12 +91,46 @@ public final class GravemindEvents {
                 }
                 continue;
             }
-            if (!plan.isComplete() && plan.recheckCompletion(level)) {
-                cleanupScaffolds(level, plan);
-                data.setDirty();
-                broadcast(server, "§aThe village wall is complete.");
+            if (!plan.isComplete()) {
+                // Ensure idle villagers near the wall actually carry the build goal -- covers villagers that
+                // loaded before the goal existed (e.g. right after a mod update), so the wall auto-starts.
+                for (Villager v : level.getEntitiesOfClass(Villager.class,
+                        new AABB(gp.pos()).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive())) {
+                    GunnerEvents.ensureWallBuildGoal(v);
+                }
+                if (plan.recheckCompletion(level)) {
+                    cleanupScaffolds(level, plan);
+                    data.setDirty();
+                    broadcast(server, "§aThe village wall is complete.");
+                }
             }
         }
+    }
+
+    /**
+     * The 2D points that define the village extent for the wall. Primary heuristic: columns containing
+     * cobblestone within +/-{@value #COBBLE_Y_BAND} of the gravemind's height (cobblestone is essentially
+     * never natural at the surface, so it tracks the man-made village well). Falls back to beds (HOME POIs)
+     * if too little cobblestone is found.
+     */
+    private static List<BlockPos> collectVillagePoints(ServerLevel level, BlockPos center) {
+        List<BlockPos> pts = new ArrayList<>();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        int yLo = center.getY() - COBBLE_Y_BAND, yHi = center.getY() + COBBLE_Y_BAND;
+        for (int dx = -COBBLE_SCAN_RADIUS; dx <= COBBLE_SCAN_RADIUS; dx++) {
+            for (int dz = -COBBLE_SCAN_RADIUS; dz <= COBBLE_SCAN_RADIUS; dz++) {
+                int x = center.getX() + dx, z = center.getZ() + dz;
+                if (!level.hasChunk(x >> 4, z >> 4)) continue;
+                for (int y = yHi; y >= yLo; y--) {
+                    if (level.getBlockState(m.set(x, y, z)).is(Blocks.COBBLESTONE)) {
+                        pts.add(new BlockPos(x, 0, z));
+                        break;
+                    }
+                }
+            }
+        }
+        if (pts.size() >= WallPlanner.MIN_BEDS) return pts;
+        return collectBeds(level, center); // sparse-cobblestone village -> fall back to beds
     }
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the gravemind. */
@@ -121,7 +162,7 @@ public final class GravemindEvents {
         GravemindData data = GravemindData.get(level.getServer());
         WallPlan plan = data.getWallPlan(gp);
         if (plan == null) {
-            plan = WallPlanner.plan(level, gp, collectBeds(level, gravemindPos));
+            plan = WallPlanner.plan(level, gp, collectVillagePoints(level, gravemindPos));
             if (plan == null) return -1;
             data.putWallPlan(plan);
         }
@@ -168,6 +209,12 @@ public final class GravemindEvents {
         data.addServiced(key);
         broadcast(level.getServer(), "§5A Village Gravemind has risen at the heart of a village §8(near "
                 + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
+
+        // Furnish the village: drop a bed into every bedless cobblestone house near the gravemind.
+        int beds = HouseBedFiller.fill(level, spot);
+        if (beds > 0) {
+            broadcast(level.getServer(), "§7The Village Gravemind furnishes §a" + beds + "§7 houses with beds.");
+        }
     }
 
     /** Nearest open ground spot within 3 blocks of the village centre, close to the centre's height. */

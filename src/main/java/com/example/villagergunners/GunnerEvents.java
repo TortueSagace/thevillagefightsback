@@ -99,6 +99,13 @@ public final class GunnerEvents {
         villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
     }
 
+    /** Add the wall-build goal to a villager if it lacks it (idempotent) -- retrofits already-loaded villagers. */
+    public static void ensureWallBuildGoal(Villager villager) {
+        if (!hasGoal(villager, WallBuildGoal.class)) {
+            villager.goalSelector.addGoal(3, new WallBuildGoal(villager));
+        }
+    }
+
     private static void armGuard(PathfinderMob guard) {
         // Guards are humanoid and render their main-hand item, so equip the minigun for the visual.
         // Firing still uses the goal's own cached stacks. JEG's auto gunner goal is stripped below.

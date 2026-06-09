@@ -168,12 +168,34 @@ public class WallBuildGoal extends Goal {
         if (pillarSteps++ >= MAX_PILLAR) { abandon(); return; }
 
         BlockPos feet = new BlockPos(stand.getX(), feetY, stand.getZ());
+        BlockPos head = feet.above();      // the villager's head now / where the next scaffold goes
+        BlockPos newHead = feet.above(2);  // the villager's head AFTER stepping up -- must be clear
+
+        // A block above can stop the tower from growing. Dig it out -- unless it's very tough (obsidian,
+        // bedrock, ...), in which case there's no way up here, so give up and pick another target.
+        if (tooToughToDig(head) || tooToughToDig(newHead)) { abandon(); return; }
+        digIfNeeded(head);
+        digIfNeeded(newHead);
+
         if (level().getBlockState(feet).canBeReplaced()) {
             level().setBlock(feet, Blocks.SCAFFOLDING.defaultBlockState(), 3);
             plan.addScaffold(feet);
         }
         // Step up onto the scaffold we just placed (a reliable, player-like climb).
         villager.setPos(stand.getX() + 0.5, feetY + 1, stand.getZ() + 0.5);
+    }
+
+    /** Break a solid block that blocks the pillar climb (no drops). No-op if already passable. */
+    private void digIfNeeded(BlockPos pos) {
+        if (!level().getBlockState(pos).canBeReplaced()) level().destroyBlock(pos, false);
+    }
+
+    /** True if a solid block here is too hard to dig through (obsidian, bedrock, reinforced deepslate, ...). */
+    private boolean tooToughToDig(BlockPos pos) {
+        BlockState s = level().getBlockState(pos);
+        if (s.canBeReplaced()) return false; // passable -> not a blocker at all
+        float hardness = s.getDestroySpeed(level(), pos);
+        return hardness < 0 || hardness >= TOUGH_HARDNESS;
     }
 
     private void tickPlace() {

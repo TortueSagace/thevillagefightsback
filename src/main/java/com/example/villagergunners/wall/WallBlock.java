@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.WallTorchBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.StairsShape;
@@ -22,7 +23,7 @@ import net.minecraft.world.level.block.state.properties.StairsShape;
  */
 public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean topHalf, int course) {
 
-    public enum BlockType { COBBLE, STAIR, LADDER }
+    public enum BlockType { COBBLE, STAIR, LADDER, TORCH }
 
     /** The concrete block state this placement should produce. */
     public BlockState toState() {
@@ -34,6 +35,8 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
                     .setValue(StairBlock.SHAPE, StairsShape.STRAIGHT);
             case LADDER -> Blocks.LADDER.defaultBlockState()
                     .setValue(LadderBlock.FACING, facing);
+            case TORCH -> Blocks.WALL_TORCH.defaultBlockState()
+                    .setValue(WallTorchBlock.FACING, facing);
         };
     }
 
@@ -49,6 +52,8 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
                     && world.getValue(StairBlock.HALF) == (topHalf ? Half.TOP : Half.BOTTOM);
             case LADDER -> world.is(Blocks.LADDER)
                     && world.getValue(LadderBlock.FACING) == facing;
+            case TORCH -> world.is(Blocks.WALL_TORCH)
+                    && world.getValue(WallTorchBlock.FACING) == facing;
         };
     }
 }
