@@ -145,13 +145,21 @@ public final class GravemindEvents {
         }
     }
 
-    private static void tryPlaceGravemind(ServerLevel level, GravemindData data, BlockPos center) {
-        GlobalPos key = GlobalPos.of(level.dimension(), center.immutable());
+    private static void tryPlaceGravemind(ServerLevel level, GravemindData data, BlockPos bell) {
+        GlobalPos key = GlobalPos.of(level.dimension(), bell.immutable());
         if (data.isServiced(key)) return;
-        // The exact meeting-point column is usually topped by the BELL (whose top isn't a solid face), so
-        // we search the columns AROUND it for the nearest open ground spot near the bell's height.
-        BlockPos spot = findGravemindSpot(level, center);
+
+        // Preferred: the block directly under the bell (the pedestal). A full solid gravemind still
+        // supports the floor-standing bell, so the bell stays. Fall back to a nearby ground spot only
+        // when that block is air/bedrock (e.g. a wall-mounted bell over a gap).
+        BlockPos under = bell.below();
+        BlockState underState = level.getBlockState(under);
+        boolean replaceable = !underState.isAir()
+                && !underState.is(ModBlocks.VILLAGE_GRAVEMIND.get())
+                && underState.getDestroySpeed(level, under) >= 0; // not bedrock/unbreakable
+        BlockPos spot = replaceable ? under : findGravemindSpot(level, bell);
         if (spot == null) return; // no good spot yet; retry next scan
+
         level.setBlock(spot, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
         broadcast(level.getServer(), "§5A Village Gravemind has risen at the heart of a village §8(near "

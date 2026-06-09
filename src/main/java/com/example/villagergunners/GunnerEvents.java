@@ -7,6 +7,7 @@ import com.example.villagergunners.goal.FlareRallyGoal;
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
 import com.example.villagergunners.goal.TntFleeGoal;
+import com.example.villagergunners.goal.WallBuildGoal;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
