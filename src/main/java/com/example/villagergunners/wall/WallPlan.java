@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * A fully computed, deterministic wall plan for one village (owned by one Gravemind). The block list is
@@ -68,16 +69,26 @@ public final class WallPlan {
     }
 
     /**
+     * A placement we consider "done" for build/completion purposes: either already built, or blocked by a
+     * non-replaceable obstacle we refuse to bulldoze (a house wall, bedrock, ...). Blocked cells are left as
+     * gaps so builders don't spin on them forever and the wall can still complete.
+     */
+    public boolean satisfied(Level level, WallBlock wb) {
+        BlockState world = level.getBlockState(wb.pos());
+        return wb.matches(world) || !world.canBeReplaced();
+    }
+
+    /**
      * The lowest course index (0..4) that still contains an unbuilt block, or {@link #COURSES} (5) if the
      * whole wall is built. Advances and caches the cursor so finished courses are never rescanned.
      */
     public int lowestIncompleteCourse(Level level) {
         while (cursorCourse < COURSES) {
-            boolean allBuilt = true;
+            boolean allDone = true;
             for (int i = courseStart[cursorCourse]; i < courseStart[cursorCourse + 1]; i++) {
-                if (!isBuilt(level, blocks.get(i))) { allBuilt = false; break; }
+                if (!satisfied(level, blocks.get(i))) { allDone = false; break; }
             }
-            if (allBuilt) cursorCourse++; else break;
+            if (allDone) cursorCourse++; else break;
         }
         return cursorCourse;
     }
@@ -94,7 +105,7 @@ public final class WallPlan {
         double bestD = Double.MAX_VALUE;
         for (int i = courseStart[c]; i < courseStart[c + 1]; i++) {
             WallBlock wb = blocks.get(i);
-            if (isBuilt(level, wb) || reserved.test(wb.pos())) continue;
+            if (satisfied(level, wb) || reserved.test(wb.pos())) continue;
             double d = wb.pos().distSqr(near);
             if (d < bestD) { bestD = d; best = wb; }
         }

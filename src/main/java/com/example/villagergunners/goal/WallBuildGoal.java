@@ -85,7 +85,7 @@ public class WallBuildGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         if (fighting() || plan == null || target == null || plan.isComplete()) return false;
-        return !plan.isBuilt(level(), target); // someone else finished it -> re-seek
+        return !plan.satisfied(level(), target); // finished or blocked -> re-seek
     }
 
     @Override

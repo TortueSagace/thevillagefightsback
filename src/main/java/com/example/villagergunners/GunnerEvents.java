@@ -96,6 +96,7 @@ public final class GunnerEvents {
         villager.goalSelector.addGoal(1, new GunCombatGoal(
                 villager, GunUtil.REVOLVER, REVOLVER_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
         villager.goalSelector.addGoal(2, new FlareRallyGoal(villager)); // run to reinforcement flares
+        villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
     }
 
     private static void armGuard(PathfinderMob guard) {
