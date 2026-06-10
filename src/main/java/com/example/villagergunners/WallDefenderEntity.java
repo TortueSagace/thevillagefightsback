@@ -24,11 +24,14 @@ import net.minecraft.world.phys.Vec3;
 public class WallDefenderEntity extends Mob {
     private static final double RANGE = 24.0;
     private static final int FIRE_INTERVAL = 20;     // one shot per second
+    private static final int RETARGET_INTERVAL = 10; // re-scan for a target only every 0.5s (the heavy part)
     private static final ResourceLocation GUN_ID = new ResourceLocation("jeg", "revolver"); // base dmg 5
     private static final float GUN_BONUS_DAMAGE = 5.0F; // + base 5 = ~10 damage per shot
 
     private static ItemStack gun; // lazily built once JEG's item registry is available
     private int fireCooldown;
+    private int retargetCooldown;
+    private LivingEntity cachedTarget;
 
     public WallDefenderEntity(EntityType<? extends Mob> type, Level level) {
         super(type, level);
@@ -59,14 +62,27 @@ public class WallDefenderEntity extends Mob {
         super.aiStep();
         if (level().isClientSide) return;
         if (fireCooldown > 0) fireCooldown--;
-        LivingEntity target = acquireTarget();
-        setTarget(target);
-        if (target == null) return;
-        GunUtil.aimAt(this, target);                  // JEG fires along body rotation, so face the target first
+        if (retargetCooldown > 0) retargetCooldown--;
+
+        // Re-acquire (the heavy entity scan + per-candidate LOS raytraces) only every RETARGET_INTERVAL
+        // ticks, or as soon as the cached target dies/leaves range -- NOT every tick. Aiming at the cached
+        // target stays per-tick because that's just a cheap rotation.
+        if (retargetCooldown <= 0 || !isValidTarget(cachedTarget)) {
+            cachedTarget = acquireTarget();
+            retargetCooldown = RETARGET_INTERVAL;
+        }
+        setTarget(cachedTarget);
+        if (cachedTarget == null) return;
+        GunUtil.aimAt(this, cachedTarget);            // JEG fires along body rotation, so face the target first
         if (fireCooldown <= 0 && !gun().isEmpty()) {
-            GunUtil.fire(this, target, gun(), 0.0F);  // real JEG bullet, perfect precision
+            GunUtil.fire(this, cachedTarget, gun(), 0.0F);  // real JEG bullet, perfect precision
             fireCooldown = FIRE_INTERVAL;
         }
+    }
+
+    /** Cheap per-tick check (no raytrace) so we can keep a target between full re-acquisitions. */
+    private boolean isValidTarget(LivingEntity t) {
+        return t != null && t.isAlive() && distanceToSqr(t) <= RANGE * RANGE;
     }
 
     private LivingEntity acquireTarget() {
