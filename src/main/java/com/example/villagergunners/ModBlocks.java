@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ScaffoldingBlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HalfTransparentBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -82,6 +83,28 @@ public final class ModBlocks {
             "blue_tnt",
             () -> new BlockItem(BLUE_TNT.get(), new Item.Properties()));
 
+    /**
+     * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
+     * blast resistance 1200, and needs a diamond+ pickaxe to break (see the mineable/pickaxe +
+     * needs_diamond_tool tags). HalfTransparentBlock gives proper glass face-culling.
+     */
+    public static final RegistryObject<Block> REINFORCED_GLASS = BLOCKS.register(
+            "reinforced_glass",
+            () -> new HalfTransparentBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(30.0F, 1200.0F)              // ancient debris toughness
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()
+                    .isValidSpawn((s, l, p, e) -> false)
+                    .isRedstoneConductor((s, l, p) -> false)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> REINFORCED_GLASS_ITEM = ITEMS.register(
+            "reinforced_glass",
+            () -> new BlockItem(REINFORCED_GLASS.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -91,6 +114,7 @@ public final class ModBlocks {
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
+                output.accept(REINFORCED_GLASS_ITEM.get());
             })
             .build());
 
