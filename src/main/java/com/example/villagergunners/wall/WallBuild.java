@@ -21,6 +21,9 @@ public final class WallBuild {
 
     // gravemind -> (target block pos as long -> reservation expiry game time)
     private static final Map<GlobalPos, Map<Long, Long>> RESERVATIONS = new HashMap<>();
+    // gravemind -> (parked block pos as long -> retry-after game time): a cell no builder could reach/finish,
+    // hidden from ALL builders for a while so they don't churn on it (shared, unlike a per-builder skip).
+    private static final Map<GlobalPos, Map<Long, Long>> SKIPS = new HashMap<>();
 
     /**
      * Nearest incomplete wall plan a builder at {@code near} belongs to, or null. The join radius is the
@@ -68,8 +71,21 @@ public final class WallBuild {
         if (map != null) map.remove(pos.asLong());
     }
 
-    /** Drop all reservations for a plan (call when the wall completes or the gravemind is removed). */
+    /** Park a cell no builder could reach/finish, hidden from every builder until {@code until}. */
+    public static void skip(GlobalPos plan, BlockPos pos, long until) {
+        SKIPS.computeIfAbsent(plan, k -> new HashMap<>()).put(pos.asLong(), until);
+    }
+
+    public static boolean isSkipped(GlobalPos plan, BlockPos pos, long now) {
+        Map<Long, Long> map = SKIPS.get(plan);
+        if (map == null) return false;
+        Long until = map.get(pos.asLong());
+        return until != null && until > now;
+    }
+
+    /** Drop all reservations/skips for a plan (call when the wall completes or the gravemind is removed). */
     public static void clearPlan(GlobalPos plan) {
         RESERVATIONS.remove(plan);
+        SKIPS.remove(plan);
     }
 }

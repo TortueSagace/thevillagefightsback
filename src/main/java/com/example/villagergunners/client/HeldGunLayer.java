@@ -60,10 +60,13 @@ public class HeldGunLayer<T extends LivingEntity, M extends EntityModel<T>> exte
     }
 
     private boolean shouldShow(T entity) {
-        return switch (gate) {
-            case EMPTY_HAND -> entity.getMainHandItem().isEmpty();
-            case HELD_GUN -> entity.getMainHandItem().getItem() instanceof ttv.migami.jeg.item.GunItem;
-        };
+        // NOTE: deliberately if/else, not a switch-over-enum. A switch on an enum makes javac emit a
+        // synthetic HeldGunLayer$1 switch-map class which Forge's module classloader fails to load here
+        // (NoClassDefFoundError at render time). Plain enum comparison generates no extra class.
+        if (gate == Gate.EMPTY_HAND) {
+            return entity.getMainHandItem().isEmpty();
+        }
+        return entity.getMainHandItem().getItem() instanceof ttv.migami.jeg.item.GunItem; // Gate.HELD_GUN
     }
 
     @Override

@@ -142,8 +142,10 @@ public final class GravemindEvents {
 
     /**
      * Keep exactly one builder per wall course (0..{@link BuilderRole#BUILDER_COUNT}-1) among the villagers
-     * nearby: demote duplicate-course builders, then fill any uncovered course from a free villager or, if
-     * none, by spawning a dedicated builder. Dead builders just leave their course uncovered -> refilled.
+     * nearby: demote duplicate-course builders, then fill any uncovered course from a free villager (that
+     * isn't on the step-down cool-down). Spawn dedicated builders only to reach a minimum body count -- never
+     * beyond -- so a village that's short on villagers gets staffed without the self-demotion cycle ever
+     * spawning an ever-growing crowd. A course with no eligible villager is simply left uncovered this pass.
      */
     private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, long now) {
         boolean[] covered = new boolean[BuilderRole.BUILDER_COUNT];
@@ -156,10 +158,14 @@ public final class GravemindEvents {
                 covered[c] = true;
             }
         }
+        int population = nearby.size(); // cap spawning so churn can't grow the crowd past BUILDER_COUNT bodies
         java.util.Iterator<Villager> free = nearby.stream().filter(BuilderRole::eligible).iterator();
         for (int c = 0; c < covered.length; c++) {
             if (covered[c]) continue;
-            Villager v = free.hasNext() ? free.next() : spawnBuilder(level, gravemind);
+            Villager v;
+            if (free.hasNext()) v = free.next();
+            else if (population < BuilderRole.BUILDER_COUNT) { v = spawnBuilder(level, gravemind); if (v != null) population++; }
+            else v = null;
             if (v == null) continue;
             BuilderRole.promote(v, c);
             GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted/spawned builder can build

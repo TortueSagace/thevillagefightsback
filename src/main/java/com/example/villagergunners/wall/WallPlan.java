@@ -143,12 +143,16 @@ public final class WallPlan {
     public int columnCount() { return columns.size(); }
 
     /**
-     * Conga selection: the first not-yet-built block of {@code course}, in perimeter (column) order. Each of
-     * the layer-builders calls this for its own course and sweeps the wall the same way from the same start.
+     * Conga selection: the first not-yet-built, supported block of {@code course}, scanning the perimeter
+     * columns from {@code fromColumn} (wrapping). Giving each builder a different start column spreads the
+     * six of them around the ring instead of all piling onto the same first cell.
      */
-    public WallBlock nextForCourse(Level level, int course, Predicate<BlockPos> skip) {
-        for (List<WallBlock> col : columns) {
-            for (WallBlock wb : col) {
+    public WallBlock nextForCourse(Level level, int course, int fromColumn, Predicate<BlockPos> skip) {
+        int n = columns.size();
+        if (n == 0) return null;
+        int start = Math.floorMod(fromColumn, n);
+        for (int k = 0; k < n; k++) {
+            for (WallBlock wb : columns.get((start + k) % n)) {
                 // cheap filters (course, skip/reserved) before the world lookups in satisfied()/hasSupport()
                 if (wb.course() != course || skip.test(wb.pos())) continue;
                 if (!satisfied(level, wb) && hasSupport(level, wb)) return wb;
@@ -170,10 +174,11 @@ public final class WallPlan {
         return !level.getBlockState(wb.pos().below()).canBeReplaced(); // course below must already be there
     }
 
-    /** Helper selection for a builder whose own layer is done: the lowest unfinished layer's next block. */
-    public WallBlock nextAnyCourse(Level level, Predicate<BlockPos> skip) {
+    /** Helper selection for a builder whose own layer has no ready cell: the lowest unfinished layer's next
+     *  block, still starting the perimeter scan at {@code fromColumn} so helpers stay spread out. */
+    public WallBlock nextAnyCourse(Level level, int fromColumn, Predicate<BlockPos> skip) {
         for (int c = 0; c < COURSES; c++) {
-            WallBlock t = nextForCourse(level, c, skip);
+            WallBlock t = nextForCourse(level, c, fromColumn, skip);
             if (t != null) return t;
         }
         return null;
