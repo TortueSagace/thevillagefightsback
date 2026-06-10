@@ -57,7 +57,7 @@ public class WallBuildGoal extends Goal {
 
     private WallPlan plan;
     private WallBlock target;
-    private BlockPos stand;       // interior-adjacent column the villager works from
+    private BlockPos stand;       // exterior-adjacent column the villager works from (outside the wall ring)
     private Phase phase;
 
     private int repathTimer;
@@ -112,7 +112,7 @@ public class WallBuildGoal extends Goal {
         if (!WallBuild.reserve(p.gravemind(), t.pos(), now)) return false; // lost the race this tick; retry soon
         this.plan = p;
         this.target = t;
-        this.stand = interiorColumn(t.pos());
+        this.stand = exteriorColumn(t.pos());
         this.phase = Phase.APPROACH;
         this.repathTimer = 0;
         this.stuckTimer = 0;
@@ -438,14 +438,19 @@ public class WallBuildGoal extends Goal {
                 : (dz >= 0 ? Direction.SOUTH : Direction.NORTH);
     }
 
-    /** The block one step toward the village interior (toward the gravemind) from a wall position. */
-    private BlockPos interiorColumn(BlockPos wall) {
+    /**
+     * The block one step toward the village EXTERIOR (away from the gravemind) from a wall position. Builders
+     * stand and work from OUTSIDE the wall ring, so they never path into / pillar through / dig up the
+     * protected area (e.g. a house the gravemind sits inside). All their destructive ops -- digging head room,
+     * clearing the wall cell, dirt-bridging over gaps -- then happen on the outside field, not indoors.
+     */
+    private BlockPos exteriorColumn(BlockPos wall) {
         BlockPos gm = plan.gravemind().pos();
         int dx = gm.getX() - wall.getX();
         int dz = gm.getZ() - wall.getZ();
-        Direction in = Math.abs(dx) >= Math.abs(dz)
+        Direction toward = Math.abs(dx) >= Math.abs(dz)
                 ? (dx >= 0 ? Direction.EAST : Direction.WEST)
                 : (dz >= 0 ? Direction.SOUTH : Direction.NORTH);
-        return wall.relative(in);
+        return wall.relative(toward.getOpposite()); // step OUTWARD, away from the gravemind
     }
 }

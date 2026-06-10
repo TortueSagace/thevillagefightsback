@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.AbstractBannerBlock;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.BasePressurePlateBlock;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.BellBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.ButtonBlock;
@@ -66,6 +67,7 @@ public final class HouseBuildManager {
     public static boolean isDeferred(BlockState s) {
         Block b = s.getBlock();
         return b instanceof TorchBlock || b instanceof LanternBlock || b instanceof LadderBlock
+                || b instanceof BellBlock
                 || b instanceof BedBlock || b instanceof DoorBlock || b instanceof BaseRailBlock
                 || b instanceof ButtonBlock || b instanceof LeverBlock || b instanceof BasePressurePlateBlock
                 || b instanceof SignBlock || b instanceof AbstractBannerBlock || b instanceof VineBlock

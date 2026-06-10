@@ -4,7 +4,9 @@
   "block.gobacktoyourworld.fake_cobblestone": "Fake Cobblestone",
   "block.gobacktoyourworld.fake_cobblestone.desc": "Villagers, golems and players can go through. Perfect to build a hidden door.",
   "block.gobacktoyourworld.blue_tnt": "Blue TNT",
+  "block.gobacktoyourworld.green_tnt": "Green TNT",
   "block.gobacktoyourworld.reinforced_glass": "Reinforced Glass",
   "block.gobacktoyourworld.protecting_glass": "Protecting Glass",
+  "block.gobacktoyourworld.wall_defender": "Wall Defender",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

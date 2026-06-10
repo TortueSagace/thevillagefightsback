@@ -83,6 +83,15 @@ public final class ModBlocks {
             "blue_tnt",
             () -> new BlockItem(BLUE_TNT.get(), new Item.Properties()));
 
+    /** Green TNT: builds the big square "village tower" structure block-by-block (see {@link GreenTntBlock}). */
+    public static final RegistryObject<Block> GREEN_TNT = BLOCKS.register(
+            "green_tnt",
+            () -> new GreenTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT)));
+
+    public static final RegistryObject<Item> GREEN_TNT_ITEM = ITEMS.register(
+            "green_tnt",
+            () -> new BlockItem(GREEN_TNT.get(), new Item.Properties()));
+
     /**
      * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
      * blast resistance 1200, and needs a diamond+ pickaxe to break (see the mineable/pickaxe +
@@ -127,6 +136,24 @@ public final class ModBlocks {
             "protecting_glass",
             () -> new BlockItem(PROTECTING_GLASS.get(), new Item.Properties()));
 
+    /**
+     * Wall defender: a conduit look-alike auto-turret (see {@link WallDefenderBlock} /
+     * {@link WallDefenderBlockEntity}). 100 HP, fires a ~10-damage arrow/second at the nearest hostile.
+     * Tough and glowing; the Gravemind drops one in a protecting-glass shell above each gate at level 2.
+     */
+    public static final RegistryObject<Block> WALL_DEFENDER = BLOCKS.register(
+            "wall_defender",
+            () -> new WallDefenderBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(50.0F, 1200.0F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(s -> 10)
+                    .noOcclusion()));
+
+    public static final RegistryObject<Item> WALL_DEFENDER_ITEM = ITEMS.register(
+            "wall_defender",
+            () -> new BlockItem(WALL_DEFENDER.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -136,8 +163,10 @@ public final class ModBlocks {
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
+                output.accept(GREEN_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
+                output.accept(WALL_DEFENDER_ITEM.get());
             })
             .build());
 
