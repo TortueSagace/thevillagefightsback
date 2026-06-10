@@ -6,7 +6,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -43,24 +42,22 @@ public class BlueTntBlock extends Block {
         return defaultBlockState().setValue(FACING, ctx.getHorizontalDirection().getOpposite());
     }
 
-    /** Detonate the moment it is placed -- schedule the build for next tick (off the placement call). */
+    /**
+     * Detonate the moment it is placed. The build is captured here (door facing + position) and run on the
+     * next SERVER tick via {@link HouseBuildManager}, so it fires reliably -- even if a neighbouring TNT's
+     * footprint carves this block away first (a scheduled block tick would have been silently dropped).
+     */
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean isMoving) {
         super.onPlace(state, level, pos, oldState, isMoving);
-        if (!level.isClientSide) level.scheduleTick(pos, this, 1);
-    }
-
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (!(level instanceof ServerLevel sl)) return;
         Direction doorFacing = state.getValue(FACING);
-        level.playSound(null, pos, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 1.0F);
-        level.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                8, 1.5, 1.5, 1.5, 0.0);
-        // Never let a placement failure take down the world tick (it would disconnect the player).
-        try {
-            HousePlacer.place(level, pos, doorFacing, HousePlacer.HOUSES[random.nextInt(HousePlacer.HOUSES.length)]);
-        } catch (Throwable t) {
-            VillagerGunners.LOGGER.error("[Go Back To Your World] Blue TNT house placement failed at {}", pos, t);
-        }
+        BlockPos at = pos.immutable();
+        HouseBuildManager.detonateNextTick(sl, at, () -> {
+            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 1.0F);
+            sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
+                    8, 1.5, 1.5, 1.5, 0.0);
+            HousePlacer.place(sl, at, doorFacing, HousePlacer.HOUSES[sl.random.nextInt(HousePlacer.HOUSES.length)]);
+        });
     }
 }

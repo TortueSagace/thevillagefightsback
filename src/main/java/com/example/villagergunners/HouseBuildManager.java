@@ -55,6 +55,18 @@ public final class HouseBuildManager {
 
     private static final List<BuildJob> JOBS = new ArrayList<>();
 
+    // Pending TNT detonations: the build is captured as a closure at PLACEMENT time and run on the next
+    // server tick. This is reliable where a scheduled block tick is not -- it fires even in a non-ticking
+    // chunk, and even if a neighbouring TNT's footprint already carved this TNT's block away (which silently
+    // dropped its scheduled tick before, so some TNTs "did nothing").
+    private static final List<PendingTnt> DETONATIONS = new ArrayList<>();
+    private record PendingTnt(ServerLevel level, BlockPos pos, Runnable detonate) {}
+
+    /** Queue a TNT's detonation (sound/particles + build) to run next server tick. */
+    public static void detonateNextTick(ServerLevel level, BlockPos pos, Runnable detonate) {
+        DETONATIONS.add(new PendingTnt(level, pos.immutable(), detonate));
+    }
+
     /** One planned block placement. {@code deferred} = an attachment/sensitive block placed in the last pass. */
     public record Placement(BlockPos pos, BlockState state, CompoundTag nbt, boolean deferred) {}
 
@@ -78,7 +90,21 @@ public final class HouseBuildManager {
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || JOBS.isEmpty()) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        // Fire any pending TNT detonations first (each carves a footprint + queues a build job below).
+        if (!DETONATIONS.isEmpty()) {
+            List<PendingTnt> due = new ArrayList<>(DETONATIONS);
+            DETONATIONS.clear();
+            for (PendingTnt d : due) {
+                if (!d.level().hasChunkAt(d.pos())) continue; // chunk unloaded in the meantime -> skip
+                try {
+                    d.detonate().run();
+                } catch (Throwable t) {
+                    VillagerGunners.LOGGER.error("[Go Back To Your World] TNT detonation failed at {}", d.pos(), t);
+                }
+            }
+        }
+        if (JOBS.isEmpty()) return;
         Iterator<BuildJob> it = JOBS.iterator();
         while (it.hasNext()) {
             if (it.next().step()) it.remove();
@@ -88,6 +114,7 @@ public final class HouseBuildManager {
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         JOBS.clear();
+        DETONATIONS.clear();
     }
 
     private static final class BuildJob {
