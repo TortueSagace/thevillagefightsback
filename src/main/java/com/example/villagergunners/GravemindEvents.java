@@ -93,17 +93,42 @@ public final class GravemindEvents {
                 continue;
             }
             if (!plan.isComplete()) {
-                // Ensure idle villagers near the wall actually carry the build goal -- covers villagers that
-                // loaded before the goal existed (e.g. right after a mod update), so the wall auto-starts.
-                for (Villager v : level.getEntitiesOfClass(Villager.class,
-                        new AABB(gp.pos()).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive())) {
-                    GunnerEvents.ensureWallBuildGoal(v);
-                }
+                long now = level.getGameTime();
+                List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
+                        new AABB(gp.pos()).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive());
+                // Every nearby villager carries the (dormant) build goal; only the builders below run it.
+                for (Villager v : nearby) GunnerEvents.ensureWallBuildGoal(v);
+                manageBuilders(nearby, now); // keep BUILDER_COUNT builders staffed
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
+                    for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
                     data.setDirty();
                     broadcast(server, "§aThe village wall is complete.");
                 }
+            }
+        }
+    }
+
+    /**
+     * Keep up to {@link BuilderRole#BUILDER_COUNT} villagers tagged as builders among those nearby: demote
+     * any that have stood still too long (with a cool-down so a different one is chosen), then promote free
+     * villagers to refill. Dead builders simply aren't in {@code nearby}, so the count naturally refills.
+     */
+    private static void manageBuilders(List<Villager> nearby, long now) {
+        int count = 0;
+        for (Villager v : nearby) {
+            if (!BuilderRole.isBuilder(v)) continue;
+            if (BuilderRole.isStuck(v, now)) {
+                BuilderRole.demoteStuck(v, now);
+            } else {
+                count++;
+            }
+        }
+        for (Villager v : nearby) {
+            if (count >= BuilderRole.BUILDER_COUNT) break;
+            if (BuilderRole.eligible(v, now)) {
+                BuilderRole.promote(v);
+                count++;
             }
         }
     }
@@ -143,11 +168,11 @@ public final class GravemindEvents {
         return beds;
     }
 
-    /** Remove any temporary scaffolding the builders left while pillaring up to high courses. */
+    /** Remove any temporary cheap scaffolds the builders left while pillaring up to high courses. */
     private static void cleanupScaffolds(ServerLevel level, WallPlan plan) {
         for (BlockPos p : plan.scaffoldTemp()) {
-            if (level.getBlockState(p).is(net.minecraft.world.level.block.Blocks.SCAFFOLDING)) {
-                level.setBlock(p, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            if (level.getBlockState(p).is(ModBlocks.CHEAP_SCAFFOLD.get())) {
+                level.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
             }
         }
         plan.scaffoldTemp().clear();

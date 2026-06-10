@@ -55,6 +55,23 @@ public final class ModBlocks {
             "cheap_scaffold",
             () -> new ScaffoldingBlockItem(CHEAP_SCAFFOLD.get(), new Item.Properties()));
 
+    /**
+     * "Fake cobblestone": a mossy-cobble look-alike smart door -- allies (players/villagers/golems/
+     * guards) phase through it while everyone else hits solid cobblestone. Emits light level 7. The
+     * isSuffocating/isViewBlocking predicates are false so an ally inside it takes no damage / no
+     * black overlay (these are Properties predicates, not block-method overrides).
+     */
+    public static final RegistryObject<Block> FAKE_COBBLESTONE = BLOCKS.register(
+            "fake_cobblestone",
+            () -> new FakeCobblestoneBlock(BlockBehaviour.Properties.copy(Blocks.MOSSY_COBBLESTONE)
+                    .lightLevel(s -> 7)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
+            "fake_cobblestone",
+            () -> new BlockItem(FAKE_COBBLESTONE.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
