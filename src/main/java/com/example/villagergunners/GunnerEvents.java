@@ -157,12 +157,34 @@ public final class GunnerEvents {
             villager.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
             villager.setDropChance(EquipmentSlot.FEET, 0.0F);
         }
+        applyLeatherArmor(villager); // protection of a full leather set (idempotent; survives reload)
         if (hasGoal(villager, AxeCombatGoal.class)) return; // goals are re-added each load
         GunUtil.extendFollowRange(villager, FOLLOW_RANGE);
         // Priority 0 (above combat): drop TNT and flee when standing on From Another World infection.
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new AxeCombatGoal(villager)); // hunt and slash hostiles with the axe
         villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
+    }
+
+    // Fixed UUID so re-applying the armour buff on world reload is idempotent.
+    private static final java.util.UUID VILLAGER_ARMOR_UUID =
+            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000002");
+    private static final double LEATHER_ARMOR = 7.0; // full leather set: helmet 1 + chest 3 + legs 2 + boots 1
+
+    /**
+     * Grant an upgraded villager the protection of a full leather set (+7 armour) as a permanent attribute
+     * modifier. (Leather's armour TOUGHNESS is 0, so the meaningful "leather equivalent" is its armour value.)
+     * Idempotent: the fixed UUID means a reload won't stack a second copy.
+     */
+    private static void applyLeatherArmor(Villager villager) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance inst =
+                villager.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+        if (inst == null) return;
+        net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(VILLAGER_ARMOR_UUID,
+                        "alien slasher leather armour", LEATHER_ARMOR,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
+        if (!inst.hasModifier(mod)) inst.addPermanentModifier(mod);
     }
 
     /** Add the wall-build goal to a villager if it lacks it (idempotent) -- retrofits already-loaded villagers. */
