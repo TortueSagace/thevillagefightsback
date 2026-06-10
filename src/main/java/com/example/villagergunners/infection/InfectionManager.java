@@ -7,6 +7,8 @@ import com.example.villagergunners.BuilderRole;
 import com.example.villagergunners.GravemindData;
 import com.example.villagergunners.VillagerGunners;
 import com.example.villagergunners.goal.MinerGoal;
+import com.example.villagergunners.wall.WallBlock;
+import com.example.villagergunners.wall.WallPlan;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,9 +47,12 @@ public final class InfectionManager {
     private static final int STAFF_INTERVAL = 100;   // (re)staff miners every 5s -- the only entity scan, kept sparse
     private static final int START_LEVEL = 2;        // infection begins at gravemind level 2
 
-    private static final double PATH_GROW_CHANCE = 0.06;  // per head per pass (paths outrun conversion)
-    private static final double CONV_CHANCE = 0.03;       // per frontier cell per pass (smaller than paths)
-    private static final int CONV_BUDGET = 64;            // frontier cells examined per pass (×5 in the fast window)
+    private static final double PATH_GROW_CHANCE = 0.45;  // per head per pass (paths outrun conversion)
+    private static final double CONV_CHANCE = 0.35;       // per frontier cell per pass (smaller than paths)
+    // Process the WHOLE active frontier each pass (symmetric growth on every edge) up to this hard cap; the
+    // frontier converges to the active perimeter (interior cells retire), so this stays cheap until very large
+    // zones, where the cap bounds per-tick cost. (The old tiny budget made growth slow + lopsided.)
+    private static final int MAX_CELLS_PER_PASS = 8192;
     private static final double SAND_DROP_CHANCE = 0.04;  // a stuck path over air/water drips fertile sand
     private static final float RICH_CHANCE = 0.05F;       // converted block: 5% rich, else fertile
     private static final long FAST_WINDOW = 200L;         // first 10s after a village triggers = 5x
@@ -85,7 +90,7 @@ public final class InfectionManager {
                 if (level == null || !level.isLoaded(gp.pos())) continue;
                 if (gdata.econ(gp).getLevel() < START_LEVEL) continue;
                 InfectionData inf = InfectionData.get(level);
-                if (!inf.hasSeeded(gp.pos().asLong())) seedVillage(level, inf, gp.pos());
+                if (!inf.hasSeeded(gp.pos().asLong())) seedVillage(level, inf, gp, gdata);
                 if (doStaff) staffMiners(level, gp.pos());
             }
         }
@@ -155,22 +160,69 @@ public final class InfectionManager {
         if (!(event.getEntity() instanceof Villager)) inf.addBoost(key, now + BOOST_DURATION);
     }
 
-    // --- seeding -------------------------------------------------------------------------------------
-    private static void seedVillage(ServerLevel level, InfectionData inf, BlockPos center) {
+    // --- seeding (one-time per village when it reaches level 2) -------------------------------------
+    private static void seedVillage(ServerLevel level, InfectionData inf, GlobalPos gp, GravemindData data) {
+        BlockPos center = gp.pos();
         inf.markSeeded(center.asLong());
         inf.setFastUntil(level.getGameTime() + FAST_WINDOW); // spec 7: 5x for the first 10s
+
+        // Stop building: demote nearby builders (they go idle; staffMiners then makes 20% of them miners).
+        for (Villager v : level.getEntitiesOfClass(Villager.class,
+                new AABB(center).inflate(96.0), v -> v.isAlive())) {
+            BuilderRole.demote(v);
+        }
+
+        // The gravemind finishes the wall itself (no builders any more), then lays a dirt-path ring along the
+        // wall footprint so the infection escapes the envelope and spreads outward.
+        WallPlan plan = data.getWallPlan(gp);
+        if (plan != null) {
+            for (WallBlock wb : plan.blocks()) {
+                BlockPos p = wb.pos();
+                if (!level.isLoaded(p)) continue;
+                if (!plan.satisfied(level, wb) && level.getBlockState(p).canBeReplaced()) {
+                    level.setBlock(p, wb.toState(), 3);                 // finish remaining gaps (no bulldozing)
+                }
+                if (wb.course() == 0) seedWallPath(level, inf, p, center); // path just outside the foundation
+            }
+            plan.markComplete();
+            com.example.villagergunners.wall.WallBuild.clearPlan(gp);
+            data.setDirty();
+        }
+
+        // Also seed from any existing village dirt paths near the centre.
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-        int found = 0;
-        for (int dx = -SEED_RADIUS; dx <= SEED_RADIUS && found < InfectionData.PATH_HEAD_CAP; dx++) {
-            for (int dz = -SEED_RADIUS; dz <= SEED_RADIUS && found < InfectionData.PATH_HEAD_CAP; dz++) {
+        for (int dx = -SEED_RADIUS; dx <= SEED_RADIUS; dx++) {
+            for (int dz = -SEED_RADIUS; dz <= SEED_RADIUS; dz++) {
                 for (int dy = -SEED_Y; dy <= SEED_Y; dy++) {
                     m.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
-                    if (!level.isLoaded(m)) continue;
-                    if (level.getBlockState(m).is(Blocks.DIRT_PATH)) {
+                    if (level.isLoaded(m) && level.getBlockState(m).is(Blocks.DIRT_PATH)) {
                         inf.addPathHead(m.asLong());
-                        if (++found >= InfectionData.PATH_HEAD_CAP) break;
                     }
                 }
+            }
+        }
+    }
+
+    /** Lay a dirt path at the surface just OUTSIDE a wall foundation column (so it can spread beyond the wall;
+     *  a path can't survive directly under the solid wall block, so it sits one step out at ground level). */
+    private static void seedWallPath(ServerLevel level, InfectionData inf, BlockPos foundation, BlockPos gravemind) {
+        int dx = foundation.getX() - gravemind.getX();
+        int dz = foundation.getZ() - gravemind.getZ();
+        Direction out = Math.abs(dx) >= Math.abs(dz)
+                ? (dx >= 0 ? Direction.EAST : Direction.WEST)
+                : (dz >= 0 ? Direction.SOUTH : Direction.NORTH);
+        int ex = foundation.getX() + out.getStepX(), ez = foundation.getZ() + out.getStepZ();
+        for (int y = foundation.getY() + 1; y >= foundation.getY() - 3; y--) { // find the exterior surface
+            BlockPos g = new BlockPos(ex, y, ez);
+            if (!level.isLoaded(g)) continue;
+            BlockState gs = level.getBlockState(g);
+            if (gs.isAir() || !gs.getFluidState().isEmpty() || !gs.blocksMotion()) continue; // need solid ground
+            if (BlockMatcher.isInfection(gs)) return;                  // already ours
+            BlockState above = level.getBlockState(g.above());
+            if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
+                level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
+                inf.addPathHead(g.asLong());
+                return;
             }
         }
     }
@@ -262,9 +314,9 @@ public final class InfectionManager {
 
     // --- conversion (spec 2-3) + destruction detection (spec 8) -------------------------------------
     private static void convert(ServerLevel level, InfectionData inf, long now, double globalMult) {
-        // The fast-window/boost multipliers apply to the per-cell CHANCE only (below), not the budget, so the
-        // per-tick cost stays bounded regardless of speed-ups (anti-lag).
-        int n = Math.min(CONV_BUDGET, inf.frontierSize());
+        // The fast-window/boost multipliers apply to the per-cell CHANCE only (below), not the cell count, so
+        // the per-tick cost stays bounded regardless of speed-ups (anti-lag).
+        int n = Math.min(MAX_CELLS_PER_PASS, inf.frontierSize());
         RandomSource rnd = level.getRandom();
         for (int i = 0; i < n; i++) {
             Long popped = inf.pollFrontier();

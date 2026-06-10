@@ -132,9 +132,16 @@ public final class BlockMatcher {
         }
         for (Direction d : Direction.values()) {                       // must touch a non-solid cell
             BlockState ns = level.getBlockState(pos.relative(d));
-            if (ns.isAir() || !ns.getFluidState().isEmpty()) return true;
+            if (isAirContact(ns)) return true;
         }
         return false;
+    }
+
+    /** Counts as "contact with a non-solid cell": air, any fluid, or a thin snow/carpet layer (spec). */
+    private static boolean isAirContact(BlockState ns) {
+        return ns.isAir() || !ns.getFluidState().isEmpty()
+                || ns.is(Blocks.SNOW)                                   // the snow LAYER (not snow_block)
+                || ns.getBlock() instanceof net.minecraft.world.level.block.CarpetBlock;
     }
 
     /** The base name a candidate maps to (exact correspondence, then id-substring, then closest hardness). */

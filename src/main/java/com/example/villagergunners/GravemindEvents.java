@@ -174,6 +174,11 @@ public final class GravemindEvents {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
 
+            // Stage 2+: the village stops building and switches to fertilization. No builder staffing here;
+            // InfectionManager.seedVillage (once) demotes existing builders, finishes the wall, and starts
+            // the infection -- after which 20% of the now-idle villagers are made miners.
+            if (data.econ(gp).getLevel() >= 2) continue;
+
             WallPlan plan = data.getWallPlan(gp);
             if (plan == null) {
                 // Empty village (no villagers): dispatch settlers to found houses first; FoundingManager

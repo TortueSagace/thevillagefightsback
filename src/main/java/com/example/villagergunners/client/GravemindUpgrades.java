@@ -40,7 +40,10 @@ public final class GravemindUpgrades {
             List.of(
                     new Upgrade(new ItemStack(ModBlocks.WALL_DEFENDER_SPAWN.get()),
                             "Wall Defenders", "Conduit turrets rise in protecting-glass shells above the gates "
-                            + "and gun down attackers.")
+                            + "and gun down attackers."),
+                    new Upgrade(new ItemStack(Items.EMERALD),
+                            "Fertilization", "Dirt paths spread and fertilize the land into Fertile/Rich blocks; "
+                            + "miner villagers dig the Rich ones for emeralds to feed the gravemind.")
             ),
             // --- Level 3 (to be defined) ---
             List.of()
