@@ -61,6 +61,7 @@ public final class GravemindEvents {
         driveWalls(server, data);
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
+        CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
     }
 
     private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a gravemind for the wall plan
