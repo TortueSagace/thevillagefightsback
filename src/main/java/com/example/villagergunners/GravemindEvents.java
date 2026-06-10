@@ -35,7 +35,10 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -69,6 +72,24 @@ public final class GravemindEvents {
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
+    }
+
+    private static final int HERO_TICKS = 60 * 60 * 20; // Hero of the Village for 1 hour
+
+    /** Grant a gravemind's founder Hero of the Village for an hour. */
+    public static void rewardHero(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, HERO_TICKS, 0, false, false, true));
+        player.displayClientMessage(Component.literal("§dYou are the Hero of the Village!"), true);
+    }
+
+    /** Remember which player placed a village bell, so the gravemind that later rises there rewards them. */
+    @SubscribeEvent
+    public static void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!event.getPlacedBlock().is(Blocks.BELL)) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        GravemindData.get(level.getServer()).recordBellPlacer(
+                GlobalPos.of(level.dimension(), event.getPos().immutable()), player.getUUID());
     }
 
     /**
@@ -442,6 +463,12 @@ public final class GravemindEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
+        // If a player placed this bell, they founded the village -> Hero of the Village.
+        java.util.UUID founder = data.takeBellPlacer(key);
+        if (founder != null) {
+            ServerPlayer p = level.getServer().getPlayerList().getPlayer(founder);
+            if (p != null) rewardHero(p);
+        }
         broadcast(level.getServer(), "§5A Village Gravemind has risen at the heart of a village §8(near "
                 + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
 

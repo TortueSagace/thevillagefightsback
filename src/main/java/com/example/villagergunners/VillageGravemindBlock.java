@@ -4,10 +4,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -116,6 +118,15 @@ public class VillageGravemindBlock extends Block {
         GunnerEvents.aggroDefendersAgainst(sl, pos, 100.0, player, 200); // village attacks the griefer ~10s
         sl.getServer().getPlayerList().broadcastSystemMessage(
                 Component.literal("§cThe gravemind is attacked!"), false);
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        // Placing the gravemind by hand founds the village -> Hero of the Village for the placer.
+        if (!level.isClientSide && placer instanceof ServerPlayer player) {
+            GravemindEvents.rewardHero(player);
+        }
     }
 
     @Override

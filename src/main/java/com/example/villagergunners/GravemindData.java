@@ -43,6 +43,7 @@ public class GravemindData extends SavedData {
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a gravemind
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
     private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // graveminds whose level-2 gate turrets are placed
+    private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
 
     public GravemindData() {}
 
@@ -122,6 +123,16 @@ public class GravemindData extends SavedData {
     public boolean areDefendersBuilt(GlobalPos gravemind) { return defendersBuilt.contains(gravemind); }
     public void markDefendersBuilt(GlobalPos gravemind) { if (defendersBuilt.add(gravemind)) setDirty(); }
 
+    // --- who placed a village bell (so the gravemind that rises there rewards them) ---
+
+    public void recordBellPlacer(GlobalPos bell, java.util.UUID player) { bellPlacers.put(bell, player); setDirty(); }
+    /** The player who placed the bell at {@code bell}, removing the record (one-time reward); null if none. */
+    public java.util.UUID takeBellPlacer(GlobalPos bell) {
+        java.util.UUID u = bellPlacers.remove(bell);
+        if (u != null) setDirty();
+        return u;
+    }
+
     // --- persistence ---
 
     public static GravemindData load(CompoundTag tag) {
@@ -153,6 +164,12 @@ public class GravemindData extends SavedData {
             WallPlan plan = WallPlan.load(walls.getCompound(i));
             d.wallPlans.put(plan.gravemind(), plan);
         }
+        ListTag bells = tag.getList("bellPlacers", Tag.TAG_COMPOUND);
+        for (int i = 0; i < bells.size(); i++) {
+            CompoundTag c = bells.getCompound(i);
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            d.bellPlacers.put(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))), c.getUUID("player"));
+        }
         return d;
     }
 
@@ -175,6 +192,15 @@ public class GravemindData extends SavedData {
         ListTag walls = new ListTag();
         for (WallPlan plan : wallPlans.values()) walls.add(plan.save());
         tag.put("wallPlans", walls);
+        ListTag bells = new ListTag();
+        for (Map.Entry<GlobalPos, java.util.UUID> e : bellPlacers.entrySet()) {
+            CompoundTag c = new CompoundTag();
+            c.putString("dim", e.getKey().dimension().location().toString());
+            c.putLong("pos", e.getKey().pos().asLong());
+            c.putUUID("player", e.getValue());
+            bells.add(c);
+        }
+        tag.put("bellPlacers", bells);
         return tag;
     }
 

@@ -257,12 +257,13 @@ public final class GunnerEvents {
             return;
         }
 
-        if (!(event.getEntity() instanceof Villager villager)) return;
+        // A player hurting a villager OR a wall defender makes that defender retaliate against them.
+        if (!(event.getEntity() instanceof Villager) && !(event.getEntity() instanceof WallDefenderEntity)) return;
         DamageSource src = event.getSource();
         if (src.getEntity() instanceof Player player) {
-            CompoundTag data = villager.getPersistentData();
+            CompoundTag data = event.getEntity().getPersistentData();
             data.putUUID(NBT_AGGRO_UUID, player.getUUID());
-            data.putLong(NBT_AGGRO_UNTIL, villager.level().getGameTime() + AGGRO_TICKS);
+            data.putLong(NBT_AGGRO_UNTIL, event.getEntity().level().getGameTime() + AGGRO_TICKS);
         }
     }
 
@@ -300,9 +301,9 @@ public final class GunnerEvents {
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
-    /** Defenders that must never fight each other: villagers, iron golems, and guards. */
+    /** Defenders that must never fight each other: villagers, iron golems, guards, and wall defenders. */
     private static boolean isAlly(Entity e) {
-        return e instanceof Villager || e instanceof IronGolem || isGuard(e);
+        return e instanceof Villager || e instanceof IronGolem || e instanceof WallDefenderEntity || isGuard(e);
     }
 
     private static boolean hasGoal(Mob mob, Class<?> goalClass) {
