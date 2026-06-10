@@ -132,6 +132,7 @@ public class VillageGravemindBlock extends Block {
             GlobalPos key = GlobalPos.of(level.dimension(), pos.immutable());
             data.removeBlock(key);
             data.removeWallPlan(key); // forget the wall plan too -> replacing the gravemind recomputes it fresh
+            GravemindEvents.clearSurveyBackoff(key);
         }
         super.onRemove(state, level, pos, newState, moved);
     }

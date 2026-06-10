@@ -4,11 +4,14 @@ import com.example.villagergunners.wall.WallPlan;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.ExplosionEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Efficient, event-driven wall repair. When a wall block is broken -- by a player ({@link BlockEvent.BreakEvent})
@@ -23,6 +26,32 @@ public final class WallRepairEvents {
 
     // The wall never extends past the survey radius (~80) from its gravemind; skip graveminds farther than this.
     private static final double MAX_WALL_DIST_SQR = 96.0 * 96.0;
+
+    // Amortized catch-all scan: covers breakage from ANY source (mobs/aliens that bypass break events).
+    private static final int SCAN_INTERVAL = 20;  // run the scan ~once per second
+    private static final int SCAN_WINDOW = 48;    // blocks verified per gravemind per scan tick (round-robin)
+
+    /**
+     * Source-agnostic safety net: a small, round-robin slice of each loaded gravemind's completed wall is
+     * verified every {@value #SCAN_INTERVAL} ticks. Cost is O({@value #SCAN_WINDOW}) per gravemind per
+     * second regardless of wall size, so even mob/alien destruction that fires no block-break event is
+     * detected and repaired within a few seconds. The break/explosion events above remain the instant path.
+     */
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null || server.getTickCount() % SCAN_INTERVAL != 0) return;
+        GravemindData data = GravemindData.get(server);
+        for (GlobalPos gp : data.blocks()) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            WallPlan plan = data.getWallPlan(gp);
+            if (plan != null && plan.scanForDamage(level, SCAN_WINDOW)) {
+                data.setDirty();
+            }
+        }
+    }
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {

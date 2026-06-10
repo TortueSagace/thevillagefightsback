@@ -133,6 +133,33 @@ public final class WallPlan {
         return true;
     }
 
+    private transient int scanIndex; // round-robin cursor for amortized damage scanning
+
+    /**
+     * Source-agnostic, amortized damage check for a COMPLETED wall: verify up to {@code window} blocks per
+     * call (round-robin across calls, so cost is O(window) regardless of wall size), and reopen any that are
+     * now a replaceable gap (i.e. a wall block was destroyed by ANY cause -- player, creeper, or a mob/alien
+     * that bypasses block-break events). Skips positions in unloaded chunks (no force-load, no false hits).
+     * Returns true if any damage was found. Pre-existing solid obstacles (house walls left as gaps) are
+     * left alone, since {@code satisfied} treats non-replaceable blocks as fine.
+     */
+    public boolean scanForDamage(ServerLevel level, int window) {
+        if (!complete || blocks.isEmpty()) return false;
+        boolean damaged = false;
+        int n = Math.min(window, blocks.size());
+        for (int i = 0; i < n; i++) {
+            if (scanIndex >= blocks.size()) scanIndex = 0;
+            WallBlock wb = blocks.get(scanIndex++);
+            if (!level.isLoaded(wb.pos())) continue;       // don't force-load / false-detect unloaded parts
+            if (!satisfied(level, wb)) {                    // became air/replaceable where wall should be
+                complete = false;
+                if (wb.course() < cursorCourse) cursorCourse = wb.course();
+                damaged = true;
+            }
+        }
+        return damaged;
+    }
+
     /** Re-evaluate completion (cheap, cursor-based). Returns true if the wall just became complete. */
     public boolean recheckCompletion(ServerLevel level) {
         if (complete) return false;

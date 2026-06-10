@@ -1,10 +1,13 @@
 package com.example.villagergunners;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import com.example.villagergunners.wall.WallBlock;
 import com.example.villagergunners.wall.WallPlan;
@@ -27,6 +30,8 @@ import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
@@ -69,6 +74,12 @@ public final class GravemindEvents {
     private static final int COBBLE_SCAN_RADIUS = 80; // survey cobblestone this far (horizontally) for the wall
     private static final int COBBLE_Y_BAND = 10;      // ... within +/- this many blocks of the gravemind's height
     private static final double ENSURE_GOAL_RADIUS = 96.0; // give villagers within this the build goal
+    private static final Predicate<BlockState> IS_COBBLE = s -> s.is(Blocks.COBBLESTONE);
+
+    // Back-off: graveminds that survey but yield no wall (no cobble / too large) aren't retried for a while,
+    // so a no-plan village can't re-run the survey every 10s. Cleared once a plan forms or the gravemind is gone.
+    private static final int SURVEY_BACKOFF_TICKS = 1200; // ~60s before retrying a village that produced no wall
+    private static final Map<GlobalPos, Integer> surveyBackoff = new HashMap<>();
 
     /**
      * For each gravemind: compute its defensive wall plan once (from the surrounding village footprint),
@@ -84,11 +95,16 @@ public final class GravemindEvents {
             WallPlan plan = data.getWallPlan(gp);
             if (plan == null) {
                 if (!trySurvey) continue;
+                Integer until = surveyBackoff.get(gp);
+                if (until != null && server.getTickCount() < until) continue; // recently failed -> backed off
                 WallPlan computed = WallPlanner.plan(level, gp, collectVillagePoints(level, gp.pos()));
                 if (computed != null) {
                     data.putWallPlan(computed);
+                    surveyBackoff.remove(gp);
                     broadcast(server, "§7The Village Gravemind marks out a defensive wall §8("
                             + computed.blocks().size() + " blocks)§7 — villagers, to work.");
+                } else {
+                    surveyBackoff.put(gp, server.getTickCount() + SURVEY_BACKOFF_TICKS);
                 }
                 continue;
             }
@@ -142,21 +158,47 @@ public final class GravemindEvents {
     private static List<BlockPos> collectVillagePoints(ServerLevel level, BlockPos center) {
         List<BlockPos> pts = new ArrayList<>();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-        int yLo = center.getY() - COBBLE_Y_BAND, yHi = center.getY() + COBBLE_Y_BAND;
-        for (int dx = -COBBLE_SCAN_RADIUS; dx <= COBBLE_SCAN_RADIUS; dx++) {
-            for (int dz = -COBBLE_SCAN_RADIUS; dz <= COBBLE_SCAN_RADIUS; dz++) {
-                int x = center.getX() + dx, z = center.getZ() + dz;
-                if (!level.hasChunk(x >> 4, z >> 4)) continue;
-                for (int y = yHi; y >= yLo; y--) {
-                    if (level.getBlockState(m.set(x, y, z)).is(Blocks.COBBLESTONE)) {
-                        pts.add(new BlockPos(x, 0, z));
-                        break;
+        int r = COBBLE_SCAN_RADIUS;
+        int yLo = Math.max(level.getMinBuildHeight(), center.getY() - COBBLE_Y_BAND);
+        int yHi = Math.min(level.getMaxBuildHeight() - 1, center.getY() + COBBLE_Y_BAND);
+        int secLo = level.getSectionIndex(yLo), secHi = level.getSectionIndex(yHi);
+        int xMin = center.getX() - r, xMax = center.getX() + r;
+        int zMin = center.getZ() - r, zMax = center.getZ() + r;
+
+        // Iterate chunk by chunk. The vast majority of the survey area is grass with no cobblestone in its
+        // palette, so we skip those whole chunks via a cheap palette pre-filter and only ever read blocks in
+        // the few chunks that actually contain cobble -- full resolution, a fraction of the work.
+        for (int cx = xMin >> 4; cx <= (xMax >> 4); cx++) {
+            for (int cz = zMin >> 4; cz <= (zMax >> 4); cz++) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue; // unloaded -> skip (never force-load)
+                boolean maybe = false;
+                for (int idx = secLo; idx <= secHi && !maybe; idx++) {
+                    LevelChunkSection sec = chunk.getSection(idx);
+                    if (!sec.hasOnlyAir() && sec.maybeHas(IS_COBBLE)) maybe = true;
+                }
+                if (!maybe) continue;
+                int bx0 = Math.max(xMin, cx << 4), bx1 = Math.min(xMax, (cx << 4) + 15);
+                int bz0 = Math.max(zMin, cz << 4), bz1 = Math.min(zMax, (cz << 4) + 15);
+                for (int x = bx0; x <= bx1; x++) {
+                    for (int z = bz0; z <= bz1; z++) {
+                        for (int y = yHi; y >= yLo; y--) {
+                            if (level.getBlockState(m.set(x, y, z)).is(Blocks.COBBLESTONE)) {
+                                pts.add(new BlockPos(x, 0, z));
+                                break;
+                            }
+                        }
                     }
                 }
             }
         }
         if (pts.size() >= WallPlanner.MIN_BEDS) return pts;
         return collectBeds(level, center); // sparse-cobblestone village -> fall back to beds
+    }
+
+    /** Forget a gravemind's survey back-off (called when it's removed, so a replacement re-surveys at once). */
+    public static void clearSurveyBackoff(GlobalPos gravemind) {
+        surveyBackoff.remove(gravemind);
     }
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the gravemind. */
