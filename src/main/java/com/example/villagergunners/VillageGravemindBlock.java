@@ -48,6 +48,7 @@ public class VillageGravemindBlock extends Block {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         ServerLevel sl = (ServerLevel) level;
         GravemindData data = GravemindData.get(sl.getServer());
+        GravemindData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
         ItemStack held = player.getItemInHand(hand);
 
         // DEBUG/admin: right-click with a stick to instantly paste the computed wall (bypasses builders).
@@ -59,37 +60,37 @@ public class VillageGravemindBlock extends Block {
             return InteractionResult.CONSUME;
         }
 
-        if (held.is(Items.EMERALD) && !data.isMaxLevel()) {
+        if (held.is(Items.EMERALD) && !econ.isMaxLevel()) {
             int donated = held.getCount();
-            int gained = data.addEmeralds(donated);
+            int gained = econ.addEmeralds(donated);
             if (!player.getAbilities().instabuild) held.shrink(donated);
             // Reflect any level-up on the clicked block immediately; the rest sync via GravemindEvents.
-            int target = chargesForLevel(data.getLevel());
+            int target = chargesForLevel(econ.getLevel());
             if (state.getValue(CHARGES) != target) {
                 sl.setBlock(pos, state.setValue(CHARGES, target), 3);
             }
             sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (gained > 0) {
                 player.displayClientMessage(Component.literal(
-                        "§6The Village Gravemind evolves — the village is now level §e" + data.getLevel()
-                        + (data.isMaxLevel() ? " §6(max)!" : "§6!")), false);
+                        "§6The Village Gravemind evolves — this village is now level §e" + econ.getLevel()
+                        + (econ.isMaxLevel() ? " §6(max)!" : "§6!")), false);
             } else {
-                player.displayClientMessage(info(data), false);
+                player.displayClientMessage(info(econ), false);
             }
             return InteractionResult.CONSUME;
         }
 
-        player.displayClientMessage(info(data), false);
+        player.displayClientMessage(info(econ), false);
         return InteractionResult.CONSUME;
     }
 
-    private static Component info(GravemindData data) {
-        if (data.isMaxLevel()) {
-            return Component.literal("§aVillage Gravemind §7| Level §e" + data.getLevel() + " §7(max)");
+    private static Component info(GravemindData.Econ econ) {
+        if (econ.isMaxLevel()) {
+            return Component.literal("§aVillage Gravemind §7| Level §e" + econ.getLevel() + " §7(max)");
         }
-        return Component.literal("§aVillage Gravemind §7| Level §e" + data.getLevel()
-                + " §7— §a" + data.getEmeralds() + "§7/§a" + data.costForNext()
-                + " §7emeralds to level §e" + (data.getLevel() + 1));
+        return Component.literal("§aVillage Gravemind §7| Level §e" + econ.getLevel()
+                + " §7— §a" + econ.getEmeralds() + "§7/§a" + econ.costForNext()
+                + " §7emeralds to level §e" + (econ.getLevel() + 1));
     }
 
     // Global throttle so sustained mining doesn't re-aggro/spam the message every tick.
@@ -118,8 +119,9 @@ public class VillageGravemindBlock extends Block {
         if (level.isClientSide || oldState.is(this)) return;
         ServerLevel sl = (ServerLevel) level;
         GravemindData data = GravemindData.get(sl.getServer());
-        data.addBlock(GlobalPos.of(level.dimension(), pos.immutable()));
-        int target = chargesForLevel(data.getLevel());
+        GlobalPos gp = GlobalPos.of(level.dimension(), pos.immutable());
+        data.addBlock(gp);
+        int target = chargesForLevel(data.econ(gp).getLevel());
         if (state.getValue(CHARGES) != target) {
             sl.setBlock(pos, state.setValue(CHARGES, target), 3);
         }

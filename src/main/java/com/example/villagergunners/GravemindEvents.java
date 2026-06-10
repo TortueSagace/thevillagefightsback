@@ -370,51 +370,49 @@ public final class GravemindEvents {
         return false;
     }
 
-    /** Once per day at sunset: +1 emerald per villager/guard alive within {@value #INCOME_RADIUS} blocks. */
+    /** Once per day at sunset, INDEPENDENTLY PER VILLAGE: reinforcements + 1 emerald per nearby defender. */
     private static void handleSunsetIncome(MinecraftServer server, GravemindData data) {
         long dayTime = server.overworld().getDayTime();
         long day = Math.floorDiv(dayTime, 24000L);
         long timeOfDay = Math.floorMod(dayTime, 24000L);
-        if (timeOfDay < SUNSET_TIME || day == data.getLastIncomeDay()) return;
+        if (timeOfDay < SUNSET_TIME) return;
 
-        data.setLastIncomeDay(day);
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            GravemindData.Econ econ = data.econ(gp);
+            if (econ.getLastIncomeDay() == day) continue; // this village already received income today
+            econ.setLastIncomeDay(day);
 
-        // Reinforcements first (independent of emerald income).
-        spawnReinforcements(server, data);
+            reinforceVillage(level, gp.pos()); // reinforcements (independent of emerald income)
 
-        int income = countDefendersNearGraveminds(server, data);
-        if (income > 0) {
-            int gained = data.addEmeralds(income);
-            broadcast(server, "§7The Village Gravemind drew §a" + income + "§7 emeralds from its defenders at sunset.");
+            int income = countDefendersNear(level, gp.pos());
+            if (income <= 0) continue;
+            int gained = econ.addEmeralds(income);
+            broadcast(server, "§7A Village Gravemind drew §a" + income + "§7 emeralds from its defenders at sunset.");
             if (gained > 0) {
-                broadcast(server, "§6The village evolved to level §e" + data.getLevel()
-                        + (data.isMaxLevel() ? " §6(max)!" : "§6!"));
+                broadcast(server, "§6A village evolved to level §e" + econ.getLevel()
+                        + (econ.isMaxLevel() ? " §6(max)!" : "§6!"));
             }
         }
     }
 
     /**
-     * Each loaded gravemind raises 1 guard + 2 villagers at sunset, UNLESS the villagers within
-     * {@value #INCOME_RADIUS} blocks already exceed {@value #VILLAGER_BED_RATIO_CAP}x the bed count
-     * (so a village can't endlessly overpopulate). Beds are counted via the village HOME POI. The
-     * spawned mobs auto-arm through the normal entity-join handler.
+     * A village raises 1 guard + 2 villagers at sunset, UNLESS the villagers within {@value #INCOME_RADIUS}
+     * blocks already exceed {@value #VILLAGER_BED_RATIO_CAP}x the bed count (so it can't endlessly
+     * overpopulate). The spawned mobs auto-arm through the normal entity-join handler.
      */
-    private static void spawnReinforcements(MinecraftServer server, GravemindData data) {
-        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
-            ServerLevel level = server.getLevel(gp.dimension());
-            if (level == null || !level.isLoaded(gp.pos())) continue;
-            BlockPos pos = gp.pos();
-            AABB box = new AABB(pos).inflate(INCOME_RADIUS);
-            int villagers = level.getEntitiesOfClass(Villager.class, box, Villager::isAlive).size();
-            long beds = level.getPoiManager().getCountInRange(
-                    h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
-            if (beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds) continue;
+    private static void reinforceVillage(ServerLevel level, BlockPos pos) {
+        AABB box = new AABB(pos).inflate(INCOME_RADIUS);
+        int villagers = level.getEntitiesOfClass(Villager.class, box, Villager::isAlive).size();
+        long beds = level.getPoiManager().getCountInRange(
+                h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
+        if (beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds) return;
 
-            spawnDefender(level, pos, EntityType.VILLAGER);
-            spawnDefender(level, pos, EntityType.VILLAGER);
-            EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
-            if (guardType != null) spawnDefender(level, pos, guardType);
-        }
+        spawnDefender(level, pos, EntityType.VILLAGER);
+        spawnDefender(level, pos, EntityType.VILLAGER);
+        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        if (guardType != null) spawnDefender(level, pos, guardType);
     }
 
     /** Spawn one entity of {@code type} on the surface near {@code center} (it auto-arms on join). */
@@ -437,29 +435,21 @@ public final class GravemindEvents {
         return center.above();
     }
 
-    private static int countDefendersNearGraveminds(MinecraftServer server, GravemindData data) {
-        Set<UUID> counted = new HashSet<>();
-        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
-            ServerLevel level = server.getLevel(gp.dimension());
-            if (level == null || !level.isLoaded(gp.pos())) continue;
-            AABB box = new AABB(gp.pos()).inflate(INCOME_RADIUS);
-            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
-                    x -> x.isAlive() && isDefender(x))) {
-                counted.add(e.getUUID());
-            }
-        }
-        return counted.size();
+    /** Alive villagers/guards within {@value #INCOME_RADIUS} blocks of one gravemind. */
+    private static int countDefendersNear(ServerLevel level, BlockPos pos) {
+        AABB box = new AABB(pos).inflate(INCOME_RADIUS);
+        return level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive() && isDefender(x)).size();
     }
 
-    /** Keep loaded gravemind blocks showing the current level; prune positions whose block is gone. */
+    /** Keep each loaded gravemind showing its OWN village's level; prune positions whose block is gone. */
     private static void syncVisuals(MinecraftServer server, GravemindData data) {
-        int target = VillageGravemindBlock.chargesForLevel(data.getLevel());
         List<GlobalPos> stale = new ArrayList<>();
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
             BlockState state = level.getBlockState(gp.pos());
             if (state.getBlock() instanceof VillageGravemindBlock) {
+                int target = VillageGravemindBlock.chargesForLevel(data.econ(gp).getLevel());
                 if (state.getValue(VillageGravemindBlock.CHARGES) != target) {
                     level.setBlock(gp.pos(), state.setValue(VillageGravemindBlock.CHARGES, target), 3);
                 }

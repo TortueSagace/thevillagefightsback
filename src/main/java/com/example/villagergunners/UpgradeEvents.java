@@ -36,11 +36,11 @@ public final class UpgradeEvents {
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
 
         GravemindData data = GravemindData.get(server);
-        if (data.getLevel() < REQUIRED_LEVEL) return; // cheap gate: nothing upgrades below level 3
 
         for (GlobalPos gp : data.blocks()) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
+            if (data.econ(gp).getLevel() < REQUIRED_LEVEL) continue; // only this village's defenders, at level 3+
             AABB box = new AABB(gp.pos()).inflate(RADIUS);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
                     x -> x.isAlive() && !UpgradeState.isUpgraded(x) && isUpgradable(x))) {
