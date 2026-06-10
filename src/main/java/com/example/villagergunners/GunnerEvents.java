@@ -9,8 +9,10 @@ import com.example.villagergunners.goal.GunCombatGoal;
 import com.example.villagergunners.goal.TntFleeGoal;
 import com.example.villagergunners.goal.WallBuildGoal;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -26,6 +28,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
@@ -206,6 +209,27 @@ public final class GunnerEvents {
         if (mob.level().getGameTime() > data.getLong(NBT_AGGRO_UNTIL)) return null;
         Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
         return (p != null && p.isAlive()) ? p : null;
+    }
+
+    /**
+     * Make every defender (villager / guard / iron golem) within {@code radius} of {@code center} turn on
+     * {@code attacker} for {@code ticks}. Villagers/guards use the aggro NBT (their combat goal then shoots
+     * the player); golems get the target set directly (their melee goal punches it). Used when the gravemind
+     * is mined. One bounded entity query -- only runs on the (throttled) attack, never per tick.
+     */
+    public static void aggroDefendersAgainst(ServerLevel level, BlockPos center, double radius,
+                                             Player attacker, int ticks) {
+        long until = level.getGameTime() + ticks;
+        AABB box = new AABB(center).inflate(radius);
+        for (Mob m : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && isAlly(e))) {
+            if (m instanceof IronGolem) {
+                m.setTarget(attacker); // golems melee the attacker (the rocket goal ignores non-Enemy targets)
+            } else { // villager or guard
+                CompoundTag data = m.getPersistentData();
+                data.putUUID(NBT_AGGRO_UUID, attacker.getUUID());
+                data.putLong(NBT_AGGRO_UNTIL, until);
+            }
+        }
     }
 
     private static boolean isGuard(Entity e) {

@@ -112,6 +112,27 @@ public final class WallPlan {
         return best;
     }
 
+    // Lazy index (packed position -> course) for O(1) repair lookups; rebuilt on first use / after load.
+    private transient java.util.Map<Long, Integer> posCourse;
+
+    /**
+     * Mark the wall block at {@code pos} as needing rebuild: clear completion and rewind the build cursor
+     * to that block's course, so the existing builders re-place exactly that block (already-built blocks in
+     * the course are skipped via {@code satisfied}). Returns false (no-op) if {@code pos} isn't part of this
+     * wall. O(1) after a one-time lazy index -- no world scan, called only on an actual break event.
+     */
+    public boolean reopenAt(BlockPos pos) {
+        if (posCourse == null) {
+            posCourse = new java.util.HashMap<>(blocks.size() * 2);
+            for (WallBlock wb : blocks) posCourse.put(wb.pos().asLong(), wb.course());
+        }
+        Integer c = posCourse.get(pos.asLong());
+        if (c == null) return false;
+        complete = false;
+        if (c < cursorCourse) cursorCourse = c;
+        return true;
+    }
+
     /** Re-evaluate completion (cheap, cursor-based). Returns true if the wall just became complete. */
     public boolean recheckCompletion(ServerLevel level) {
         if (complete) return false;

@@ -92,6 +92,26 @@ public class VillageGravemindBlock extends Block {
                 + " §7emeralds to level §e" + (data.getLevel() + 1));
     }
 
+    // Global throttle so sustained mining doesn't re-aggro/spam the message every tick.
+    private static long lastAttackResponse = Long.MIN_VALUE;
+
+    /**
+     * Anti-grief: the instant any player starts mining the gravemind, the whole village turns on them and a
+     * warning is shown. This stops players from mining + replacing the gravemind to farm bonuses. Throttled.
+     */
+    @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        super.attack(state, level, pos, player);
+        if (level.isClientSide) return;
+        ServerLevel sl = (ServerLevel) level;
+        long now = sl.getGameTime();
+        if (now - lastAttackResponse < 40L) return; // at most once per ~2s
+        lastAttackResponse = now;
+        GunnerEvents.aggroDefendersAgainst(sl, pos, 100.0, player, 200); // village attacks the griefer ~10s
+        sl.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("§cThe gravemind is attacked!"), false);
+    }
+
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean moved) {
         super.onPlace(state, level, pos, oldState, moved);
