@@ -63,7 +63,12 @@ public class BlueTntBlock extends Block {
         level.playSound(null, pos, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 1.0F);
         level.sendParticles(ParticleTypes.EXPLOSION, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 8, 1.5, 1.5, 1.5, 0.0);
-        HousePlacer.place(level, pos, doorFacing, HousePlacer.HOUSES[random.nextInt(HousePlacer.HOUSES.length)]);
+        // Never let a placement failure take down the world tick (it would disconnect the player).
+        try {
+            HousePlacer.place(level, pos, doorFacing, HousePlacer.HOUSES[random.nextInt(HousePlacer.HOUSES.length)]);
+        } catch (Throwable t) {
+            VillagerGunners.LOGGER.error("[Go Back To Your World] Blue TNT house placement failed at {}", pos, t);
+        }
     }
 
     @Override
