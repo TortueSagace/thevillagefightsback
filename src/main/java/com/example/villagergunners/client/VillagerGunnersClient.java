@@ -26,8 +26,10 @@ public final class VillagerGunnersClient {
         // so the revolver sits in the folded arms. No bone needed.
         LivingEntityRenderer<Villager, VillagerModel<Villager>> villager = event.getRenderer(EntityType.VILLAGER);
         if (villager != null) {
+            // Upgraded villagers have an empty hand (nerfed ones hold a stone axe shown by CrossedArmsItemLayer).
             villager.addLayer(new HeldGunLayer<>(villager, GunUtil.REVOLVER, null,
-                    0.0F, 0.4F, -0.4F, 180.0F, 0.0F, 0.0F, 1.0F, ItemDisplayContext.GROUND));
+                    0.0F, 0.4F, -0.4F, 180.0F, 0.0F, 0.0F, 1.0F, ItemDisplayContext.GROUND,
+                    HeldGunLayer.Gate.EMPTY_HAND));
         }
 
         // Iron golem: no vanilla item layer. Anchor to right_arm. NOTE: the right_arm PIVOT is at
@@ -35,8 +37,10 @@ public final class VillagerGunnersClient {
         // box and down to the hand. Big golem -> scale the gun up. (Orientation may need tuning.)
         LivingEntityRenderer<IronGolem, IronGolemModel<IronGolem>> golem = event.getRenderer(EntityType.IRON_GOLEM);
         if (golem != null) {
+            // Upgraded golems hold the rocket launcher (nerfed ones have an empty hand).
             golem.addLayer(new HeldGunLayer<>(golem, GunUtil.ROCKET_LAUNCHER, "right_arm",
-                    -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND));
+                    -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
+                    HeldGunLayer.Gate.HELD_GUN));
         }
     }
 }

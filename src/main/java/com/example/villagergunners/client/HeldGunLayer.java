@@ -73,6 +73,7 @@ public class HeldGunLayer<T extends LivingEntity, M extends EntityModel<T>> exte
         if (disabled) return;
         if (entity instanceof IronGolem golem && golem.isPlayerCreated()) return; // armed golems only
         if (entity.isInvisible()) return;
+        if (!shouldShow(entity)) return; // only show the gun on UPGRADED defenders (see Gate)
 
         if (stack.isEmpty()) {
             Item item = ForgeRegistries.ITEMS.getValue(gunId);
