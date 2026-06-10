@@ -1,7 +1,9 @@
 package com.example.villagergunners;
 
+import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -78,5 +80,21 @@ public final class EmeraldVirus {
     /** True if the host should currently look green (any accumulated tint). */
     public static boolean isTinted(Entity e) {
         return e instanceof LivingEntity le && progress(le) > 0.0F;
+    }
+
+    /** Highest level reached by any placed Village Gravemind (the global virus "stage"); 0 if none. */
+    public static int maxGravemindStage(MinecraftServer server) {
+        if (server == null) return 0;
+        GravemindData data = GravemindData.get(server);
+        int max = 0;
+        for (GlobalPos gp : data.blocks()) {
+            max = Math.max(max, data.econ(gp).getLevel());
+        }
+        return max;
+    }
+
+    /** The virus has evolved (Wither II, spawns Emeraldgers) once any gravemind hits level 4. */
+    public static boolean isEvolved(MinecraftServer server) {
+        return maxGravemindStage(server) >= 4;
     }
 }

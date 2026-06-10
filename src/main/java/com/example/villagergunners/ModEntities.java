@@ -2,6 +2,7 @@ package com.example.villagergunners;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -25,6 +26,14 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("wall_defender"));
 
+    /** The Emeraldger: a villager-based, virus-spawned combatant ({@link EmeraldgerEntity}). Summoned only. */
+    public static final RegistryObject<EntityType<EmeraldgerEntity>> EMERALDGER = ENTITIES.register(
+            "emeraldger",
+            () -> EntityType.Builder.<EmeraldgerEntity>of(EmeraldgerEntity::new, MobCategory.MISC)
+                    .sized(0.6F, 1.95F)            // base villager box; actual box is scaled per-entity by HP
+                    .clientTrackingRange(10)
+                    .build("emeraldger"));
+
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
     }
@@ -32,5 +41,6 @@ public final class ModEntities {
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
+        event.put(EMERALDGER.get(), Villager.createAttributes().build());
     }
 }

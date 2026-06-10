@@ -58,8 +58,10 @@ public final class EmeraldVirusEvents {
     private static final float BLAST_RADIUS = 4.0F;     // TNT-strength blast
     private static final int FIRE_PASS_RADIUS = 4;      // set the whole blast range on fire
 
-    /** Pending post-death explosions, processed when their corpse fades (~1s later). */
-    private record Pending(ServerLevel level, double x, double y, double z, long when) {}
+    /** Pending post-death explosions, processed when their corpse fades (~1s later). {@code deadMaxHp} drives
+     *  the Emeraldger that rises after the blast (stage-4 only; {@code spawnEmeraldger} captured at death time). */
+    private record Pending(ServerLevel level, double x, double y, double z, long when,
+                           float deadMaxHp, boolean spawnEmeraldger) {}
     private static final List<Pending> PENDING = new ArrayList<>();
 
     // --- Alien Slasher on-hit payload ------------------------------------------------------------
@@ -164,9 +166,15 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity e = event.getEntity();
+        // An emeraldger that just got a kill renews its 5-minute no-kill lifespan.
+        if (event.getSource().getEntity() instanceof EmeraldgerEntity killer) killer.markKill();
+
         if (!(e.level() instanceof ServerLevel sl)) return;
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
-        PENDING.add(new Pending(sl, e.getX(), e.getY() + 0.5, e.getZ(), sl.getGameTime() + CORPSE_DELAY));
+        // At stage 4 the virus has evolved: after the blast, an Emeraldger rises from the corpse.
+        boolean spawnEmeraldger = EmeraldVirus.isEvolved(sl.getServer()) && !(e instanceof EmeraldgerEntity);
+        PENDING.add(new Pending(sl, e.getX(), e.getY() + 0.5, e.getZ(), sl.getGameTime() + CORPSE_DELAY,
+                e.getMaxHealth(), spawnEmeraldger));
     }
 
     @SubscribeEvent
@@ -185,8 +193,22 @@ public final class EmeraldVirusEvents {
             Pending p = it.next();
             if (p.level.getGameTime() < p.when) continue;
             explodeWithFire(p.level, p.x, p.y, p.z);
+            if (p.spawnEmeraldger) spawnEmeraldger(p.level, p.x, p.y, p.z, p.deadMaxHp);
             it.remove();
         }
+    }
+
+    /** Raise an Emeraldger from a corpse: HP = 50% of the dead host, scaled body, armed as a stage-3 villager. */
+    private static void spawnEmeraldger(ServerLevel level, double x, double y, double z, float deadMaxHp) {
+        EmeraldgerEntity em = ModEntities.EMERALDGER.get().create(level);
+        if (em == null) return;
+        em.moveTo(x, y, z, level.getRandom().nextFloat() * 360.0F, 0.0F);
+        em.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(x, y, z)),
+                net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null, null);
+        em.setBaby(false);                 // always an adult-bodied warrior (its size comes from HP, not age)
+        UpgradeState.setUpgraded(em);      // emeraldgers are born as stage-3 combatants (GunnerEvents arms them)
+        em.initWithMaxHealthOfDead(deadMaxHp); // set HP/scale AFTER finalizeSpawn so it isn't overwritten
+        level.addFreshEntity(em);
     }
 
     /** TNT-strength explosion that also leaves the whole blast range on fire. */

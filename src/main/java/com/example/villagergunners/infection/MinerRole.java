@@ -36,8 +36,10 @@ public final class MinerRole {
         }
     }
 
-    /** A villager that may be promoted to miner: not already one and not on the step-down cooldown. */
+    /** A villager that may be promoted to miner: not already one and not on the step-down cooldown.
+     *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
-        return !isMiner(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+        return !(v instanceof com.example.villagergunners.EmeraldgerEntity)
+                && !isMiner(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
     }
 }

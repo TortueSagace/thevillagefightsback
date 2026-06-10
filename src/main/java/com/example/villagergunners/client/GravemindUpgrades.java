@@ -3,9 +3,11 @@ package com.example.villagergunners.client;
 import java.util.List;
 
 import com.example.villagergunners.ModBlocks;
+import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -17,12 +19,21 @@ import net.minecraft.world.item.Items;
 public final class GravemindUpgrades {
     private GravemindUpgrades() {}
 
-    /** One upgrade entry: the icon to draw, its name, and a short description (shown on hover). */
-    public record Upgrade(ItemStack icon, Component name, Component desc) {
+    /**
+     * One upgrade entry. The icon is EITHER an item ({@code icon}) OR a 16x16 GUI texture ({@code texture},
+     * e.g. the Emeraldger face) -- whichever is non-empty/non-null. Plus a name and hover description.
+     */
+    public record Upgrade(ItemStack icon, ResourceLocation texture, Component name, Component desc) {
+        /** Item-icon upgrade. */
         public Upgrade(ItemStack icon, String name, String desc) {
-            this(icon, Component.literal(name).withStyle(ChatFormatting.YELLOW),
-                    Component.literal(desc).withStyle(ChatFormatting.GRAY));
+            this(icon, null, lit(name), gray(desc));
         }
+        /** Texture-icon upgrade (e.g. the Emeraldger face). */
+        public Upgrade(ResourceLocation texture, String name, String desc) {
+            this(ItemStack.EMPTY, texture, lit(name), gray(desc));
+        }
+        private static Component lit(String s) { return Component.literal(s).withStyle(ChatFormatting.YELLOW); }
+        private static Component gray(String s) { return Component.literal(s).withStyle(ChatFormatting.GRAY); }
     }
 
     /** Rows indexed by (level - 1). Add upgrades to a level by appending to its list. */
@@ -55,7 +66,11 @@ public final class GravemindUpgrades {
             List.of(
                     new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
                             "Glass Dome", "A reinforced-glass dome rises over the whole village, sealing it from "
-                            + "aerial attacks.")
+                            + "aerial attacks."),
+                    new Upgrade(new ResourceLocation(VillagerGunners.MODID, "textures/gui/emeraldger_face.png"),
+                            "Emeraldgers", "The Emerald Virus evolves: it inflicts Wither II, and every host that "
+                            + "dies and explodes rises again as an Emeraldger -- a green-eyed warrior that grows "
+                            + "with the strength of what it killed.")
             )
     );
 

@@ -86,22 +86,29 @@ public final class GunnerEvents {
             mob.setPathfindingMalus(ModPathTypes.ALLY_PASSABLE, 0.0F);
         }
 
+        // Emeraldgers are stage-4 virus spawns: combat-only villagers that can NEVER take a role (miner/
+        // settler/builder) or profession. So skip every role goal for them -- they still get the stage-3
+        // combat loadout below (they spawn pre-upgraded).
+        boolean emeraldger = mob instanceof EmeraldgerEntity;
+
         // A villager far from every gravemind can found a new home with a Blue TNT (independent of the
         // combat upgrade). Idempotent: goals are re-added on every load; the goal settles at most once.
-        if (mob instanceof Villager settler && !hasGoal(settler, com.example.villagergunners.goal.SettlerGoal.class)) {
+        if (!emeraldger && mob instanceof Villager settler
+                && !hasGoal(settler, com.example.villagergunners.goal.SettlerGoal.class)) {
             settler.goalSelector.addGoal(6, new com.example.villagergunners.goal.SettlerGoal(settler));
         }
 
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
-        if (mob instanceof Villager defender && !hasGoal(defender, com.example.villagergunners.goal.BuilderDefenseGoal.class)) {
+        if (!emeraldger && mob instanceof Villager defender
+                && !hasGoal(defender, com.example.villagergunners.goal.BuilderDefenseGoal.class)) {
             defender.goalSelector.addGoal(2, new com.example.villagergunners.goal.BuilderDefenseGoal(defender));
         }
 
         // Every villager carries the (dormant) miner goal; it only runs once the gravemind tags it a miner
-        // (level-2 infection). Idempotent.
-        if (mob instanceof Villager v) {
+        // (level-2 infection). Idempotent. (Emeraldgers can't be miners, so they don't need it.)
+        if (!emeraldger && mob instanceof Villager v) {
             com.example.villagergunners.infection.InfectionManager.ensureMinerGoal(v);
         }
 

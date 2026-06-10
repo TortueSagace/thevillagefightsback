@@ -8,19 +8,28 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * The "Emerald Virus": a harmful, contagious effect with NO particles of its own. While it is active it
- * inflicts Wither, and (driven elsewhere -- see {@link EmeraldVirus}) it tints the host progressively and
+ * withers the host, and (driven elsewhere -- see {@link EmeraldVirus}) it tints the host progressively and
  * permanently green, spreads to nearby creatures, turns ground into dirt paths, and makes the host explode
  * shortly after death. The colour ({@code 0x2BBF4E}) is only used for the inventory-icon tint.
+ *
+ * The virus EVOLVES once any Village Gravemind reaches level 4 ({@link EmeraldVirus#isEvolved}): the host then
+ * suffers Wither II instead of the base Wither I + Slowness I.
  */
 public class EmeraldVirusEffect extends MobEffect {
     public EmeraldVirusEffect() {
         super(MobEffectCategory.HARMFUL, 0x2BBF4E);
     }
 
-    /** Each second, refresh a (hidden) Wither so the virus withers the host for its whole length. */
+    /** Each second, refresh the (hidden) wither/slowness so they cover the whole virus length. */
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, false, false));
+        if (entity.level().isClientSide()) return;
+        if (EmeraldVirus.isEvolved(entity.getServer())) {
+            entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 1, false, false, false)); // Wither II
+        } else {
+            entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, false, false));          // Wither I
+            entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, false)); // Slowness I
+        }
     }
 
     @Override

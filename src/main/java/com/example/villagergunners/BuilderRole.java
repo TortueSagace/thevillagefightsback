@@ -47,8 +47,10 @@ public final class BuilderRole {
         }
     }
 
-    /** A villager that may be promoted: not already a builder and not on the step-down cool-down. */
+    /** A villager that may be promoted: not already a builder and not on the step-down cool-down.
+     *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
-        return !isBuilder(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+        return !(v instanceof EmeraldgerEntity)
+                && !isBuilder(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
     }
 }

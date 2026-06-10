@@ -86,7 +86,11 @@ public class GravemindScreen extends Screen {
             for (int i = 0; i < ups.size(); i++) {
                 Upgrade u = ups.get(i);
                 int iconX = leftPos + ICONS_X + i * (ICON + ICON_GAP);
-                g.renderItem(u.icon(), iconX, iconY);
+                if (u.texture() != null) {
+                    g.blit(u.texture(), iconX, iconY, 0, 0, ICON, ICON, ICON, ICON); // 16x16 face/GUI texture
+                } else {
+                    g.renderItem(u.icon(), iconX, iconY);
+                }
                 if (!unlocked) {
                     g.fill(iconX, iconY, iconX + ICON, iconY + ICON, 0xB0101010); // grey-out locked
                 }
