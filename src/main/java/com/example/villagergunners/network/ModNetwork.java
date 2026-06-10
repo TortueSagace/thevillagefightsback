@@ -4,6 +4,7 @@ import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -25,10 +26,20 @@ public final class ModNetwork {
                 .decoder(OpenGravemindScreenPacket::decode)
                 .consumerMainThread(OpenGravemindScreenPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(EmeraldTintPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(EmeraldTintPacket::encode)
+                .decoder(EmeraldTintPacket::decode)
+                .consumerMainThread(EmeraldTintPacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */
     public static void sendTo(ServerPlayer player, Object msg) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), msg);
+    }
+
+    /** Send a packet to every client tracking {@code entity} (server -> clients), including the entity itself. */
+    public static void sendToTracking(Entity entity, Object msg) {
+        CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), msg);
     }
 }

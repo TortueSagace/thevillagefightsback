@@ -69,6 +69,7 @@ public final class GravemindEvents {
         spawnInVillages(server, data);
         driveWalls(server, data);
         manageDefenders(server, data); // level-2 gate turrets
+        manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
@@ -116,10 +117,29 @@ public final class GravemindEvents {
         }
     }
 
+    /**
+     * At village level 4, once per gravemind, raise the protective reinforced-glass dome over the village
+     * (walls levelled to a common top plane, then a gentle full roof peaking over the gravemind). Built
+     * block-by-block via {@link HouseBuildManager} at the TNT-structure speed.
+     */
+    private static void manageDome(MinecraftServer server, GravemindData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.isDomeBuilt(gp)) continue;
+            if (data.econ(gp).getLevel() < 4) continue;       // only at level 4
+            WallPlan plan = data.getWallPlan(gp);
+            if (plan == null) continue;                       // no wall -> nothing to anchor the dome to
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            DomeBuilder.build(level, plan, gp.pos());
+            data.markDomeBuilt(gp);
+            broadcast(server, "§bThe Village Gravemind raises a protective glass dome over the village.");
+        }
+    }
+
     /** Build the 3x3 protecting-glass cube (panes facing outward, bulldozing whatever is there) with a wall
      *  defender creature at its centre, a few blocks above {@code gate}. Returns true if it was built. */
     private static boolean buildDefenderShell(ServerLevel level, BlockPos gate) {
-        BlockPos c = gate.above(6); // sit the cube just above the wall top
+        BlockPos c = gate.above(WallPlan.COURSES); // shell bottom row sits at the top (4th) wall layer
         if (!level.isLoaded(c)) return false;
         for (int dy = -1; dy <= 1; dy++) {
             for (int dx = -1; dx <= 1; dx++) {
@@ -212,7 +232,7 @@ public final class GravemindEvents {
                     // (the goal only wakes itself while it is actively running).
                     if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
                 }
-                manageBuilders(level, gp.pos(), nearby, now); // keep BUILDER_COUNT builders staffed
+                manageBuilders(level, gp.pos(), nearby, plan.doorColumns().length); // one builder per gate
                 sealStuckHoles(level, plan); // gravemind finishes cells the builders can't reach
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
@@ -260,33 +280,34 @@ public final class GravemindEvents {
     }
 
     /**
-     * Keep exactly one builder per wall course (0..{@link BuilderRole#BUILDER_COUNT}-1) among the villagers
-     * nearby: demote duplicate-course builders, then fill any uncovered course from a free villager (that
-     * isn't on the step-down cool-down). Spawn dedicated builders only to reach a minimum body count -- never
-     * beyond -- so a village that's short on villagers gets staffed without the self-demotion cycle ever
-     * spawning an ever-growing crowd. A course with no eligible villager is simply left uncovered this pass.
+     * Keep exactly one builder per gate (door index 0..{@code doorCount}-1) among the villagers nearby:
+     * demote duplicate/stray-door builders, then fill any uncovered door from a free villager (that isn't on
+     * the step-down cool-down). Spawn dedicated builders only to reach a minimum body count -- never beyond --
+     * so a village that's short on villagers gets staffed without the self-demotion cycle ever spawning an
+     * ever-growing crowd. A door with no eligible villager is left uncovered this pass.
      */
-    private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, long now) {
-        boolean[] covered = new boolean[BuilderRole.BUILDER_COUNT];
+    private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, int doorCount) {
+        int slots = doorCount > 0 ? Math.min(BuilderRole.BUILDER_COUNT, doorCount) : BuilderRole.BUILDER_COUNT;
+        boolean[] covered = new boolean[slots];
         for (Villager v : nearby) {
             if (!BuilderRole.isBuilder(v)) continue;
-            int c = BuilderRole.course(v);
-            if (c < 0 || c >= covered.length || covered[c]) {
-                BuilderRole.demote(v); // stray / duplicate course -> free it
+            int d = BuilderRole.door(v);
+            if (d < 0 || d >= covered.length || covered[d]) {
+                BuilderRole.demote(v); // stray / duplicate door -> free it
             } else {
-                covered[c] = true;
+                covered[d] = true;
             }
         }
         int population = nearby.size(); // cap spawning so churn can't grow the crowd past BUILDER_COUNT bodies
         java.util.Iterator<Villager> free = nearby.stream().filter(BuilderRole::eligible).iterator();
-        for (int c = 0; c < covered.length; c++) {
-            if (covered[c]) continue;
+        for (int d = 0; d < covered.length; d++) {
+            if (covered[d]) continue;
             Villager v;
             if (free.hasNext()) v = free.next();
-            else if (population < BuilderRole.BUILDER_COUNT) { v = spawnBuilder(level, gravemind); if (v != null) population++; }
+            else if (population < slots) { v = spawnBuilder(level, gravemind); if (v != null) population++; }
             else v = null;
             if (v == null) continue;
-            BuilderRole.promote(v, c);
+            BuilderRole.promote(v, d);
             GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted/spawned builder can build
         }
     }

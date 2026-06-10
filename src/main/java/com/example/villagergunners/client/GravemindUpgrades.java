@@ -45,8 +45,18 @@ public final class GravemindUpgrades {
                             "Fertilization", "Dirt paths spread and fertilize the land into Fertile/Rich blocks; "
                             + "miner villagers dig the Rich ones for emeralds to feed the gravemind.")
             ),
-            // --- Level 3 (to be defined) ---
-            List.of()
+            // --- Level 3 ---
+            List.of(
+                    new Upgrade(new ItemStack(com.example.villagergunners.ModItems.ALIEN_SLASHER.get()),
+                            "Advanced Weaponry",
+                            "The battle power of villagers, guards and golems is strongly improved.")
+            ),
+            // --- Level 4 ---
+            List.of(
+                    new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
+                            "Glass Dome", "A reinforced-glass dome rises over the whole village, sealing it from "
+                            + "aerial attacks.")
+            )
     );
 
     /** Upgrades for the given gravemind level (1-based), or an empty list if none are defined. */

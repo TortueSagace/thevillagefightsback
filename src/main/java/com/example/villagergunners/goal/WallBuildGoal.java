@@ -96,20 +96,22 @@ public class WallBuildGoal extends Goal {
         WallPlan p = WallBuild.planFor(sl, villager.blockPosition());
         if (p == null) { BuilderRole.demote(villager); return false; } // not at any wall -> don't stay tagged
         if (p.isComplete()) return false;                              // completion sweep demotes everyone
-        int course = BuilderRole.course(villager);
         long now = sl.getGameTime();
         // A cell is unavailable if it's parked (no builder could reach/finish it) OR another builder owns it
-        // (live reservation) -- so the six builders never all pile on the same block and collide.
+        // (live reservation) -- so two builders never pile on the same block and collide.
         java.util.function.Predicate<BlockPos> taken = pos ->
                 WallBuild.isSkipped(p.gravemind(), pos, now) || WallBuild.isReserved(p.gravemind(), pos, now);
-        // Spread the six builders around the ring: each starts its perimeter scan at a different column.
-        int from = p.columnCount() == 0 ? 0 : course * p.columnCount() / BuilderRole.BUILDER_COUNT;
-        // Build my own layer where it already has support (the course below is built); support-gating makes
-        // each layer follow the one beneath. If my layer has no ready cell yet, help the lowest unfinished
-        // layer instead. If there is genuinely nothing for me to build, step down -- a builder must never
-        // stand idle (wandering) while still wearing the tag.
-        WallBlock t = p.nextForCourse(sl, course, from, taken);
-        if (t == null) t = p.nextAnyCourse(sl, from, taken);
+        // Build MY section: from my door rightward to the next door, raising each column as a full pillar.
+        int[] doors = p.doorColumns();
+        int from = 0;
+        WallBlock t = null;
+        if (doors.length > 0) {
+            int d = Math.floorMod(BuilderRole.door(villager), doors.length);
+            from = doors[d];
+            t = p.nextInSection(sl, from, doors[(d + 1) % doors.length], taken);
+        }
+        // My section is done (or there are no gates) -> help finish the rest of the wall before standing idle.
+        if (t == null) t = p.nextAnyUnbuilt(sl, from, taken);
         if (t == null) { BuilderRole.demote(villager); return false; } // nothing to build -> drop the role
         if (!WallBuild.reserve(p.gravemind(), t.pos(), now)) return false; // lost the race this tick; retry soon
         this.plan = p;
@@ -242,8 +244,8 @@ public class WallBuildGoal extends Goal {
         // feet and step onto it. We PREFER scaffolding over digging; only when the space above is solid (so we
         // can't rise any other way) do we dig it out as a last resort -- and never below the foundation.
         if (tp.getY() > fy && Math.abs(hx) <= 1 && Math.abs(hz) <= 1) {
-            if (isSolid(fx, fy + 1, fz)) { digToFree(new BlockPos(fx, fy + 1, fz)); return; }
-            if (isSolid(fx, fy + 2, fz)) { digToFree(new BlockPos(fx, fy + 2, fz)); return; }
+            if (isSolid(fx, fy + 1, fz)) { blocked(new BlockPos(fx, fy + 1, fz)); return; }
+            if (isSolid(fx, fy + 2, fz)) { blocked(new BlockPos(fx, fy + 2, fz)); return; }
             placeScaffold(new BlockPos(fx, fy, fz));
             villager.setPos(fx + 0.5, fy + 1, fz + 0.5);
             return;
@@ -257,13 +259,13 @@ public class WallBuildGoal extends Goal {
         if (isSolid(step.getX(), step.getY(), step.getZ())) {
             // a one-block rise ahead -> STEP UP onto it (like jumping) if there's head room; else dig the
             // overhang out (last resort) rather than stay stuck.
-            if (isSolid(step.getX(), fy + 1, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
-            if (isSolid(step.getX(), fy + 2, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 2, step.getZ())); return; }
+            if (isSolid(step.getX(), fy + 1, step.getZ())) { blocked(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
+            if (isSolid(step.getX(), fy + 2, step.getZ())) { blocked(new BlockPos(step.getX(), fy + 2, step.getZ())); return; }
             villager.setPos(step.getX() + 0.5, fy + 1, step.getZ() + 0.5);
             return;
         }
         // open cell ahead -> walk in; lay a scaffold floor if needed. Dig the head room only if it's blocked.
-        if (isSolid(step.getX(), fy + 1, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
+        if (isSolid(step.getX(), fy + 1, step.getZ())) { blocked(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
         if (!isStandable(step.below())) placeScaffold(step.below());
         villager.setPos(step.getX() + 0.5, fy, step.getZ() + 0.5);
     }
@@ -273,16 +275,11 @@ public class WallBuildGoal extends Goal {
     }
 
     /**
-     * Last-resort escape: a villager that's genuinely stuck (a solid block is the only thing in its way) digs
-     * the blocker out -- but NEVER below the wall foundation (that would leave an unfillable breach under the
-     * wall), and never something too tough. If we can't safely dig it, we give the cell up instead.
+     * Blocked by a solid block we can't scaffold past: builders no longer dig anything (it tore the village
+     * apart), so we simply give the cell up. The gravemind seals cells the builders keep failing to reach.
      */
-    private void digToFree(BlockPos blocker) {
-        if (blocker.getY() >= baseY && !tooToughToDig(blocker)) {
-            startDig(blocker);
-        } else {
-            abandon();
-        }
+    private void blocked(BlockPos blocker) {
+        abandon();
     }
 
     private void placeScaffold(BlockPos pos) {
@@ -302,10 +299,9 @@ public class WallBuildGoal extends Goal {
         BlockPos tp = target.pos();
         if (plan.isBuilt(level(), target)) { finishTarget(); return; } // already built (us or another builder)
         if (!placeable(tp)) {
-            // A block is occupying the wall cell -> break it with the right stone tool (or hand) first,
-            // unless it's too tough to manage; then we'll re-enter and place once it's clear.
-            if (tooToughToDig(tp)) { abandon(); return; }
-            startDig(tp);
+            // A block is occupying the wall cell. Builders no longer dig, so we give it up rather than tear
+            // anything down; the gravemind seals cells the builders can't fill.
+            abandon();
             return;
         }
         level().setBlock(tp, target.toState(), 3);

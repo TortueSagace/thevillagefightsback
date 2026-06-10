@@ -105,9 +105,9 @@ public final class WallPlanner {
     private static void expandColumn(Col col, int surfaceY, List<WallBlock> out, boolean isDoor) {
         int base = surfaceY + 1;                 // wall sits ON the ground (one above the top solid block)
 
-        // Corners (where two straight segments meet): a plain 6-tall cobblestone pillar, nothing else.
+        // Corners (where two straight segments meet): a plain 4-tall cobblestone pillar, nothing else.
         if (col.outward == null) {
-            for (int c = 0; c <= 5; c++) out.add(cobble(col.x, base + c, col.z, c));
+            for (int c = 0; c <= 3; c++) out.add(cobble(col.x, base + c, col.z, c));
             return;
         }
 
@@ -115,14 +115,13 @@ public final class WallPlanner {
         Direction in = o.getOpposite();          // toward the village interior
 
         if (isDoor) {
-            // A 3-high fake-cobblestone gate (courses 0..2) with a solid cobble cap above. We emit NO
-            // loophole/ladder/torch/merlon on a door column, so nothing is ever placed ON the fake
-            // cobblestone, and the opening stays a clean 2-wide x 3-high passage for an iron golem.
+            // A 3-high fake-cobblestone gate (courses 0..2) with a solid cobble cap above (course 3). We emit
+            // NO loophole/ladder/torch on a door column, so nothing is ever placed ON the fake cobblestone,
+            // and the opening stays a clean 2-wide x 3-high passage for an iron golem.
             out.add(fakeCobble(col.x, base, col.z, 0));
             out.add(fakeCobble(col.x, base + 1, col.z, 1));
             out.add(fakeCobble(col.x, base + 2, col.z, 2));
             out.add(cobble(col.x, base + 3, col.z, 3));
-            out.add(cobble(col.x, base + 4, col.z, 4));
             return;
         }
 
@@ -131,7 +130,6 @@ public final class WallPlanner {
         int coord = (o == Direction.EAST || o == Direction.WEST) ? col.z : col.x;
         boolean loophole = Math.floorMod(coord, 5) == 2;   // a firing slit every 5 blocks
         boolean ladder = Math.floorMod(coord, 15) == 0;    // a climb ladder every 15 blocks
-        boolean merlon = Math.floorMod(coord, 2) == 0;     // battlements: alternating merlon / gap
         boolean torch = Math.floorMod(coord, 6) == 3 && !ladder; // light the inside face (not on ladder columns)
 
         // Stairs form the loophole. Their FACING must run ALONG the wall (parallel), not across it -- only
@@ -145,7 +143,6 @@ public final class WallPlanner {
         out.add(loophole ? stair(col.x, base + 2, col.z, 2, stairFacing, true)
                          : cobble(col.x, base + 2, col.z, 2));
         out.add(cobble(col.x, base + 3, col.z, 3));
-        if (merlon) out.add(cobble(col.x, base + 4, col.z, 4));
 
         if (ladder) {
             // Ladders climb the wall's INSIDE face: a ladder cell one block toward the interior, supported

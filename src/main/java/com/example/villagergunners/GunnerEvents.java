@@ -3,6 +3,7 @@ package com.example.villagergunners;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.villagergunners.goal.AxeCombatGoal;
 import com.example.villagergunners.goal.FlareRallyGoal;
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
@@ -65,11 +66,6 @@ public final class GunnerEvents {
     // revolver is handled separately by the nerf below, so it has no bonus constant.
     private static final float MINIGUN_BONUS = 9.0F;    // 4  -> 13 (minigun also fades over range)
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
-
-    // Villager gun NERF (villagers only; guards/golems keep the values above): fire once per second and
-    // each projectile does a flat 8 damage, regardless of the guns' data-driven rate/base damage.
-    private static final int VILLAGER_FIRE_RATE = 20;   // ticks between shots = 1/sec
-    private static final float VILLAGER_GUN_DAMAGE = 8.0F;
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
@@ -148,11 +144,12 @@ public final class GunnerEvents {
     }
 
     private static void armVillagerFull(Villager villager) {
-        // Hold the revolver so the vanilla CrossedArmsItemLayer renders it -- a villager only shows a gun
-        // when it actually HOLDS one, which happens solely here on upgrade (nerfed villagers hold a stone
-        // axe). Firing still uses the goal's cached stacks; JEG's auto gunner-goal is stripped on equip.
-        if (!(villager.getMainHandItem().getItem() instanceof GunItem)) {
-            villager.setItemSlot(EquipmentSlot.MAINHAND, GunUtil.makeGun(GunUtil.REVOLVER));
+        // Stage-3 villagers wield the Alien Slasher (a netherite axe) instead of the revolver. They hold it
+        // for real -- the vanilla CrossedArmsItemLayer renders the held item -- and melee with it; the axe's
+        // on-hit payload (Emerald Virus, Slowness IV, fire, huge knockback) is applied in EmeraldVirusEvents.
+        // No guns, flamethrower, flare or molotov: the slasher is the villager's only stage-3 weapon.
+        if (villager.getMainHandItem().getItem() != ModItems.ALIEN_SLASHER.get()) {
+            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.ALIEN_SLASHER.get()));
             villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
         // Iron boots on upgraded villagers (functional armour; villagers have no armour render layer).
@@ -160,13 +157,11 @@ public final class GunnerEvents {
             villager.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
             villager.setDropChance(EquipmentSlot.FEET, 0.0F);
         }
-        if (hasGoal(villager, GunCombatGoal.class)) return; // goals are re-added each load
+        if (hasGoal(villager, AxeCombatGoal.class)) return; // goals are re-added each load
         GunUtil.extendFollowRange(villager, FOLLOW_RANGE);
         // Priority 0 (above combat): drop TNT and flee when standing on From Another World infection.
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
-        villager.goalSelector.addGoal(1, new GunCombatGoal(
-                villager, GunUtil.REVOLVER, GunUtil.FLAMETHROWER, VILLAGER_FIRE_RATE, VILLAGER_GUN_DAMAGE));
-        villager.goalSelector.addGoal(2, new FlareRallyGoal(villager)); // run to reinforcement flares
+        villager.goalSelector.addGoal(1, new AxeCombatGoal(villager)); // hunt and slash hostiles with the axe
         villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
     }
 

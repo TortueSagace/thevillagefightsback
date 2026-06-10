@@ -27,5 +27,7 @@
   "block.gobacktoyourworld.rich_sculk": "Rich Sculk",
   "block.gobacktoyourworld.fertile_deepslate": "Fertile Deepslate",
   "block.gobacktoyourworld.rich_deepslate": "Rich Deepslate",
+  "item.gobacktoyourworld.alien_slasher": "Alien Slasher",
+  "effect.gobacktoyourworld.emerald_virus": "Emerald Virus",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

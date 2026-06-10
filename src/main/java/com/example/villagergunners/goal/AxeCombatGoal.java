@@ -1,0 +1,117 @@
+package com.example.villagergunners.goal;
+
+import java.util.EnumSet;
+import java.util.List;
+
+import com.example.villagergunners.GunnerEvents;
+
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.Brain;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
+
+/**
+ * Upgraded villager melee combat with the Alien Slasher. Replaces the gun loadout at stage 3: the villager
+ * hunts the nearest hostile (creepers excluded -- the huge knockback would just punt them mid-fuse) and
+ * hacks it with the axe. The slash's payload (Emerald Virus, Slowness IV, fire, 20-block launch) is applied
+ * by {@code EmeraldVirusEvents.onLivingHurt} since the villager holds the axe. A player who recently struck
+ * the villager becomes the target instead (retaliation), mirroring the old gun behaviour.
+ */
+public class AxeCombatGoal extends Goal {
+    private static final double SEE_RANGE = 24.0;     // detect hostiles within this
+    private static final double REACH_SQR = 4.0;      // melee reach (~2 blocks)
+    private static final float AXE_DAMAGE = 10.0F;    // netherite-axe damage
+    private static final int ATTACK_COOLDOWN = 20;    // 1s between swings
+    private static final int RETARGET_INTERVAL = 5;
+
+    private final Villager villager;
+    private LivingEntity target;
+    private int attackCooldown;
+
+    public AxeCombatGoal(Villager villager) {
+        this.villager = villager;
+        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+    }
+
+    private LivingEntity acquireTarget() {
+        Player aggro = GunnerEvents.getAggroPlayer(villager);
+        if (aggro != null && inRange(aggro)) return aggro;
+        return findHostile();
+    }
+
+    private boolean inRange(LivingEntity t) {
+        return t != null && t.isAlive()
+                && villager.distanceToSqr(t) <= SEE_RANGE * SEE_RANGE
+                && villager.getSensing().hasLineOfSight(t);
+    }
+
+    /** Nearest living hostile (Enemy) that is NOT a creeper, in range and line of sight. */
+    private LivingEntity findHostile() {
+        AABB box = villager.getBoundingBox().inflate(SEE_RANGE);
+        List<LivingEntity> candidates = villager.level().getEntitiesOfClass(LivingEntity.class, box,
+                e -> e instanceof Enemy && !(e instanceof Creeper) && e.isAlive() && e != villager
+                        && villager.distanceToSqr(e) <= SEE_RANGE * SEE_RANGE
+                        && villager.getSensing().hasLineOfSight(e));
+        LivingEntity nearest = null;
+        double best = Double.MAX_VALUE;
+        for (LivingEntity e : candidates) {
+            double d = villager.distanceToSqr(e);
+            if (d < best) { best = d; nearest = e; }
+        }
+        return nearest;
+    }
+
+    @Override
+    public boolean canUse() {
+        if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
+        this.target = acquireTarget();
+        return target != null;
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        return inRange(this.target);
+    }
+
+    @Override
+    public boolean requiresUpdateEveryTick() {
+        return true;
+    }
+
+    @Override
+    public void stop() {
+        villager.setTarget(null);
+        this.target = null;
+        villager.getNavigation().stop();
+    }
+
+    @Override
+    public void tick() {
+        LivingEntity t = this.target;
+        if (t == null) return;
+
+        // Villagers are brain-driven and would flee; erase the panic-trigger memories so they stand and fight.
+        Brain<?> brain = villager.getBrain();
+        brain.eraseMemory(MemoryModuleType.WALK_TARGET);
+        brain.eraseMemory(MemoryModuleType.HURT_BY);
+        brain.eraseMemory(MemoryModuleType.HURT_BY_ENTITY);
+        brain.eraseMemory(MemoryModuleType.NEAREST_HOSTILE);
+
+        villager.setTarget(t);
+        villager.getLookControl().setLookAt(t, 30.0F, 30.0F);
+        villager.getNavigation().moveTo(t, 1.15D);
+
+        if (attackCooldown > 0) attackCooldown--;
+        if (villager.distanceToSqr(t) <= REACH_SQR && attackCooldown <= 0) {
+            villager.swing(InteractionHand.MAIN_HAND);
+            t.hurt(villager.level().damageSources().mobAttack(villager), AXE_DAMAGE);
+            attackCooldown = ATTACK_COOLDOWN;
+        }
+    }
+}

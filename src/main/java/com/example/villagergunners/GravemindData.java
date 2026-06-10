@@ -30,9 +30,9 @@ import net.minecraft.world.level.saveddata.SavedData;
 public class GravemindData extends SavedData {
     private static final String NAME = "gobacktoyourworld_gravemind";
 
-    public static final int MAX_LEVEL = 3;
+    public static final int MAX_LEVEL = 4;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
-    private static final int[] COST_TO_ADVANCE = {0, 64, 192}; // index by current level: 1->2 =64, 2->3 =192
+    private static final int[] COST_TO_ADVANCE = {0, 16, 128, 256}; // 1->2=16, 2->3=128, 3->4=256
 
     // Per-village economy: graveminds within CLUSTER blocks share one Econ; graveminds farther apart are
     // completely independent villages, each with its own level/emeralds/income.
@@ -43,6 +43,7 @@ public class GravemindData extends SavedData {
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a gravemind
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
     private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // graveminds whose level-2 gate turrets are placed
+    private final Set<GlobalPos> domeBuilt = new HashSet<>();       // graveminds whose level-4 glass dome is placed
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
 
     public GravemindData() {}
@@ -123,6 +124,11 @@ public class GravemindData extends SavedData {
     public boolean areDefendersBuilt(GlobalPos gravemind) { return defendersBuilt.contains(gravemind); }
     public void markDefendersBuilt(GlobalPos gravemind) { if (defendersBuilt.add(gravemind)) setDirty(); }
 
+    // --- level-4 reinforced-glass dome (built once per gravemind) ---
+
+    public boolean isDomeBuilt(GlobalPos gravemind) { return domeBuilt.contains(gravemind); }
+    public void markDomeBuilt(GlobalPos gravemind) { if (domeBuilt.add(gravemind)) setDirty(); }
+
     // --- who placed a village bell (so the gravemind that rises there rewards them) ---
 
     public void recordBellPlacer(GlobalPos bell, java.util.UUID player) { bellPlacers.put(bell, player); setDirty(); }
@@ -140,6 +146,7 @@ public class GravemindData extends SavedData {
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "serviced", d.servicedCenters);
         readPositions(tag, "defenders", d.defendersBuilt);
+        readPositions(tag, "dome", d.domeBuilt);
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
@@ -178,6 +185,7 @@ public class GravemindData extends SavedData {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "serviced", servicedCenters);
         writePositions(tag, "defenders", defendersBuilt);
+        writePositions(tag, "dome", domeBuilt);
         ListTag econList = new ListTag();
         for (Map.Entry<GlobalPos, Econ> e : econs.entrySet()) {
             CompoundTag c = new CompoundTag();

@@ -24,8 +24,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * what right now) live in {@link WallBuild}, not here.
  */
 public final class WallPlan {
-    /** Number of vertical courses (0..4 for the curtain; corner pillars also fill course 5). */
-    public static final int COURSES = 6;
+    /** Number of vertical courses: the wall is 4 blocks tall (courses 0..3). */
+    public static final int COURSES = 4;
 
     /** Margin (blocks) added to the wall's outer radius so a builder anywhere on/near its wall keeps the plan. */
     private static final double JOIN_MARGIN = 48.0;
@@ -34,6 +34,7 @@ public final class WallPlan {
     private final List<List<WallBlock>> columns; // perimeter-ordered columns (each a course stack); for the conga
     private final List<WallBlock> blocks;        // flat, sorted by (course, x, z, type); for completion/repair
     private final int[] courseStart;             // courseStart[c]..courseStart[c+1] = blocks of course c
+    private final int[] doorColumns;             // perimeter-column index where each gate begins (one per gate)
     private final double joinRadiusSqr;          // (max block distance from gravemind + margin)^2, for plan lookup
     private final List<BlockPos> scaffoldTemp = new ArrayList<>();
     private boolean complete;
@@ -60,10 +61,29 @@ public final class WallPlan {
         for (WallBlock wb : flat) maxR2 = Math.max(maxR2, gravemind.pos().distSqr(wb.pos()));
         double r = Math.sqrt(maxR2) + JOIN_MARGIN;
         this.joinRadiusSqr = r * r;
+        this.doorColumns = computeDoorColumns(columns);
+    }
+
+    /** The perimeter-column index where each gate begins (a gate = a run of fake-cobblestone columns). */
+    private static int[] computeDoorColumns(List<List<WallBlock>> columns) {
+        List<Integer> doors = new ArrayList<>();
+        boolean prevDoor = false;
+        for (int i = 0; i < columns.size(); i++) {
+            boolean isDoor = false;
+            for (WallBlock wb : columns.get(i)) {
+                if (wb.type() == WallBlock.BlockType.FAKE_COBBLE) { isDoor = true; break; }
+            }
+            if (isDoor && !prevDoor) doors.add(i); // first column of a gate run
+            prevDoor = isDoor;
+        }
+        return doors.stream().mapToInt(Integer::intValue).toArray();
     }
 
     /** Radius (squared) from the gravemind within which a builder is considered "at this wall". */
     public double joinRadiusSqr() { return joinRadiusSqr; }
+
+    /** Perimeter-column indices of the gates (one per gate); a builder is assigned one and builds rightward. */
+    public int[] doorColumns() { return doorColumns; }
 
     private static int[] computeCourseStarts(List<WallBlock> blocks) {
         int[] starts = new int[COURSES + 1];
@@ -143,22 +163,29 @@ public final class WallPlan {
     public int columnCount() { return columns.size(); }
 
     /**
-     * Conga selection: the first not-yet-built, supported block of {@code course}, scanning the perimeter
-     * columns from {@code fromColumn} (wrapping). Giving each builder a different start column spreads the
-     * six of them around the ring instead of all piling onto the same first cell.
+     * Section selection: the next not-yet-built, supported block in the perimeter columns from {@code startCol}
+     * up to (excluding) {@code endCol}, wrapping. Columns are scanned in perimeter order ("rightward" from the
+     * builder's door); within a column the blocks come course-first, so each column rises as a full pillar
+     * before moving on. When {@code startCol == endCol} the section is the whole ring (used as a help fallback).
      */
-    public WallBlock nextForCourse(Level level, int course, int fromColumn, Predicate<BlockPos> skip) {
+    public WallBlock nextInSection(Level level, int startCol, int endCol, Predicate<BlockPos> skip) {
         int n = columns.size();
         if (n == 0) return null;
-        int start = Math.floorMod(fromColumn, n);
-        for (int k = 0; k < n; k++) {
+        int start = Math.floorMod(startCol, n);
+        int count = Math.floorMod(endCol - startCol, n);
+        if (count == 0) count = n;
+        for (int k = 0; k < count; k++) {
             for (WallBlock wb : columns.get((start + k) % n)) {
-                // cheap filters (course, skip/reserved) before the world lookups in satisfied()/hasSupport()
-                if (wb.course() != course || skip.test(wb.pos())) continue;
+                if (skip.test(wb.pos())) continue; // cheap (reserved/parked) check before the world lookups
                 if (!satisfied(level, wb) && hasSupport(level, wb)) return wb;
             }
         }
         return null;
+    }
+
+    /** Help fallback once a builder's own section is done: the next unbuilt block anywhere, from {@code fromColumn}. */
+    public WallBlock nextAnyUnbuilt(Level level, int fromColumn, Predicate<BlockPos> skip) {
+        return nextInSection(level, fromColumn, fromColumn, skip);
     }
 
     /**
@@ -197,16 +224,6 @@ public final class WallPlan {
             centres.add(new BlockPos((int) (sx / cl.size()), (int) (sy / cl.size()), (int) (sz / cl.size())));
         }
         return centres;
-    }
-
-    /** Helper selection for a builder whose own layer has no ready cell: the lowest unfinished layer's next
-     *  block, still starting the perimeter scan at {@code fromColumn} so helpers stay spread out. */
-    public WallBlock nextAnyCourse(Level level, int fromColumn, Predicate<BlockPos> skip) {
-        for (int c = 0; c < COURSES; c++) {
-            WallBlock t = nextForCourse(level, c, fromColumn, skip);
-            if (t != null) return t;
-        }
-        return null;
     }
 
     // Lazy index (packed position -> course) for O(1) repair lookups; rebuilt on first use / after load.
