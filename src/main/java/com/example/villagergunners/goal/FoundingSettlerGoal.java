@@ -3,7 +3,6 @@ package com.example.villagergunners.goal;
 import java.util.EnumSet;
 import java.util.List;
 
-import com.example.villagergunners.BlueTntBlock;
 import com.example.villagergunners.FoundingManager;
 import com.example.villagergunners.ModBlocks;
 
@@ -60,7 +59,7 @@ public class FoundingSettlerGoal extends Goal {
         if (villager.tickCount - startTick < SCATTER_TICKS) {
             scatter();
         } else {
-            placeAndLight();
+            placeTnt();
             placed = true;
         }
     }
@@ -97,7 +96,7 @@ public class FoundingSettlerGoal extends Goal {
         return best;
     }
 
-    private void placeAndLight() {
+    private void placeTnt() {
         ServerLevel level = (ServerLevel) villager.level();
         BlockPos pos = villager.blockPosition();
         // door faces the gravemind (village centre)
@@ -105,9 +104,6 @@ public class FoundingSettlerGoal extends Goal {
         if (face.getAxis().isVertical()) face = villager.getDirection();
         BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, face);
-        level.setBlock(pos, tnt, 3);
-        ((BlueTntBlock) ModBlocks.BLUE_TNT.get()).prime(level, pos);
-        // step toward the centre so the settler isn't embedded in its own house when it builds
-        moveTo(pos.relative(face, 4));
+        level.setBlock(pos, tnt, 3); // detonates instantly on placement -> builds the house (no fuse, no fleeing)
     }
 }

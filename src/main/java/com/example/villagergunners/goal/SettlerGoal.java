@@ -2,7 +2,6 @@ package com.example.villagergunners.goal;
 
 import java.util.EnumSet;
 
-import com.example.villagergunners.BlueTntBlock;
 import com.example.villagergunners.GravemindData;
 import com.example.villagergunners.ModBlocks;
 
@@ -29,12 +28,10 @@ public class SettlerGoal extends Goal {
     private static final String NBT_SETTLED = "vgun_settled";
     private static final double MIN_DIST_FROM_GRAVEMIND = 100.0;
     private static final int RETRY_TICKS = 200;     // re-evaluate at most every 10s
-    private static final int FLEE_DIST = 7;          // clear of the 7x7 footprint
     private static final int FLAT_TOLERANCE = 2;     // max ground-height spread under the footprint
 
     private final Villager villager;
     private int nextTryTick = RETRY_TICKS;
-    private int timer;
     private BlockPos tntPos;
     private Direction doorFacing = Direction.NORTH;
 
@@ -63,7 +60,7 @@ public class SettlerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return tntPos != null && timer > 0;
+        return false; // the TNT self-detonates on placement -- nothing left to do, no fleeing
     }
 
     @Override
@@ -71,28 +68,13 @@ public class SettlerGoal extends Goal {
         ServerLevel level = (ServerLevel) villager.level();
         BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, doorFacing);
-        level.setBlock(tntPos, tnt, 3);
-        ((BlueTntBlock) ModBlocks.BLUE_TNT.get()).prime(level, tntPos);
+        level.setBlock(tntPos, tnt, 3); // detonates instantly on placement -> builds the house
         villager.getPersistentData().putBoolean(NBT_SETTLED, true);
-        timer = BlueTntBlock.FUSE_TICKS + 40; // flee a little past the fuse
-        fleeForward();
-    }
-
-    @Override
-    public void tick() {
-        timer--;
-        if (villager.getNavigation().isDone()) fleeForward();
     }
 
     @Override
     public void stop() {
         tntPos = null;
-        timer = 0;
-    }
-
-    private void fleeForward() {
-        BlockPos t = villager.blockPosition().relative(doorFacing, FLEE_DIST);
-        villager.getNavigation().moveTo(t.getX() + 0.5, t.getY(), t.getZ() + 0.5, 1.3);
     }
 
     private boolean farFromGraveminds(ServerLevel level) {
