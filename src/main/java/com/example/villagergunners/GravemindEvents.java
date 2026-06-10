@@ -179,6 +179,7 @@ public final class GravemindEvents {
                     if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
                 }
                 manageBuilders(level, gp.pos(), nearby, now); // keep BUILDER_COUNT builders staffed
+                sealStuckHoles(server, level, plan); // gravemind finishes cells the builders can't reach
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
                     for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
@@ -187,6 +188,43 @@ public final class GravemindEvents {
                     broadcast(server, "§aThe village wall is complete.");
                 }
             }
+        }
+    }
+
+    // A cell abandoned by builders this many times is sealed directly by the gravemind (builders can't reach
+    // it -- e.g. it sits over a roof, a cliff, or inside a structure -- so it would otherwise stay a hole).
+    private static final int SEAL_AFTER_ABANDONS = 2;
+
+    /**
+     * Safety net so the wall can never be left with mob-passable holes: any cell the builders have given up on
+     * {@value #SEAL_AFTER_ABANDONS}+ times is placed directly by the gravemind -- but ONLY where the world
+     * cell is currently empty/replaceable (a real gap). Genuine obstacles (player blocks, bedrock, ...) are
+     * left alone (they already count as "satisfied" gaps). Cheap: iterates only the small set of abandoned
+     * cells, not the whole wall.
+     */
+    private static void sealStuckHoles(MinecraftServer server, ServerLevel level, WallPlan plan) {
+        java.util.Map<Long, Integer> abandons = com.example.villagergunners.wall.WallBuild.abandons(plan.gravemind());
+        if (abandons.isEmpty()) return;
+        int sealed = 0;
+        for (Map.Entry<Long, Integer> e : new ArrayList<>(abandons.entrySet())) {
+            if (e.getValue() < SEAL_AFTER_ABANDONS) continue;
+            BlockPos pos = BlockPos.of(e.getKey());
+            if (!level.isLoaded(pos)) continue; // don't force-load
+            WallBlock wb = plan.blockAt(pos);
+            if (wb == null) { com.example.villagergunners.wall.WallBuild.clearAbandon(plan.gravemind(), pos); continue; }
+            // Only seal genuine gaps: if it's already built, or blocked by a real obstacle, leave it and stop
+            // counting it (satisfied() treats both as done).
+            if (plan.satisfied(level, wb) || !level.getBlockState(pos).canBeReplaced()) {
+                com.example.villagergunners.wall.WallBuild.clearAbandon(plan.gravemind(), pos);
+                continue;
+            }
+            level.setBlock(pos, wb.toState(), 3);
+            com.example.villagergunners.wall.WallBuild.clearAbandon(plan.gravemind(), pos);
+            sealed++;
+        }
+        if (sealed > 0) {
+            broadcast(server, "§7The Village Gravemind seals §a" + sealed
+                    + "§7 wall gap" + (sealed == 1 ? "" : "s") + " the builders couldn't reach.");
         }
     }
 
