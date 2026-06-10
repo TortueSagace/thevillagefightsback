@@ -15,27 +15,22 @@ import net.minecraft.world.level.levelgen.Heightmap;
 /**
  * Pure, deterministic geometry for the village wall. Turns a set of bed positions into the full ordered
  * list of {@link WallBlock}s the Gravemind hands to the builders. Strategy:
- * beds -> distinct (x,z) -> convex hull -> Minkowski "inflate by 5" (disc offset, then re-hull) ->
- * 4-connected rasterized perimeter -> per-column ground height (skipping floating islands) ->
- * expand each column into its 5-course block stack (loophole stairs every 5, ladders every 15,
- * battlements alternating). Everything is integer/array based and sorted, so the same input always yields
- * the identical plan.
+ * beds -> distinct (x,z) -> a footprint grid marked within CLEARANCE of every bed AND of a minimum spanning
+ * tree linking the beds (so the wall hugs the ACTUAL village shape -- an L stays an L instead of being
+ * wrapped by a convex hull, which would enclose the L's notch as a big dark interior) -> the orthogonal
+ * boundary of that region -> per-column ground height (skipping floating islands) -> expand each column into
+ * its course stack (loophole stairs every 5, ladders every 15, battlements alternating). Everything is
+ * integer/array based and sorted, so the same input always yields the identical plan.
  */
 public final class WallPlanner {
     private WallPlanner() {}
 
     public static final int MIN_BEDS = 4;          // fewer distinct bed columns than this -> no wall yet
+    private static final int CLEARANCE = 5;        // wall sits ~this many blocks out from the nearest bed
     private static final int FLOAT_GAP = 10;       // >= this much air below a surface => floating island, skip it
-    private static final int SEGMENT = 5;          // band height -> length of the straight vertical wall runs
-    private static final int MAX_COLUMNS = 600;     // perimeter cap (runaway-village guard)
-    private static final int MAX_BLOCKS = 4000;     // total placement cap
-
-    // Disc of radius 5 (the required bed clearance) sampled at 16 points -- precomputed so the offset is
-    // fully deterministic with no runtime trig.
-    private static final int[][] DISC = {
-            {5, 0}, {5, 2}, {4, 4}, {2, 5}, {0, 5}, {-2, 5}, {-4, 4}, {-5, 2},
-            {-5, 0}, {-5, -2}, {-4, -4}, {-2, -5}, {0, -5}, {2, -5}, {4, -4}, {5, -2}
-    };
+    private static final int MAX_GRID = 220 * 220; // footprint-grid cell cap (runaway-village guard)
+    private static final int MAX_COLUMNS = 1000;    // perimeter cap
+    private static final int MAX_BLOCKS = 6500;     // total placement cap
 
     /** Compute the wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds) {
@@ -44,50 +39,40 @@ public final class WallPlanner {
 
         double[] centroid = centroid(pts);
 
-        List<int[]> hull = convexHull(pts);
-        if (hull.size() < 3) hull = boundingRect(pts);
-
-        // Inflate the hull outward by CLEARANCE: drop a disc on every hull vertex, re-hull the samples.
-        List<int[]> samples = new ArrayList<>(hull.size() * DISC.length);
-        for (int[] v : hull) {
-            for (int[] d : DISC) samples.add(new int[]{v[0] + d[0], v[1] + d[1]});
+        // --- Concave footprint grid ---------------------------------------------------------------------
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+        for (int[] p : pts) {
+            minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+            minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]);
         }
-        List<int[]> ring = convexHull(samples);
-        if (ring.size() < 3) return null;
+        int pad = CLEARANCE + 2;
+        int ox = minX - pad, oz = minZ - pad;                 // grid origin in world coords
+        int W = (maxX + pad) - ox + 1, H = (maxZ + pad) - oz + 1;
+        if ((long) W * H > MAX_GRID) return null;             // village footprint too sprawling
 
-        // --- Rectilinear outline: turn the convex offset polygon into axis-aligned segments (no diagonals).
-        // For each row z compute the polygon's [lo,hi] x-span, then quantize those extents into SEGMENT-tall
-        // bands so the left/right walls are SEGMENT-long straight runs joined by horizontal jogs. The wall is
-        // the boundary of that orthogonal region; corners (cells with two outside sides) become 6-tall pillars.
-        int zMin = Integer.MAX_VALUE, zMax = Integer.MIN_VALUE;
-        for (int[] v : ring) { zMin = Math.min(zMin, v[1]); zMax = Math.max(zMax, v[1]); }
-        int rows = zMax - zMin + 1;
-        int[] lo = new int[rows], hi = new int[rows];
-        java.util.Arrays.fill(lo, Integer.MAX_VALUE);
-        java.util.Arrays.fill(hi, Integer.MIN_VALUE);
-        computeRowSpans(ring, zMin, lo, hi);
-        for (int b = 0; b * SEGMENT < rows; b++) {
-            int z0 = b * SEGMENT, z1 = Math.min(rows - 1, z0 + SEGMENT - 1);
-            int bl = Integer.MAX_VALUE, bh = Integer.MIN_VALUE;
-            for (int zi = z0; zi <= z1; zi++) if (lo[zi] <= hi[zi]) { bl = Math.min(bl, lo[zi]); bh = Math.max(bh, hi[zi]); }
-            for (int zi = z0; zi <= z1; zi++) { lo[zi] = bl; hi[zi] = bh; }
+        boolean[] interior = new boolean[W * H];
+        for (int[] p : pts) markDisc(interior, W, H, p[0] - ox, p[1] - oz);          // CLEARANCE around each bed
+        for (int[] e : spanningEdges(pts)) {                                          // ...and along the MST,
+            int[] a = pts.get(e[0]), b = pts.get(e[1]);                               // so scattered houses
+            rasterizeTube(interior, W, H, a[0] - ox, a[1] - oz, b[0] - ox, b[1] - oz); // enclose as ONE ring
         }
 
-        // Collect boundary cells; outward = the outside side (a corner has >=2 outside sides -> pillar).
+        // --- Boundary cells: an interior cell with a non-interior orthogonal neighbour. outward = the
+        // outside side (a cell with >=2 outside sides is a corner -> 6-tall pillar). This naturally follows
+        // concavities and inserts pillars at diagonal steps, so the wall is 4-connected (sealed).
         List<Col> cells = new ArrayList<>();
-        for (int zi = 0; zi < rows; zi++) {
-            if (lo[zi] > hi[zi]) continue;
-            int z = zMin + zi;
-            for (int x = lo[zi]; x <= hi[zi]; x++) {
-                boolean wN = !inRegion(lo, hi, zMin, x, z - 1);
-                boolean wS = !inRegion(lo, hi, zMin, x, z + 1);
-                boolean wE = !inRegion(lo, hi, zMin, x + 1, z);
-                boolean wW = !inRegion(lo, hi, zMin, x - 1, z);
+        for (int gz = 0; gz < H; gz++) {
+            for (int gx = 0; gx < W; gx++) {
+                if (!interior[gz * W + gx]) continue;
+                boolean wN = !cell(interior, W, H, gx, gz - 1);
+                boolean wS = !cell(interior, W, H, gx, gz + 1);
+                boolean wE = !cell(interior, W, H, gx + 1, gz);
+                boolean wW = !cell(interior, W, H, gx - 1, gz);
                 int cnt = (wN ? 1 : 0) + (wS ? 1 : 0) + (wE ? 1 : 0) + (wW ? 1 : 0);
                 if (cnt == 0) continue; // interior cell
                 Direction o = cnt >= 2 ? null // corner -> pillar
                         : wN ? Direction.NORTH : wS ? Direction.SOUTH : wE ? Direction.EAST : Direction.WEST;
-                cells.add(new Col(x, z, o));
+                cells.add(new Col(ox + gx, oz + gz, o));
             }
         }
         if (cells.isEmpty() || cells.size() > MAX_COLUMNS) return null;
@@ -225,7 +210,7 @@ public final class WallPlanner {
         return s.blocksMotion() || !s.getFluidState().isEmpty();
     }
 
-    // --- 2D helpers (convex hull, offset, rasterization) ---
+    // --- 2D footprint helpers ---
 
     private static List<int[]> distinctXz(List<BlockPos> beds) {
         List<int[]> pts = new ArrayList<>(beds.size());
@@ -246,91 +231,63 @@ public final class WallPlanner {
         return new double[]{cx / pts.size(), cz / pts.size()};
     }
 
-    /** Andrew's monotone chain. Input must be sorted+distinct. Returns hull vertices (>=0), collinear removed. */
-    private static List<int[]> convexHull(List<int[]> ptsIn) {
-        List<int[]> pts = distinctSorted(ptsIn);
+    /** Mark every grid cell within CLEARANCE (Euclidean) of (cx,cz) as interior -- a disc of radius CLEARANCE. */
+    private static void markDisc(boolean[] grid, int W, int H, int cx, int cz) {
+        for (int dz = -CLEARANCE; dz <= CLEARANCE; dz++) {
+            int z = cz + dz;
+            if (z < 0 || z >= H) continue;
+            for (int dx = -CLEARANCE; dx <= CLEARANCE; dx++) {
+                int x = cx + dx;
+                if (x < 0 || x >= W) continue;
+                if (dx * dx + dz * dz <= CLEARANCE * CLEARANCE) grid[z * W + x] = true;
+            }
+        }
+    }
+
+    /** Mark a CLEARANCE-radius tube (capsule) along the segment (x0,z0)->(x1,z1): connects two bed clusters. */
+    private static void rasterizeTube(boolean[] grid, int W, int H, int x0, int z0, int x1, int z1) {
+        int steps = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
+        for (int i = 0; i <= steps; i++) {
+            int x = steps == 0 ? x0 : Math.round(x0 + (float) (x1 - x0) * i / steps);
+            int z = steps == 0 ? z0 : Math.round(z0 + (float) (z1 - z0) * i / steps);
+            markDisc(grid, W, H, x, z);
+        }
+    }
+
+    /** Minimum spanning tree over the beds (Prim, O(n^2)); returns index pairs. Guarantees one connected ring. */
+    private static List<int[]> spanningEdges(List<int[]> pts) {
         int n = pts.size();
-        if (n < 3) return new ArrayList<>(pts);
-        List<int[]> h = new ArrayList<>(2 * n);
-        for (int[] p : pts) { // lower hull
-            while (h.size() >= 2 && cross(h.get(h.size() - 2), h.get(h.size() - 1), p) <= 0) {
-                h.remove(h.size() - 1);
-            }
-            h.add(p);
-        }
-        int lower = h.size() + 1;
-        for (int i = n - 2; i >= 0; i--) { // upper hull
-            int[] p = pts.get(i);
-            while (h.size() >= lower && cross(h.get(h.size() - 2), h.get(h.size() - 1), p) <= 0) {
-                h.remove(h.size() - 1);
-            }
-            h.add(p);
-        }
-        h.remove(h.size() - 1); // last == first
-        return h;
-    }
-
-    private static List<int[]> distinctSorted(List<int[]> in) {
-        List<int[]> pts = new ArrayList<>(in);
-        pts.sort(Comparator.<int[]>comparingInt(a -> a[0]).thenComparingInt(a -> a[1]));
-        List<int[]> out = new ArrayList<>(pts.size());
-        for (int[] p : pts) {
-            if (out.isEmpty() || out.get(out.size() - 1)[0] != p[0] || out.get(out.size() - 1)[1] != p[1]) {
-                out.add(p);
+        List<int[]> edges = new ArrayList<>();
+        if (n < 2) return edges;
+        boolean[] in = new boolean[n];
+        long[] best = new long[n];
+        int[] from = new int[n];
+        java.util.Arrays.fill(best, Long.MAX_VALUE);
+        in[0] = true;
+        for (int j = 1; j < n; j++) { best[j] = distSq(pts.get(0), pts.get(j)); from[j] = 0; }
+        for (int k = 1; k < n; k++) {
+            int u = -1;
+            long bd = Long.MAX_VALUE;
+            for (int j = 0; j < n; j++) if (!in[j] && best[j] < bd) { bd = best[j]; u = j; }
+            if (u < 0) break;
+            in[u] = true;
+            edges.add(new int[]{from[u], u});
+            for (int j = 0; j < n; j++) if (!in[j]) {
+                long d = distSq(pts.get(u), pts.get(j));
+                if (d < best[j]) { best[j] = d; from[j] = u; }
             }
         }
-        return out;
+        return edges;
     }
 
-    private static List<int[]> boundingRect(List<int[]> pts) {
-        int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (int[] p : pts) {
-            minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
-            minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]);
-        }
-        List<int[]> r = new ArrayList<>(4);
-        r.add(new int[]{minX, minZ});
-        r.add(new int[]{maxX, minZ});
-        r.add(new int[]{maxX, maxZ});
-        r.add(new int[]{minX, maxZ});
-        return r;
+    private static long distSq(int[] a, int[] b) {
+        long dx = a[0] - b[0], dz = a[1] - b[1];
+        return dx * dx + dz * dz;
     }
 
-    private static long cross(int[] o, int[] a, int[] b) {
-        return (long) (a[0] - o[0]) * (b[1] - o[1]) - (long) (a[1] - o[1]) * (b[0] - o[0]);
-    }
-
-    /** For each row z in [zMin, zMin+lo.length), the convex polygon's min/max x (its scanline span). */
-    private static void computeRowSpans(List<int[]> ring, int zMin, int[] lo, int[] hi) {
-        int n = ring.size();
-        for (int i = 0; i < n; i++) {
-            int[] a = ring.get(i), b = ring.get((i + 1) % n);
-            int az = a[1], bz = b[1], ax = a[0], bx = b[0];
-            if (az == bz) { // horizontal edge: spans both endpoints at this z
-                spanAt(lo, hi, zMin, az, Math.min(ax, bx));
-                spanAt(lo, hi, zMin, az, Math.max(ax, bx));
-                continue;
-            }
-            int z0 = Math.min(az, bz), z1 = Math.max(az, bz);
-            for (int z = z0; z <= z1; z++) {
-                int x = (int) Math.round(ax + (double) (bx - ax) * (z - az) / (bz - az));
-                spanAt(lo, hi, zMin, z, x);
-            }
-        }
-    }
-
-    private static void spanAt(int[] lo, int[] hi, int zMin, int z, int x) {
-        int zi = z - zMin;
-        if (zi < 0 || zi >= lo.length) return;
-        lo[zi] = Math.min(lo[zi], x);
-        hi[zi] = Math.max(hi[zi], x);
-    }
-
-    /** True if (x,z) is inside the banded orthogonal region. */
-    private static boolean inRegion(int[] lo, int[] hi, int zMin, int x, int z) {
-        int zi = z - zMin;
-        if (zi < 0 || zi >= lo.length || lo[zi] > hi[zi]) return false;
-        return x >= lo[zi] && x <= hi[zi];
+    private static boolean cell(boolean[] grid, int W, int H, int gx, int gz) {
+        if (gx < 0 || gx >= W || gz < 0 || gz >= H) return false;
+        return grid[gz * W + gx];
     }
 
     /** Pick one gate cell at the middle of each of the four sides, plus its along-segment neighbour (2 wide). */
