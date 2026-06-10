@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -35,6 +36,9 @@ public final class HousePlacer {
     private static final Direction LOCAL_DOOR = Direction.NORTH;
     private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE; // 2 | 16 = 18
     private static final int SX = 7, SY = 8, SZ = 7;
+
+    /** Loot table rolled (lazily, on first open) for the large chest inside each house. */
+    private static final ResourceLocation LOOT = new ResourceLocation(VillagerGunners.MODID, "chests/basic_house");
 
     public static final ResourceLocation[] HOUSES = {
             new ResourceLocation(VillagerGunners.MODID, "basic_house"),
@@ -83,13 +87,19 @@ public final class HousePlacer {
         BlockPos offset = new BlockPos(ox, oy, oz);
         template.placeInWorld(level, offset, offset, settings, level.getRandom(), FLAGS);
 
-        // 3) a freshly placed bed should not read as "occupied"
+        // 3) post-pass: un-occupy freshly placed beds, and give containers (the large chest) a random
+        //    loot table so it fills with random loot the first time it's opened.
         for (int dx = 0; dx < SX; dx++)
             for (int dy = 0; dy < SY; dy++)
                 for (int dz = 0; dz < SZ; dz++) {
-                    BlockState s = level.getBlockState(m.set(ox + dx, oy + dy, oz + dz));
+                    m.set(ox + dx, oy + dy, oz + dz);
+                    BlockState s = level.getBlockState(m);
                     if (s.getBlock() instanceof BedBlock && s.getValue(BedBlock.OCCUPIED)) {
                         level.setBlock(m, s.setValue(BedBlock.OCCUPIED, false), FLAGS);
+                    } else if (level.getBlockEntity(m) instanceof RandomizableContainerBlockEntity container) {
+                        // distinct seed per half, so a double chest's two halves roll different loot
+                        container.setLootTable(LOOT, level.getRandom().nextLong());
+                        container.setChanged();
                     }
                 }
         return true;
