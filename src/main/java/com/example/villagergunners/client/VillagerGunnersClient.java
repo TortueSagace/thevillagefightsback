@@ -4,11 +4,9 @@ import com.example.villagergunners.GunUtil;
 import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.client.model.IronGolemModel;
-import net.minecraft.client.model.VillagerModel;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -22,15 +20,9 @@ public final class VillagerGunnersClient {
 
     @SubscribeEvent
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
-        // Villager: mirror vanilla CrossedArmsItemLayer's transform (translate 0,0.4,-0.4 + flip)
-        // so the revolver sits in the folded arms. No bone needed.
-        LivingEntityRenderer<Villager, VillagerModel<Villager>> villager = event.getRenderer(EntityType.VILLAGER);
-        if (villager != null) {
-            // Upgraded villagers have an empty hand (nerfed ones hold a stone axe shown by CrossedArmsItemLayer).
-            villager.addLayer(new HeldGunLayer<>(villager, GunUtil.REVOLVER, null,
-                    0.0F, 0.4F, -0.4F, 180.0F, 0.0F, 0.0F, 1.0F, ItemDisplayContext.GROUND,
-                    HeldGunLayer.Gate.EMPTY_HAND));
-        }
+        // Villagers need NO custom layer: upgraded villagers hold the revolver and the vanilla
+        // CrossedArmsItemLayer renders it (nerfed villagers hold a stone axe, also rendered by it). A
+        // villager therefore only ever shows whatever it actually holds -- no gun before the upgrade.
 
         // Iron golem: no vanilla item layer. Anchor to right_arm. NOTE: the right_arm PIVOT is at
         // x=0 (centre); the visible arm box is at x -13..-9 and 30px long. So we offset to the arm

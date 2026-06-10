@@ -104,8 +104,7 @@ public final class GunnerEvents {
     public static void applyUpgrade(LivingEntity e) {
         if (e instanceof Villager villager) {
             removeGoal(villager, StoneAxeDefenseGoal.class);
-            villager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY); // drop the stone axe (gun shows via layer)
-            armVillagerFull(villager);
+            armVillagerFull(villager); // replaces the stone axe with the revolver
         } else if (e instanceof IronGolem golem) {
             if (!golem.isPlayerCreated()) armGolemFull(golem);
         } else if (e instanceof PathfinderMob pm && isGuard(pm)) {
@@ -125,6 +124,13 @@ public final class GunnerEvents {
     }
 
     private static void armVillagerFull(Villager villager) {
+        // Hold the revolver so the vanilla CrossedArmsItemLayer renders it -- a villager only shows a gun
+        // when it actually HOLDS one, which happens solely here on upgrade (nerfed villagers hold a stone
+        // axe). Firing still uses the goal's cached stacks; JEG's auto gunner-goal is stripped on equip.
+        if (!(villager.getMainHandItem().getItem() instanceof GunItem)) {
+            villager.setItemSlot(EquipmentSlot.MAINHAND, GunUtil.makeGun(GunUtil.REVOLVER));
+            villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
         // Iron boots on upgraded villagers (functional armour; villagers have no armour render layer).
         if (!(villager.getItemBySlot(EquipmentSlot.FEET).getItem() instanceof net.minecraft.world.item.ArmorItem)) {
             villager.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
