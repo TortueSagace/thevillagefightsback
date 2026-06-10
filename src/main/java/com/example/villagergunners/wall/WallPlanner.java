@@ -2,10 +2,7 @@ package com.example.villagergunners.wall;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,8 +26,9 @@ public final class WallPlanner {
 
     public static final int MIN_BEDS = 4;          // fewer distinct bed columns than this -> no wall yet
     private static final int FLOAT_GAP = 10;       // >= this much air below a surface => floating island, skip it
-    private static final int MAX_COLUMNS = 400;     // perimeter cap (runaway-village guard)
-    private static final int MAX_BLOCKS = 3000;     // total placement cap
+    private static final int SEGMENT = 5;          // band height -> length of the straight vertical wall runs
+    private static final int MAX_COLUMNS = 600;     // perimeter cap (runaway-village guard)
+    private static final int MAX_BLOCKS = 4000;     // total placement cap
 
     // Disc of radius 5 (the required bed clearance) sampled at 16 points -- precomputed so the offset is
     // fully deterministic with no runtime trig.
@@ -57,43 +55,53 @@ public final class WallPlanner {
         List<int[]> ring = convexHull(samples);
         if (ring.size() < 3) return null;
 
-        // Rasterize the offset polygon into an ordered, 4-connected, de-duplicated set of columns.
-        Map<Long, Col> columns = new LinkedHashMap<>();
-        for (int i = 0; i < ring.size(); i++) {
-            int[] a = ring.get(i);
-            int[] b = ring.get((i + 1) % ring.size());
-            Direction outward = outwardCardinal(a, b, centroid);
-            boolean first = (i == 0);
-            BiConsumer<Integer, Integer> sink = (x, z) -> {
-                long key = pack(x, z);
-                columns.putIfAbsent(key, new Col(x, z, outward));
-            };
-            line4(a[0], a[1], b[0], b[1], first, sink);
+        // --- Rectilinear outline: turn the convex offset polygon into axis-aligned segments (no diagonals).
+        // For each row z compute the polygon's [lo,hi] x-span, then quantize those extents into SEGMENT-tall
+        // bands so the left/right walls are SEGMENT-long straight runs joined by horizontal jogs. The wall is
+        // the boundary of that orthogonal region; corners (cells with two outside sides) become 6-tall pillars.
+        int zMin = Integer.MAX_VALUE, zMax = Integer.MIN_VALUE;
+        for (int[] v : ring) { zMin = Math.min(zMin, v[1]); zMax = Math.max(zMax, v[1]); }
+        int rows = zMax - zMin + 1;
+        int[] lo = new int[rows], hi = new int[rows];
+        java.util.Arrays.fill(lo, Integer.MAX_VALUE);
+        java.util.Arrays.fill(hi, Integer.MIN_VALUE);
+        computeRowSpans(ring, zMin, lo, hi);
+        for (int b = 0; b * SEGMENT < rows; b++) {
+            int z0 = b * SEGMENT, z1 = Math.min(rows - 1, z0 + SEGMENT - 1);
+            int bl = Integer.MAX_VALUE, bh = Integer.MIN_VALUE;
+            for (int zi = z0; zi <= z1; zi++) if (lo[zi] <= hi[zi]) { bl = Math.min(bl, lo[zi]); bh = Math.max(bh, hi[zi]); }
+            for (int zi = z0; zi <= z1; zi++) { lo[zi] = bl; hi[zi] = bh; }
         }
-        if (columns.size() > MAX_COLUMNS) return null;
 
-        // Four gates at the midpoints of the polygon's sides (~1/8, 3/8, 5/8, 7/8 of the perimeter), each
-        // two perimeter columns wide. Built from fake cobblestone so only village defenders pass through.
-        int n = columns.size();
-        java.util.Set<Integer> doorS = new java.util.HashSet<>();
-        if (n >= 8) {
-            for (int k = 0; k < 4; k++) {
-                int s0 = (int) Math.round((k + 0.5) / 4.0 * n) % n;
-                doorS.add(s0);
-                doorS.add((s0 + 1) % n);
+        // Collect boundary cells; outward = the outside side (a corner has >=2 outside sides -> pillar).
+        List<Col> cells = new ArrayList<>();
+        for (int zi = 0; zi < rows; zi++) {
+            if (lo[zi] > hi[zi]) continue;
+            int z = zMin + zi;
+            for (int x = lo[zi]; x <= hi[zi]; x++) {
+                boolean wN = !inRegion(lo, hi, zMin, x, z - 1);
+                boolean wS = !inRegion(lo, hi, zMin, x, z + 1);
+                boolean wE = !inRegion(lo, hi, zMin, x + 1, z);
+                boolean wW = !inRegion(lo, hi, zMin, x - 1, z);
+                int cnt = (wN ? 1 : 0) + (wS ? 1 : 0) + (wE ? 1 : 0) + (wW ? 1 : 0);
+                if (cnt == 0) continue; // interior cell
+                Direction o = cnt >= 2 ? null // corner -> pillar
+                        : wN ? Direction.NORTH : wS ? Direction.SOUTH : wE ? Direction.EAST : Direction.WEST;
+                cells.add(new Col(x, z, o));
             }
         }
+        if (cells.isEmpty() || cells.size() > MAX_COLUMNS) return null;
 
-        // Assign arc-length index s in perimeter order; expand each column into its course stack.
+        // Gates: one 2-wide fake-cobblestone passage at the middle of each of the four sides.
+        java.util.Set<Long> doors = pickDoors(cells, centroid);
+
         List<WallBlock> blocks = new ArrayList<>();
-        int s = 0;
         int minY = level.getMinBuildHeight();
-        for (Col col : columns.values()) {
-            col.s = s++;
+        for (Col col : cells) {
             if (!level.hasChunk(col.x >> 4, col.z >> 4)) continue;     // never build into unloaded terrain
             int surfaceY = surfaceY(level, col.x, col.z, minY);
             if (surfaceY <= minY) continue;                            // void column -> skip
-            expandColumn(col, surfaceY, blocks, doorS.contains(col.s));
+            expandColumn(col, surfaceY, blocks, doors.contains(pack(col.x, col.z)));
             if (blocks.size() > MAX_BLOCKS) return null;
         }
         if (blocks.isEmpty()) return null;
@@ -106,10 +114,17 @@ public final class WallPlanner {
         return new WallPlan(gravemind, blocks);
     }
 
-    // --- column -> 5-course block stack ---
+    // --- column -> course stack ---
 
     private static void expandColumn(Col col, int surfaceY, List<WallBlock> out, boolean isDoor) {
         int base = surfaceY + 1;                 // wall sits ON the ground (one above the top solid block)
+
+        // Corners (where two straight segments meet): a plain 6-tall cobblestone pillar, nothing else.
+        if (col.outward == null) {
+            for (int c = 0; c <= 5; c++) out.add(cobble(col.x, base + c, col.z, c));
+            return;
+        }
+
         Direction o = col.outward;
         Direction in = o.getOpposite();          // toward the village interior
 
@@ -125,14 +140,17 @@ public final class WallPlanner {
             return;
         }
 
-        boolean loophole = (col.s % 5 == 2);     // a firing slit every 5 blocks
-        boolean ladder = (col.s % 15 == 0);      // a climb ladder every 15 blocks
-        boolean merlon = (col.s % 2 == 0);       // battlements: alternating merlon / gap
-        boolean torch = (col.s % 6 == 3) && !ladder; // light the inside face (not on ladder columns)
+        // Spacing runs ALONG the straight segment: vertical segments (outward E/W) along Z, horizontal (N/S)
+        // along X. floorMod keeps it correct for negative coordinates.
+        int coord = (o == Direction.EAST || o == Direction.WEST) ? col.z : col.x;
+        boolean loophole = Math.floorMod(coord, 5) == 2;   // a firing slit every 5 blocks
+        boolean ladder = Math.floorMod(coord, 15) == 0;    // a climb ladder every 15 blocks
+        boolean merlon = Math.floorMod(coord, 2) == 0;     // battlements: alternating merlon / gap
+        boolean torch = Math.floorMod(coord, 6) == 3 && !ladder; // light the inside face (not on ladder columns)
 
         // Stairs form the loophole. FACING points toward the raised step; we face it INWARD so the open
-        // notch (and thus the firing slit) opens OUTWARD. (Verify visually via the Phase-2 debug paste;
-        // if the slit faces the wrong way, flip this single value to `o`.)
+        // notch (and thus the firing slit) opens OUTWARD. (Verify visually via the debug paste; if the slit
+        // faces the wrong way, flip this single value to `o`.)
         Direction stairFacing = in;
 
         out.add(cobble(col.x, base, col.z, 0));
@@ -281,48 +299,80 @@ public final class WallPlanner {
         return (long) (a[0] - o[0]) * (b[1] - o[1]) - (long) (a[1] - o[1]) * (b[0] - o[0]);
     }
 
-    /** Outward cardinal for edge a->b: the perpendicular that points away from the polygon centroid. */
-    private static Direction outwardCardinal(int[] a, int[] b, double[] centroid) {
-        double ex = b[0] - a[0], ez = b[1] - a[1];
-        double nx = ez, nz = -ex;                       // one perpendicular
-        double mx = (a[0] + b[0]) / 2.0, mz = (a[1] + b[1]) / 2.0;
-        if ((mx - centroid[0]) * nx + (mz - centroid[1]) * nz < 0) { nx = -nx; nz = -nz; } // make it outward
-        return Math.abs(nx) >= Math.abs(nz)
-                ? (nx >= 0 ? Direction.EAST : Direction.WEST)
-                : (nz >= 0 ? Direction.SOUTH : Direction.NORTH);
-    }
-
-    /** 4-connected integer line a->b (no diagonal-only steps, so the wall is gap-free). */
-    private static void line4(int x0, int z0, int x1, int z1, boolean includeFirst, BiConsumer<Integer, Integer> out) {
-        int dx = Math.abs(x1 - x0), dz = Math.abs(z1 - z0);
-        int sx = Integer.signum(x1 - x0), sz = Integer.signum(z1 - z0);
-        int x = x0, z = z0;
-        if (includeFirst) out.accept(x, z);
-        int err = dx - dz;
-        while (x != x1 || z != z1) {
-            int e2 = 2 * err;
-            boolean stepX = e2 > -dz;
-            boolean stepZ = e2 < dx;
-            if (stepX && stepZ) {            // diagonal -> split into two orthogonal steps
-                err -= dz; x += sx; out.accept(x, z);
-                err += dx; z += sz; out.accept(x, z);
-            } else if (stepX) {
-                err -= dz; x += sx; out.accept(x, z);
-            } else {
-                err += dx; z += sz; out.accept(x, z);
+    /** For each row z in [zMin, zMin+lo.length), the convex polygon's min/max x (its scanline span). */
+    private static void computeRowSpans(List<int[]> ring, int zMin, int[] lo, int[] hi) {
+        int n = ring.size();
+        for (int i = 0; i < n; i++) {
+            int[] a = ring.get(i), b = ring.get((i + 1) % n);
+            int az = a[1], bz = b[1], ax = a[0], bx = b[0];
+            if (az == bz) { // horizontal edge: spans both endpoints at this z
+                spanAt(lo, hi, zMin, az, Math.min(ax, bx));
+                spanAt(lo, hi, zMin, az, Math.max(ax, bx));
+                continue;
+            }
+            int z0 = Math.min(az, bz), z1 = Math.max(az, bz);
+            for (int z = z0; z <= z1; z++) {
+                int x = (int) Math.round(ax + (double) (bx - ax) * (z - az) / (bz - az));
+                spanAt(lo, hi, zMin, z, x);
             }
         }
+    }
+
+    private static void spanAt(int[] lo, int[] hi, int zMin, int z, int x) {
+        int zi = z - zMin;
+        if (zi < 0 || zi >= lo.length) return;
+        lo[zi] = Math.min(lo[zi], x);
+        hi[zi] = Math.max(hi[zi], x);
+    }
+
+    /** True if (x,z) is inside the banded orthogonal region. */
+    private static boolean inRegion(int[] lo, int[] hi, int zMin, int x, int z) {
+        int zi = z - zMin;
+        if (zi < 0 || zi >= lo.length || lo[zi] > hi[zi]) return false;
+        return x >= lo[zi] && x <= hi[zi];
+    }
+
+    /** Pick one gate cell at the middle of each of the four sides, plus its along-segment neighbour (2 wide). */
+    private static java.util.Set<Long> pickDoors(List<Col> cells, double[] centroid) {
+        Col cn = null, cs = null, ce = null, cw = null;
+        double bn = Double.MAX_VALUE, bs = Double.MAX_VALUE, be = Double.MAX_VALUE, bw = Double.MAX_VALUE;
+        for (Col c : cells) {
+            if (c.outward == null) continue; // corners aren't gates
+            switch (c.outward) {
+                case NORTH -> { double d = Math.abs(c.x - centroid[0]); if (d < bn) { bn = d; cn = c; } }
+                case SOUTH -> { double d = Math.abs(c.x - centroid[0]); if (d < bs) { bs = d; cs = c; } }
+                case EAST  -> { double d = Math.abs(c.z - centroid[1]); if (d < be) { be = d; ce = c; } }
+                case WEST  -> { double d = Math.abs(c.z - centroid[1]); if (d < bw) { bw = d; cw = c; } }
+                default -> { }
+            }
+        }
+        java.util.Map<Long, Col> byPos = new java.util.HashMap<>();
+        for (Col c : cells) byPos.put(pack(c.x, c.z), c);
+        java.util.Set<Long> doors = new java.util.HashSet<>();
+        markDoor(doors, byPos, cn);
+        markDoor(doors, byPos, cs);
+        markDoor(doors, byPos, ce);
+        markDoor(doors, byPos, cw);
+        return doors;
+    }
+
+    private static void markDoor(java.util.Set<Long> doors, java.util.Map<Long, Col> byPos, Col c) {
+        if (c == null) return;
+        doors.add(pack(c.x, c.z));
+        int nx = c.x, nz = c.z;
+        if (c.outward == Direction.NORTH || c.outward == Direction.SOUTH) nx++; else nz++;
+        Col nb = byPos.get(pack(nx, nz));
+        if (nb != null && nb.outward == c.outward) doors.add(pack(nx, nz)); // 2-wide if the neighbour matches
     }
 
     private static long pack(int x, int z) {
         return ((long) x << 32) | (z & 0xffffffffL);
     }
 
-    /** One wall column: 2D position, perimeter arc index, and the outward cardinal of its edge. */
+    /** One wall column: 2D position and its outward cardinal (null = a corner, built as a 6-tall pillar). */
     private static final class Col {
         final int x, z;
         final Direction outward;
-        int s;
         Col(int x, int z, Direction outward) { this.x = x; this.z = z; this.outward = outward; }
     }
 }

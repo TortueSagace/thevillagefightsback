@@ -27,6 +27,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -71,10 +72,13 @@ public final class GravemindEvents {
 
     private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a gravemind for the wall plan
 
-    private static final int COBBLE_SCAN_RADIUS = 80; // survey cobblestone this far (horizontally) for the wall
+    private static final int COBBLE_SCAN_RADIUS = 80; // survey village material this far (horizontally) for the wall
     private static final int COBBLE_Y_BAND = 10;      // ... within +/- this many blocks of the gravemind's height
     private static final double ENSURE_GOAL_RADIUS = 96.0; // give villagers within this the build goal
-    private static final Predicate<BlockState> IS_COBBLE = s -> s.is(Blocks.COBBLESTONE);
+    // The man-made "village material" the wall envelops: cobblestone, plus any planks or fences (house walls,
+    // floors, fences). All are ~never natural at the surface, so together they track the built village well.
+    private static final Predicate<BlockState> IS_VILLAGE_MATERIAL = s ->
+            s.is(Blocks.COBBLESTONE) || s.is(BlockTags.PLANKS) || s.is(BlockTags.FENCES);
 
     // Back-off: graveminds that survey but yield no wall (no cobble / too large) aren't retried for a while,
     // so a no-plan village can't re-run the survey every 10s. Cleared once a plan forms or the gravemind is gone.
@@ -165,9 +169,9 @@ public final class GravemindEvents {
         int xMin = center.getX() - r, xMax = center.getX() + r;
         int zMin = center.getZ() - r, zMax = center.getZ() + r;
 
-        // Iterate chunk by chunk. The vast majority of the survey area is grass with no cobblestone in its
-        // palette, so we skip those whole chunks via a cheap palette pre-filter and only ever read blocks in
-        // the few chunks that actually contain cobble -- full resolution, a fraction of the work.
+        // Iterate chunk by chunk. The vast majority of the survey area is grass with no village material in
+        // its palette, so we skip those whole chunks via a cheap palette pre-filter and only ever read blocks
+        // in the few chunks that actually contain some -- full resolution, a fraction of the work.
         for (int cx = xMin >> 4; cx <= (xMax >> 4); cx++) {
             for (int cz = zMin >> 4; cz <= (zMax >> 4); cz++) {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
@@ -175,7 +179,7 @@ public final class GravemindEvents {
                 boolean maybe = false;
                 for (int idx = secLo; idx <= secHi && !maybe; idx++) {
                     LevelChunkSection sec = chunk.getSection(idx);
-                    if (!sec.hasOnlyAir() && sec.maybeHas(IS_COBBLE)) maybe = true;
+                    if (!sec.hasOnlyAir() && sec.maybeHas(IS_VILLAGE_MATERIAL)) maybe = true;
                 }
                 if (!maybe) continue;
                 int bx0 = Math.max(xMin, cx << 4), bx1 = Math.min(xMax, (cx << 4) + 15);
@@ -183,7 +187,7 @@ public final class GravemindEvents {
                 for (int x = bx0; x <= bx1; x++) {
                     for (int z = bz0; z <= bz1; z++) {
                         for (int y = yHi; y >= yLo; y--) {
-                            if (level.getBlockState(m.set(x, y, z)).is(Blocks.COBBLESTONE)) {
+                            if (IS_VILLAGE_MATERIAL.test(level.getBlockState(m.set(x, y, z)))) {
                                 pts.add(new BlockPos(x, 0, z));
                                 break;
                             }

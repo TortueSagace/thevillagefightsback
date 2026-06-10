@@ -6,6 +6,7 @@ import java.util.List;
 import com.example.villagergunners.goal.FlareRallyGoal;
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
+import com.example.villagergunners.goal.StoneAxeDefenseGoal;
 import com.example.villagergunners.goal.TntFleeGoal;
 import com.example.villagergunners.goal.WallBuildGoal;
 

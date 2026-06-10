@@ -24,8 +24,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * what right now) live in {@link WallBuild}, not here.
  */
 public final class WallPlan {
-    /** Number of vertical courses in a wall segment (0..4). */
-    public static final int COURSES = 5;
+    /** Number of vertical courses (0..4 for the curtain; corner pillars also fill course 5). */
+    public static final int COURSES = 6;
 
     private final GlobalPos gravemind;
     private final List<WallBlock> blocks;   // sorted by (course, x, z, type)
