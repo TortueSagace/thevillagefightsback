@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": { "layer0": "gobacktoyourworld:item/emerald_chestplate" }
+}

@@ -23,6 +23,7 @@ public class VillagerGunners {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModBlocks.register(modBus);
         ModItems.register(modBus);
+        ModArmor.register(modBus);
         ModEffects.register(modBus);
         ModEntities.register(modBus);
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
