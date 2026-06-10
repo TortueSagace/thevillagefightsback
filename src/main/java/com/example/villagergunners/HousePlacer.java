@@ -105,6 +105,9 @@ public final class HousePlacer {
             BlockPos local = new BlockPos(posTag.getInt(0), posTag.getInt(1), posTag.getInt(2));
             BlockState state = palette[idx].mirror(Mirror.NONE).rotate(rotation);
             if (state.isAir()) continue; // already carved to air
+            // Never place a Blue/Green TNT that got captured in a structure -- it would detonate and build
+            // another structure inside this one (e.g. a stray Blue TNT in the tower template).
+            if (state.getBlock() instanceof BlueTntBlock || state.getBlock() instanceof GreenTntBlock) continue;
             CompoundTag nbt = b.contains("nbt") ? b.getCompound("nbt") : null;
             BlockPos world = StructureTemplate.calculateRelativePosition(settings, local).offset(offset);
             boolean def = HouseBuildManager.isDeferred(state);

@@ -18,6 +18,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -49,7 +51,7 @@ public final class FoundingManager {
     private static final int FALLBACK_RADIUS = 3;
     private static final int BUBBLE_SEARCH = 5;        // search this far for a 1x1x2 air bubble
     private static final int GUARDS = 4;
-    private static final int SCATTER_TICKS = 40;       // settlers run for 2s before lighting the TNT
+    private static final int SCATTER_TICKS = 20;       // settlers run for 1s before dropping the TNT
     private static final int POST_EXPLODE_TICKS = 20;  // wall phase begins 1s after the blast
     private static final long FOUNDING_DURATION = SCATTER_TICKS + BlueTntBlock.FUSE_TICKS + POST_EXPLODE_TICKS;
 
@@ -165,6 +167,14 @@ public final class FoundingManager {
         v.getPersistentData().putBoolean(NBT_FOUNDING, true);
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant goals
         v.goalSelector.addGoal(1, new FoundingSettlerGoal(v, gravemind)); // founding takes priority while it runs
+
+        // Drop a jack o'lantern right under its feet (a lit, solid footing) -- unless that block is too
+        // tough to break (>= 1200 blast resistance: the gravemind / reinforced glass).
+        BlockPos floor = spot.below();
+        BlockState floorState = level.getBlockState(floor);
+        if (floorState.isAir() || floorState.getBlock().getExplosionResistance() < 1200.0F) {
+            level.setBlock(floor, Blocks.JACK_O_LANTERN.defaultBlockState(), 3);
+        }
     }
 
     private static void spawnGuards(ServerLevel level, BlockPos gravemind) {
