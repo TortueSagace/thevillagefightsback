@@ -142,6 +142,15 @@ public final class WallPlan {
         return null;
     }
 
+    /** Helper selection for a builder whose own layer is done: the lowest unfinished layer's next block. */
+    public WallBlock nextAnyCourse(Level level, Predicate<BlockPos> skip) {
+        for (int c = 0; c < COURSES; c++) {
+            WallBlock t = nextForCourse(level, c, skip);
+            if (t != null) return t;
+        }
+        return null;
+    }
+
     // Lazy index (packed position -> course) for O(1) repair lookups; rebuilt on first use / after load.
     private transient java.util.Map<Long, Integer> posCourse;
 

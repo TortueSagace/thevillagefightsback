@@ -94,15 +94,20 @@ public class WallBuildGoal extends Goal {
         WallPlan p = WallBuild.planFor(sl, villager.blockPosition());
         if (p == null || p.isComplete()) return false;
         int course = BuilderRole.course(villager);
-        // Per-layer stagger: builder for course X waits ~2*X seconds so the layers below get ahead and it can
-        // stand on them rather than scaffolding. All builders sweep the same perimeter order from the start.
         long now = sl.getGameTime();
-        if (now < p.startTick() + (long) course * STAGGER_TICKS) return false;
-        WallBlock t = p.nextForCourse(sl, course, pos -> {
+        java.util.function.Predicate<BlockPos> skipPred = pos -> {
             Long u = skipUntil.get(pos.asLong());
             return u != null && now < u;
-        });
-        if (t == null) return false; // my layer is done (or nothing reachable right now)
+        };
+        // Prefer my own layer once my stagger has elapsed (builder for course X waits ~2*X seconds so the
+        // layers below get ahead). Until then -- or once my own layer is finished -- help finish the lowest
+        // unfinished layer, so no builder ever stands idle while the wall is incomplete.
+        WallBlock t = null;
+        if (now >= p.startTick() + (long) course * STAGGER_TICKS) {
+            t = p.nextForCourse(sl, course, skipPred);
+        }
+        if (t == null) t = p.nextAnyCourse(sl, skipPred);
+        if (t == null) return false; // whole wall is built
         this.plan = p;
         this.target = t;
         this.stand = interiorColumn(t.pos());
@@ -205,33 +210,49 @@ public class WallBuildGoal extends Goal {
     }
 
     private void tickPillar() {
-        // Stand over the interior column before stacking up.
-        double hx = villager.getX() - (stand.getX() + 0.5);
-        double hz = villager.getZ() - (stand.getZ() + 0.5);
-        if (hx * hx + hz * hz > 1.2) {
-            villager.getNavigation().moveTo(stand.getX() + 0.5, villager.getY(), stand.getZ() + 0.5, BUILD_SPEED);
-            return;
-        }
         villager.getNavigation().stop();
-
-        int feetY = villager.getBlockY();
-        if (feetY >= target.pos().getY() - 1) { // high enough to reach the target by hand
+        BlockPos tp = target.pos();
+        double d2 = villager.position().distanceToSqr(tp.getX() + 0.5, tp.getY() + 0.5, tp.getZ() + 0.5);
+        if (d2 <= REACH_SQR && placeable(tp)) { // close enough now -> place
             phase = Phase.PLACE;
             placeTimer = PLACE_DELAY;
             return;
         }
-
-        BlockPos feet = new BlockPos(stand.getX(), feetY, stand.getZ());
-        // Dig out anything blocking the climb (progressively, with the right tool) before stepping up.
-        if (clearBlocker(feet.above()) || clearBlocker(feet.above(2))) return;
         if (pillarSteps++ >= MAX_PILLAR) { abandon(); return; }
 
-        if (level().getBlockState(feet).canBeReplaced()) {
-            level().setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
-            plan.addScaffold(feet);
+        int fx = villager.getBlockX(), fy = villager.getBlockY(), fz = villager.getBlockZ();
+        int hx = tp.getX() - fx, hz = tp.getZ() - fz;
+
+        // Climb straight up only when we're already over (within 1 of) the target column; otherwise we'd
+        // pillar in the wrong place. Scaffolds are always placed AT/NEXT TO us so we can actually reach them.
+        if (tp.getY() > fy && Math.abs(hx) <= 1 && Math.abs(hz) <= 1) {
+            BlockPos feet = new BlockPos(fx, fy, fz);
+            if (clearBlocker(feet.above()) || clearBlocker(feet.above(2))) return; // dig head room first
+            placeScaffold(feet);
+            villager.setPos(fx + 0.5, fy + 1, fz + 0.5); // step up onto it
+            return;
         }
-        // Step up onto the scaffold we just placed (a reliable, player-like climb).
-        villager.setPos(stand.getX() + 0.5, feetY + 1, stand.getZ() + 0.5);
+
+        // Step one block horizontally toward the target, laying a stepping-stone scaffold beside us.
+        Direction d = Math.abs(hx) >= Math.abs(hz)
+                ? (hx >= 0 ? Direction.EAST : Direction.WEST)
+                : (hz >= 0 ? Direction.SOUTH : Direction.NORTH);
+        BlockPos step = new BlockPos(fx, fy, fz).relative(d);
+        if (clearBlocker(step) || clearBlocker(step.above())) return; // clear the cell + head room
+        if (!isStandable(step.below())) placeScaffold(step.below()); // floor to walk onto
+        villager.setPos(step.getX() + 0.5, fy, step.getZ() + 0.5);
+    }
+
+    private void placeScaffold(BlockPos pos) {
+        if (level().getBlockState(pos).canBeReplaced()) {
+            level().setBlock(pos, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+            plan.addScaffold(pos);
+        }
+    }
+
+    private boolean isStandable(BlockPos pos) {
+        BlockState s = level().getBlockState(pos);
+        return s.blocksMotion() || s.is(ModBlocks.CHEAP_SCAFFOLD.get());
     }
 
     private void tickPlace() {

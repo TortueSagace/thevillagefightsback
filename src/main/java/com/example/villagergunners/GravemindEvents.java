@@ -152,6 +152,7 @@ public final class GravemindEvents {
             Villager v = free.hasNext() ? free.next() : spawnBuilder(level, gravemind);
             if (v == null) continue;
             BuilderRole.promote(v, c);
+            GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted/spawned builder can build
         }
     }
 
