@@ -85,6 +85,12 @@ public final class GunnerEvents {
             mob.setPathfindingMalus(ModPathTypes.ALLY_PASSABLE, 0.0F);
         }
 
+        // A villager far from every gravemind can found a new home with a Blue TNT (independent of the
+        // combat upgrade). Idempotent: goals are re-added on every load; the goal settles at most once.
+        if (mob instanceof Villager settler && !hasGoal(settler, com.example.villagergunners.goal.SettlerGoal.class)) {
+            settler.goalSelector.addGoal(6, new com.example.villagergunners.goal.SettlerGoal(settler));
+        }
+
         // Defenders start NERFED and permanently upgrade to the full gun loadout once they have been near a
         // level-3 Village Gravemind (UpgradeEvents flips the flag). Until then: villagers fight only with a
         // stone axe (and only when badly hurt), guards and golems are vanilla.
