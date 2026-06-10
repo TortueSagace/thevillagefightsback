@@ -80,15 +80,16 @@ public final class DomeBuilder {
                 double f = Math.max(0.0, 1.0 - (d * d) / (R * R));
                 top.put(k, H + (int) Math.round(rise * f));
             }
-            // Watertight fill: each column drops to just above its lowest orthogonal neighbour (seals steps).
+            // Watertight fill: each column drops to its LOWEST orthogonal neighbour's top, so adjacent columns
+            // always share a layer -> no holes (even at diagonal steps), a continuous shell.
             for (long k : interior) {
                 int x = kx(k), z = kz(k), yTop = top.get(k);
                 int floorY = yTop;
                 Integer n;
-                if ((n = top.get(key(x + 1, z))) != null) floorY = Math.min(floorY, n + 1);
-                if ((n = top.get(key(x - 1, z))) != null) floorY = Math.min(floorY, n + 1);
-                if ((n = top.get(key(x, z + 1))) != null) floorY = Math.min(floorY, n + 1);
-                if ((n = top.get(key(x, z - 1))) != null) floorY = Math.min(floorY, n + 1);
+                if ((n = top.get(key(x + 1, z))) != null) floorY = Math.min(floorY, n);
+                if ((n = top.get(key(x - 1, z))) != null) floorY = Math.min(floorY, n);
+                if ((n = top.get(key(x, z + 1))) != null) floorY = Math.min(floorY, n);
+                if ((n = top.get(key(x, z - 1))) != null) floorY = Math.min(floorY, n);
                 if (floorY < H) floorY = H;                       // never below the rim plane
                 for (int y = floorY; y <= yTop; y++) order.add(place(x, y, z, glass));
             }
