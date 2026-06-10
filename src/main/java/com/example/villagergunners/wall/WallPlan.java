@@ -28,18 +28,28 @@ public final class WallPlan {
     public static final int COURSES = 6;
 
     private final GlobalPos gravemind;
-    private final List<WallBlock> blocks;   // sorted by (course, x, z, type)
-    private final int[] courseStart;        // courseStart[c]..courseStart[c+1] = blocks of course c; len COURSES+1
+    private final List<List<WallBlock>> columns; // perimeter-ordered columns (each a course stack); for the conga
+    private final List<WallBlock> blocks;        // flat, sorted by (course, x, z, type); for completion/repair
+    private final int[] courseStart;             // courseStart[c]..courseStart[c+1] = blocks of course c
     private final List<BlockPos> scaffoldTemp = new ArrayList<>();
     private boolean complete;
+    private long startTick;                      // gametime the plan was laid out (per-layer builder stagger)
 
     // Transient build cursor: the lowest course that still has unbuilt blocks. Only advances forward.
     private transient int cursorCourse;
 
-    public WallPlan(GlobalPos gravemind, List<WallBlock> blocks) {
+    public WallPlan(GlobalPos gravemind, List<List<WallBlock>> columns) {
         this.gravemind = gravemind;
-        this.blocks = blocks;
-        this.courseStart = computeCourseStarts(blocks);
+        this.columns = columns;
+        List<WallBlock> flat = new ArrayList<>();
+        for (List<WallBlock> col : columns) flat.addAll(col);
+        flat.sort(java.util.Comparator
+                .comparingInt(WallBlock::course)
+                .thenComparingInt(b -> b.pos().getX())
+                .thenComparingInt(b -> b.pos().getZ())
+                .thenComparingInt(b -> b.type().ordinal()));
+        this.blocks = flat;
+        this.courseStart = computeCourseStarts(flat);
     }
 
     private static int[] computeCourseStarts(List<WallBlock> blocks) {
@@ -115,6 +125,23 @@ public final class WallPlan {
         return best;
     }
 
+    public long startTick() { return startTick; }
+    public void setStartTick(long t) { this.startTick = t; }
+    public int columnCount() { return columns.size(); }
+
+    /**
+     * Conga selection: the first not-yet-built block of {@code course}, in perimeter (column) order. Each of
+     * the layer-builders calls this for its own course and sweeps the wall the same way from the same start.
+     */
+    public WallBlock nextForCourse(Level level, int course, Predicate<BlockPos> skip) {
+        for (List<WallBlock> col : columns) {
+            for (WallBlock wb : col) {
+                if (wb.course() == course && !satisfied(level, wb) && !skip.test(wb.pos())) return wb;
+            }
+        }
+        return null;
+    }
+
     // Lazy index (packed position -> course) for O(1) repair lookups; rebuilt on first use / after load.
     private transient java.util.Map<Long, Integer> posCourse;
 
@@ -184,15 +211,19 @@ public final class WallPlan {
         tag.putString("gm_dim", gravemind.dimension().location().toString());
         tag.putLong("gm_pos", gravemind.pos().asLong());
         tag.putBoolean("complete", complete);
+        tag.putLong("startTick", startTick);
         ListTag list = new ListTag();
-        for (WallBlock wb : blocks) {
-            CompoundTag c = new CompoundTag();
-            c.putLong("p", wb.pos().asLong());
-            c.putByte("t", (byte) wb.type().ordinal());
-            c.putByte("f", (byte) (wb.facing() == null ? -1 : wb.facing().get3DDataValue()));
-            c.putBoolean("h", wb.topHalf());
-            c.putByte("c", (byte) wb.course());
-            list.add(c);
+        for (int ci = 0; ci < columns.size(); ci++) {
+            for (WallBlock wb : columns.get(ci)) {
+                CompoundTag c = new CompoundTag();
+                c.putLong("p", wb.pos().asLong());
+                c.putByte("t", (byte) wb.type().ordinal());
+                c.putByte("f", (byte) (wb.facing() == null ? -1 : wb.facing().get3DDataValue()));
+                c.putBoolean("h", wb.topHalf());
+                c.putByte("c", (byte) wb.course());
+                c.putInt("ci", ci); // perimeter column index, to rebuild the column order on load
+                list.add(c);
+            }
         }
         tag.put("blocks", list);
         long[] scaf = new long[scaffoldTemp.size()];
@@ -205,21 +236,23 @@ public final class WallPlan {
         ResourceKey<Level> dim = ResourceKey.create(
                 Registries.DIMENSION, new ResourceLocation(tag.getString("gm_dim")));
         GlobalPos gm = GlobalPos.of(dim, BlockPos.of(tag.getLong("gm_pos")));
-        List<WallBlock> blocks = new ArrayList<>();
+        java.util.TreeMap<Integer, List<WallBlock>> byColumn = new java.util.TreeMap<>();
         ListTag list = tag.getList("blocks", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
             byte f = c.getByte("f");
             Direction facing = f < 0 ? null : Direction.from3DDataValue(f);
-            blocks.add(new WallBlock(
+            WallBlock wb = new WallBlock(
                     BlockPos.of(c.getLong("p")),
                     WallBlock.BlockType.values()[c.getByte("t")],
                     facing,
                     c.getBoolean("h"),
-                    c.getByte("c")));
+                    c.getByte("c"));
+            byColumn.computeIfAbsent(c.getInt("ci"), k -> new ArrayList<>()).add(wb);
         }
-        WallPlan plan = new WallPlan(gm, blocks);
+        WallPlan plan = new WallPlan(gm, new ArrayList<>(byColumn.values())); // TreeMap -> column order preserved
         plan.complete = tag.getBoolean("complete");
+        plan.startTick = tag.getLong("startTick");
         for (long l : tag.getLongArray("scaffold")) plan.scaffoldTemp.add(BlockPos.of(l));
         return plan;
     }

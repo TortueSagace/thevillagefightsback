@@ -46,11 +46,14 @@ public class WallBuildGoal extends Goal {
     private static final int MAX_BRIDGE = 8;           // dirt-bridge length cap before giving up
     private static final int PLACE_DELAY = 8;          // brief "working" pause before a block appears
     private static final int DESCEND_TIMEOUT = 80;     // ticks to spend climbing down before moving on
+    private static final int STAGGER_TICKS = 40;       // each higher layer starts 2s after the one below
+    private static final int SKIP_TICKS = 600;         // skip an unreachable cell for ~30s, then retry
     private static final float TOUGH_HARDNESS = 25.0F; // at/above this hardness a block can't be dug (obsidian=50)
 
     private enum Phase { APPROACH, PILLAR, PLACE, DESCEND }
 
     private final Villager villager;
+    private final java.util.Map<Long, Long> skipUntil = new java.util.HashMap<>(); // cells we couldn't reach
 
     private WallPlan plan;
     private WallBlock target;
@@ -88,13 +91,18 @@ public class WallBuildGoal extends Goal {
         if (!BuilderRole.isBuilder(villager)) return false; // only the tagged builders build
         if (villager.tickCount % SELECT_THROTTLE != 0) return false;
         if (!(level() instanceof ServerLevel sl)) return false;
-        long now = sl.getGameTime();
         WallPlan p = WallBuild.planFor(sl, villager.blockPosition());
-        if (p == null) return false;
-        WallBlock t = p.nextUnbuiltFor(sl, villager.blockPosition(),
-                pos -> WallBuild.isReserved(p.gravemind(), pos, now));
-        if (t == null) return false;
-        if (!WallBuild.reserve(p.gravemind(), t.pos(), now)) return false;
+        if (p == null || p.isComplete()) return false;
+        int course = BuilderRole.course(villager);
+        // Per-layer stagger: builder for course X waits ~2*X seconds so the layers below get ahead and it can
+        // stand on them rather than scaffolding. All builders sweep the same perimeter order from the start.
+        long now = sl.getGameTime();
+        if (now < p.startTick() + (long) course * STAGGER_TICKS) return false;
+        WallBlock t = p.nextForCourse(sl, course, pos -> {
+            Long u = skipUntil.get(pos.asLong());
+            return u != null && now < u;
+        });
+        if (t == null) return false; // my layer is done (or nothing reachable right now)
         this.plan = p;
         this.target = t;
         this.stand = interiorColumn(t.pos());
@@ -129,7 +137,6 @@ public class WallBuildGoal extends Goal {
 
     @Override
     public void stop() {
-        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
         villager.getNavigation().stop();
         clearDig();
         unequipTool();
@@ -147,7 +154,6 @@ public class WallBuildGoal extends Goal {
         if (phase == Phase.DESCEND) { tickDescend(); return; }
         if (target == null) return;
 
-        WallBuild.refresh(plan.gravemind(), target.pos(), level().getGameTime());
         if (digPos != null) { tickDig(); return; } // a progressive break takes precedence
 
         villager.getLookControl().setLookAt(
@@ -246,9 +252,8 @@ public class WallBuildGoal extends Goal {
         finishTarget();
     }
 
-    /** Done with the current target (built or given up): release it, then descend our scaffolds or re-seek. */
+    /** Done with the current target (built or given up): then descend our scaffolds or re-seek. */
     private void finishTarget() {
-        WallBuild.release(plan.gravemind(), target.pos());
         descendY = groundBelow(stand);
         target = null;
         // If we built up high, prefer climbing back down our own scaffolds before seeking the next block.
@@ -371,9 +376,9 @@ public class WallBuildGoal extends Goal {
     }
 
     private void abandon() {
-        // Keep the (short-TTL) reservation instead of releasing it, so we -- and other builders -- skip this
-        // unreachable/too-tough block for ~5s and work elsewhere, then retry it once the reservation lapses.
-        // This stops a builder spinning on a block it can't get to. canContinueToUse() then ends the goal.
+        // Skip an unreachable/too-tough cell for a while so we don't spin on it; canUse() then picks the next
+        // cell of our course, and this one is retried once the skip lapses.
+        if (target != null) skipUntil.put(target.pos().asLong(), level().getGameTime() + SKIP_TICKS);
         target = null;
     }
 

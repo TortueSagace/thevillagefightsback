@@ -92,26 +92,27 @@ public final class WallPlanner {
         }
         if (cells.isEmpty() || cells.size() > MAX_COLUMNS) return null;
 
+        // Order the columns AROUND the village centre (by angle) so the per-layer builders all sweep the
+        // perimeter the same way from the same start point.
+        cells.sort(Comparator.comparingDouble(c -> Math.atan2(c.z - centroid[1], c.x - centroid[0])));
+
         // Gates: one 2-wide fake-cobblestone passage at the middle of each of the four sides.
         java.util.Set<Long> doors = pickDoors(cells, centroid);
 
-        List<WallBlock> blocks = new ArrayList<>();
+        List<List<WallBlock>> columns = new ArrayList<>();
+        int total = 0;
         int minY = level.getMinBuildHeight();
         for (Col col : cells) {
             if (!level.hasChunk(col.x >> 4, col.z >> 4)) continue;     // never build into unloaded terrain
             int surfaceY = surfaceY(level, col.x, col.z, minY);
             if (surfaceY <= minY) continue;                            // void column -> skip
-            expandColumn(col, surfaceY, blocks, doors.contains(pack(col.x, col.z)));
-            if (blocks.size() > MAX_BLOCKS) return null;
+            List<WallBlock> colBlocks = new ArrayList<>();
+            expandColumn(col, surfaceY, colBlocks, doors.contains(pack(col.x, col.z)));
+            if (!colBlocks.isEmpty()) { columns.add(colBlocks); total += colBlocks.size(); }
+            if (total > MAX_BLOCKS) return null;
         }
-        if (blocks.isEmpty()) return null;
-
-        blocks.sort(Comparator
-                .comparingInt(WallBlock::course)
-                .thenComparingInt(b -> b.pos().getX())
-                .thenComparingInt(b -> b.pos().getZ())
-                .thenComparingInt(b -> b.type().ordinal()));
-        return new WallPlan(gravemind, blocks);
+        if (columns.isEmpty()) return null;
+        return new WallPlan(gravemind, columns);
     }
 
     // --- column -> course stack ---
@@ -148,10 +149,10 @@ public final class WallPlanner {
         boolean merlon = Math.floorMod(coord, 2) == 0;     // battlements: alternating merlon / gap
         boolean torch = Math.floorMod(coord, 6) == 3 && !ladder; // light the inside face (not on ladder columns)
 
-        // Stairs form the loophole. FACING points toward the raised step; we face it INWARD so the open
-        // notch (and thus the firing slit) opens OUTWARD. (Verify visually via the debug paste; if the slit
-        // faces the wrong way, flip this single value to `o`.)
-        Direction stairFacing = in;
+        // Stairs form the loophole. Their FACING must run ALONG the wall (parallel), not across it -- only
+        // then does the L/Gamma notch leave an actual hole THROUGH the 1-thick wall to shoot from. (If the
+        // slit ends up on the wrong side, flip this to o.getCounterClockWise().)
+        Direction stairFacing = o.getClockWise();
 
         out.add(cobble(col.x, base, col.z, 0));
         out.add(loophole ? stair(col.x, base + 1, col.z, 1, stairFacing, false)

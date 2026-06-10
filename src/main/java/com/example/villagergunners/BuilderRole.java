@@ -1,70 +1,50 @@
 package com.example.villagergunners;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.npc.Villager;
 
 /**
- * The "builder" role: a small number of villagers per village are tagged as wall builders and visibly named
- * "builder" while they work. Only builders run the wall-build goal. A builder that dies or stops moving for
- * too long loses the role (with a short cool-down so a different villager is chosen next), and the village
- * tops itself back up to {@link #BUILDER_COUNT} from the free villagers nearby.
+ * The "builder" role. Each village wall is built by {@link #BUILDER_COUNT} builders, one per wall layer
+ * (course). A builder is visibly named "builder &lt;course&gt;" while it works and only builds its own
+ * course. Builders that die free their course; the village refills it from a nearby free villager or by
+ * spawning one (see GravemindEvents.manageBuilders). There is no idle-timeout demotion: in a layer conga the
+ * upper-course builders intentionally wait for the layers below to get ahead.
  */
 public final class BuilderRole {
     private BuilderRole() {}
 
-    public static final int BUILDER_COUNT = 4;          // builders per village wall
+    public static final int BUILDER_COUNT = 6;          // one builder per course 0..5
     private static final String NBT_BUILDER = "vgun_builder";
-    private static final String NBT_BUILDER_CD = "vgun_builder_cd"; // game time until re-eligible
+    private static final String NBT_COURSE = "vgun_builder_course";
     private static final String BUILDER_NAME = "builder";
-    private static final long STUCK_TICKS = 100;         // 5s without moving -> lose the role
-    private static final long DEMOTE_COOLDOWN = 200;     // 10s before a stuck-demoted villager is eligible again
-
-    // Transient stuck tracking: uuid -> { last block position (asLong), game time last seen there }.
-    private static final Map<UUID, long[]> LAST_MOVE = new HashMap<>();
 
     public static boolean isBuilder(Villager v) {
         return v.getPersistentData().getBoolean(NBT_BUILDER);
     }
 
-    public static void promote(Villager v) {
+    /** The wall layer (course) this builder is responsible for. */
+    public static int course(Villager v) {
+        return v.getPersistentData().getInt(NBT_COURSE);
+    }
+
+    public static void promote(Villager v, int course) {
         v.getPersistentData().putBoolean(NBT_BUILDER, true);
-        v.setCustomName(Component.literal(BUILDER_NAME));
+        v.getPersistentData().putInt(NBT_COURSE, course);
+        v.setCustomName(Component.literal(BUILDER_NAME + " " + course));
         v.setCustomNameVisible(true);
     }
 
     public static void demote(Villager v) {
         if (!isBuilder(v)) return;
         v.getPersistentData().putBoolean(NBT_BUILDER, false);
-        if (v.getCustomName() != null && BUILDER_NAME.equals(v.getCustomName().getString())) {
+        if (v.getCustomName() != null && v.getCustomName().getString().startsWith(BUILDER_NAME)) {
             v.setCustomName(null);
             v.setCustomNameVisible(false);
         }
-        LAST_MOVE.remove(v.getUUID());
     }
 
-    /** A free villager that may be promoted: not already a builder and not on the post-stuck cool-down. */
-    public static boolean eligible(Villager v, long now) {
-        return !isBuilder(v) && now >= v.getPersistentData().getLong(NBT_BUILDER_CD);
-    }
-
-    /** True if this builder has sat on the same block for {@value #STUCK_TICKS}+ ticks (records movement too). */
-    public static boolean isStuck(Villager v, long now) {
-        long packed = v.blockPosition().asLong();
-        long[] m = LAST_MOVE.get(v.getUUID());
-        if (m == null || m[0] != packed) {
-            LAST_MOVE.put(v.getUUID(), new long[]{packed, now});
-            return false;
-        }
-        return now - m[1] >= STUCK_TICKS;
-    }
-
-    /** Demote a stuck builder and put it on cool-down so a different villager is picked next. */
-    public static void demoteStuck(Villager v, long now) {
-        demote(v);
-        v.getPersistentData().putLong(NBT_BUILDER_CD, now + DEMOTE_COOLDOWN);
+    /** A villager that may be promoted: not already a builder. */
+    public static boolean eligible(Villager v) {
+        return !isBuilder(v);
     }
 }

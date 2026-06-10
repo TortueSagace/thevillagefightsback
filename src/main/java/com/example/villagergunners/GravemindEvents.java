@@ -103,11 +103,11 @@ public final class GravemindEvents {
                 if (until != null && server.getTickCount() < until) continue; // recently failed -> backed off
                 WallPlan computed = WallPlanner.plan(level, gp, collectVillagePoints(level, gp.pos()));
                 if (computed != null) {
+                    computed.setStartTick(level.getGameTime()); // t0 for the per-layer builder stagger
                     data.putWallPlan(computed);
                     surveyBackoff.remove(gp);
-                    spawnInitialBuilders(level, gp.pos()); // staff up to 4 builders when the wall is laid out
                     broadcast(server, "§7The Village Gravemind marks out a defensive wall §8("
-                            + computed.blocks().size() + " blocks)§7 — villagers, to work.");
+                            + computed.blocks().size() + " blocks)§7 — 6 builders, to work.");
                 } else {
                     surveyBackoff.put(gp, server.getTickCount() + SURVEY_BACKOFF_TICKS);
                 }
@@ -131,47 +131,27 @@ public final class GravemindEvents {
     }
 
     /**
-     * Keep up to {@link BuilderRole#BUILDER_COUNT} villagers tagged as builders among those nearby: demote
-     * any that have stood still too long (with a cool-down so a different one is chosen), then promote free
-     * villagers to refill. Dead builders simply aren't in {@code nearby}, so the count naturally refills.
+     * Keep exactly one builder per wall course (0..{@link BuilderRole#BUILDER_COUNT}-1) among the villagers
+     * nearby: demote duplicate-course builders, then fill any uncovered course from a free villager or, if
+     * none, by spawning a dedicated builder. Dead builders just leave their course uncovered -> refilled.
      */
     private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, long now) {
-        int count = 0;
+        boolean[] covered = new boolean[BuilderRole.BUILDER_COUNT];
         for (Villager v : nearby) {
             if (!BuilderRole.isBuilder(v)) continue;
-            if (BuilderRole.isStuck(v, now)) {
-                BuilderRole.demoteStuck(v, now);
+            int c = BuilderRole.course(v);
+            if (c < 0 || c >= covered.length || covered[c]) {
+                BuilderRole.demote(v); // stray / duplicate course -> free it
             } else {
-                count++;
+                covered[c] = true;
             }
         }
-        // Top up from free villagers nearby (replacements for lost builders come from the existing pool).
-        for (Villager v : nearby) {
-            if (count >= BuilderRole.BUILDER_COUNT) break;
-            if (BuilderRole.eligible(v, now)) {
-                BuilderRole.promote(v);
-                count++;
-            }
-        }
-    }
-
-    /** Once, when a wall plan is first computed: staff it up to {@link BuilderRole#BUILDER_COUNT} builders,
-     *  promoting nearby free villagers first and SPAWNING dedicated builders for the shortfall. */
-    private static void spawnInitialBuilders(ServerLevel level, BlockPos gravemind) {
-        List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
-                new AABB(gravemind).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive());
-        int count = 0;
-        long now = level.getGameTime();
-        for (Villager v : nearby) if (BuilderRole.isBuilder(v)) count++;
-        for (Villager v : nearby) {
-            if (count >= BuilderRole.BUILDER_COUNT) break;
-            if (BuilderRole.eligible(v, now)) { BuilderRole.promote(v); count++; }
-        }
-        while (count < BuilderRole.BUILDER_COUNT) {
-            Villager spawned = spawnBuilder(level, gravemind);
-            if (spawned == null) break;
-            BuilderRole.promote(spawned);
-            count++;
+        java.util.Iterator<Villager> free = nearby.stream().filter(BuilderRole::eligible).iterator();
+        for (int c = 0; c < covered.length; c++) {
+            if (covered[c]) continue;
+            Villager v = free.hasNext() ? free.next() : spawnBuilder(level, gravemind);
+            if (v == null) continue;
+            BuilderRole.promote(v, c);
         }
     }
 
