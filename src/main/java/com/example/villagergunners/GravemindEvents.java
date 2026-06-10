@@ -76,9 +76,11 @@ public final class GravemindEvents {
     private static final int COBBLE_Y_BAND = 10;      // ... within +/- this many blocks of the gravemind's height
     private static final double ENSURE_GOAL_RADIUS = 96.0; // give villagers within this the build goal
     // The man-made "village material" the wall envelops: cobblestone, plus any planks or fences (house walls,
-    // floors, fences). All are ~never natural at the surface, so together they track the built village well.
+    // floors, fences) and farmland (village crop fields). All are ~never natural at the surface, so together
+    // they track the built village well -- including its farms, which we want enclosed inside the wall.
     private static final Predicate<BlockState> IS_VILLAGE_MATERIAL = s ->
-            s.is(Blocks.COBBLESTONE) || s.is(BlockTags.PLANKS) || s.is(BlockTags.FENCES);
+            s.is(Blocks.COBBLESTONE) || s.is(BlockTags.PLANKS) || s.is(BlockTags.FENCES)
+            || s.is(Blocks.FARMLAND);
 
     // Back-off: graveminds that survey but yield no wall (no cobble / too large) aren't retried for a while,
     // so a no-plan village can't re-run the survey every 10s. Cleared once a plan forms or the gravemind is gone.
