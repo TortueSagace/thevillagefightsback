@@ -96,6 +96,19 @@ public final class GunnerEvents {
             settler.goalSelector.addGoal(6, new com.example.villagergunners.goal.SettlerGoal(settler));
         }
 
+        // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
+        // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
+        // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
+        if (mob instanceof Villager defender && !hasGoal(defender, com.example.villagergunners.goal.BuilderDefenseGoal.class)) {
+            defender.goalSelector.addGoal(2, new com.example.villagergunners.goal.BuilderDefenseGoal(defender));
+        }
+
+        // Every villager carries the (dormant) miner goal; it only runs once the gravemind tags it a miner
+        // (level-2 infection). Idempotent.
+        if (mob instanceof Villager v) {
+            com.example.villagergunners.infection.InfectionManager.ensureMinerGoal(v);
+        }
+
         // Defenders start NERFED and permanently upgrade to the full gun loadout once they have been near a
         // level-3 Village Gravemind (UpgradeEvents flips the flag). Until then: villagers fight only with a
         // stone axe (and only when badly hurt), guards and golems are vanilla.

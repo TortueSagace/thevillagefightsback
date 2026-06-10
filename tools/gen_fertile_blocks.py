@@ -24,6 +24,7 @@ BASES = {
     "sand":       ("all", "sand"),
     "stone":      ("all", "stone"),
     "log":        ("log", ("oak_log", "oak_log_top")),
+    "deepslate":  ("log", ("deepslate", "deepslate_top")),  # axis pillar like logs (side + top)
     "gravel":     ("all", "gravel"),
     "netherrack": ("all", "netherrack"),
     "end_stone":  ("all", "end_stone"),

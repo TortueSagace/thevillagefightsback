@@ -59,6 +59,7 @@ public class WallBuildGoal extends Goal {
     private WallPlan plan;
     private WallBlock target;
     private BlockPos stand;       // exterior-adjacent column the villager works from (outside the wall ring)
+    private int baseY;            // the wall's foundation Y at this column -- we never dig below it (no breach)
     private Phase phase;
 
     private int repathTimer;
@@ -114,6 +115,7 @@ public class WallBuildGoal extends Goal {
         this.plan = p;
         this.target = t;
         this.stand = exteriorColumn(t.pos());
+        this.baseY = t.pos().getY() - t.course(); // course 0 sits on the foundation; never dig below it
         this.phase = Phase.APPROACH;
         this.repathTimer = 0;
         this.stuckTimer = 0;
@@ -237,10 +239,11 @@ public class WallBuildGoal extends Goal {
         int hx = tp.getX() - fx, hz = tp.getZ() - fz;
 
         // Climb straight up when we're over (within 1 of) the target column: stack a cheap scaffold under our
-        // feet and step onto it. We NEVER dig to climb -- if the space above is blocked, give up this approach
-        // rather than gouge a trench (or, worse, a hole under the wall).
+        // feet and step onto it. We PREFER scaffolding over digging; only when the space above is solid (so we
+        // can't rise any other way) do we dig it out as a last resort -- and never below the foundation.
         if (tp.getY() > fy && Math.abs(hx) <= 1 && Math.abs(hz) <= 1) {
-            if (isSolid(fx, fy + 1, fz) || isSolid(fx, fy + 2, fz)) { abandon(); return; } // no head room -> don't dig
+            if (isSolid(fx, fy + 1, fz)) { digToFree(new BlockPos(fx, fy + 1, fz)); return; }
+            if (isSolid(fx, fy + 2, fz)) { digToFree(new BlockPos(fx, fy + 2, fz)); return; }
             placeScaffold(new BlockPos(fx, fy, fz));
             villager.setPos(fx + 0.5, fy + 1, fz + 0.5);
             return;
@@ -252,19 +255,34 @@ public class WallBuildGoal extends Goal {
                 : (hz >= 0 ? Direction.SOUTH : Direction.NORTH);
         BlockPos step = new BlockPos(fx, fy, fz).relative(d);
         if (isSolid(step.getX(), step.getY(), step.getZ())) {
-            // a one-block rise ahead -> STEP UP onto it (like jumping), never dig through it
-            if (isSolid(step.getX(), fy + 1, step.getZ()) || isSolid(step.getX(), fy + 2, step.getZ())) { abandon(); return; }
+            // a one-block rise ahead -> STEP UP onto it (like jumping) if there's head room; else dig the
+            // overhang out (last resort) rather than stay stuck.
+            if (isSolid(step.getX(), fy + 1, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
+            if (isSolid(step.getX(), fy + 2, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 2, step.getZ())); return; }
             villager.setPos(step.getX() + 0.5, fy + 1, step.getZ() + 0.5);
             return;
         }
-        // open cell ahead -> walk in; lay a scaffold floor if there's nothing to stand on. Don't dig head room.
-        if (isSolid(step.getX(), fy + 1, step.getZ())) { abandon(); return; }
+        // open cell ahead -> walk in; lay a scaffold floor if needed. Dig the head room only if it's blocked.
+        if (isSolid(step.getX(), fy + 1, step.getZ())) { digToFree(new BlockPos(step.getX(), fy + 1, step.getZ())); return; }
         if (!isStandable(step.below())) placeScaffold(step.below());
         villager.setPos(step.getX() + 0.5, fy, step.getZ() + 0.5);
     }
 
     private boolean isSolid(int x, int y, int z) {
         return level().getBlockState(new BlockPos(x, y, z)).blocksMotion();
+    }
+
+    /**
+     * Last-resort escape: a villager that's genuinely stuck (a solid block is the only thing in its way) digs
+     * the blocker out -- but NEVER below the wall foundation (that would leave an unfillable breach under the
+     * wall), and never something too tough. If we can't safely dig it, we give the cell up instead.
+     */
+    private void digToFree(BlockPos blocker) {
+        if (blocker.getY() >= baseY && !tooToughToDig(blocker)) {
+            startDig(blocker);
+        } else {
+            abandon();
+        }
     }
 
     private void placeScaffold(BlockPos pos) {

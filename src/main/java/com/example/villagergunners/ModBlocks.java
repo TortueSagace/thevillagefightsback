@@ -165,6 +165,7 @@ public final class ModBlocks {
         registerFertileRich("sand", Blocks.SAND, FertileKind.FALLING);
         registerFertileRich("gravel", Blocks.GRAVEL, FertileKind.FALLING);
         registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
+        registerFertileRich("deepslate", Blocks.DEEPSLATE, FertileKind.LOG); // axis pillar like logs
     }
 
     private static void registerFertileRich(String base, Block vanilla, FertileKind kind) {

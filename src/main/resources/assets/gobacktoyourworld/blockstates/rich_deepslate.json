@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "gobacktoyourworld:block/rich_deepslate"
+    },
+    "axis=z": {
+      "model": "gobacktoyourworld:block/rich_deepslate",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "gobacktoyourworld:block/rich_deepslate",
+      "x": 90,
+      "y": 90
+    }
+  }
+}
