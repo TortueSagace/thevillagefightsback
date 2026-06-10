@@ -70,7 +70,17 @@ public final class ModBlocks {
 
     public static final RegistryObject<Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
             "fake_cobblestone",
-            () -> new BlockItem(FAKE_COBBLESTONE.get(), new Item.Properties()));
+            () -> new TooltipBlockItem(FAKE_COBBLESTONE.get(), new Item.Properties(),
+                    "block.gobacktoyourworld.fake_cobblestone.desc"));
+
+    /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
+    public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
+            "blue_tnt",
+            () -> new BlueTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT)));
+
+    public static final RegistryObject<Item> BLUE_TNT_ITEM = ITEMS.register(
+            "blue_tnt",
+            () -> new BlockItem(BLUE_TNT.get(), new Item.Properties()));
 
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
@@ -80,6 +90,7 @@ public final class ModBlocks {
                 output.accept(VILLAGE_GRAVEMIND_ITEM.get());
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
+                output.accept(BLUE_TNT_ITEM.get());
             })
             .build());
 

@@ -30,16 +30,25 @@ import net.minecraftforge.registries.ForgeRegistries;
  *  - bone != null: anchor to that model bone (e.g. "right_arm" for the golem) before offsetting.
  */
 public class HeldGunLayer<T extends LivingEntity, M extends EntityModel<T>> extends RenderLayer<T, M> {
+    /**
+     * When the decorative gun is shown -- the only entity state the client can read without custom syncing
+     * is the equipped item, so we use it as the upgrade proxy: EMPTY_HAND = an upgraded villager (whose
+     * hand is empty; a nerfed villager holds a stone axe), HELD_GUN = an upgraded golem (which holds the
+     * rocket; a nerfed golem's hand is empty).
+     */
+    public enum Gate { EMPTY_HAND, HELD_GUN }
+
     private final ResourceLocation gunId;
     private final String bone;
     private final float dx, dy, dz, rx, ry, rz, scale;
     private final ItemDisplayContext context;
+    private final Gate gate;
     private ItemStack stack = ItemStack.EMPTY;
     private boolean disabled = false;
 
     public HeldGunLayer(RenderLayerParent<T, M> parent, ResourceLocation gunId, String bone,
                         float dx, float dy, float dz, float rx, float ry, float rz, float scale,
-                        ItemDisplayContext context) {
+                        ItemDisplayContext context, Gate gate) {
         super(parent);
         this.gunId = gunId;
         this.bone = bone;
@@ -47,6 +56,14 @@ public class HeldGunLayer<T extends LivingEntity, M extends EntityModel<T>> exte
         this.rx = rx; this.ry = ry; this.rz = rz;
         this.scale = scale;
         this.context = context;
+        this.gate = gate;
+    }
+
+    private boolean shouldShow(T entity) {
+        return switch (gate) {
+            case EMPTY_HAND -> entity.getMainHandItem().isEmpty();
+            case HELD_GUN -> entity.getMainHandItem().getItem() instanceof ttv.migami.jeg.item.GunItem;
+        };
     }
 
     @Override

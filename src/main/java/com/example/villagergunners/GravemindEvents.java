@@ -105,6 +105,7 @@ public final class GravemindEvents {
                 if (computed != null) {
                     data.putWallPlan(computed);
                     surveyBackoff.remove(gp);
+                    spawnInitialBuilders(level, gp.pos()); // staff up to 4 builders when the wall is laid out
                     broadcast(server, "§7The Village Gravemind marks out a defensive wall §8("
                             + computed.blocks().size() + " blocks)§7 — villagers, to work.");
                 } else {
@@ -118,7 +119,7 @@ public final class GravemindEvents {
                         new AABB(gp.pos()).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive());
                 // Every nearby villager carries the (dormant) build goal; only the builders below run it.
                 for (Villager v : nearby) GunnerEvents.ensureWallBuildGoal(v);
-                manageBuilders(nearby, now); // keep BUILDER_COUNT builders staffed
+                manageBuilders(level, gp.pos(), nearby, now); // keep BUILDER_COUNT builders staffed
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
                     for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
@@ -134,7 +135,7 @@ public final class GravemindEvents {
      * any that have stood still too long (with a cool-down so a different one is chosen), then promote free
      * villagers to refill. Dead builders simply aren't in {@code nearby}, so the count naturally refills.
      */
-    private static void manageBuilders(List<Villager> nearby, long now) {
+    private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, long now) {
         int count = 0;
         for (Villager v : nearby) {
             if (!BuilderRole.isBuilder(v)) continue;
@@ -144,6 +145,7 @@ public final class GravemindEvents {
                 count++;
             }
         }
+        // Top up from free villagers nearby (replacements for lost builders come from the existing pool).
         for (Villager v : nearby) {
             if (count >= BuilderRole.BUILDER_COUNT) break;
             if (BuilderRole.eligible(v, now)) {
@@ -151,6 +153,58 @@ public final class GravemindEvents {
                 count++;
             }
         }
+    }
+
+    /** Once, when a wall plan is first computed: staff it up to {@link BuilderRole#BUILDER_COUNT} builders,
+     *  promoting nearby free villagers first and SPAWNING dedicated builders for the shortfall. */
+    private static void spawnInitialBuilders(ServerLevel level, BlockPos gravemind) {
+        List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
+                new AABB(gravemind).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive());
+        int count = 0;
+        long now = level.getGameTime();
+        for (Villager v : nearby) if (BuilderRole.isBuilder(v)) count++;
+        for (Villager v : nearby) {
+            if (count >= BuilderRole.BUILDER_COUNT) break;
+            if (BuilderRole.eligible(v, now)) { BuilderRole.promote(v); count++; }
+        }
+        while (count < BuilderRole.BUILDER_COUNT) {
+            Villager spawned = spawnBuilder(level, gravemind);
+            if (spawned == null) break;
+            BuilderRole.promote(spawned);
+            count++;
+        }
+    }
+
+    /** Spawn an (armed-on-join) villager near the gravemind to serve as a wall builder, or null if no spot. */
+    private static Villager spawnBuilder(ServerLevel level, BlockPos gravemind) {
+        BlockPos spot = builderSpawnSpot(level, gravemind);
+        if (spot == null) return null;
+        Villager v = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
+        if (v == null) return null;
+        v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
+        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+        v.setBaby(false);
+        level.addFreshEntity(v); // onEntityJoin arms it + adds the build goal
+        return v;
+    }
+
+    /** A standable surface spot near the gravemind (ring search outward), or null. */
+    private static BlockPos builderSpawnSpot(ServerLevel level, BlockPos gm) {
+        for (int r = 1; r <= 5; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue; // ring only
+                    BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, gm.offset(dx, 0, dz));
+                    if (Math.abs(surf.getY() - gm.getY()) > 6) continue;
+                    if (level.getBlockState(surf).getCollisionShape(level, surf).isEmpty()
+                            && level.getBlockState(surf.above()).getCollisionShape(level, surf.above()).isEmpty()
+                            && level.getBlockState(surf.below()).isFaceSturdy(level, surf.below(), Direction.UP)) {
+                        return surf;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

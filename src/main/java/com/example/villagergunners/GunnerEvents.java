@@ -26,6 +26,7 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -84,18 +85,47 @@ public final class GunnerEvents {
             mob.setPathfindingMalus(ModPathTypes.ALLY_PASSABLE, 0.0F);
         }
 
+        // Defenders start NERFED and permanently upgrade to the full gun loadout once they have been near a
+        // level-3 Village Gravemind (UpgradeEvents flips the flag). Until then: villagers fight only with a
+        // stone axe (and only when badly hurt), guards and golems are vanilla.
+        boolean upgraded = UpgradeState.isUpgraded(mob);
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
-            armGolem(golem);
+            if (upgraded) armGolemFull(golem);          // else: normal iron golem
         } else if (mob instanceof Villager villager) {
-            armVillager(villager);                      // every villager
+            if (upgraded) armVillagerFull(villager);
+            else armVillagerNerfed(villager);
         } else if (isGuard(mob)) {
-            armGuard(mob);                              // Guard Villagers guards (soft dependency)
+            if (upgraded) armGuardFull(mob);            // else: normal guard
         }
     }
 
-    private static void armVillager(Villager villager) {
-        // Iron boots on every villager (functional armour; rendered? no -- villagers have no armour layer).
+    /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 gravemind). */
+    public static void applyUpgrade(LivingEntity e) {
+        if (e instanceof Villager villager) {
+            removeGoal(villager, StoneAxeDefenseGoal.class);
+            villager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY); // drop the stone axe (gun shows via layer)
+            armVillagerFull(villager);
+        } else if (e instanceof IronGolem golem) {
+            if (!golem.isPlayerCreated()) armGolemFull(golem);
+        } else if (e instanceof PathfinderMob pm && isGuard(pm)) {
+            armGuardFull(pm);
+        }
+    }
+
+    /** NERFED villager: a stone axe (shown via the vanilla crossed-arms layer), defensive melee only. */
+    private static void armVillagerNerfed(Villager villager) {
+        if (hasGoal(villager, StoneAxeDefenseGoal.class)) return;
+        if (!(villager.getMainHandItem().getItem() instanceof AxeItem)) {
+            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_AXE));
+            villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
+        villager.goalSelector.addGoal(2, new StoneAxeDefenseGoal(villager));
+        // (WallBuildGoal is added separately by GravemindEvents.ensureWallBuildGoal when a gravemind is near.)
+    }
+
+    private static void armVillagerFull(Villager villager) {
+        // Iron boots on upgraded villagers (functional armour; villagers have no armour render layer).
         if (!(villager.getItemBySlot(EquipmentSlot.FEET).getItem() instanceof net.minecraft.world.item.ArmorItem)) {
             villager.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
             villager.setDropChance(EquipmentSlot.FEET, 0.0F);
@@ -117,7 +147,7 @@ public final class GunnerEvents {
         }
     }
 
-    private static void armGuard(PathfinderMob guard) {
+    private static void armGuardFull(PathfinderMob guard) {
         // Guards are humanoid and render their main-hand item, so equip the minigun for the visual.
         // Firing still uses the goal's own cached stacks. JEG's auto gunner goal is stripped below.
         if (!(guard.getMainHandItem().getItem() instanceof GunItem)) {
@@ -131,11 +161,26 @@ public final class GunnerEvents {
         guard.goalSelector.addGoal(2, new FlareRallyGoal(guard));
     }
 
-    private static void armGolem(IronGolem golem) {
+    private static void armGolemFull(IronGolem golem) {
+        // Equip the rocket launcher so the render layer can show it (and only on upgraded golems). JEG's
+        // auto gunner goal is stripped in onEquipmentChange; our GolemRocketGoal fires from a cached stack.
+        if (!(golem.getMainHandItem().getItem() instanceof GunItem)) {
+            golem.setItemSlot(EquipmentSlot.MAINHAND, GunUtil.makeGun(GunUtil.ROCKET_LAUNCHER));
+            golem.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
         golem.goalSelector.addGoal(2, new FlareRallyGoal(golem));
+    }
+
+    /** Remove every goal of {@code goalClass} from the mob's goal selector (used when upgrading). */
+    private static void removeGoal(Mob mob, Class<?> goalClass) {
+        List<Goal> remove = new ArrayList<>();
+        for (WrappedGoal w : mob.goalSelector.getAvailableGoals()) {
+            if (goalClass.isInstance(w.getGoal())) remove.add(w.getGoal());
+        }
+        for (Goal g : remove) mob.goalSelector.removeGoal(g);
     }
 
     /**
@@ -146,7 +191,7 @@ public final class GunnerEvents {
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
         if (event.getEntity().level().isClientSide()) return;
         if (!(event.getEntity() instanceof PathfinderMob mob)) return;
-        if (!isGuard(mob)) return;
+        if (!isAlly(mob)) return; // any armed defender (guard/golem) that now holds a gun
         List<Goal> remove = new ArrayList<>();
         for (WrappedGoal w : mob.goalSelector.getAvailableGoals()) {
             if (w.getGoal() instanceof ttv.migami.jeg.entity.ai.GunAttackGoal) {
@@ -175,6 +220,7 @@ public final class GunnerEvents {
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide()) return;
         if (!isGuard(entity)) return;
+        if (!UpgradeState.isUpgraded(entity)) return; // molotov drop is a level-3 unlock
         if (entity.getRandom().nextFloat() >= GUARD_MOLOTOV_DROP_CHANCE) return;
         Item molotov = ForgeRegistries.ITEMS.getValue(MOLOTOV);
         if (molotov == null) return; // JEG not present / item missing -> no drop

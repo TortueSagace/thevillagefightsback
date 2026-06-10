@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "unstable=false": { "model": "gobacktoyourworld:block/blue_tnt" },
+    "unstable=true": { "model": "gobacktoyourworld:block/blue_tnt" }
+  }
+}
