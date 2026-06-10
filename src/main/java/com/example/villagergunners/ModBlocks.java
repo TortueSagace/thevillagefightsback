@@ -154,14 +154,14 @@ public final class ModBlocks {
     // axis-aware (RotatedPillarBlock). Textures/models/blockstates/loot are data-generated under resources.
     public static final java.util.List<RegistryObject<Item>> FERTILE_RICH_ITEMS = new java.util.ArrayList<>();
 
-    private enum FertileKind { CUBE, FALLING, LOG }
+    private enum FertileKind { CUBE, FALLING, LOG, SCULK }
 
     static {
         registerFertileRich("dirt", Blocks.DIRT, FertileKind.CUBE);
         registerFertileRich("stone", Blocks.STONE, FertileKind.CUBE);
         registerFertileRich("netherrack", Blocks.NETHERRACK, FertileKind.CUBE);
         registerFertileRich("end_stone", Blocks.END_STONE, FertileKind.CUBE);
-        registerFertileRich("sculk", Blocks.SCULK, FertileKind.CUBE);
+        registerFertileRich("sculk", Blocks.SCULK, FertileKind.SCULK); // emissive glow like vanilla sculk
         registerFertileRich("sand", Blocks.SAND, FertileKind.FALLING);
         registerFertileRich("gravel", Blocks.GRAVEL, FertileKind.FALLING);
         registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
@@ -178,6 +178,11 @@ public final class ModBlocks {
             BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
             if (kind == FertileKind.FALLING) return new FallingBlock(p);
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
+            if (kind == FertileKind.SCULK) {
+                // Render fullbright like vanilla sculk so the texture glows in the dark (copy() doesn't
+                // carry emissiveRendering over). The block still emits no light into the world.
+                p.emissiveRendering((s, l, pos) -> true);
+            }
             return new Block(p);
         });
         FERTILE_RICH_ITEMS.add(ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties())));

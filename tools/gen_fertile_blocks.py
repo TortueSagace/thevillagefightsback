@@ -32,15 +32,26 @@ BASES = {
 
 def mkdir(p): os.makedirs(p, exist_ok=True)
 
-def load_vanilla(zf, name):
-    """Load assets/minecraft/textures/block/<name>.png, cropped to its first square frame (handles
-    animated textures like sculk whose png is a vertical strip)."""
+def load_vanilla(zf, name, crop=True):
+    """Load assets/minecraft/textures/block/<name>.png. By default crops to its first square frame
+    (handles animated textures); pass crop=False to keep the full animation strip."""
     with zf.open(f"assets/minecraft/textures/block/{name}.png") as fh:
         img = Image.open(fh).convert("RGBA")
     w, h = img.size
-    if h > w:           # animation strip -> take the top frame
+    if crop and h > w:  # animation strip -> take the top frame
         img = img.crop((0, 0, w, w))
     return img
+
+def overlay_strip(base, overlay):
+    """Composite the 16x16 gem overlay onto EACH frame of a (possibly multi-frame) vertical strip."""
+    out = base.convert("RGBA").copy()
+    w, h = base.size
+    ov = overlay if overlay.size == (w, w) else overlay.resize((w, w), Image.NEAREST)
+    for i in range(max(1, h // w)):
+        out.alpha_composite(ov, (0, i * w))
+    return out
+
+SCULK_MCMETA = {"animation": {"frametime": 20, "interpolate": True}}
 
 def green_tint(img):
     """Blend each pixel toward a brightness-modulated green, preserving texture detail and alpha."""
@@ -86,6 +97,11 @@ def overlay_onto(base, overlay):
 def save_png(img, name):
     d = os.path.join(ASSETS, "textures", "block"); mkdir(d)
     img.save(os.path.join(d, name + ".png"))
+
+def save_mcmeta(name):
+    d = os.path.join(ASSETS, "textures", "block"); mkdir(d)
+    with open(os.path.join(d, name + ".png.mcmeta"), "w", encoding="utf-8") as f:
+        json.dump(SCULK_MCMETA, f, indent=2)
 
 def write_json(path, obj):
     mkdir(os.path.dirname(path))
@@ -146,7 +162,13 @@ def main():
         gems = gem_overlay(zf)
         for base, (kind, srcs) in BASES.items():
             fertile, rich = f"fertile_{base}", f"rich_{base}"
-            if kind == "all":
+            if base == "sculk":
+                # Keep sculk ANIMATED (full strip + .mcmeta) so it pulses/glows like vanilla sculk.
+                ft = green_tint(load_vanilla(zf, srcs, crop=False))
+                save_png(ft, fertile); save_mcmeta(fertile)
+                save_png(overlay_strip(ft, gems), rich); save_mcmeta(rich)
+                write_cube_all(fertile); write_cube_all(rich)
+            elif kind == "all":
                 ft = green_tint(load_vanilla(zf, srcs))
                 save_png(ft, fertile)
                 save_png(overlay_onto(ft, gems), rich)
