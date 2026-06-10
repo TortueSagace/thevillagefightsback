@@ -75,7 +75,10 @@ public final class WallPlan {
      */
     public boolean satisfied(Level level, WallBlock wb) {
         BlockState world = level.getBlockState(wb.pos());
-        return wb.matches(world) || !world.canBeReplaced();
+        if (wb.matches(world)) return true;             // already built
+        if (world.canBeReplaced()) return false;         // empty/replaceable -> still to build
+        float hardness = world.getDestroySpeed(level, wb.pos());
+        return hardness < 0 || hardness >= 25.0F;        // too tough to dig -> leave a gap (counts as done)
     }
 
     /**

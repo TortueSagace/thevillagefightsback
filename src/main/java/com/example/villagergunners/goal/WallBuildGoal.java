@@ -162,15 +162,23 @@ public class WallBuildGoal extends Goal {
     }
 
     private void tickApproach() {
-        double d2 = villager.position().distanceToSqr(
-                target.pos().getX() + 0.5, target.pos().getY() + 0.5, target.pos().getZ() + 0.5);
-        if (d2 <= REACH_SQR && placeable(target.pos())) {
+        BlockPos tp = target.pos();
+        double d2 = villager.position().distanceToSqr(tp.getX() + 0.5, tp.getY() + 0.5, tp.getZ() + 0.5);
+        if (d2 <= REACH_SQR) { // in reach -> PLACE (which digs the cell clear first if something's there)
             phase = Phase.PLACE;
             placeTimer = PLACE_DELAY;
             return;
         }
+        // As soon as we're standing at the work column but the block is too high to reach, scaffold up --
+        // don't wait around for the navigator to "finish" (it never can reach a node up in the air).
+        double hx = villager.getX() - (stand.getX() + 0.5), hz = villager.getZ() - (stand.getZ() + 0.5);
+        boolean atColumn = hx * hx + hz * hz <= 2.0;
+        boolean above = tp.getY() > villager.getBlockY() + 1;
+        if (atColumn && above) { phase = Phase.PILLAR; return; }
+
         if (--repathTimer <= 0) {
-            villager.getNavigation().moveTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, BUILD_SPEED);
+            // Navigate to the work column at our OWN height (a reachable ground node), not the block's height.
+            villager.getNavigation().moveTo(stand.getX() + 0.5, villager.getY(), stand.getZ() + 0.5, BUILD_SPEED);
             repathTimer = REPATH;
         }
         boolean stuck = villager.getNavigation().isDone();
@@ -180,7 +188,7 @@ public class WallBuildGoal extends Goal {
             stuck = true;
         }
         // Stuck: climb (pillar) if the target is above; bridge with dirt over lava/void sideways; else give up.
-        if (target.pos().getY() > villager.getBlockY() + 1) {
+        if (above) {
             phase = Phase.PILLAR;
         } else if (bridgeSteps < MAX_BRIDGE && tryBridge()) {
             stuckTimer = 0;
@@ -222,15 +230,27 @@ public class WallBuildGoal extends Goal {
 
     private void tickPlace() {
         if (placeTimer-- > 0) return;
-        if (!plan.isBuilt(level(), target) && placeable(target.pos())) {
-            level().setBlock(target.pos(), target.toState(), 3);
-            SoundType s = SoundType.STONE;
-            level().playSound(null, target.pos(), s.getPlaceSound(), SoundSource.BLOCKS,
-                    (s.getVolume() + 1.0F) / 2.0F, s.getPitch() * 0.9F);
+        BlockPos tp = target.pos();
+        if (plan.isBuilt(level(), target)) { finishTarget(); return; } // already built (us or another builder)
+        if (!placeable(tp)) {
+            // A block is occupying the wall cell -> break it with the right stone tool (or hand) first,
+            // unless it's too tough to manage; then we'll re-enter and place once it's clear.
+            if (tooToughToDig(tp)) { abandon(); return; }
+            startDig(tp);
+            return;
         }
+        level().setBlock(tp, target.toState(), 3);
+        SoundType s = SoundType.STONE;
+        level().playSound(null, tp, s.getPlaceSound(), SoundSource.BLOCKS,
+                (s.getVolume() + 1.0F) / 2.0F, s.getPitch() * 0.9F);
+        finishTarget();
+    }
+
+    /** Done with the current target (built or given up): release it, then descend our scaffolds or re-seek. */
+    private void finishTarget() {
         WallBuild.release(plan.gravemind(), target.pos());
         descendY = groundBelow(stand);
-        target = null; // built -> no longer a build target
+        target = null;
         // If we built up high, prefer climbing back down our own scaffolds before seeking the next block.
         if (villager.getBlockY() - descendY > 3) {
             phase = Phase.DESCEND;
@@ -351,8 +371,10 @@ public class WallBuildGoal extends Goal {
     }
 
     private void abandon() {
-        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
-        target = null; // canContinueToUse() ends the goal; canUse() picks a fresh target later
+        // Keep the (short-TTL) reservation instead of releasing it, so we -- and other builders -- skip this
+        // unreachable/too-tough block for ~5s and work elsewhere, then retry it once the reservation lapses.
+        // This stops a builder spinning on a block it can't get to. canContinueToUse() then ends the goal.
+        target = null;
     }
 
     /** Standable Y at a column: the first block (below the villager) that blocks motion and isn't a scaffold. */
