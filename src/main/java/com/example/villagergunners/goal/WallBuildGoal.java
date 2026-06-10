@@ -188,12 +188,13 @@ public class WallBuildGoal extends Goal {
             placeTimer = PLACE_DELAY;
             return;
         }
-        // As soon as we're standing at the work column but the block is too high to reach, scaffold up --
-        // don't wait around for the navigator to "finish" (it never can reach a node up in the air).
         double hx = villager.getX() - (stand.getX() + 0.5), hz = villager.getZ() - (stand.getZ() + 0.5);
-        boolean atColumn = hx * hx + hz * hz <= 2.0;
+        double horiz2 = hx * hx + hz * hz;
         boolean above = tp.getY() > villager.getBlockY() + 1;
-        if (atColumn && above) { phase = Phase.PILLAR; return; }
+        // Near the work column but the block is too high to reach -> scaffold UP to it right away. Don't wait
+        // for the navigator to "finish" (it can never path to a mid-air node) and don't give up -- stacking a
+        // couple of cheap scaffolds is exactly what's needed here.
+        if (above && horiz2 <= 4.0) { phase = Phase.PILLAR; return; }
 
         if (--repathTimer <= 0) {
             // Navigate to the work column at our OWN height (a reachable ground node), not the block's height.
@@ -206,12 +207,16 @@ public class WallBuildGoal extends Goal {
             if (++stuckTimer <= STUCK_TICKS) return;
             stuck = true;
         }
-        // Stuck: climb (pillar) if the target is above; bridge with dirt over lava/void sideways; else give up.
+        // Stuck: scaffold UP to an above target; bridge a lava/void gap sideways; otherwise still try to
+        // scaffold our way toward it (PILLAR builds stepping stones) before finally giving up -- so we
+        // exhaust the cheap-scaffold options first instead of abandoning a block we just can't quite reach.
         if (above) {
             phase = Phase.PILLAR;
         } else if (bridgeSteps < MAX_BRIDGE && tryBridge()) {
             stuckTimer = 0;
             repathTimer = 0;
+        } else if (pillarSteps < MAX_PILLAR) {
+            phase = Phase.PILLAR;
         } else {
             abandon();
         }
@@ -231,24 +236,35 @@ public class WallBuildGoal extends Goal {
         int fx = villager.getBlockX(), fy = villager.getBlockY(), fz = villager.getBlockZ();
         int hx = tp.getX() - fx, hz = tp.getZ() - fz;
 
-        // Climb straight up only when we're already over (within 1 of) the target column; otherwise we'd
-        // pillar in the wrong place. Scaffolds are always placed AT/NEXT TO us so we can actually reach them.
+        // Climb straight up when we're over (within 1 of) the target column: stack a cheap scaffold under our
+        // feet and step onto it. We NEVER dig to climb -- if the space above is blocked, give up this approach
+        // rather than gouge a trench (or, worse, a hole under the wall).
         if (tp.getY() > fy && Math.abs(hx) <= 1 && Math.abs(hz) <= 1) {
-            BlockPos feet = new BlockPos(fx, fy, fz);
-            if (clearBlocker(feet.above()) || clearBlocker(feet.above(2))) return; // dig head room first
-            placeScaffold(feet);
-            villager.setPos(fx + 0.5, fy + 1, fz + 0.5); // step up onto it
+            if (isSolid(fx, fy + 1, fz) || isSolid(fx, fy + 2, fz)) { abandon(); return; } // no head room -> don't dig
+            placeScaffold(new BlockPos(fx, fy, fz));
+            villager.setPos(fx + 0.5, fy + 1, fz + 0.5);
             return;
         }
 
-        // Step one block horizontally toward the target, laying a stepping-stone scaffold beside us.
+        // Otherwise move one block horizontally toward the target.
         Direction d = Math.abs(hx) >= Math.abs(hz)
                 ? (hx >= 0 ? Direction.EAST : Direction.WEST)
                 : (hz >= 0 ? Direction.SOUTH : Direction.NORTH);
         BlockPos step = new BlockPos(fx, fy, fz).relative(d);
-        if (clearBlocker(step) || clearBlocker(step.above())) return; // clear the cell + head room
-        if (!isStandable(step.below())) placeScaffold(step.below()); // floor to walk onto
+        if (isSolid(step.getX(), step.getY(), step.getZ())) {
+            // a one-block rise ahead -> STEP UP onto it (like jumping), never dig through it
+            if (isSolid(step.getX(), fy + 1, step.getZ()) || isSolid(step.getX(), fy + 2, step.getZ())) { abandon(); return; }
+            villager.setPos(step.getX() + 0.5, fy + 1, step.getZ() + 0.5);
+            return;
+        }
+        // open cell ahead -> walk in; lay a scaffold floor if there's nothing to stand on. Don't dig head room.
+        if (isSolid(step.getX(), fy + 1, step.getZ())) { abandon(); return; }
+        if (!isStandable(step.below())) placeScaffold(step.below());
         villager.setPos(step.getX() + 0.5, fy, step.getZ() + 0.5);
+    }
+
+    private boolean isSolid(int x, int y, int z) {
+        return level().getBlockState(new BlockPos(x, y, z)).blocksMotion();
     }
 
     private void placeScaffold(BlockPos pos) {
@@ -312,15 +328,6 @@ public class WallBuildGoal extends Goal {
 
     // --- tool breaking ---
 
-    /** If a blocker is here, start breaking it (or give up if it's too tough). Returns true to pause pillaring. */
-    private boolean clearBlocker(BlockPos p) {
-        BlockState s = level().getBlockState(p);
-        if (s.canBeReplaced()) return false;
-        if (tooToughToDig(p)) { abandon(); return true; }
-        startDig(p);
-        return true;
-    }
-
     private void startDig(BlockPos pos) {
         digPos = pos.immutable();
         digTicks = 0;
@@ -379,27 +386,49 @@ public class WallBuildGoal extends Goal {
         return hardness < 0 || hardness >= TOUGH_HARDNESS;
     }
 
-    // --- dirt bridging (sideways, over lava / void) ---
+    // --- bridging sideways over a lava / void gap ---
 
-    /** Lay a dirt block to cross lava or a void gap directly ahead toward the work column. Returns true if it did. */
+    /**
+     * Cross a gap directly ahead toward the work column. Over a void we lay a cheap scaffold to walk on (with
+     * a short support column below so it doesn't pop), so it cleans itself up afterwards; over LAVA we use
+     * dirt instead (a cheap scaffold is flammable and would burn out from under us). Returns true if it did.
+     */
     private boolean tryBridge() {
         Direction d = horizontalToward(stand);
         BlockPos ahead = villager.blockPosition().relative(d);
         BlockPos floor = ahead.below();
         BlockState aheadS = level().getBlockState(ahead);
         BlockState floorS = level().getBlockState(floor);
-        if (aheadS.getFluidState().is(FluidTags.LAVA)) {           // lava at body level ahead
+        if (aheadS.getFluidState().is(FluidTags.LAVA)) {           // lava at body level ahead -> dirt
             level().setBlock(ahead, Blocks.DIRT.defaultBlockState(), 3);
             bridgeSteps++;
             return true;
         }
-        boolean voidFloor = floorS.canBeReplaced() && floorS.getFluidState().isEmpty(); // nothing to stand on
-        if (voidFloor || floorS.getFluidState().is(FluidTags.LAVA)) {
+        if (floorS.getFluidState().is(FluidTags.LAVA)) {           // lava to stand over -> dirt (fireproof)
             level().setBlock(floor, Blocks.DIRT.defaultBlockState(), 3);
             bridgeSteps++;
             return true;
         }
+        if (floorS.canBeReplaced() && floorS.getFluidState().isEmpty()) { // empty gap -> disposable scaffold
+            bridgeWithScaffold(floor);
+            bridgeSteps++;
+            return true;
+        }
         return false; // a real (non-lava/void) obstacle -> can't bridge
+    }
+
+    /** Place a cheap scaffold to stand on, plus a short support column down to solid ground so scaffolding
+     *  (which needs a base) doesn't immediately pop over the gap. */
+    private void bridgeWithScaffold(BlockPos floor) {
+        placeScaffold(floor);
+        BlockPos p = floor.below();
+        for (int i = 0; i < 8; i++) {
+            BlockState s = level().getBlockState(p);
+            if (s.blocksMotion()) break;        // reached a base -> the column above is now supported
+            if (!s.canBeReplaced()) break;       // fluid / something else -> stop
+            placeScaffold(p);
+            p = p.below();
+        }
     }
 
     private boolean placeable(BlockPos pos) {
