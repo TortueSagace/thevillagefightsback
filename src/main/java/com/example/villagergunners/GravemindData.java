@@ -42,6 +42,7 @@ public class GravemindData extends SavedData {
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed gravemind blocks
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a gravemind
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
+    private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // graveminds whose level-2 gate turrets are placed
 
     public GravemindData() {}
 
@@ -111,7 +112,15 @@ public class GravemindData extends SavedData {
     public Collection<WallPlan> wallPlans() { return wallPlans.values(); }
     public WallPlan getWallPlan(GlobalPos gravemind) { return wallPlans.get(gravemind); }
     public void putWallPlan(WallPlan plan) { wallPlans.put(plan.gravemind(), plan); setDirty(); }
-    public void removeWallPlan(GlobalPos gravemind) { if (wallPlans.remove(gravemind) != null) setDirty(); }
+    public void removeWallPlan(GlobalPos gravemind) {
+        if (wallPlans.remove(gravemind) != null) setDirty();
+        if (defendersBuilt.remove(gravemind)) setDirty(); // new wall -> let the gate turrets be rebuilt
+    }
+
+    // --- level-2 gate turrets (built once per gravemind) ---
+
+    public boolean areDefendersBuilt(GlobalPos gravemind) { return defendersBuilt.contains(gravemind); }
+    public void markDefendersBuilt(GlobalPos gravemind) { if (defendersBuilt.add(gravemind)) setDirty(); }
 
     // --- persistence ---
 
@@ -119,6 +128,7 @@ public class GravemindData extends SavedData {
         GravemindData d = new GravemindData();
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "serviced", d.servicedCenters);
+        readPositions(tag, "defenders", d.defendersBuilt);
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
@@ -150,6 +160,7 @@ public class GravemindData extends SavedData {
     public CompoundTag save(CompoundTag tag) {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "serviced", servicedCenters);
+        writePositions(tag, "defenders", defendersBuilt);
         ListTag econList = new ListTag();
         for (Map.Entry<GlobalPos, Econ> e : econs.entrySet()) {
             CompoundTag c = new CompoundTag();

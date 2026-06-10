@@ -24,6 +24,9 @@ public final class WallBuild {
     // gravemind -> (parked block pos as long -> retry-after game time): a cell no builder could reach/finish,
     // hidden from ALL builders for a while so they don't churn on it (shared, unlike a per-builder skip).
     private static final Map<GlobalPos, Map<Long, Long>> SKIPS = new HashMap<>();
+    // gravemind -> (block pos as long -> how many times a builder has abandoned it). Cells the builders keep
+    // failing to reach are eventually sealed directly by the gravemind so the wall can't be left with holes.
+    private static final Map<GlobalPos, Map<Long, Integer>> ABANDONS = new HashMap<>();
 
     /**
      * Nearest incomplete wall plan a builder at {@code near} belongs to, or null. The join radius is the
@@ -76,6 +79,24 @@ public final class WallBuild {
         SKIPS.computeIfAbsent(plan, k -> new HashMap<>()).put(pos.asLong(), until);
     }
 
+    /** Record that a builder gave up on this cell; returns the new running abandon count for it. */
+    public static int recordAbandon(GlobalPos plan, BlockPos pos) {
+        return ABANDONS.computeIfAbsent(plan, k -> new HashMap<>()).merge(pos.asLong(), 1, Integer::sum);
+    }
+
+    /** Snapshot of (cell pos as long -> abandon count) for a plan; empty if none. */
+    public static Map<Long, Integer> abandons(GlobalPos plan) {
+        return ABANDONS.getOrDefault(plan, java.util.Collections.emptyMap());
+    }
+
+    /** Forget a cell's abandon count + skip (e.g. the gravemind just sealed it, or it got built). */
+    public static void clearAbandon(GlobalPos plan, BlockPos pos) {
+        Map<Long, Integer> m = ABANDONS.get(plan);
+        if (m != null) m.remove(pos.asLong());
+        Map<Long, Long> s = SKIPS.get(plan);
+        if (s != null) s.remove(pos.asLong());
+    }
+
     public static boolean isSkipped(GlobalPos plan, BlockPos pos, long now) {
         Map<Long, Long> map = SKIPS.get(plan);
         if (map == null) return false;
@@ -87,5 +108,6 @@ public final class WallBuild {
     public static void clearPlan(GlobalPos plan) {
         RESERVATIONS.remove(plan);
         SKIPS.remove(plan);
+        ABANDONS.remove(plan);
     }
 }

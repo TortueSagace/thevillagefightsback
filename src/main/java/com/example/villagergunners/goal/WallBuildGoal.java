@@ -410,6 +410,7 @@ public class WallBuildGoal extends Goal {
         // while, and release our claim.
         if (target != null && plan != null) {
             WallBuild.skip(plan.gravemind(), target.pos(), level().getGameTime() + SKIP_TICKS);
+            WallBuild.recordAbandon(plan.gravemind(), target.pos()); // count failures so the gravemind can seal it
             WallBuild.release(plan.gravemind(), target.pos());
         }
         target = null;

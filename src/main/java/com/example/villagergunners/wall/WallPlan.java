@@ -174,6 +174,31 @@ public final class WallPlan {
         return !level.getBlockState(wb.pos().below()).canBeReplaced(); // course below must already be there
     }
 
+    /**
+     * The centre-bottom of each gate (the fake-cobblestone passages -- normally the four N/S/E/W doors).
+     * Found by clustering the course-0 FAKE_COBBLE blocks; used to drop a defender turret above each gate.
+     */
+    public List<BlockPos> gates() {
+        List<List<BlockPos>> clusters = new ArrayList<>();
+        for (WallBlock wb : blocks) {
+            if (wb.type() != WallBlock.BlockType.FAKE_COBBLE || wb.course() != 0) continue;
+            BlockPos p = wb.pos();
+            List<BlockPos> c = null;
+            for (List<BlockPos> cl : clusters) {
+                if (cl.get(0).distSqr(p) <= 9.0) { c = cl; break; } // within ~3 blocks -> same gate
+            }
+            if (c == null) { c = new ArrayList<>(); clusters.add(c); }
+            c.add(p);
+        }
+        List<BlockPos> centres = new ArrayList<>();
+        for (List<BlockPos> cl : clusters) {
+            long sx = 0, sy = 0, sz = 0;
+            for (BlockPos p : cl) { sx += p.getX(); sy += p.getY(); sz += p.getZ(); }
+            centres.add(new BlockPos((int) (sx / cl.size()), (int) (sy / cl.size()), (int) (sz / cl.size())));
+        }
+        return centres;
+    }
+
     /** Helper selection for a builder whose own layer has no ready cell: the lowest unfinished layer's next
      *  block, still starting the perimeter scan at {@code fromColumn} so helpers stay spread out. */
     public WallBlock nextAnyCourse(Level level, int fromColumn, Predicate<BlockPos> skip) {
@@ -203,6 +228,19 @@ public final class WallPlan {
         complete = false;
         if (c < cursorCourse) cursorCourse = c;
         return true;
+    }
+
+    // Lazy index (packed position -> WallBlock) for O(1) cell lookups (used by the gravemind hole-sealer).
+    private transient java.util.Map<Long, WallBlock> posBlock;
+
+    /** The planned wall block at {@code pos}, or null if {@code pos} is not part of this wall. O(1) after a
+     *  one-time lazy index. */
+    public WallBlock blockAt(BlockPos pos) {
+        if (posBlock == null) {
+            posBlock = new java.util.HashMap<>(blocks.size() * 2);
+            for (WallBlock wb : blocks) posBlock.put(wb.pos().asLong(), wb);
+        }
+        return posBlock.get(pos.asLong());
     }
 
     private transient int scanIndex; // round-robin cursor for amortized damage scanning

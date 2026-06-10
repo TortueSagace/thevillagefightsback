@@ -65,9 +65,59 @@ public final class GravemindEvents {
         GravemindData data = GravemindData.get(server);
         spawnInVillages(server, data);
         driveWalls(server, data);
+        manageDefenders(server, data); // level-2 gate turrets
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
+    }
+
+    /**
+     * At village level 2+, once per gravemind, drop a wall-defender turret inside a 3x3 protecting-glass
+     * shell above each of the wall's gates (if a wall plan still exists). The shell's panes face outward so
+     * the defender shoots out while projectiles from outside are stopped.
+     */
+    private static void manageDefenders(MinecraftServer server, GravemindData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.areDefendersBuilt(gp)) continue;
+            if (data.econ(gp).getLevel() < 2) continue;       // only from level 2
+            WallPlan plan = data.getWallPlan(gp);
+            if (plan == null) continue;                       // no wall -> nothing to defend
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            boolean any = false;
+            for (BlockPos gate : plan.gates()) {
+                if (buildDefenderShell(level, gate)) any = true;
+            }
+            if (any) {
+                data.markDefendersBuilt(gp);
+                broadcast(server, "§bThe Village Gravemind raises wall defenders above the gates.");
+            }
+        }
+    }
+
+    /** Build the 3x3 protecting-glass cube (panes facing outward) with a wall defender at its centre, a few
+     *  blocks above {@code gate}. Returns true if it was built (the area was loaded). */
+    private static boolean buildDefenderShell(ServerLevel level, BlockPos gate) {
+        BlockPos c = gate.above(6); // sit the cube just above the wall top
+        if (!level.isLoaded(c)) return false;
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    BlockPos pos = c.offset(dx, dy, dz);
+                    if (!level.isLoaded(pos)) continue;
+                    if (dx == 0 && dy == 0 && dz == 0) {
+                        level.setBlock(pos, ModBlocks.WALL_DEFENDER.get().defaultBlockState(), 3);
+                    } else if (level.getBlockState(pos).canBeReplaced()) { // don't destroy existing builds
+                        Direction f = dx != 0 ? (dx > 0 ? Direction.EAST : Direction.WEST)
+                                : dz != 0 ? (dz > 0 ? Direction.SOUTH : Direction.NORTH)
+                                : (dy > 0 ? Direction.UP : Direction.DOWN);
+                        level.setBlock(pos, ModBlocks.PROTECTING_GLASS.get().defaultBlockState()
+                                .setValue(ProtectingGlassBlock.FACING, f), 3);
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a gravemind for the wall plan

@@ -28,7 +28,7 @@ public class WallDefenderBlockEntity extends BlockEntity {
     private static final double RANGE = 24.0;
     private static final int FIRE_INTERVAL = 20;      // one shot per second
     private static final float SHOT_SPEED = 3.0F;
-    private static final double SHOT_BASE_DAMAGE = 3.34; // ~10 damage at SHOT_SPEED
+    private static final double SHOT_BASE_DAMAGE = 3.3; // ceil(speed*base) ~= 10 damage at SHOT_SPEED
 
     private int hp = MAX_HP;
     private int cooldown;
