@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:diamond" }
+  ],
+  "result": {
+    "item": "gobacktoyourworld:protecting_glass",
+    "count": 6
+  }
+}

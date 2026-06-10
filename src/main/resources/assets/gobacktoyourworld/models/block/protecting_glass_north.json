@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/cube",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "gobacktoyourworld:block/protecting_glass_side",
+    "down": "gobacktoyourworld:block/protecting_glass_side",
+    "up": "gobacktoyourworld:block/protecting_glass_side",
+    "north": "gobacktoyourworld:block/protecting_glass_front",
+    "south": "gobacktoyourworld:block/protecting_glass_side",
+    "east": "gobacktoyourworld:block/protecting_glass_side",
+    "west": "gobacktoyourworld:block/protecting_glass_side"
+  }
+}

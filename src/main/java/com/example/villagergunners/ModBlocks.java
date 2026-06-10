@@ -105,6 +105,28 @@ public final class ModBlocks {
             "reinforced_glass",
             () -> new BlockItem(REINFORCED_GLASS.get(), new Item.Properties()));
 
+    /**
+     * Protecting glass: a directional, one-way-for-projectiles glass (see {@link ProtectingGlassBlock} /
+     * {@link ProtectingGlassEvents}). Light-blue tinted look; the white FACING face is the side a projectile
+     * can exit. Reinforced-glass tough (hardness 30, blast resistance 1200, diamond pickaxe).
+     */
+    public static final RegistryObject<Block> PROTECTING_GLASS = BLOCKS.register(
+            "protecting_glass",
+            () -> new ProtectingGlassBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                    .strength(30.0F, 1200.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()
+                    .isValidSpawn((s, l, p, e) -> false)
+                    .isRedstoneConductor((s, l, p) -> false)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> PROTECTING_GLASS_ITEM = ITEMS.register(
+            "protecting_glass",
+            () -> new BlockItem(PROTECTING_GLASS.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -115,6 +137,7 @@ public final class ModBlocks {
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
+                output.accept(PROTECTING_GLASS_ITEM.get());
             })
             .build());
 

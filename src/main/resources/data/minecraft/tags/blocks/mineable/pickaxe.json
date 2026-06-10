@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "gobacktoyourworld:reinforced_glass"
+    "gobacktoyourworld:reinforced_glass",
+    "gobacktoyourworld:protecting_glass"
   ]
 }
