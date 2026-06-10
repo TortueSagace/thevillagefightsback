@@ -80,7 +80,12 @@ public class VillageGravemindBlock extends Block {
             return InteractionResult.CONSUME;
         }
 
-        player.displayClientMessage(info(econ), false);
+        // Empty hand (or any non-emerald item): open the upgrade screen for THIS village.
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            com.example.villagergunners.network.ModNetwork.sendTo(sp,
+                    new com.example.villagergunners.network.OpenGravemindScreenPacket(
+                            econ.getLevel(), GravemindData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext()));
+        }
         return InteractionResult.CONSUME;
     }
 
