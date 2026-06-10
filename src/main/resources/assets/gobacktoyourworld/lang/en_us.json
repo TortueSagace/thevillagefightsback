@@ -7,6 +7,7 @@
   "block.gobacktoyourworld.green_tnt": "Green TNT",
   "block.gobacktoyourworld.reinforced_glass": "Reinforced Glass",
   "block.gobacktoyourworld.protecting_glass": "Protecting Glass",
-  "block.gobacktoyourworld.wall_defender": "Wall Defender",
+  "item.gobacktoyourworld.wall_defender": "Wall Defender Spawn Egg",
+  "entity.gobacktoyourworld.wall_defender": "Wall Defender",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

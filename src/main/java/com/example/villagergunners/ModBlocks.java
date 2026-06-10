@@ -137,22 +137,13 @@ public final class ModBlocks {
             () -> new BlockItem(PROTECTING_GLASS.get(), new Item.Properties()));
 
     /**
-     * Wall defender: a conduit look-alike auto-turret (see {@link WallDefenderBlock} /
-     * {@link WallDefenderBlockEntity}). 100 HP, fires a ~10-damage arrow/second at the nearest hostile.
-     * Tough and glowing; the Gravemind drops one in a protecting-glass shell above each gate at level 2.
+     * Wall defender spawn egg: places the {@link WallDefenderEntity} conduit-turret creature (100 HP, fires a
+     * real JEG bullet/second at the nearest hostile). The Gravemind also spawns one above each gate at level 2.
      */
-    public static final RegistryObject<Block> WALL_DEFENDER = BLOCKS.register(
+    public static final RegistryObject<Item> WALL_DEFENDER_SPAWN = ITEMS.register(
             "wall_defender",
-            () -> new WallDefenderBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_CYAN)
-                    .strength(50.0F, 1200.0F)
-                    .sound(SoundType.STONE)
-                    .lightLevel(s -> 10)
-                    .noOcclusion()));
-
-    public static final RegistryObject<Item> WALL_DEFENDER_ITEM = ITEMS.register(
-            "wall_defender",
-            () -> new BlockItem(WALL_DEFENDER.get(), new Item.Properties()));
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER,
+                    0x1b4a4a, 0x78ebf5, new Item.Properties()));
 
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
@@ -166,7 +157,7 @@ public final class ModBlocks {
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
-                output.accept(WALL_DEFENDER_ITEM.get());
+                output.accept(WALL_DEFENDER_SPAWN.get());
             })
             .build());
 

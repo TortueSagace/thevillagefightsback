@@ -95,8 +95,8 @@ public final class GravemindEvents {
         }
     }
 
-    /** Build the 3x3 protecting-glass cube (panes facing outward) with a wall defender at its centre, a few
-     *  blocks above {@code gate}. Returns true if it was built (the area was loaded). */
+    /** Build the 3x3 protecting-glass cube (panes facing outward, bulldozing whatever is there) with a wall
+     *  defender creature at its centre, a few blocks above {@code gate}. Returns true if it was built. */
     private static boolean buildDefenderShell(ServerLevel level, BlockPos gate) {
         BlockPos c = gate.above(6); // sit the cube just above the wall top
         if (!level.isLoaded(c)) return false;
@@ -106,16 +106,21 @@ public final class GravemindEvents {
                     BlockPos pos = c.offset(dx, dy, dz);
                     if (!level.isLoaded(pos)) continue;
                     if (dx == 0 && dy == 0 && dz == 0) {
-                        level.setBlock(pos, ModBlocks.WALL_DEFENDER.get().defaultBlockState(), 3);
-                    } else if (level.getBlockState(pos).canBeReplaced()) { // don't destroy existing builds
+                        level.removeBlock(pos, false); // clear the centre for the defender creature
+                    } else {
                         Direction f = dx != 0 ? (dx > 0 ? Direction.EAST : Direction.WEST)
                                 : dz != 0 ? (dz > 0 ? Direction.SOUTH : Direction.NORTH)
                                 : (dy > 0 ? Direction.UP : Direction.DOWN);
                         level.setBlock(pos, ModBlocks.PROTECTING_GLASS.get().defaultBlockState()
-                                .setValue(ProtectingGlassBlock.FACING, f), 3);
+                                .setValue(ProtectingGlassBlock.FACING, f), 3); // bulldoze whatever is there
                     }
                 }
             }
+        }
+        WallDefenderEntity defender = ModEntities.WALL_DEFENDER.get().create(level);
+        if (defender != null) {
+            defender.moveTo(c.getX() + 0.5, c.getY() + 0.1, c.getZ() + 0.5, 0.0F, 0.0F);
+            level.addFreshEntity(defender);
         }
         return true;
     }
@@ -150,6 +155,9 @@ public final class GravemindEvents {
 
             WallPlan plan = data.getWallPlan(gp);
             if (plan == null) {
+                // Empty village (no villagers): dispatch settlers to found houses first; FoundingManager
+                // creates the plan once they're done. gate() returns true to let normal planning proceed.
+                if (!FoundingManager.gate(server, level, gp, data)) continue;
                 if (!trySurvey) continue;
                 Integer until = surveyBackoff.get(gp);
                 if (until != null && server.getTickCount() < until) continue; // recently failed -> backed off
@@ -179,7 +187,7 @@ public final class GravemindEvents {
                     if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
                 }
                 manageBuilders(level, gp.pos(), nearby, now); // keep BUILDER_COUNT builders staffed
-                sealStuckHoles(server, level, plan); // gravemind finishes cells the builders can't reach
+                sealStuckHoles(level, plan); // gravemind finishes cells the builders can't reach
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
                     for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
@@ -202,7 +210,7 @@ public final class GravemindEvents {
      * left alone (they already count as "satisfied" gaps). Cheap: iterates only the small set of abandoned
      * cells, not the whole wall.
      */
-    private static void sealStuckHoles(MinecraftServer server, ServerLevel level, WallPlan plan) {
+    private static void sealStuckHoles(ServerLevel level, WallPlan plan) {
         java.util.Map<Long, Integer> abandons = com.example.villagergunners.wall.WallBuild.abandons(plan.gravemind());
         if (abandons.isEmpty()) return;
         int sealed = 0;
@@ -222,10 +230,7 @@ public final class GravemindEvents {
             com.example.villagergunners.wall.WallBuild.clearAbandon(plan.gravemind(), pos);
             sealed++;
         }
-        if (sealed > 0) {
-            broadcast(server, "§7The Village Gravemind seals §a" + sealed
-                    + "§7 wall gap" + (sealed == 1 ? "" : "s") + " the builders couldn't reach.");
-        }
+        // No broadcast: sealing happens often, so a message here would spam the chat.
     }
 
     /**
@@ -381,6 +386,22 @@ public final class GravemindEvents {
             placed++;
         }
         return placed;
+    }
+
+    /**
+     * Create + store this gravemind's wall plan right now (used by the founding flow to enter the wall
+     * phase promptly once the settlers' houses are up). Returns true if a plan was made or already exists.
+     */
+    public static boolean createWallPlanNow(ServerLevel level, GlobalPos gp) {
+        GravemindData data = GravemindData.get(level.getServer());
+        if (data.getWallPlan(gp) != null) return true;
+        WallPlan plan = WallPlanner.plan(level, gp, collectVillagePoints(level, gp.pos()));
+        if (plan == null) return false;
+        plan.setStartTick(level.getGameTime());
+        data.putWallPlan(plan);
+        broadcast(level.getServer(), "§7The Village Gravemind marks out a defensive wall §8("
+                + plan.blocks().size() + " blocks)§7 — 6 builders, to work.");
+        return true;
     }
 
     /** Place a gravemind at the centre (meeting point / bell) of each loaded village, once. */

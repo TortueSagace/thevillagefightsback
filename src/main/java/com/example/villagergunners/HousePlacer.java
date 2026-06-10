@@ -11,6 +11,7 @@ import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
@@ -118,8 +119,44 @@ public final class HousePlacer {
         order.addAll(structure);
         order.addAll(deferred);
 
-        HouseBuildManager.submit(level, order, loot);
+        List<CompoundTag> entities = rotation == Rotation.NONE
+                ? readDecorativeEntities(data, ox, oy, oz)
+                : new ArrayList<>(); // entity transform is only implemented for unrotated structures (the tower)
+        HouseBuildManager.submit(level, order, loot, entities);
         return true;
+    }
+
+    /** Decorative entities placed with the build (paintings, frames, armor stands); living mobs are skipped. */
+    private static final java.util.Set<String> DECORATIVE = java.util.Set.of(
+            "minecraft:painting", "minecraft:item_frame", "minecraft:glow_item_frame",
+            "minecraft:armor_stand", "minecraft:leash_knot");
+
+    /** World-ready entity NBTs for the structure's decorative entities (offset only -> Rotation.NONE). */
+    private static List<CompoundTag> readDecorativeEntities(CompoundTag data, int ox, int oy, int oz) {
+        List<CompoundTag> out = new ArrayList<>();
+        if (!data.contains("entities")) return out;
+        ListTag entities = data.getList("entities", Tag.TAG_COMPOUND);
+        for (int i = 0; i < entities.size(); i++) {
+            CompoundTag entry = entities.getCompound(i);
+            CompoundTag enbt = entry.getCompound("nbt");
+            if (!DECORATIVE.contains(enbt.getString("id"))) continue; // skip villagers/guards/all mobs
+            CompoundTag nbt = enbt.copy();
+            nbt.remove("UUID"); // fresh UUID so it isn't a duplicate of the captured entity
+            ListTag p = entry.getList("pos", Tag.TAG_DOUBLE);
+            ListTag worldPos = new ListTag();
+            worldPos.add(DoubleTag.valueOf(p.getDouble(0) + ox));
+            worldPos.add(DoubleTag.valueOf(p.getDouble(1) + oy));
+            worldPos.add(DoubleTag.valueOf(p.getDouble(2) + oz));
+            nbt.put("Pos", worldPos);
+            if (nbt.contains("TileX")) { // hanging entity (painting / item frame) -> move its anchor block too
+                ListTag bp = entry.getList("blockPos", Tag.TAG_INT);
+                nbt.putInt("TileX", bp.getInt(0) + ox);
+                nbt.putInt("TileY", bp.getInt(1) + oy);
+                nbt.putInt("TileZ", bp.getInt(2) + oz);
+            }
+            out.add(nbt);
+        }
+        return out;
     }
 
     /** Read the (single) block-state palette from a saved structure tag. */

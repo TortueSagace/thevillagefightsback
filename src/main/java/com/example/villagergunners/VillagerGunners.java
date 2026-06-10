@@ -22,7 +22,7 @@ public class VillagerGunners {
         ModPathTypes.init(); // register the custom BlockPathTypes during mod construction
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModBlocks.register(modBus);
-        ModBlockEntities.register(modBus);
+        ModEntities.register(modBus);
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
         LOGGER.info("[Go Back To Your World] loaded.");
     }

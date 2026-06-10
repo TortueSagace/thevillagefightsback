@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "gobacktoyourworld:block/fertile_log",
+    "end": "gobacktoyourworld:block/fertile_log_top"
+  }
+}

@@ -36,8 +36,12 @@ public final class GravemindUpgrades {
                     new Upgrade(new ItemStack(Items.STONE_PICKAXE),
                             "Basic Tools", "Villagers carry basic tools to work and fight.")
             ),
-            // --- Level 2 (to be defined) ---
-            List.of(),
+            // --- Level 2 ---
+            List.of(
+                    new Upgrade(new ItemStack(ModBlocks.WALL_DEFENDER_SPAWN.get()),
+                            "Wall Defenders", "Conduit turrets rise in protecting-glass shells above the gates "
+                            + "and gun down attackers.")
+            ),
             // --- Level 3 (to be defined) ---
             List.of()
     );

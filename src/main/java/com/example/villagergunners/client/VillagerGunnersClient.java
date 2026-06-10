@@ -1,10 +1,13 @@
 package com.example.villagergunners.client;
 
 import com.example.villagergunners.GunUtil;
+import com.example.villagergunners.ModEntities;
 import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.client.model.IronGolemModel;
+import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -17,6 +20,19 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = VillagerGunners.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillagerGunnersClient {
     private VillagerGunnersClient() {}
+
+    public static final ModelLayerLocation WALL_DEFENDER_LAYER =
+            new ModelLayerLocation(new ResourceLocation(VillagerGunners.MODID, "wall_defender"), "main");
+
+    @SubscribeEvent
+    public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
+    }
 
     @SubscribeEvent
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {

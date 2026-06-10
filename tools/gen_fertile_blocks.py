@@ -1,0 +1,165 @@
+"""
+Generates the Fertile/Rich block assets for "Go Back To Your World":
+  - Fertile X = the vanilla block texture hue-shifted toward green (still recognizable).
+  - Rich X    = Fertile X with emerald gems overlaid (gems = emerald_ore minus stone).
+Writes textures + blockstates + block/item models + loot tables. Java registration is done
+separately. Re-runnable (overwrites). Source textures come from the vanilla client "extra" jar.
+"""
+import json, os, zipfile
+from PIL import Image
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # villager-arms-mod/
+ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "gobacktoyourworld")
+DATA = os.path.join(ROOT, "src", "main", "resources", "data", "gobacktoyourworld")
+MODID = "gobacktoyourworld"
+JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
+       r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
+
+GREEN_BLEND = 0.5          # how far to push toward green (0=none, 1=fully green-luminance)
+GREEN = (0.40, 0.85, 0.32) # the green the tint pushes toward (modulated by each pixel's brightness)
+
+# base id -> (kind, vanilla source texture(s)). kind: "all" = cube_all, "log" = cube_column.
+BASES = {
+    "dirt":       ("all", "dirt"),
+    "sand":       ("all", "sand"),
+    "stone":      ("all", "stone"),
+    "log":        ("log", ("oak_log", "oak_log_top")),
+    "gravel":     ("all", "gravel"),
+    "netherrack": ("all", "netherrack"),
+    "end_stone":  ("all", "end_stone"),
+    "sculk":      ("all", "sculk"),
+}
+
+def mkdir(p): os.makedirs(p, exist_ok=True)
+
+def load_vanilla(zf, name):
+    """Load assets/minecraft/textures/block/<name>.png, cropped to its first square frame (handles
+    animated textures like sculk whose png is a vertical strip)."""
+    with zf.open(f"assets/minecraft/textures/block/{name}.png") as fh:
+        img = Image.open(fh).convert("RGBA")
+    w, h = img.size
+    if h > w:           # animation strip -> take the top frame
+        img = img.crop((0, 0, w, w))
+    return img
+
+def green_tint(img):
+    """Blend each pixel toward a brightness-modulated green, preserving texture detail and alpha."""
+    src = img.load()
+    out = Image.new("RGBA", img.size)
+    dst = out.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = src[x, y]
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            tr, tg, tb = lum * GREEN[0], lum * GREEN[1], lum * GREEN[2]
+            nr = int(round(r * (1 - GREEN_BLEND) + tr * GREEN_BLEND))
+            ng = int(round(g * (1 - GREEN_BLEND) + tg * GREEN_BLEND))
+            nb = int(round(b * (1 - GREEN_BLEND) + tb * GREEN_BLEND))
+            dst[x, y] = (min(255, nr), min(255, ng), min(255, nb), a)
+    return out
+
+def gem_overlay(zf):
+    """The emerald crystals of emerald ore as a transparent overlay: emerald_ore where it differs
+    from plain stone, transparent elsewhere. Scaled to 16x16 (vanilla native size)."""
+    ore = load_vanilla(zf, "emerald_ore")
+    stone = load_vanilla(zf, "stone").resize(ore.size)
+    op, sp = ore.load(), stone.load()
+    w, h = ore.size
+    overlay = Image.new("RGBA", ore.size, (0, 0, 0, 0))
+    od = overlay.load()
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = op[x, y]
+            sr, sg, sb, _ = sp[x, y]
+            if abs(r - sr) + abs(g - sg) + abs(b - sb) > 24:  # a crystal pixel
+                od[x, y] = (r, g, b, 255)
+    return overlay
+
+def overlay_onto(base, overlay):
+    if overlay.size != base.size:
+        overlay = overlay.resize(base.size, Image.NEAREST)
+    out = base.convert("RGBA").copy()
+    out.alpha_composite(overlay)
+    return out
+
+def save_png(img, name):
+    d = os.path.join(ASSETS, "textures", "block"); mkdir(d)
+    img.save(os.path.join(d, name + ".png"))
+
+def write_json(path, obj):
+    mkdir(os.path.dirname(path))
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2)
+
+def tex(name): return f"{MODID}:block/{name}"
+
+def write_cube_all(bid):
+    write_json(os.path.join(ASSETS, "blockstates", bid + ".json"),
+               {"variants": {"": {"model": tex(bid)}}})
+    write_json(os.path.join(ASSETS, "models", "block", bid + ".json"),
+               {"parent": "minecraft:block/cube_all", "textures": {"all": tex(bid)}})
+    write_json(os.path.join(ASSETS, "models", "item", bid + ".json"),
+               {"parent": f"{MODID}:block/{bid}"})
+
+def write_log(bid):
+    # cube_column with axis variants, like vanilla logs
+    write_json(os.path.join(ASSETS, "blockstates", bid + ".json"), {"variants": {
+        "axis=y": {"model": tex(bid)},
+        "axis=z": {"model": tex(bid), "x": 90},
+        "axis=x": {"model": tex(bid), "x": 90, "y": 90},
+    }})
+    write_json(os.path.join(ASSETS, "models", "block", bid + ".json"),
+               {"parent": "minecraft:block/cube_column",
+                "textures": {"side": tex(bid), "end": tex(bid + "_top")}})
+    write_json(os.path.join(ASSETS, "models", "item", bid + ".json"),
+               {"parent": f"{MODID}:block/{bid}"})
+
+def write_loot_self(bid):
+    write_json(os.path.join(DATA, "loot_tables", "blocks", bid + ".json"), {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1, "bonus_rolls": 0,
+                   "entries": [{"type": "minecraft:item", "name": f"{MODID}:{bid}"}],
+                   "conditions": [{"condition": "minecraft:survives_explosion"}]}]
+    })
+
+def write_loot_emerald(bid):
+    # emerald-ore style: silk touch -> the block itself; otherwise 1 emerald with fortune (ore_drops).
+    write_json(os.path.join(DATA, "loot_tables", "blocks", bid + ".json"), {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1, "bonus_rolls": 0, "entries": [{
+            "type": "minecraft:alternatives",
+            "children": [
+                {"type": "minecraft:item", "name": f"{MODID}:{bid}", "conditions": [
+                    {"condition": "minecraft:match_tool", "predicate": {"enchantments": [
+                        {"enchantment": "minecraft:silk_touch", "levels": {"min": 1}}]}}]},
+                {"type": "minecraft:item", "name": "minecraft:emerald", "functions": [
+                    {"function": "minecraft:apply_bonus", "enchantment": "minecraft:fortune",
+                     "formula": "minecraft:ore_drops"},
+                    {"function": "minecraft:explosion_decay"}]}
+            ]
+        }]}]
+    })
+
+def main():
+    with zipfile.ZipFile(JAR) as zf:
+        gems = gem_overlay(zf)
+        for base, (kind, srcs) in BASES.items():
+            fertile, rich = f"fertile_{base}", f"rich_{base}"
+            if kind == "all":
+                ft = green_tint(load_vanilla(zf, srcs))
+                save_png(ft, fertile)
+                save_png(overlay_onto(ft, gems), rich)
+                write_cube_all(fertile); write_cube_all(rich)
+            else:  # log: side + top
+                side, top = srcs
+                fs, ftp = green_tint(load_vanilla(zf, side)), green_tint(load_vanilla(zf, top))
+                save_png(fs, fertile); save_png(ftp, fertile + "_top")
+                save_png(overlay_onto(fs, gems), rich); save_png(overlay_onto(ftp, gems), rich + "_top")
+                write_log(fertile); write_log(rich)
+            write_loot_self(fertile)
+            write_loot_emerald(rich)
+            print("generated", fertile, "+", rich)
+
+if __name__ == "__main__":
+    main()

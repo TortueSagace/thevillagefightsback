@@ -46,7 +46,8 @@ public class WallBuildGoal extends Goal {
     private static final int MAX_BRIDGE = 8;           // dirt-bridge length cap before giving up
     private static final int PLACE_DELAY = 8;          // brief "working" pause before a block appears
     private static final int DESCEND_TIMEOUT = 80;     // ticks to spend climbing down before moving on
-    private static final int SKIP_TICKS = 600;         // skip an unreachable cell for ~30s, then retry
+    private static final int SKIP_TICKS = 200;         // skip an unreachable cell for ~10s, then retry
+                                                       // (short, so the gravemind's fallback seal kicks in ~3x faster)
     private static final int ABANDON_LIMIT = 3;        // give up the builder role after this many fails in a row
     private static final float TOUGH_HARDNESS = 25.0F; // at/above this hardness a block can't be dug (obsidian=50)
 

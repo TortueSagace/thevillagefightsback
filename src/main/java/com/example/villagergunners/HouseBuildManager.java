@@ -51,16 +51,16 @@ public final class HouseBuildManager {
 
     /** UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE: visible to clients, but no neighbour updates -> no pops. */
     static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
-    private static final int BLOCKS_PER_TICK = 14; // "quick" build: a ~190-block house finishes in ~14 ticks
+    private static final int BLOCKS_PER_TICK = 3; // ~5x slower build: a ~190-block house finishes in ~63 ticks (~3s)
 
     private static final List<BuildJob> JOBS = new ArrayList<>();
 
     /** One planned block placement. {@code deferred} = an attachment/sensitive block placed in the last pass. */
     public record Placement(BlockPos pos, BlockState state, CompoundTag nbt, boolean deferred) {}
 
-    /** Queue an ordered list of placements to animate into {@code level}. */
-    public static void submit(ServerLevel level, List<Placement> order, ResourceLocation loot) {
-        if (!order.isEmpty()) JOBS.add(new BuildJob(level, order, loot));
+    /** Queue an ordered list of placements (+ decorative entity NBTs placed last) to animate into {@code level}. */
+    public static void submit(ServerLevel level, List<Placement> order, ResourceLocation loot, List<CompoundTag> entities) {
+        if (!order.isEmpty() || !entities.isEmpty()) JOBS.add(new BuildJob(level, order, loot, entities));
     }
 
     /** Blocks that hang on / sit atop a neighbour (or fall) -> place them after the structure is up. */
@@ -94,35 +94,54 @@ public final class HouseBuildManager {
         private final ServerLevel level;
         private final List<Placement> order;
         private final ResourceLocation loot;
+        private final List<CompoundTag> entities;
         private int cursor;
 
-        BuildJob(ServerLevel level, List<Placement> order, ResourceLocation loot) {
+        BuildJob(ServerLevel level, List<Placement> order, ResourceLocation loot, List<CompoundTag> entities) {
             this.level = level;
             this.order = order;
             this.loot = loot;
+            this.entities = entities;
         }
 
         /** Place up to BLOCKS_PER_TICK blocks; returns true when the job is finished (or failed). */
         boolean step() {
             try {
-                int end = Math.min(cursor + BLOCKS_PER_TICK, order.size());
-                for (; cursor < end; cursor++) {
-                    Placement p = order.get(cursor);
-                    level.setBlock(p.pos(), p.state(), FLAGS);
-                    if (p.nbt() != null) loadBlockEntity(p);
-                    if (loot != null && level.getBlockEntity(p.pos()) instanceof RandomizableContainerBlockEntity c) {
-                        c.setLootTable(loot, level.getRandom().nextLong());
-                        c.setChanged();
+                if (cursor < order.size()) {
+                    int end = Math.min(cursor + BLOCKS_PER_TICK, order.size());
+                    for (; cursor < end; cursor++) {
+                        Placement p = order.get(cursor);
+                        level.setBlock(p.pos(), p.state(), FLAGS);
+                        if (p.nbt() != null) loadBlockEntity(p);
+                        if (loot != null && level.getBlockEntity(p.pos()) instanceof RandomizableContainerBlockEntity c) {
+                            c.setLootTable(loot, level.getRandom().nextLong());
+                            c.setChanged();
+                        }
+                        if ((cursor & 3) == 0) { // a soft building tick every 4th block
+                            level.playSound(null, p.pos(), p.state().getSoundType().getPlaceSound(),
+                                    SoundSource.BLOCKS, 0.4F, 0.9F + (cursor % 5) * 0.05F);
+                        }
                     }
-                    if ((cursor & 3) == 0) { // a soft building tick every 4th block
-                        level.playSound(null, p.pos(), p.state().getSoundType().getPlaceSound(),
-                                SoundSource.BLOCKS, 0.4F, 0.9F + (cursor % 5) * 0.05F);
-                    }
+                    return false; // still placing blocks
                 }
-                return cursor >= order.size();
+                placeEntities(); // all blocks up -> add the decorative entities (paintings, ...) last
+                return true;
             } catch (Throwable t) {
                 VillagerGunners.LOGGER.error("[Go Back To Your World] house build animation aborted", t);
                 return true;
+            }
+        }
+
+        /** Spawn the structure's decorative entities once the building is fully up (walls support paintings). */
+        private void placeEntities() {
+            for (CompoundTag nbt : entities) {
+                try {
+                    net.minecraft.world.entity.Entity e =
+                            net.minecraft.world.entity.EntityType.loadEntityRecursive(nbt, level, x -> x);
+                    if (e != null) level.addFreshEntity(e);
+                } catch (Throwable t) {
+                    VillagerGunners.LOGGER.error("[Go Back To Your World] failed to place a structure entity", t);
+                }
             }
         }
 
