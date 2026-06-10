@@ -18,13 +18,16 @@ public final class WallBuild {
     private WallBuild() {}
 
     public static final long RESERVE_TTL = 100L;        // ticks a target stays reserved without refresh
-    private static final double JOIN_RADIUS = 96.0;     // villagers within this of a village join its wall
-    private static final double JOIN_RADIUS_SQR = JOIN_RADIUS * JOIN_RADIUS;
 
     // gravemind -> (target block pos as long -> reservation expiry game time)
     private static final Map<GlobalPos, Map<Long, Long>> RESERVATIONS = new HashMap<>();
 
-    /** Nearest incomplete wall plan to {@code near} in the same dimension, within the join radius, or null. */
+    /**
+     * Nearest incomplete wall plan a builder at {@code near} belongs to, or null. The join radius is the
+     * wall's OWN extent (+margin), not a fixed distance from the village centre -- otherwise a builder out on
+     * a far wall section of a big village would "lose" its plan and stop building (and then wander off /
+     * settle).
+     */
     public static WallPlan planFor(ServerLevel level, BlockPos near) {
         GravemindData data = GravemindData.get(level.getServer());
         WallPlan best = null;
@@ -32,7 +35,7 @@ public final class WallBuild {
         for (WallPlan p : data.wallPlans()) {
             if (p.isComplete() || !p.gravemind().dimension().equals(level.dimension())) continue;
             double d = p.distSqrTo(near);
-            if (d < bestD && d <= JOIN_RADIUS_SQR) { bestD = d; best = p; }
+            if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
         }
         return best;
     }
@@ -63,5 +66,10 @@ public final class WallBuild {
     public static void release(GlobalPos plan, BlockPos pos) {
         Map<Long, Long> map = RESERVATIONS.get(plan);
         if (map != null) map.remove(pos.asLong());
+    }
+
+    /** Drop all reservations for a plan (call when the wall completes or the gravemind is removed). */
+    public static void clearPlan(GlobalPos plan) {
+        RESERVATIONS.remove(plan);
     }
 }

@@ -47,6 +47,7 @@ public class SettlerGoal extends Goal {
     public boolean canUse() {
         if (!(villager.level() instanceof ServerLevel level)) return false;
         if (villager.isBaby() || villager.isSleeping()) return false;
+        if (com.example.villagergunners.BuilderRole.isBuilder(villager)) return false; // builders belong to a village
         if (villager.getPersistentData().getBoolean(NBT_SETTLED)) return false;
         if (villager.tickCount < nextTryTick) return false;
         nextTryTick = villager.tickCount + RETRY_TICKS;

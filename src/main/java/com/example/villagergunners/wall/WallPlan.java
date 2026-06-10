@@ -27,13 +27,17 @@ public final class WallPlan {
     /** Number of vertical courses (0..4 for the curtain; corner pillars also fill course 5). */
     public static final int COURSES = 6;
 
+    /** Margin (blocks) added to the wall's outer radius so a builder anywhere on/near its wall keeps the plan. */
+    private static final double JOIN_MARGIN = 48.0;
+
     private final GlobalPos gravemind;
     private final List<List<WallBlock>> columns; // perimeter-ordered columns (each a course stack); for the conga
     private final List<WallBlock> blocks;        // flat, sorted by (course, x, z, type); for completion/repair
     private final int[] courseStart;             // courseStart[c]..courseStart[c+1] = blocks of course c
+    private final double joinRadiusSqr;          // (max block distance from gravemind + margin)^2, for plan lookup
     private final List<BlockPos> scaffoldTemp = new ArrayList<>();
     private boolean complete;
-    private long startTick;                      // gametime the plan was laid out (per-layer builder stagger)
+    private long startTick;                      // gametime the plan was laid out
 
     // Transient build cursor: the lowest course that still has unbuilt blocks. Only advances forward.
     private transient int cursorCourse;
@@ -50,7 +54,16 @@ public final class WallPlan {
                 .thenComparingInt(b -> b.type().ordinal()));
         this.blocks = flat;
         this.courseStart = computeCourseStarts(flat);
+        // The wall can sit far from the gravemind (village centre) on a big/elongated village; size the
+        // builder join radius to the actual wall extent so far-side builders don't "lose" the plan.
+        double maxR2 = 0;
+        for (WallBlock wb : flat) maxR2 = Math.max(maxR2, gravemind.pos().distSqr(wb.pos()));
+        double r = Math.sqrt(maxR2) + JOIN_MARGIN;
+        this.joinRadiusSqr = r * r;
     }
+
+    /** Radius (squared) from the gravemind within which a builder is considered "at this wall". */
+    public double joinRadiusSqr() { return joinRadiusSqr; }
 
     private static int[] computeCourseStarts(List<WallBlock> blocks) {
         int[] starts = new int[COURSES + 1];
@@ -136,10 +149,25 @@ public final class WallPlan {
     public WallBlock nextForCourse(Level level, int course, Predicate<BlockPos> skip) {
         for (List<WallBlock> col : columns) {
             for (WallBlock wb : col) {
-                if (wb.course() == course && !satisfied(level, wb) && !skip.test(wb.pos())) return wb;
+                // cheap filters (course, skip/reserved) before the world lookups in satisfied()/hasSupport()
+                if (wb.course() != course || skip.test(wb.pos())) continue;
+                if (!satisfied(level, wb) && hasSupport(level, wb)) return wb;
             }
         }
         return null;
+    }
+
+    /**
+     * A course block is buildable only once there is something to stand/build on directly below it (the
+     * course beneath already built, or the ground for course 0). This makes each layer follow the one under
+     * it -- the "reuse the previous layer" conga -- and stops upper-course builders from trying to pillar up
+     * to an unbuilt mid-air column (which they couldn't reach, so they used to abandon and skip the whole
+     * layer). Ladders/torches attach to the curtain's face rather than stacking, so they are never gated.
+     */
+    private boolean hasSupport(Level level, WallBlock wb) {
+        if (wb.course() == 0) return true;
+        if (wb.type() == WallBlock.BlockType.LADDER || wb.type() == WallBlock.BlockType.TORCH) return true;
+        return !level.getBlockState(wb.pos().below()).canBeReplaced(); // course below must already be there
     }
 
     /** Helper selection for a builder whose own layer is done: the lowest unfinished layer's next block. */

@@ -46,7 +46,6 @@ public class WallBuildGoal extends Goal {
     private static final int MAX_BRIDGE = 8;           // dirt-bridge length cap before giving up
     private static final int PLACE_DELAY = 8;          // brief "working" pause before a block appears
     private static final int DESCEND_TIMEOUT = 80;     // ticks to spend climbing down before moving on
-    private static final int STAGGER_TICKS = 40;       // each higher layer starts 2s after the one below
     private static final int SKIP_TICKS = 600;         // skip an unreachable cell for ~30s, then retry
     private static final float TOUGH_HARDNESS = 25.0F; // at/above this hardness a block can't be dug (obsidian=50)
 
@@ -95,19 +94,20 @@ public class WallBuildGoal extends Goal {
         if (p == null || p.isComplete()) return false;
         int course = BuilderRole.course(villager);
         long now = sl.getGameTime();
-        java.util.function.Predicate<BlockPos> skipPred = pos -> {
+        // A cell is unavailable if we recently gave up on it (our own skip) OR another builder owns it
+        // (live reservation) -- so the six builders never all pile on the same block and collide.
+        java.util.function.Predicate<BlockPos> taken = pos -> {
             Long u = skipUntil.get(pos.asLong());
-            return u != null && now < u;
+            if (u != null && now < u) return true;
+            return WallBuild.isReserved(p.gravemind(), pos, now);
         };
-        // Prefer my own layer once my stagger has elapsed (builder for course X waits ~2*X seconds so the
-        // layers below get ahead). Until then -- or once my own layer is finished -- help finish the lowest
-        // unfinished layer, so no builder ever stands idle while the wall is incomplete.
-        WallBlock t = null;
-        if (now >= p.startTick() + (long) course * STAGGER_TICKS) {
-            t = p.nextForCourse(sl, course, skipPred);
-        }
-        if (t == null) t = p.nextAnyCourse(sl, skipPred);
-        if (t == null) return false; // whole wall is built
+        // Build my own layer where it already has support (the course below is built); support-gating makes
+        // each layer follow the one beneath. If my layer has no ready cell yet, help the lowest unfinished
+        // layer instead of idling, so no builder ever stands idle while the wall is incomplete.
+        WallBlock t = p.nextForCourse(sl, course, taken);
+        if (t == null) t = p.nextAnyCourse(sl, taken);
+        if (t == null) return false; // nothing free for me right now
+        if (!WallBuild.reserve(p.gravemind(), t.pos(), now)) return false; // lost the race this tick; retry soon
         this.plan = p;
         this.target = t;
         this.stand = interiorColumn(t.pos());
@@ -142,6 +142,7 @@ public class WallBuildGoal extends Goal {
 
     @Override
     public void stop() {
+        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
         villager.getNavigation().stop();
         clearDig();
         unequipTool();
@@ -155,6 +156,10 @@ public class WallBuildGoal extends Goal {
         // Villagers are brain-driven: keep them awake and stop the brain from overriding our navigation.
         if (villager.isSleeping()) villager.stopSleeping();
         villager.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
+
+        // Hold our claim on the target so no other builder grabs it mid-build.
+        if (target != null && plan != null && level() instanceof ServerLevel rsl)
+            WallBuild.refresh(plan.gravemind(), target.pos(), rsl.getGameTime());
 
         if (phase == Phase.DESCEND) { tickDescend(); return; }
         if (target == null) return;
@@ -275,6 +280,7 @@ public class WallBuildGoal extends Goal {
 
     /** Done with the current target (built or given up): then descend our scaffolds or re-seek. */
     private void finishTarget() {
+        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
         descendY = groundBelow(stand);
         target = null;
         // If we built up high, prefer climbing back down our own scaffolds before seeking the next block.
@@ -398,8 +404,12 @@ public class WallBuildGoal extends Goal {
 
     private void abandon() {
         // Skip an unreachable/too-tough cell for a while so we don't spin on it; canUse() then picks the next
-        // cell of our course, and this one is retried once the skip lapses.
-        if (target != null) skipUntil.put(target.pos().asLong(), level().getGameTime() + SKIP_TICKS);
+        // cell of our course, and this one is retried once the skip lapses. Release the claim so another
+        // builder may try it.
+        if (target != null) {
+            skipUntil.put(target.pos().asLong(), level().getGameTime() + SKIP_TICKS);
+            if (plan != null) WallBuild.release(plan.gravemind(), target.pos());
+        }
         target = null;
     }
 

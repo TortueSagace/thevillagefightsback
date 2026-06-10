@@ -117,14 +117,22 @@ public final class GravemindEvents {
             }
             if (!plan.isComplete()) {
                 long now = level.getGameTime();
+                // Scan out to the wall's own extent (not a fixed radius) so far-side builders are managed too.
+                double radius = Math.max(ENSURE_GOAL_RADIUS, Math.sqrt(plan.joinRadiusSqr()));
                 List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
-                        new AABB(gp.pos()).inflate(ENSURE_GOAL_RADIUS), v -> v.isAlive());
+                        new AABB(gp.pos()).inflate(radius), v -> v.isAlive());
                 // Every nearby villager carries the (dormant) build goal; only the builders below run it.
-                for (Villager v : nearby) GunnerEvents.ensureWallBuildGoal(v);
+                for (Villager v : nearby) {
+                    GunnerEvents.ensureWallBuildGoal(v);
+                    // Keep-awake backstop: a builder must never get stuck asleep while its wall is unfinished
+                    // (the goal only wakes itself while it is actively running).
+                    if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
+                }
                 manageBuilders(level, gp.pos(), nearby, now); // keep BUILDER_COUNT builders staffed
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
                     for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
+                    com.example.villagergunners.wall.WallBuild.clearPlan(gp); // free the reservation map
                     data.setDirty();
                     broadcast(server, "§aThe village wall is complete.");
                 }
