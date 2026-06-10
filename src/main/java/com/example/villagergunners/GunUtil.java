@@ -72,6 +72,30 @@ public final class GunUtil {
         return stack;
     }
 
+    /** A gun's base per-projectile damage from its JEG data, or {@code fallback}. */
+    public static float projectileDamage(ItemStack gunStack, float fallback) {
+        if (gunStack.getItem() instanceof GunItem gunItem) {
+            Gun gun = gunItem.getModifiedGun(gunStack);
+            if (gun != null && gun.getProjectile() != null) {
+                return gun.getProjectile().getDamage();
+            }
+        }
+        return fallback;
+    }
+
+    /**
+     * Build a JEG gun whose projectile does EXACTLY {@code flatDamage} per shot, by setting AdditionalDamage
+     * to (flatDamage - the gun's base projectile damage). JEG adds AdditionalDamage to the base, so the two
+     * sum to flatDamage. Used to nerf a gun to a fixed value regardless of its data-driven base damage.
+     */
+    public static ItemStack makeGunFlatDamage(ResourceLocation id, float flatDamage) {
+        ItemStack stack = makeGun(id);
+        if (stack.isEmpty()) return stack;
+        float add = flatDamage - projectileDamage(stack, flatDamage);
+        if (add != 0.0F) stack.getOrCreateTag().putFloat("AdditionalDamage", add);
+        return stack;
+    }
+
     /**
      * Snap the shooter to face the target. JEG's getDirection() builds the shot from the entity's
      * own rotation (getXRot/getYRot), NOT a straight line to the target -- and a mob's body yaw lags

@@ -61,10 +61,15 @@ public final class GunnerEvents {
 
     private static final double FOLLOW_RANGE = 32.0;
 
-    // Bonus damage injected via NBT so the guns actually hurt (revolver/minigun base dmg are low).
-    private static final float REVOLVER_BONUS = 10.0F;  // 5  -> 15
+    // Bonus damage injected via NBT so the guns actually hurt (minigun base dmg is low). The villager
+    // revolver is handled separately by the nerf below, so it has no bonus constant.
     private static final float MINIGUN_BONUS = 9.0F;    // 4  -> 13 (minigun also fades over range)
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
+
+    // Villager gun NERF (villagers only; guards/golems keep the values above): fire once per second and
+    // each projectile does a flat 8 damage, regardless of the guns' data-driven rate/base damage.
+    private static final int VILLAGER_FIRE_RATE = 20;   // ticks between shots = 1/sec
+    private static final float VILLAGER_GUN_DAMAGE = 8.0F;
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
@@ -147,7 +152,7 @@ public final class GunnerEvents {
         // Priority 0 (above combat): drop TNT and flee when standing on From Another World infection.
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new GunCombatGoal(
-                villager, GunUtil.REVOLVER, REVOLVER_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
+                villager, GunUtil.REVOLVER, GunUtil.FLAMETHROWER, VILLAGER_FIRE_RATE, VILLAGER_GUN_DAMAGE));
         villager.goalSelector.addGoal(2, new FlareRallyGoal(villager)); // run to reinforcement flares
         villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
     }

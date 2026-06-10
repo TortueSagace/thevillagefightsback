@@ -72,6 +72,22 @@ public class GunCombatGoal extends Goal {
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
+    /**
+     * Nerfed variant (villagers): both guns fire every {@code fixedRate} ticks and each projectile does
+     * EXACTLY {@code flatDamage}, regardless of the guns' data-driven rate/damage. Guards/golems keep the
+     * other constructor and are unaffected.
+     */
+    public GunCombatGoal(PathfinderMob shooter, ResourceLocation rangedId, ResourceLocation closeId,
+                         int fixedRate, float flatDamage) {
+        this.shooter = shooter;
+        this.isVillager = shooter instanceof Villager;
+        this.rangedGun = GunUtil.makeGunFlatDamage(rangedId, flatDamage);
+        this.closeGun = GunUtil.makeGunFlatDamage(closeId, flatDamage);
+        this.rangedRate = Math.max(1, fixedRate);
+        this.closeRate = Math.max(1, fixedRate);
+        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+    }
+
     private LivingEntity acquireTarget() {
         Player aggro = GunnerEvents.getAggroPlayer(shooter);
         if (aggro != null && inSight(aggro)) return aggro;
