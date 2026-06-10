@@ -9,7 +9,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ScaffoldingBlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.HalfTransparentBlock;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -145,6 +147,42 @@ public final class ModBlocks {
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER,
                     0x1b4a4a, 0x78ebf5, new Item.Properties()));
 
+    // --- Fertile / Rich block family --------------------------------------------------------------
+    // For each base block, "Fertile X" is a green-tinted copy with the SAME properties as the base, and
+    // "Rich X" is the same with emerald gems -- it drops emeralds like emerald ore (via its loot table) but
+    // keeps the base's toughness/tool requirement. Sand & gravel variants fall (FallingBlock); logs are
+    // axis-aware (RotatedPillarBlock). Textures/models/blockstates/loot are data-generated under resources.
+    public static final java.util.List<RegistryObject<Item>> FERTILE_RICH_ITEMS = new java.util.ArrayList<>();
+
+    private enum FertileKind { CUBE, FALLING, LOG }
+
+    static {
+        registerFertileRich("dirt", Blocks.DIRT, FertileKind.CUBE);
+        registerFertileRich("stone", Blocks.STONE, FertileKind.CUBE);
+        registerFertileRich("netherrack", Blocks.NETHERRACK, FertileKind.CUBE);
+        registerFertileRich("end_stone", Blocks.END_STONE, FertileKind.CUBE);
+        registerFertileRich("sculk", Blocks.SCULK, FertileKind.CUBE);
+        registerFertileRich("sand", Blocks.SAND, FertileKind.FALLING);
+        registerFertileRich("gravel", Blocks.GRAVEL, FertileKind.FALLING);
+        registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
+    }
+
+    private static void registerFertileRich(String base, Block vanilla, FertileKind kind) {
+        registerFertileBlock("fertile_" + base, vanilla, kind);
+        registerFertileBlock("rich_" + base, vanilla, kind);
+    }
+
+    private static void registerFertileBlock(String name, Block vanilla, FertileKind kind) {
+        // if/else, not switch-over-enum, to avoid generating a synthetic switch-map class.
+        RegistryObject<Block> block = BLOCKS.register(name, () -> {
+            BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
+            if (kind == FertileKind.FALLING) return new FallingBlock(p);
+            if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
+            return new Block(p);
+        });
+        FERTILE_RICH_ITEMS.add(ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties())));
+    }
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -158,6 +196,7 @@ public final class ModBlocks {
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
+                for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
             })
             .build());
 

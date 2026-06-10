@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "gobacktoyourworld:fertile_dirt",
+    "gobacktoyourworld:rich_dirt",
+    "gobacktoyourworld:fertile_sand",
+    "gobacktoyourworld:rich_sand",
+    "gobacktoyourworld:fertile_gravel",
+    "gobacktoyourworld:rich_gravel"
+  ]
+}

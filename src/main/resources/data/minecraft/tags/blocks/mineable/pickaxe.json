@@ -2,6 +2,12 @@
   "replace": false,
   "values": [
     "gobacktoyourworld:reinforced_glass",
-    "gobacktoyourworld:protecting_glass"
+    "gobacktoyourworld:protecting_glass",
+    "gobacktoyourworld:fertile_stone",
+    "gobacktoyourworld:rich_stone",
+    "gobacktoyourworld:fertile_netherrack",
+    "gobacktoyourworld:rich_netherrack",
+    "gobacktoyourworld:fertile_end_stone",
+    "gobacktoyourworld:rich_end_stone"
   ]
 }
