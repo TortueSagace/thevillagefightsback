@@ -23,12 +23,14 @@ import net.minecraft.world.level.block.state.properties.StairsShape;
  */
 public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean topHalf, int course) {
 
-    public enum BlockType { COBBLE, STAIR, LADDER, TORCH }
+    // FAKE_COBBLE appended at the END so existing saved plans' ordinals stay stable.
+    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE }
 
     /** The concrete block state this placement should produce. */
     public BlockState toState() {
         return switch (type) {
             case COBBLE -> Blocks.COBBLESTONE.defaultBlockState();
+            case FAKE_COBBLE -> com.example.villagergunners.ModBlocks.FAKE_COBBLESTONE.get().defaultBlockState();
             case STAIR -> Blocks.COBBLESTONE_STAIRS.defaultBlockState()
                     .setValue(StairBlock.FACING, facing)
                     .setValue(StairBlock.HALF, topHalf ? Half.TOP : Half.BOTTOM)
@@ -47,6 +49,7 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
     public boolean matches(BlockState world) {
         return switch (type) {
             case COBBLE -> world.is(Blocks.COBBLESTONE);
+            case FAKE_COBBLE -> world.is(com.example.villagergunners.ModBlocks.FAKE_COBBLESTONE.get());
             case STAIR -> world.is(Blocks.COBBLESTONE_STAIRS)
                     && world.getValue(StairBlock.FACING) == facing
                     && world.getValue(StairBlock.HALF) == (topHalf ? Half.TOP : Half.BOTTOM);

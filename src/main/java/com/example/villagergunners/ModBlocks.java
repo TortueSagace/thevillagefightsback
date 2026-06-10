@@ -79,6 +79,7 @@ public final class ModBlocks {
             .displayItems((params, output) -> {
                 output.accept(VILLAGE_GRAVEMIND_ITEM.get());
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
+                output.accept(FAKE_COBBLESTONE_ITEM.get());
             })
             .build());
 

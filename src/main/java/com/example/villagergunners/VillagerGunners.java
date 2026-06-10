@@ -19,6 +19,7 @@ public class VillagerGunners {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public VillagerGunners() {
+        ModPathTypes.init(); // register the custom BlockPathTypes during mod construction
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModBlocks.register(modBus);
         LOGGER.info("[Go Back To Your World] loaded.");

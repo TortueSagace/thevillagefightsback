@@ -73,6 +73,13 @@ public final class GunnerEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof PathfinderMob mob)) return;
 
+        // Let village defenders (and all iron golems) PATH through fake-cobblestone "doors": flip our
+        // custom passable type's malus to 0 for them only (others keep the -1 default = blocked). This
+        // mirrors FakeCobblestoneBlock.isPhaser, which lets the same set physically walk through.
+        if (mob instanceof IronGolem || mob instanceof Villager || isGuard(mob)) {
+            mob.setPathfindingMalus(ModPathTypes.ALLY_PASSABLE, 0.0F);
+        }
+
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
             armGolem(golem);
