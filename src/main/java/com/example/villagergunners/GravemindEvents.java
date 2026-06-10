@@ -245,9 +245,14 @@ public final class GravemindEvents {
         for (ServerLevel level : server.getAllLevels()) {
             PoiManager poi = level.getPoiManager();
             for (ServerPlayer player : level.players()) {
-                poi.getInSquare(holder -> holder.is(PoiTypes.MEETING), player.blockPosition(),
-                                VILLAGE_SCAN_RADIUS, PoiManager.Occupancy.ANY)
-                        .forEach(record -> tryPlaceGravemind(level, data, record.getPos()));
+                // Collect the meeting-point positions FIRST. tryPlaceGravemind places the gravemind and beds
+                // (HOME POIs), which mutate the POI manager -- doing that while the POI stream is still open
+                // throws ConcurrentModificationException, so we drain the stream before touching the world.
+                List<BlockPos> centers = poi.getInSquare(holder -> holder.is(PoiTypes.MEETING),
+                                player.blockPosition(), VILLAGE_SCAN_RADIUS, PoiManager.Occupancy.ANY)
+                        .map(record -> record.getPos().immutable())
+                        .toList();
+                for (BlockPos bell : centers) tryPlaceGravemind(level, data, bell);
             }
         }
     }
