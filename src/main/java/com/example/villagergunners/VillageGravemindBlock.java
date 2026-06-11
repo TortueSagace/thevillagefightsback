@@ -159,7 +159,7 @@ public class VillageGravemindBlock extends Block {
         if (!level.isClientSide) {
             int silk = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
                     net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, player.getMainHandItem());
-            if (silk > 0 || player.getAbilities().instabuild) {
+            if (silk > 0) { // ONLY silk touch is a clean pickup; everything else (incl. creative) unleashes the boss
                 cleanBreakPos = pos.asLong();
                 cleanBreakTick = level.getGameTime();
             }
@@ -167,17 +167,14 @@ public class VillageGravemindBlock extends Block {
         super.playerWillDestroy(level, pos, state, player);
     }
 
-    /** Drops the gravemind ONLY on a silk-touch / creative break; any other break consumes it (it becomes the boss). */
+    /** Drops the gravemind ONLY on a silk-touch break; any other break consumes it (it becomes the boss). */
     @Override
     public List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
-        net.minecraft.world.entity.Entity breaker = params.getOptionalParameter(
-                net.minecraft.world.level.storage.loot.parameters.LootContextParams.THIS_ENTITY);
         ItemStack tool = params.getOptionalParameter(
                 net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL);
         int silk = tool == null ? 0 : net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
                 net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, tool);
-        boolean creative = breaker instanceof Player p && p.getAbilities().instabuild;
-        return (silk > 0 || creative) ? List.of(new ItemStack(this)) : List.of();
+        return silk > 0 ? List.of(new ItemStack(this)) : List.of(); // only silk touch yields the block back
     }
 
     @Override

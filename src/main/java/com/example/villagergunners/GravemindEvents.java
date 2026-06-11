@@ -567,6 +567,11 @@ public final class GravemindEvents {
         // villages / extra bells). Not marked serviced, so it self-heals if that gravemind is removed.
         if (hasGravemindWithin(level, data, spot, 100.0)) return;
 
+        // While the unleashed gravemind boss is loose in the area, NO new gravemind may rise (no domino
+        // re-spawn after it was destroyed). It resumes only once the boss is dead. Not marked serviced.
+        if (!level.getEntitiesOfClass(UnleashedGravemindEntity.class,
+                new net.minecraft.world.phys.AABB(spot).inflate(128.0)).isEmpty()) return;
+
         level.setBlock(spot, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
         // If a player placed this bell, they founded the village -> Hero of the Village.

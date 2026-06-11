@@ -37,10 +37,13 @@ public class GravemindHeadLayer extends RenderLayer<GravemindWardenEntity, Warde
                        float limbSwing, float limbSwingAmount, float partialTick, float age,
                        float netHeadYaw, float headPitch) {
         BlockState state = ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState();
+        // Warden hierarchy is root -> "bone" -> "body" -> "head"; walk the whole chain to the head pivot.
         ModelPart bone = getParentModel().root().getChild("bone");
-        ModelPart head = bone.getChild("head");
+        ModelPart body = bone.getChild("body");
+        ModelPart head = body.getChild("head");
         pose.pushPose();
         bone.translateAndRotate(pose);
+        body.translateAndRotate(pose);
         head.translateAndRotate(pose);          // now at the animated head pivot
         // The model is rendered y-down (the renderer flipped it); flip back so the block is upright, scale it
         // to head size, then centre it on the bone.

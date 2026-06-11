@@ -35,7 +35,8 @@ public class GravemindWardenRenderer extends MobRenderer<GravemindWardenEntity, 
                        MultiBufferSource buffer, int light) {
         // Hide the Warden's own head (+ its tendrils) -- the gravemind block stands in for it. translateAndRotate
         // in the head layer still works on an invisible bone, so the block tracks the head's animation.
-        ModelPart head = getModel().root().getChild("bone").getChild("head");
+        // Warden hierarchy is root -> "bone" -> "body" -> "head" (the head is under body, not bone).
+        ModelPart head = getModel().root().getChild("bone").getChild("body").getChild("head");
         boolean prev = head.visible;
         head.visible = false;
         super.render(entity, yaw, partialTicks, pose, buffer, light);
