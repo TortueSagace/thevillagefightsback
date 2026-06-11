@@ -37,13 +37,13 @@ public class StageThreeGuardGoal extends Goal {
 
     private static final double FOLLOW_RANGE = 24.0;
     private static final double CROSSBOW_RANGE = 10.0;   // > this -> crossbow
-    private static final int MIN_HEADROOM = 4;            // air blocks above the head needed to bounce
+    private static final int MIN_HEADROOM = 5;            // air blocks above the head needed to bounce
     private static final int RETARGET_INTERVAL = 10;
 
     private static final int FIRE_INTERVAL = 25;          // crossbow cadence (Quick Charge III ~ fast)
     private static final float ARROW_SPEED = 2.8F;
 
-    private static final double LAUNCH_VY = 1.35;         // wind-charge upward kick
+    private static final double LAUNCH_VY = 0.85;         // wind-charge upward kick (~4-5 blocks, clears MIN_HEADROOM)
     private static final double LAUNCH_HORIZ = 0.45;      // lean toward the target
     private static final int LAUNCH_COOLDOWN = 25;
     private static final double SMASH_RANGE_SQR = 9.0;    // smash when within 3 blocks while diving
