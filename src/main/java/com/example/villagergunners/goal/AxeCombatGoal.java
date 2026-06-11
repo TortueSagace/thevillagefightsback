@@ -71,12 +71,13 @@ public class AxeCombatGoal extends Goal {
     public boolean canUse() {
         if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
         this.target = acquireTarget();
+        if (GunnerEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
         return target != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return inRange(this.target);
+        return inRange(this.target) && !GunnerEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
     }
 
     @Override

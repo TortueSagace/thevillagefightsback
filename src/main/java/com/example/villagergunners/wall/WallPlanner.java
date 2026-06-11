@@ -120,13 +120,17 @@ public final class WallPlanner {
         Direction in = o.getOpposite();          // toward the village interior
 
         if (isDoor) {
-            // A 3-high fake-cobblestone gate (courses 0..2) with a solid cobble cap above (course 3). We emit
-            // NO loophole/ladder/torch on a door column, so nothing is ever placed ON the fake cobblestone,
-            // and the opening stays a clean 2-wide x 3-high passage for an iron golem.
+            // A 3-high fake-cobblestone gate (courses 0..2) with a solid cobble cap above (course 3) -- the
+            // opening stays a clean 2-wide x 3-high passage for an iron golem. The only thing ON the column is
+            // a standing torch atop the cap (the 4th block above the door), to light the gate. No loophole/
+            // ladder (nothing is placed on the fake cobblestone itself).
             out.add(fakeCobble(col.x, base, col.z, 0));
             out.add(fakeCobble(col.x, base + 1, col.z, 1));
             out.add(fakeCobble(col.x, base + 2, col.z, 2));
             out.add(cobble(col.x, base + 3, col.z, 3));
+            // Standing torch on top of the cap (course 3 so it's placed last, after the cap is up).
+            out.add(new WallBlock(new BlockPos(col.x, base + 4, col.z),
+                    WallBlock.BlockType.STANDING_TORCH, null, false, 3));
             return;
         }
 

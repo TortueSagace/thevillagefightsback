@@ -125,10 +125,13 @@ public class WallBuildGoal extends Goal {
     /** Try to claim the next reachable unbuilt cell. Returns true and enters APPROACH on success. */
     private boolean acquireTarget(ServerLevel sl) {
         long now = sl.getGameTime();
-        // A cell is unavailable if it's parked (no builder could reach/finish it) OR another builder owns it
-        // (live reservation) -- so two builders never pile on the same block and collide.
+        // A cell is unavailable to builders if it's parked (briefly hidden), another builder owns it (live
+        // reservation), OR it has been abandoned more than 3 times -- past that, builders give up on it for
+        // good and the gravemind's hole-sealer places it, so the whole crew never piles on one hard cell.
         java.util.function.Predicate<BlockPos> taken = pos ->
-                WallBuild.isSkipped(plan.gravemind(), pos, now) || WallBuild.isReserved(plan.gravemind(), pos, now);
+                WallBuild.isSkipped(plan.gravemind(), pos, now)
+                || WallBuild.isReserved(plan.gravemind(), pos, now)
+                || WallBuild.abandonCount(plan.gravemind(), pos) > 3;
         // Build MY section: from my door rightward to the next door, raising each column as a full pillar.
         int[] doors = plan.doorColumns();
         int from = 0;
@@ -485,7 +488,11 @@ public class WallBuildGoal extends Goal {
     }
 
     private boolean placeable(BlockPos pos) {
-        return level().getBlockState(pos).canBeReplaced(); // never bulldoze houses, bedrock, ...
+        BlockState s = level().getBlockState(pos);
+        return s.canBeReplaced()                          // air / water / tall grass / ...
+                || s.is(net.minecraft.tags.BlockTags.LEAVES)   // build straight through overgrowth
+                || s.is(ModBlocks.CHEAP_SCAFFOLD.get());  // our own disposable scaffold -> overwrite it
+        // (still never bulldozes houses, terrain, bedrock -- those aren't replaceable/leaves/scaffold)
     }
 
     private void abandon() {

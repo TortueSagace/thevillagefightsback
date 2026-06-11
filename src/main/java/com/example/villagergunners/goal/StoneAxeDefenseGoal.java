@@ -3,6 +3,8 @@ package com.example.villagergunners.goal;
 import java.util.EnumSet;
 import java.util.List;
 
+import com.example.villagergunners.GunnerEvents;
+
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.Brain;
@@ -61,13 +63,15 @@ public class StoneAxeDefenseGoal extends Goal {
         if (!hurt()) return false;                                   // healthy -> flee normally
         if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
         this.target = findTarget();
+        if (GunnerEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
         return target != null;
     }
 
     @Override
     public boolean canContinueToUse() {
         return hurt() && target != null && target.isAlive()
-                && villager.distanceToSqr(target) <= SEE_RANGE * SEE_RANGE;
+                && villager.distanceToSqr(target) <= SEE_RANGE * SEE_RANGE
+                && !GunnerEvents.beyondHomeWall(villager, target); // stop if it leaves our wall
     }
 
     @Override

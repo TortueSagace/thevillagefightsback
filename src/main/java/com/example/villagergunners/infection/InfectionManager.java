@@ -58,6 +58,9 @@ public final class InfectionManager {
     private static final long FAST_WINDOW = 200L;         // first 10s after a village triggers = 5x
     private static final double FAST_MULT = 5.0;
     private static final long BOOST_DURATION = 600L;      // +100% for 30s near a lost block (spec 8)
+    private static final double SLOW_FACTOR = 0.1;        // steady-state infection is 10x slower than the raw
+                                                          // chances; SKIPPED while fighting back (boost) or in
+                                                          // the 5x start window, so retaliation stays snappy.
 
     private static final int SEED_RADIUS = 24;       // one-time scan for dirt paths around a new lvl-2 village
     private static final int SEED_Y = 5;
@@ -120,6 +123,7 @@ public final class InfectionManager {
         InfectionData inf = InfectionData.get(sl);
         long key = event.getPos().asLong();
         inf.sanction(key, sl.getGameTime());
+        inf.decConverted();                  // player cleared one of our blocks -> frees the footprint cap
         if (BlockMatcher.isRich(s)) inf.removeRich(key);
     }
 
@@ -135,6 +139,7 @@ public final class InfectionManager {
             if (!BlockMatcher.isInfection(sl.getBlockState(pos))) continue;
             long key = pos.asLong();
             inf.removeRich(key);
+            inf.decConverted();                                      // frees the footprint cap to regrow
             inf.sanction(key, now);                                   // accounted for -> frontier scan won't re-boost
             if (!friendly) inf.addBoost(key, now + BOOST_DURATION);   // the ground feels attacked (spec 8)
             inf.retire(key);                                          // it's gone -> drop it from the frontier
@@ -158,6 +163,7 @@ public final class InfectionManager {
         long key = event.getPos().asLong();
         long now = sl.getGameTime();
         inf.removeRich(key);
+        inf.decConverted();
         inf.sanction(key, now);
         if (!(event.getEntity() instanceof Villager)) inf.addBoost(key, now + BOOST_DURATION);
         inf.retire(key);
@@ -226,6 +232,7 @@ public final class InfectionManager {
             if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
                 level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
                 inf.addPathHead(g.asLong());
+                inf.incConverted();
                 return;
             }
         }
@@ -240,8 +247,11 @@ public final class InfectionManager {
             BlockPos p = BlockPos.of(head);
             if (!level.isLoaded(p)) continue;
             if (!BlockMatcher.isPath(level.getBlockState(p))) { inf.dropPathHead(head); continue; }
-            double chance = Math.min(1.0, PATH_GROW_CHANCE * globalMult * inf.multiplierAt(p, now));
+            double mult = inf.multiplierAt(p, now);
+            double slow = (mult > 1.0 || globalMult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
+            double chance = Math.min(1.0, PATH_GROW_CHANCE * globalMult * mult * slow);
             if (rnd.nextDouble() >= chance) continue;
+            if (!inf.canConvertMore()) continue;          // footprint cap reached -> stop creating new blocks
             int res = tryGrow(level, inf, p, rnd);
             if (res < 0) {
                 // spec 5: a path with NO viable extension, sitting over air/water, may drip a fertile sand below
@@ -251,6 +261,7 @@ public final class InfectionManager {
                     boolean voidOrWater = bs.isAir() || !bs.getFluidState().isEmpty();
                     if (voidOrWater && rnd.nextDouble() < SAND_DROP_CHANCE && BlockMatcher.fertileSand() != null) {
                         level.setBlock(below, BlockMatcher.fertileSand().defaultBlockState(), 3);
+                        inf.incConverted();
                     }
                 }
             }
@@ -290,6 +301,7 @@ public final class InfectionManager {
         if (targets[chosen] == null) return 0; // the weighted pick was a no-op direction this attempt
         level.setBlock(targets[chosen], Blocks.DIRT_PATH.defaultBlockState(), 3);
         inf.addPathHead(targets[chosen].asLong());
+        inf.incConverted();
         return 1;
     }
 
@@ -334,6 +346,7 @@ public final class InfectionManager {
                 // The block is gone. If nobody sanctioned its removal, the ground "feels attacked".
                 if (!inf.wasSanctioned(key, now)) inf.addBoost(key, now + BOOST_DURATION);
                 inf.removeRich(key);
+                inf.decConverted();                    // one fewer of our blocks -> frees the cap to regrow
                 inf.retire(key);
                 reactivateNeighbours(inf, level, pos); // re-take the exposed ground (heals craters / damage)
                 continue;
@@ -346,13 +359,17 @@ public final class InfectionManager {
             BlockPos cand = findCandidate(level, pos, rnd);
             if (cand == null) { inf.retire(key); continue; }           // nothing left to convert here -> drop it
 
-            double chance = Math.min(1.0, CONV_CHANCE * globalMult * inf.multiplierAt(pos, now));
-            if (rnd.nextDouble() < chance) {
+            double mult = inf.multiplierAt(pos, now);
+            double slow = (mult > 1.0 || globalMult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
+            double chance = Math.min(1.0, CONV_CHANCE * globalMult * mult * slow);
+            if (inf.canConvertMore() && rnd.nextDouble() < chance) {    // footprint cap -> pause new conversions
                 boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
                 BlockState conv = BlockMatcher.convertedState(level.getBlockState(cand), richVariant);
                 if (conv != null) {
-                    level.setBlock(cand, conv, 3);
+                    conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
+                    level.setBlock(cand, conv, 3);     // updateFromNeighbourShapes -> fertile fences keep connections
                     inf.addFrontier(cand.asLong());
+                    inf.incConverted();
                     if (richVariant) inf.addRich(cand.asLong());
                 }
             }

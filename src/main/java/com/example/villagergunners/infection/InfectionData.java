@@ -50,6 +50,12 @@ public class InfectionData extends SavedData {
 
     private long fastUntil = Long.MIN_VALUE; // gametime until which infection runs at 5x (first 10s)
 
+    // Hard cap on how many infection blocks may exist at once (anti-lag). Tracked with a simple counter
+    // (O(1) inc/dec on place/destroy -- no scanning), so infection PAUSES at the cap and resumes once some
+    // converted blocks are destroyed.
+    public static final int MAX_CONVERTED = 2000;
+    private int converted = 0;
+
     // transient: positions whose removal was sanctioned (player break / miner dig) -> not an "attack"
     private final Map<Long, Long> sanctioned = new HashMap<>();
 
@@ -94,6 +100,12 @@ public class InfectionData extends SavedData {
     }
 
     public int frontierSize() { return frontier.size(); }
+
+    // --- converted-block cap (anti-lag) ---
+    public boolean canConvertMore() { return converted < MAX_CONVERTED; }
+    public void incConverted() { converted++; setDirty(); }
+    public void decConverted() { if (converted > 0) { converted--; setDirty(); } }
+    public int convertedCount() { return converted; }
 
     /** Pop the next frontier position to process (round-robin), or null. Caller must {@link #reactivate} or
      *  {@link #retire} it. */
@@ -185,6 +197,7 @@ public class InfectionData extends SavedData {
         tag.putLongArray("rich", toArray(rich));
         tag.putLongArray("seeded", toArray(seeded));
         tag.putLong("fastUntil", fastUntil);
+        tag.putInt("converted", converted);
         long[] bc = new long[boosts.size()], be = new long[boosts.size()];
         int i = 0;
         for (long[] b : boosts) { bc[i] = b[0]; be[i] = b[1]; i++; }
@@ -200,6 +213,7 @@ public class InfectionData extends SavedData {
         for (long l : tag.getLongArray("rich")) d.rich.add(l);
         for (long l : tag.getLongArray("seeded")) d.seeded.add(l);
         d.fastUntil = tag.getLong("fastUntil");
+        d.converted = tag.getInt("converted");
         long[] bc = tag.getLongArray("boostC"), be = tag.getLongArray("boostE");
         for (int i = 0; i < bc.length && i < be.length; i++) d.boosts.addLast(new long[]{bc[i], be[i]});
         return d;

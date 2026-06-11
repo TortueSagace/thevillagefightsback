@@ -89,6 +89,25 @@ public final class WallBuild {
         return ABANDONS.getOrDefault(plan, java.util.Collections.emptyMap());
     }
 
+    /** How many times builders have given up on this cell (0 if never). */
+    public static int abandonCount(GlobalPos plan, BlockPos pos) {
+        Map<Long, Integer> m = ABANDONS.get(plan);
+        if (m == null) return 0;
+        Integer v = m.get(pos.asLong());
+        return v == null ? 0 : v;
+    }
+
+    /** The wall plan whose footprint (horizontally) ENCLOSES {@code pos}, or null. Used to leash defenders to
+     *  the walled zone (complete or not -- a half-built wall still defines the village's footprint). */
+    public static WallPlan enclosingPlan(ServerLevel level, BlockPos pos) {
+        GravemindData data = GravemindData.get(level.getServer());
+        for (WallPlan p : data.wallPlans()) {
+            if (!p.gravemind().dimension().equals(level.dimension())) continue;
+            if (p.contains(pos)) return p;
+        }
+        return null;
+    }
+
     /** Forget a cell's abandon count + skip (e.g. the gravemind just sealed it, or it got built). */
     public static void clearAbandon(GlobalPos plan, BlockPos pos) {
         Map<Long, Integer> m = ABANDONS.get(plan);

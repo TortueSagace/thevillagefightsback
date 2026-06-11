@@ -221,6 +221,7 @@ public final class ModBlocks {
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
+                output.accept(ModItems.EMERALDGER_SPAWN.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());

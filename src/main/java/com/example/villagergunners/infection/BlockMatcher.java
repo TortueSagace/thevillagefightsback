@@ -61,6 +61,7 @@ public final class BlockMatcher {
     private static Map<String, Block> richByBase;    // base -> our rich block
     private static Set<Block> infectionBlocks;       // all fertile + rich + dirt_path
     private static Set<Block> richBlockSet;          // all rich blocks
+    private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
 
     private static Block byId(String name) {
         return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(VillagerGunners.MODID, name));
@@ -82,6 +83,16 @@ public final class BlockMatcher {
             if (r != null) { richByBase.put(b, r); infectionBlocks.add(r); richBlockSet.add(r); }
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
+
+        // Villager job-site workstations + the meeting bell: never infected, so a village keeps its jobs.
+        jobSites = new HashSet<>();
+        for (Block b : new Block[]{
+                Blocks.BELL, Blocks.LECTERN, Blocks.COMPOSTER, Blocks.BARREL, Blocks.BLAST_FURNACE,
+                Blocks.SMOKER, Blocks.BREWING_STAND, Blocks.CARTOGRAPHY_TABLE, Blocks.FLETCHING_TABLE,
+                Blocks.GRINDSTONE, Blocks.LOOM, Blocks.SMITHING_TABLE, Blocks.STONECUTTER,
+                Blocks.CAULDRON, Blocks.WATER_CAULDRON, Blocks.LAVA_CAULDRON, Blocks.POWDER_SNOW_CAULDRON}) {
+            jobSites.add(b);
+        }
         // our shape-preserving fertile blocks count as infection too, so they are never re-converted to cubes.
         if (ModBlocks.FERTILE_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
         if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
@@ -127,6 +138,8 @@ public final class BlockMatcher {
         Block b = s.getBlock();
         if (infectionBlocks.contains(b)) return false;                 // already part of our extension
         if (b == Blocks.FARMLAND) return false;
+        if (jobSites.contains(b)) return false;                        // keep village jobs (workstations + bell)
+        if (b == Blocks.IRON_DOOR || b == Blocks.IRON_TRAPDOOR) return false; // iron doors are immune
         if (s.is(BlockTags.PLANKS)) return false;
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 7) return false;                    // brighter than a redstone torch

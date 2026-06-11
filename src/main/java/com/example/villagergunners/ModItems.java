@@ -25,6 +25,11 @@ public final class ModItems {
     public static final RegistryObject<Item> ROCKET =
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
+    /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
+    public static final RegistryObject<Item> EMERALDGER_SPAWN =
+            ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.EMERALDGER, 0x17DD62, 0x0A6E2E, new Item.Properties()));
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
     }

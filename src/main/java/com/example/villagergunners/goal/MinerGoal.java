@@ -114,28 +114,44 @@ public class MinerGoal extends Goal {
 
         if (digPos != null) { tickDig(sl); return; }
         if (carrying) { tickDeliver(sl); return; }
-        if (target == null) return;
 
-        // Target must still be a rich block.
-        if (!BlockMatcher.isRich(sl.getBlockState(target))) {
-            InfectionData.get(sl).removeRich(target.asLong());
-            target = null;
-            seekTicks = 0;
-            return;
+        InfectionData inf = InfectionData.get(sl);
+        avoid.values().removeIf(exp -> exp <= sl.getGameTime()); // let blacklisted blocks become eligible again
+
+        // 1. Mine any rich block right next to us FIRST -- never walk past one we could already dig.
+        BlockPos here = villager.blockPosition();
+        for (BlockPos n : BlockPos.betweenClosed(here.offset(-1, -2, -1), here.offset(1, 2, 1))) {
+            if (BlockMatcher.isRich(sl.getBlockState(n))) {
+                avoid.remove(n.asLong());          // clearly reachable -> un-blacklist
+                target = n.immutable();
+                seekTicks = 0;
+                startDig(target);
+                return;
+            }
         }
+
+        // 2. Make sure we have a still-valid target; otherwise pick the nearest non-blacklisted rich block.
+        if (target != null && !BlockMatcher.isRich(sl.getBlockState(target))) {
+            inf.removeRich(target.asLong());
+            target = null;
+        }
+        if (target == null || avoid.containsKey(target.asLong())) {
+            target = inf.nearestRich(here, SEARCH_RANGE, avoid.keySet());
+            seekTicks = 0;
+            if (target == null) return;            // nothing minable right now -> let normal AI roam; canUse retries
+        }
+
+        // 3. Pursue. Dig when in reach; if we can't make progress, blacklist it and re-pick NEXT tick (never idle).
         Vec3 c = Vec3.atCenterOf(target);
         villager.getLookControl().setLookAt(c.x, c.y, c.z);
-        if (villager.position().distanceToSqr(c) <= REACH_SQR) {
-            seekTicks = 0;
-            startDig(target);
-        } else if (++seekTicks > SEEK_TIMEOUT) {
-            // Can't reach this block (no path / blocked): blacklist it briefly and pick another reachable one.
+        if (villager.position().distanceToSqr(c) <= REACH_SQR) { seekTicks = 0; startDig(target); return; }
+        navigate(target);
+        boolean unreachable = villager.getNavigation().isDone() && seekTicks > 10; // navigator finished but not in reach
+        if (++seekTicks > SEEK_TIMEOUT || unreachable) {
             avoid.put(target.asLong(), sl.getGameTime() + BLACKLIST_TICKS);
             villager.getNavigation().stop();
             target = null;
             seekTicks = 0;
-        } else {
-            navigate(target);
         }
     }
 
@@ -217,6 +233,7 @@ public class MinerGoal extends Goal {
             InfectionData id = InfectionData.get(sl);
             id.sanction(digPos.asLong(), sl.getGameTime()); // our own dig is NOT an attack
             id.removeRich(digPos.asLong());
+            id.decConverted();                              // frees the footprint cap so infection can regrow
             sl.destroyBlock(digPos, false);                 // remove without vanilla drops; we hand over the emerald
             villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.EMERALD));
             villager.setDropChance(EquipmentSlot.MAINHAND, 1.0F); // drop the emerald if killed mid-run

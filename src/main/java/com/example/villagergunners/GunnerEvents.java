@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.example.villagergunners.goal.AxeCombatGoal;
 import com.example.villagergunners.goal.FlareRallyGoal;
+import com.example.villagergunners.wall.WallBuild;
+import com.example.villagergunners.wall.WallPlan;
 import com.example.villagergunners.goal.GolemRocketGoal;
 import com.example.villagergunners.goal.GunCombatGoal;
 import com.example.villagergunners.goal.StoneAxeDefenseGoal;
@@ -23,8 +25,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.AxeItem;
@@ -34,6 +38,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -265,9 +270,51 @@ public final class GunnerEvents {
      */
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
-        if (isAlly(event.getEntity()) && event.getNewTarget() != null && isAlly(event.getNewTarget())) {
+        LivingEntity self = event.getEntity();
+        LivingEntity newTarget = event.getNewTarget();
+        if (isAlly(self) && newTarget != null && isAlly(newTarget)) {
+            event.setCanceled(true);            // allies never fight each other
+            return;
+        }
+        // Villagers/guards must not leave the walled zone to chase a mob: if WE stand inside our village wall
+        // but the would-be target is on the far side of it, refuse the target (we engage it only once it
+        // breaks IN). Players are exempt -- anti-grief retaliation can still chase the griefer.
+        if (newTarget != null && (self instanceof Villager || isGuard(self)) && beyondHomeWall(self, newTarget)) {
             event.setCanceled(true);
         }
+    }
+
+    /**
+     * True if {@code self} stands inside its village wall but {@code target} is OUTSIDE that wall -- i.e.
+     * engaging it would mean leaving the protected zone. Players are never "beyond the wall" (so anti-grief
+     * still works). Used by the combat goals and {@link #onChangeTarget} to keep defenders home.
+     */
+    public static boolean beyondHomeWall(LivingEntity self, LivingEntity target) {
+        if (target == null || target instanceof Player) return false;
+        if (!(self.level() instanceof ServerLevel sl)) return false;
+        WallPlan wall = WallBuild.enclosingPlan(sl, self.blockPosition());
+        return wall != null && !wall.contains(target.blockPosition());
+    }
+
+    private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // gravemind must be within this of the kill
+
+    /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Gravemind. */
+    @SubscribeEvent
+    public static void onMobKilledByGuard(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof Enemy)) return;                 // only hostile mobs count
+        if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
+        Entity killer = event.getSource().getEntity();
+        if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard
+        GravemindData data = GravemindData.get(sl.getServer());
+        BlockPos at = event.getEntity().blockPosition();
+        GlobalPos best = null;
+        double bestD = GUARD_KILL_EMERALD_RANGE * GUARD_KILL_EMERALD_RANGE;
+        for (GlobalPos gp : data.blocks()) {
+            if (!gp.dimension().equals(sl.dimension())) continue;
+            double d = gp.pos().distSqr(at);
+            if (d <= bestD) { bestD = d; best = gp; }
+        }
+        if (best != null) data.econ(best).addEmeralds(1); // addEmeralds() self-dirties the saved data
     }
 
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */

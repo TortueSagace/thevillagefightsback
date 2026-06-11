@@ -23,8 +23,8 @@ import net.minecraft.world.level.block.state.properties.StairsShape;
  */
 public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean topHalf, int course) {
 
-    // FAKE_COBBLE appended at the END so existing saved plans' ordinals stay stable.
-    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE }
+    // New types appended at the END so existing saved plans' ordinals stay stable.
+    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE, STANDING_TORCH }
 
     /** The concrete block state this placement should produce. */
     public BlockState toState() {
@@ -39,6 +39,7 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
                     .setValue(LadderBlock.FACING, facing);
             case TORCH -> Blocks.WALL_TORCH.defaultBlockState()
                     .setValue(WallTorchBlock.FACING, facing);
+            case STANDING_TORCH -> Blocks.TORCH.defaultBlockState();
         };
     }
 
@@ -57,6 +58,7 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
                     && world.getValue(LadderBlock.FACING) == facing;
             case TORCH -> world.is(Blocks.WALL_TORCH)
                     && world.getValue(WallTorchBlock.FACING) == facing;
+            case STANDING_TORCH -> world.is(Blocks.TORCH);
         };
     }
 }

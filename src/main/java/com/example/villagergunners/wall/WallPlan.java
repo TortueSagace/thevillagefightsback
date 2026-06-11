@@ -107,6 +107,39 @@ public final class WallPlan {
         return gravemind.pos().distSqr(p);
     }
 
+    // Cached perimeter polygon (one (x,z) vertex per column, in perimeter order) for contains() tests.
+    private transient int[] polyX, polyZ;
+
+    /**
+     * True if {@code p} lies (horizontally) INSIDE the wall ring -- a 2D point-in-polygon test against the
+     * perimeter columns (Y is ignored). Used to keep defenders from leaving the walled zone to chase a mob
+     * that is on the far side of the wall.
+     */
+    public boolean contains(BlockPos p) {
+        if (polyX == null) {
+            int n = columns.size();
+            int[] xs = new int[n], zs = new int[n];
+            for (int i = 0; i < n; i++) {
+                BlockPos c = columns.get(i).get(0).pos(); // each column has >=1 block; its (x,z) is the vertex
+                xs[i] = c.getX();
+                zs[i] = c.getZ();
+            }
+            polyX = xs;
+            polyZ = zs;
+        }
+        int n = polyX.length;
+        if (n < 3) return false;
+        int x = p.getX(), z = p.getZ();
+        boolean in = false;
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            if ((polyZ[i] > z) != (polyZ[j] > z)
+                    && x < (double) (polyX[j] - polyX[i]) * (z - polyZ[i]) / (polyZ[j] - polyZ[i]) + polyX[i]) {
+                in = !in;
+            }
+        }
+        return in;
+    }
+
     public boolean isBuilt(Level level, WallBlock wb) {
         return wb.matches(level.getBlockState(wb.pos()));
     }

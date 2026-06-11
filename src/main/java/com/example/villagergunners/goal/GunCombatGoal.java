@@ -91,7 +91,8 @@ public class GunCombatGoal extends Goal {
     private LivingEntity acquireTarget() {
         Player aggro = GunnerEvents.getAggroPlayer(shooter);
         if (aggro != null && inSight(aggro)) return aggro;
-        return GunUtil.findNearestHostile(shooter, SEE_RANGE);
+        LivingEntity hostile = GunUtil.findNearestHostile(shooter, SEE_RANGE);
+        return GunnerEvents.beyondHomeWall(shooter, hostile) ? null : hostile; // don't leave our wall to chase it
     }
 
     private boolean inSight(LivingEntity t) {
@@ -112,7 +113,7 @@ public class GunCombatGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         if (isFleeing()) return false; // desperation: yield to natural panic/flee behaviour
-        return inSight(this.target);
+        return inSight(this.target) && !GunnerEvents.beyondHomeWall(shooter, this.target); // stop if it leaves our wall
     }
 
     /** True while a desperation grenade-and-flee is in progress (we stay disengaged from combat). */
