@@ -489,10 +489,11 @@ public class WallBuildGoal extends Goal {
 
     private boolean placeable(BlockPos pos) {
         BlockState s = level().getBlockState(pos);
-        return s.canBeReplaced()                          // air / water / tall grass / ...
+        return s.canBeReplaced()                          // air / water / short grass / ferns / snow layer / ...
+                || s.getBlock() instanceof net.minecraft.world.level.block.BushBlock // flowers, saplings, crops, mushrooms, ...
                 || s.is(net.minecraft.tags.BlockTags.LEAVES)   // build straight through overgrowth
                 || s.is(ModBlocks.CHEAP_SCAFFOLD.get());  // our own disposable scaffold -> overwrite it
-        // (still never bulldozes houses, terrain, bedrock -- those aren't replaceable/leaves/scaffold)
+        // (still never bulldozes houses, terrain, bedrock -- those aren't replaceable/plants/leaves/scaffold)
     }
 
     private void abandon() {
