@@ -62,6 +62,7 @@ public class MinerGoal extends Goal {
     // progressive dig (mirrors WallBuildGoal)
     private BlockPos digPos;
     private int digTicks, digTotal;
+    private boolean digObstacle; // true while digging a block that's merely in the WAY (not the rich target)
 
     public MinerGoal(Villager villager) {
         this.villager = villager;
@@ -135,7 +136,7 @@ public class MinerGoal extends Goal {
                 avoid.remove(n.asLong());          // clearly reachable -> un-blacklist
                 target = n.immutable();
                 seekTicks = 0;
-                startDig(target);
+                startDig(target, false);
                 return;
             }
         }
@@ -152,13 +153,15 @@ public class MinerGoal extends Goal {
             if (target == null) return;            // nothing minable right now -> let normal AI roam; canUse retries
         }
 
-        // 3. Pursue. Dig when in reach; if we can't make progress, blacklist it and re-pick NEXT tick (never idle).
+        // 3. Pursue. Dig when in reach; if we can't make progress, TUNNEL toward it (dig the blocks in the
+        //    way, except cobblestone/our own), and only blacklist if even that's impossible (never idle).
         Vec3 c = Vec3.atCenterOf(target);
         villager.getLookControl().setLookAt(c.x, c.y, c.z);
-        if (villager.position().distanceToSqr(c) <= REACH_SQR) { seekTicks = 0; startDig(target); return; }
+        if (villager.position().distanceToSqr(c) <= REACH_SQR) { seekTicks = 0; startDig(target, false); return; }
         navigate(target);
         boolean unreachable = villager.getNavigation().isDone() && seekTicks > 10; // navigator finished but not in reach
         if (++seekTicks > SEEK_TIMEOUT || unreachable) {
+            if (digTowards(sl, target)) { seekTicks = 0; return; }   // dig through the obstacle and keep coming
             avoid.put(target.asLong(), sl.getGameTime() + BLACKLIST_TICKS);
             villager.getNavigation().stop();
             target = null;
@@ -237,9 +240,10 @@ public class MinerGoal extends Goal {
     }
 
     // --- digging ---
-    private void startDig(BlockPos pos) {
+    private void startDig(BlockPos pos, boolean obstacle) {
         digPos = pos.immutable();
         digTicks = 0;
+        digObstacle = obstacle;
         BlockState s = level().getBlockState(pos);
         equipTool(toolFor(s));
         float hardness = s.getDestroySpeed(level(), pos);
@@ -252,6 +256,18 @@ public class MinerGoal extends Goal {
 
     private void tickDig(ServerLevel sl) {
         BlockState s = sl.getBlockState(digPos);
+
+        if (digObstacle) {                                   // clearing a block that's merely in the way
+            if (!canDigObstacle(s, sl, digPos)) { clearDig(); return; } // cleared / no longer valid -> resume seeking
+            digTicks++;
+            int st = (int) Math.min(9, (digTicks * 10L) / Math.max(1, digTotal));
+            sl.destroyBlockProgress(villager.getId(), digPos, st);
+            villager.swing(InteractionHand.MAIN_HAND);
+            villager.getLookControl().setLookAt(digPos.getX() + 0.5, digPos.getY() + 0.5, digPos.getZ() + 0.5);
+            if (digTicks >= digTotal) { sl.destroyBlock(digPos, true); clearDig(); } // drop its items; keep the target
+            return;
+        }
+
         if (!BlockMatcher.isRich(s)) { // gone / no longer rich
             InfectionData.get(sl).removeRich(digPos.asLong());
             clearDig();
@@ -267,7 +283,7 @@ public class MinerGoal extends Goal {
             InfectionData id = InfectionData.get(sl);
             id.sanction(digPos.asLong(), sl.getGameTime()); // our own dig is NOT an attack
             id.removeRich(digPos.asLong());
-            id.decConverted();                              // frees the footprint cap so infection can regrow
+            id.decConverted();                              // one fewer fertilized block
             sl.destroyBlock(digPos, false);                 // remove without vanilla drops; we hand over the emerald
             villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.EMERALD));
             villager.setDropChance(EquipmentSlot.MAINHAND, 1.0F); // drop the emerald if killed mid-run
@@ -278,9 +294,48 @@ public class MinerGoal extends Goal {
         }
     }
 
+    /** Pick a block standing between the miner and {@code tgt} and start digging it, so the miner tunnels to a
+     *  buried rich block instead of giving up. Never digs cobblestone (the walls) or our own blocks. */
+    private boolean digTowards(ServerLevel sl, BlockPos tgt) {
+        BlockPos feet = villager.blockPosition();
+        int sx = Integer.compare(tgt.getX(), feet.getX());
+        int sz = Integer.compare(tgt.getZ(), feet.getZ());
+        java.util.List<BlockPos> tries = new java.util.ArrayList<>();
+        BlockPos front = feet.offset(sx, 0, sz);
+        tries.add(front);                 // foot-level block ahead
+        tries.add(front.above());         // head-level block ahead
+        if (tgt.getY() < feet.getY()) tries.add(feet.below());      // tunnel down toward a lower target
+        if (tgt.getY() > feet.getY()) tries.add(feet.above(2));     // tunnel up toward a higher target
+        if (sx != 0 && sz != 0) {         // diagonal: also try the pure-axis blocks
+            tries.add(feet.offset(sx, 0, 0)); tries.add(feet.offset(sx, 1, 0));
+            tries.add(feet.offset(0, 0, sz)); tries.add(feet.offset(0, 1, sz));
+        }
+        for (BlockPos o : tries) {
+            if (canDigObstacle(sl.getBlockState(o), sl, o)) { startDig(o, true); return true; }
+        }
+        return false;
+    }
+
+    /** A block the miner may break to clear a path: solid, breakable, NOT cobblestone (walls), not our own
+     *  infection/structure blocks, and not a rich block (those are mined the normal way for the emerald). */
+    private static boolean canDigObstacle(BlockState s, Level level, BlockPos pos) {
+        if (s.isAir() || !s.blocksMotion()) return false;
+        if (BlockMatcher.isInfection(s)) return false;       // don't chew our own spread / rich blocks
+        net.minecraft.world.level.block.Block b = s.getBlock();
+        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(b);
+        if (id != null) {
+            if (id.getNamespace().equals(com.example.villagergunners.VillagerGunners.MODID)) return false; // our blocks
+            if (id.getPath().contains("cobblestone")) return false; // never the walls
+        }
+        float hardness = s.getDestroySpeed(level, pos);
+        if (hardness < 0) return false;                      // bedrock / unbreakable
+        return b.getExplosionResistance() < 1200.0F;         // skip blast-proof blocks
+    }
+
     private void clearDig() {
         if (digPos != null && level() instanceof ServerLevel sl) sl.destroyBlockProgress(villager.getId(), digPos, -1);
         digPos = null;
+        digObstacle = false;
     }
 
     private void equipTool(net.minecraft.world.item.Item item) {

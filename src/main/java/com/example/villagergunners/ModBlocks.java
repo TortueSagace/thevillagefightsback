@@ -228,6 +228,32 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));
 
+    /**
+     * Limbo Bed: an indestructible (bedrock-tough), bedrock-textured "bed" that sits at a random spot inside
+     * the Limbo cube. Sleeping on it (right-click) sends the entity back to where it came from -- see
+     * {@link LimboBedBlock}.
+     */
+    public static final RegistryObject<Block> LIMBO_BED = BLOCKS.register("limbo_bed",
+            () -> new LimboBedBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(-1.0F, 3600000.0F)     // unbreakable, bedrock blast resistance
+                    .sound(SoundType.STONE)
+                    .noOcclusion()                   // low bed-height block
+                    .noLootTable()));
+    public static final RegistryObject<Item> LIMBO_BED_ITEM = ITEMS.register("limbo_bed",
+            () -> new BlockItem(LIMBO_BED.get(), new Item.Properties()));
+
+    /**
+     * Limbo Gravel: a darker gravel that marks where a creature stood before being pulled into Limbo. If it
+     * is destroyed, that creature returns to this exact spot ({@link LimboGravelBlock}). Soul particles rise
+     * when something walks on it.
+     */
+    public static final RegistryObject<Block> LIMBO_GRAVEL = BLOCKS.register("limbo_gravel",
+            () -> new LimboGravelBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL)
+                    .mapColor(MapColor.COLOR_BLACK)));
+    public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
+            () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -253,6 +279,8 @@ public final class ModBlocks {
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
                 output.accept(FERTILE_DOOR_ITEM.get());
+                output.accept(LIMBO_BED_ITEM.get());
+                output.accept(LIMBO_GRAVEL_ITEM.get());
             })
             .build());
 

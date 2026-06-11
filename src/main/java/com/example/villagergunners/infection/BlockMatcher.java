@@ -154,6 +154,11 @@ public final class BlockMatcher {
         if (b instanceof net.minecraft.world.level.block.ChestBlock
                 || b instanceof net.minecraft.world.level.block.EnderChestBlock
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
+        // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
+        if (b == Blocks.HAY_BLOCK
+                || b instanceof net.minecraft.world.level.block.CropBlock
+                || b instanceof net.minecraft.world.level.block.StemBlock
+                || s.is(BlockTags.CROPS)) return false;
         if (s.is(BlockTags.PLANKS)) return false;
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 7) return false;                    // brighter than a redstone torch

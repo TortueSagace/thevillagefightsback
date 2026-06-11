@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:the_void",
+      "biome": "minecraft:deep_dark",
       "lakes": false,
       "features": false,
       "layers": [

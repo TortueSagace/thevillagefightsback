@@ -4,8 +4,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -38,6 +40,35 @@ public final class LimboDimension {
     private static final int MIN_Y = 60, MAX_Y = 81;
     // Spawn stands on the bedrock floor in the centre of the hollow interior.
     private static final BlockPos SPAWN = new BlockPos(0, MIN_Y + 1, 0);
+
+    /**
+     * Banish any entity to Limbo's spawn. Players are re-seated with {@code teleportTo}; mobs cross dimensions
+     * via the Forge {@code changeDimension(ServerLevel, ITeleporter)} overload (the returned entity is the new
+     * instance in Limbo). Server-side only; no-op on the client or if Limbo isn't loaded.
+     */
+    public static Entity sendToLimbo(Entity e) {
+        if (e.level().isClientSide()) return e;
+        MinecraftServer server = e.getServer();
+        if (server == null) return e;
+        ServerLevel limbo = server.getLevel(LIMBO);
+        if (limbo == null) return e;
+        forceLoadCube(limbo);
+        ensureCube(limbo);
+        double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
+        if (e instanceof ServerPlayer player) {
+            player.teleportTo(limbo, x, y, z, player.getYRot(), player.getXRot());
+            return player;
+        }
+        return e.changeDimension(limbo, new net.minecraftforge.common.util.ITeleporter() {
+            @Override
+            public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
+                    java.util.function.Function<Boolean, Entity> repositionEntity) {
+                Entity moved = repositionEntity.apply(false); // recreate in Limbo, no portal logic
+                moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
+                return moved;
+            }
+        });
+    }
 
     /** Keep Limbo loaded in parallel with the overworld: force-load the cube chunks and build the room. */
     @SubscribeEvent
@@ -88,6 +119,14 @@ public final class LimboDimension {
                 }
             }
         }
+
+        // Drop the indestructible Limbo Bed at a random interior floor cell (never on the spawn column).
+        int bx, bz;
+        do {
+            bx = MIN_X + 1 + level.random.nextInt(MAX_X - MIN_X - 1);
+            bz = MIN_Z + 1 + level.random.nextInt(MAX_Z - MIN_Z - 1);
+        } while (bx == SPAWN.getX() && bz == SPAWN.getZ());
+        level.setBlock(new BlockPos(bx, MIN_Y + 1, bz), ModBlocks.LIMBO_BED.get().defaultBlockState(), 3);
         return true;
     }
 }

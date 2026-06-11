@@ -61,6 +61,10 @@ public final class InfectionManager {
 
     private static final int SEED_RADIUS = 24;       // one-time scan for dirt paths around a new lvl-2 village
     private static final int SEED_Y = 5;
+
+    // Spatial bound: nothing is infected beyond a gravemind's range (horizontal). The reach scales with stage
+    // -- stage 2 = 1/3, stage 3 = 2/3, stage 4+ = the full range -- so the takeover grows as the village does.
+    private static final double INFECT_RANGE_FULL = 100.0; // full (stage-4) gravemind infection radius
     private static final double MINER_FRACTION = 0.40;
     private static final double MINER_AREA = 64.0;
 
@@ -96,16 +100,43 @@ public final class InfectionManager {
         }
 
         if (tc % PROCESS_INTERVAL == 0) {
+            GravemindData gdata = GravemindData.get(server);
             for (ServerLevel level : server.getAllLevels()) {
                 InfectionData inf = InfectionData.get(level);
                 long now = level.getGameTime();
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
+                double[][] ranges = gravemindRanges(gdata, level); // {cx, cz, rangeSqr} per in-range gravemind
+                if (ranges.length == 0) continue;                  // no active gravemind here -> nothing to infect
                 // Constant base speed (no first-seconds buff); only a local "fighting back" boost speeds things up.
-                growPaths(level, inf, now, 1.0);
-                convert(level, inf, now, 1.0);
+                growPaths(level, inf, now, ranges);
+                convert(level, inf, now, ranges);
             }
         }
+    }
+
+    /** Per-gravemind infection reach in {@code level}: {centreX+0.5, centreZ+0.5, rangeSqr} for each gravemind
+     *  at stage >= 2, with the radius scaled by stage (2 -> 1/3, 3 -> 2/3, 4+ -> full). */
+    private static double[][] gravemindRanges(GravemindData gdata, ServerLevel level) {
+        List<double[]> out = new ArrayList<>();
+        for (GlobalPos gp : gdata.blocks()) {
+            if (!gp.dimension().equals(level.dimension())) continue;
+            int stage = gdata.econ(gp).getLevel();
+            if (stage < START_LEVEL) continue;
+            double factor = Math.min(1.0, (stage - 1) / 3.0); // stage2=1/3, stage3=2/3, stage4+=1
+            double r = INFECT_RANGE_FULL * factor;
+            out.add(new double[]{gp.pos().getX() + 0.5, gp.pos().getZ() + 0.5, r * r});
+        }
+        return out.toArray(new double[0][]);
+    }
+
+    /** True if (x,z) lies within any gravemind's (stage-scaled) infection range. */
+    private static boolean inRange(double x, double z, double[][] ranges) {
+        for (double[] g : ranges) {
+            double dx = x - g[0], dz = z - g[1];
+            if (dx * dx + dz * dz <= g[2]) return true;
+        }
+        return false;
     }
 
     /** Player breaks an infection block -> sanctioned (NOT an attack); also drop it from the rich registry. */
@@ -234,18 +265,17 @@ public final class InfectionManager {
     // --- path growth (spec 1 + spec 5) --------------------------------------------------------------
     private static final Direction[] HORIZ = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
 
-    private static void growPaths(ServerLevel level, InfectionData inf, long now, double globalMult) {
+    private static void growPaths(ServerLevel level, InfectionData inf, long now, double[][] ranges) {
         RandomSource rnd = level.getRandom();
         for (long head : inf.pathHeadsSnapshot()) {
             BlockPos p = BlockPos.of(head);
             if (!level.isLoaded(p)) continue;
             if (!BlockMatcher.isPath(level.getBlockState(p))) { inf.dropPathHead(head); continue; }
             double mult = inf.multiplierAt(p, now);
-            double slow = (mult > 1.0 || globalMult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
-            double chance = Math.min(1.0, PATH_GROW_CHANCE * globalMult * mult * slow);
+            double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
+            double chance = Math.min(1.0, PATH_GROW_CHANCE * mult * slow);
             if (rnd.nextDouble() >= chance) continue;
-            if (!inf.canConvertMore()) continue;          // footprint cap reached -> stop creating new blocks
-            int res = tryGrow(level, inf, p, rnd);
+            int res = tryGrow(level, inf, p, rnd, ranges);
             if (res < 0) {
                 // spec 5: a path with NO viable extension, sitting over air/water, may drip a fertile sand below
                 BlockPos below = p.below();
@@ -267,7 +297,7 @@ public final class InfectionManager {
      * a path consumes its 45% as a no-op, so the path mostly continues forward and rarely branches.
      * Returns 1 = extended, 0 = picked a non-viable direction (no-op this attempt), -1 = no viable extension.
      */
-    private static int tryGrow(ServerLevel level, InfectionData inf, BlockPos p, RandomSource rnd) {
+    private static int tryGrow(ServerLevel level, InfectionData inf, BlockPos p, RandomSource rnd, double[][] ranges) {
         int xCount = 0, zCount = 0;
         for (Direction d : HORIZ) if (hasPathNeighbour(level, p, d)) {
             if (d.getAxis() == Direction.Axis.X) xCount++; else zCount++;
@@ -280,7 +310,7 @@ public final class InfectionManager {
         double total = 0;
         boolean anyViable = false;
         for (int i = 0; i < HORIZ.length; i++) {
-            targets[i] = extendTarget(level, p, HORIZ[i]);
+            targets[i] = extendTarget(level, p, HORIZ[i], ranges);
             if (targets[i] != null) anyViable = true;
             boolean alongX = HORIZ[i].getAxis() == Direction.Axis.X;
             w[i] = tie ? 25.0 : ((xDominant == alongX) ? 45.0 : 5.0);
@@ -306,9 +336,11 @@ public final class InfectionManager {
         return false;
     }
 
-    /** The ground cell (within +/-2 in Y) the path would convert to dirt-path in direction {@code d}, or null. */
-    private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d) {
+    /** The ground cell (within +/-2 in Y) the path would convert to dirt-path in direction {@code d}, or null.
+     *  Never extends beyond a gravemind's (stage-scaled) range. */
+    private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d, double[][] ranges) {
         int nx = p.getX() + d.getStepX(), nz = p.getZ() + d.getStepZ();
+        if (!inRange(nx + 0.5, nz + 0.5, ranges)) return null;       // outside every gravemind's reach -> stop here
         for (int dy = 2; dy >= -2; dy--) {
             BlockPos g = new BlockPos(nx, p.getY() + dy, nz);
             if (!level.isLoaded(g)) continue;
@@ -321,9 +353,9 @@ public final class InfectionManager {
     }
 
     // --- conversion (spec 2-3) + destruction detection (spec 8) -------------------------------------
-    private static void convert(ServerLevel level, InfectionData inf, long now, double globalMult) {
-        // The fast-window/boost multipliers apply to the per-cell CHANCE only (below), not the cell count, so
-        // the per-tick cost stays bounded regardless of speed-ups (anti-lag).
+    private static void convert(ServerLevel level, InfectionData inf, long now, double[][] ranges) {
+        // The boost multiplier applies to the per-cell CHANCE only (below), not the cell count, so the per-tick
+        // cost stays bounded regardless of speed-ups (anti-lag).
         int n = Math.min(MAX_CELLS_PER_PASS, inf.frontierSize());
         RandomSource rnd = level.getRandom();
         for (int i = 0; i < n; i++) {
@@ -348,13 +380,13 @@ public final class InfectionManager {
             // racing ahead onto fresh ground and conversion fills in BEHIND them (spec 3). Keep them active.
             if (inf.isPathHead(key)) { inf.reactivate(key); continue; }
 
-            BlockPos cand = findCandidate(level, pos, rnd);
+            BlockPos cand = findCandidate(level, pos, rnd, ranges);
             if (cand == null) { inf.retire(key); continue; }           // nothing left to convert here -> drop it
 
             double mult = inf.multiplierAt(pos, now);
-            double slow = (mult > 1.0 || globalMult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
-            double chance = Math.min(1.0, CONV_CHANCE * globalMult * mult * slow);
-            if (inf.canConvertMore() && rnd.nextDouble() < chance) {    // footprint cap -> pause new conversions
+            double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR;            // not slowed while fighting back
+            double chance = Math.min(1.0, CONV_CHANCE * mult * slow);
+            if (rnd.nextDouble() < chance) {
                 BlockState src = level.getBlockState(cand);
                 if (BlockMatcher.isWoodenDoor(src)) {                   // doors: replace BOTH halves at once
                     placeFertileDoor(level, cand, src);
@@ -399,14 +431,16 @@ public final class InfectionManager {
                 net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 3);
     }
 
-    /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias), or null. */
-    private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd) {
+    /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias) that is
+     *  also within a gravemind's range, or null. */
+    private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges) {
         int start = rnd.nextInt(N26.length);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int k = 0; k < N26.length; k++) {
             int[] o = N26[(start + k) % N26.length];
             m.set(pos.getX() + o[0], pos.getY() + o[1], pos.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
+            if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the gravemind reach -> skip
             BlockState ns = level.getBlockState(m);
             if (BlockMatcher.isCandidate(level, m, ns)) return m.immutable();
         }
