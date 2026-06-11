@@ -192,17 +192,27 @@ public final class EmeraldVirusEvents {
         event.getDrops().add(new ItemEntity(e.level(), e.getX(), e.getY(), e.getZ(), new ItemStack(Items.EMERALD, n)));
     }
 
+    private static final int MAX_DETONATIONS_PER_TICK = 8; // throttle so a backlog can't freeze a tick
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || PENDING.isEmpty()) return;
-        // Drain the entries whose timer is up and remove them FIRST. Exploding (below) can kill nearby
-        // virus-carrying hosts, whose onDeath adds to PENDING -- so we must not be mid-iteration when that
-        // happens, or it.remove() throws a ConcurrentModificationException. New entries are handled next tick.
+        // Drain a few due entries and remove them FIRST, then explode. We remove before exploding for two
+        // reasons: (1) the blast kills nearby virus hosts whose onDeath re-adds to PENDING, so we must not be
+        // mid-iteration (ConcurrentModificationException); (2) on world load every queued corpse comes due at
+        // once -- firing them all in one tick is an 80s+ freeze -- so we cap per tick and let the rest wait.
         java.util.List<Pending> due = new java.util.ArrayList<>();
         Iterator<Pending> it = PENDING.iterator();
-        while (it.hasNext()) {
+        while (it.hasNext() && due.size() < MAX_DETONATIONS_PER_TICK) {
             Pending p = it.next();
-            if (p.level.getGameTime() >= p.when) { due.add(p); it.remove(); }
+            if (p.level.getGameTime() < p.when) continue;          // timer not up yet -> leave it queued
+            BlockPos at = BlockPos.containing(p.corpse.getX(), p.corpse.getY() + 0.5, p.corpse.getZ());
+            // Never explode into an unloaded chunk: Explosion#explode reads block states across the blast,
+            // which force-loads chunks via a blocking join() and can deadlock the server tick. Nobody is near
+            // an unloaded chunk to see it anyway, so just drop the entry.
+            if (!p.level.hasChunkAt(at)) { it.remove(); continue; }
+            due.add(p);
+            it.remove();
         }
         for (Pending p : due) {
             // Explode where the CORPSE ended up (it kept sliding from the knockback during its death
