@@ -150,6 +150,12 @@ public final class ModBlocks {
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER,
                     0x1b4a4a, 0x78ebf5, new Item.Properties()));
 
+    /** Spawn egg for the {@link GravemindWardenEntity} (a green Warden with a gravemind-block head). */
+    public static final RegistryObject<Item> GRAVEMIND_WARDEN_SPAWN = ITEMS.register(
+            "gravemind_warden",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.GRAVEMIND_WARDEN,
+                    0x16331a, 0x55e07a, new Item.Properties()));
+
     // --- Fertile / Rich block family --------------------------------------------------------------
     // For each base block, "Fertile X" is a green-tinted copy with the SAME properties as the base, and
     // "Rich X" is the same with emerald gems -- it drops emeralds like emerald ore (via its loot table) but
@@ -235,6 +241,7 @@ public final class ModBlocks {
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
+                output.accept(GRAVEMIND_WARDEN_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());

@@ -230,7 +230,8 @@ public final class GunnerEvents {
             golem.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.ROCKET_LAUNCHER.get()));
             golem.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
-        applyGolemArmor(golem); // gigachad: protection of a full iron set (idempotent; survives reload)
+        applyGolemArmor(golem);  // gigachad: protection of a full iron set (idempotent; survives reload)
+        applyGolemHealth(golem); // gigachad: 200 HP (base 100 + 100)
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
@@ -253,6 +254,26 @@ public final class GunnerEvents {
                         "gigachad iron armour", IRON_ARMOR,
                         net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
         if (!inst.hasModifier(mod)) inst.addPermanentModifier(mod);
+    }
+
+    private static final java.util.UUID GOLEM_HEALTH_UUID =
+            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000004");
+    private static final double GOLEM_HEALTH_BONUS = 100.0; // base iron golem 100 -> gigachad 200
+
+    /** Give a stage-3 ("gigachad") iron golem +100 max health (-> 200 total), as a permanent, idempotent
+     *  attribute modifier. Heals to full only the first time it's applied (so reloads don't re-heal). */
+    private static void applyGolemHealth(IronGolem golem) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance inst =
+                golem.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
+        if (inst == null) return;
+        net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_HEALTH_UUID,
+                        "gigachad health", GOLEM_HEALTH_BONUS,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
+        if (!inst.hasModifier(mod)) {
+            inst.addPermanentModifier(mod);
+            golem.setHealth(golem.getMaxHealth()); // top up to the new 200 on first upgrade
+        }
     }
 
     /** Remove every goal of {@code goalClass} from the mob's goal selector (used when upgrading). */

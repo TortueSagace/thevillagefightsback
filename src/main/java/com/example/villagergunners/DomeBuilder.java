@@ -15,7 +15,6 @@ import com.example.villagergunners.wall.WallPlan;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Builds the village's protective reinforced-glass dome (gravemind level 4). Geometry:
@@ -33,9 +32,6 @@ public final class DomeBuilder {
     private static final int MAX_INTERIOR = 14_000; // safety cap (huge villages); flood stops here
     private static final double RISE_FACTOR = 0.22; // dome peak height as a fraction of its radius
     private static final int RISE_MIN = 2, RISE_MAX = 10;
-    private static final int CLEARANCE = 3;         // air blocks the dome keeps above a building's roof
-    private static final int MAX_CLEARANCE_ABOVE_RIM = 16; // cap the building-drape so the roof hugs the rim
-    private static final int MAX_DOME_HEIGHT = 64;  // cap above the rim so a freak-tall build can't spike forever
 
     private static long key(int x, int z) { return (x & 0xFFFFFFFFL) | ((long) z << 32); }
     private static int kx(long k) { return (int) k; }
@@ -85,16 +81,10 @@ public final class DomeBuilder {
                 int x = kx(k), z = kz(k);
                 double d = Math.hypot(x - cx, z - cz);
                 double f = Math.max(0.0, 1.0 - (d * d) / (R * R));
-                int paraboloid = H + (int) Math.round(rise * f);
-                // Clearance over interior buildings -- but clamp it close to the rim. The world heightmap
-                // reports the far-above surface for a dug-in/cave village (and the tops of tall trees), which
-                // would otherwise lift the whole roof dozens of blocks above the base. Short interior houses
-                // sit only a few blocks over the rim, so they never reach this clamp.
-                int clearBuildings = Math.min(level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + CLEARANCE,
-                        H + MAX_CLEARANCE_ABOVE_RIM);
-                int y = Math.max(paraboloid, clearBuildings);
-                if (y > H + MAX_DOME_HEIGHT) y = H + MAX_DOME_HEIGHT;
-                top.put(k, y);
+                // A pure gentle paraboloid: it MEETS the rim at H (so the roof hugs the wall with no floating
+                // gap) and peaks `rise` blocks over the gravemind. (No building-drape -- reading the world
+                // heightmap was lifting the whole roof a dozen+ blocks off the rim.)
+                top.put(k, H + (int) Math.round(rise * f));
             }
             // Watertight fill: each column drops to its LOWEST orthogonal neighbour's top, so adjacent columns
             // always share a layer -> no holes (even at diagonal steps), a continuous shell.

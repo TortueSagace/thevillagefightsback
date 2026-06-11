@@ -70,6 +70,7 @@ public final class GravemindEvents {
         driveWalls(server, data);
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
+        manageExpansion(server, data); // level-3 settler wave (fires spontaneously on reaching level 3)
         manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
@@ -136,6 +137,17 @@ public final class GravemindEvents {
                 data.markDefendersBuilt(gp);
                 broadcast(server, "§bThe Village Gravemind raises wall defenders above the gates.");
             }
+        }
+    }
+
+    /** Fire the stage-3 settler expansion the moment a village reaches level 3 (once per gravemind), rather
+     *  than waiting for the next sunset. {@link ExpansionManager#maybeExpand} no-ops below level 3 / if done. */
+    private static void manageExpansion(MinecraftServer server, GravemindData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.isExpanded(gp) || data.econ(gp).getLevel() < 3) continue;
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            ExpansionManager.maybeExpand(level, gp, data);
         }
     }
 
