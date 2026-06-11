@@ -25,6 +25,11 @@ public final class ModItems {
     public static final RegistryObject<Item> ROCKET =
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
+    /** Limbo Potion: drink it to be flung into Limbo (a Limbo-gravel marker is auto-dropped where you stood,
+     *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}. */
+    public static final RegistryObject<Item> LIMBO_POTION =
+            ITEMS.register("limbo_potion", () -> new LimboPotionItem(new Item.Properties().stacksTo(16)));
+
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
