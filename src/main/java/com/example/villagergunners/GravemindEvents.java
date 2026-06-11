@@ -79,9 +79,9 @@ public final class GravemindEvents {
 
     private static final int IMMUNITY_RADIUS = 10; // shield allies this close to a gravemind
 
-    /** At ANY stage, a Village Gravemind shields the village core: every villager and iron golem within
-     *  {@value #IMMUNITY_RADIUS} blocks gets our Immunity effect (takes no damage), refreshed each pass and
-     *  with NO particles. */
+    /** At ANY stage, a Village Gravemind shields the village core: every villager, guard and iron golem (incl.
+     *  gigachad golems -- same entity class) within {@value #IMMUNITY_RADIUS} blocks gets our Immunity effect
+     *  (takes no damage), refreshed each pass and with NO particles. */
     private static void applyImmunityAura(MinecraftServer server, GravemindData data) {
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
@@ -90,7 +90,9 @@ public final class GravemindEvents {
             double r2 = (double) IMMUNITY_RADIUS * IMMUNITY_RADIUS;
             AABB box = new AABB(gp.pos()).inflate(IMMUNITY_RADIUS);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive()
-                    && (x instanceof Villager || x instanceof net.minecraft.world.entity.animal.IronGolem))) {
+                    && (x instanceof Villager
+                        || x instanceof net.minecraft.world.entity.animal.IronGolem
+                        || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(x.getType()))))) {
                 if (e.distanceToSqr(center) > r2) continue;
                 // ambient=false, showParticles=false, showIcon=false -> a silent, particle-free shield.
                 e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY.get(), 200, 0, false, false, false));
