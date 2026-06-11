@@ -15,22 +15,19 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Tracks placed {@link CheapScaffoldBlock}s and auto-breaks them ~1 minute after placement, dropping a
- * single stick each. For efficiency, scaffolds placed close together in time share ONE timer: a placement
+ * Tracks placed {@link CheapScaffoldBlock}s and auto-breaks them ~30s after placement, dropping nothing.
+ * For efficiency, scaffolds placed close together in time share ONE timer: a placement
  * joins the current "open" batch (within {@link #GROUP_WINDOW} ticks of its start) instead of getting its
  * own counter, so a whole pillar of scaffolds expires together. Persisted so timers survive a save/reload.
  */
 public class CheapScaffoldManager extends SavedData {
     private static final String NAME = "gobacktoyourworld_cheap_scaffold";
 
-    public static final long LIFETIME = 1200L;    // ~60s before a batch auto-breaks
+    public static final long LIFETIME = 600L;     // ~30s before a batch auto-breaks
     private static final long GROUP_WINDOW = 60L; // placements within this of a batch's start share its timer
 
     private static final class Batch {
@@ -68,7 +65,7 @@ public class CheapScaffoldManager extends SavedData {
         setDirty();
     }
 
-    /** Break every cheap scaffold whose batch timer has elapsed (dropping 1 stick each). Cheap to run. */
+    /** Break every cheap scaffold whose batch timer has elapsed (dropping nothing). Cheap to run. */
     public static void tick(MinecraftServer server) {
         get(server).expire(server);
     }
@@ -86,8 +83,7 @@ public class CheapScaffoldManager extends SavedData {
                 for (long l : b.positions) {
                     BlockPos p = BlockPos.of(l);
                     if (level.hasChunkAt(p) && level.getBlockState(p).is(ModBlocks.CHEAP_SCAFFOLD.get())) {
-                        level.removeBlock(p, false);
-                        Block.popResource(level, p, new ItemStack(Items.STICK));
+                        level.removeBlock(p, false); // auto-break (cooldown) drops nothing
                     }
                 }
             }

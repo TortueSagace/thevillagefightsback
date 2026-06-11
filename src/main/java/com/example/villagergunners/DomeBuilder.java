@@ -15,6 +15,7 @@ import com.example.villagergunners.wall.WallPlan;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Builds the village's protective reinforced-glass dome (gravemind level 4). Geometry:
@@ -32,6 +33,8 @@ public final class DomeBuilder {
     private static final int MAX_INTERIOR = 14_000; // safety cap (huge villages); flood stops here
     private static final double RISE_FACTOR = 0.22; // dome peak height as a fraction of its radius
     private static final int RISE_MIN = 2, RISE_MAX = 10;
+    private static final int CLEARANCE = 3;         // air blocks the dome keeps above a building's roof
+    private static final int MAX_DOME_HEIGHT = 64;  // cap above the rim so a freak-tall build can't spike forever
 
     private static long key(int x, int z) { return (x & 0xFFFFFFFFL) | ((long) z << 32); }
     private static int kx(long k) { return (int) k; }
@@ -73,12 +76,19 @@ public final class DomeBuilder {
             final double R = r;
             int rise = Math.max(RISE_MIN, Math.min(RISE_MAX, (int) Math.round(R * RISE_FACTOR)));
 
-            // Dome height per interior column (paraboloid cap peaking over the gravemind).
+            // Dome height per interior column: the gentle paraboloid cap, but DRAPED so it always clears the
+            // tallest block in that column by CLEARANCE (so a central skyscraper / any building is enclosed
+            // rather than poking through). Capped so a freak-tall pillar can't spike the dome forever.
             Map<Long, Integer> top = new HashMap<>(interior.size() * 2);
             for (long k : interior) {
-                double d = Math.hypot(kx(k) - cx, kz(k) - cz);
+                int x = kx(k), z = kz(k);
+                double d = Math.hypot(x - cx, z - cz);
                 double f = Math.max(0.0, 1.0 - (d * d) / (R * R));
-                top.put(k, H + (int) Math.round(rise * f));
+                int paraboloid = H + (int) Math.round(rise * f);
+                int clearBuildings = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + CLEARANCE;
+                int y = Math.max(paraboloid, clearBuildings);
+                if (y > H + MAX_DOME_HEIGHT) y = H + MAX_DOME_HEIGHT;
+                top.put(k, y);
             }
             // Watertight fill: each column drops to its LOWEST orthogonal neighbour's top, so adjacent columns
             // always share a layer -> no holes (even at diagonal steps), a continuous shell.

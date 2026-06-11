@@ -11,9 +11,9 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * A throwaway "cheap scaffold": identical to vanilla scaffolding to stand on / climb, but every cheap
- * scaffold auto-breaks roughly a minute after it is placed, dropping a single stick. Drop rules:
+ * scaffold auto-breaks ~30s after it is placed. Drop rules:
  * <ul>
- *   <li>auto-break after ~1 minute -> drops 1 stick (handled by {@link CheapScaffoldManager});</li>
+ *   <li>auto-break after ~30s -> drops nothing (handled by {@link CheapScaffoldManager});</li>
  *   <li>broken early (mined / loses support) -> drops itself (loot table);</li>
  *   <li>destroyed by fire or explosion -> drops nothing.</li>
  * </ul>
