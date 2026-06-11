@@ -544,6 +544,7 @@ public final class GravemindEvents {
             econ.setLastIncomeDay(day);
 
             reinforceVillage(level, gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
+            ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
 
             int income = countDefendersNear(level, gp.pos());
             if (income <= 0) continue;

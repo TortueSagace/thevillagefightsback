@@ -48,6 +48,9 @@ public final class VillagerGunnersClient {
         // box and down to the hand. Big golem -> scale the gun up. (Orientation may need tuning.)
         LivingEntityRenderer<IronGolem, IronGolemModel<IronGolem>> golem = event.getRenderer(EntityType.IRON_GOLEM);
         if (golem != null) {
+            // Stage-3 (upgraded) golems get a fancy metallic-gold re-skin. Added first so it draws under the
+            // held gun.
+            golem.addLayer(new GoldGolemLayer(golem));
             // Upgraded golems hold our NATIVE rocket launcher (nerfed ones have an empty hand).
             golem.addLayer(new HeldGunLayer<>(golem,
                     new ResourceLocation(VillagerGunners.MODID, "rocket_launcher"), "right_arm",

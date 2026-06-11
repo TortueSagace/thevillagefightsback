@@ -44,6 +44,7 @@ public class GravemindData extends SavedData {
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
     private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // graveminds whose level-2 gate turrets are placed
     private final Set<GlobalPos> domeBuilt = new HashSet<>();       // graveminds whose level-4 glass dome is placed
+    private final Set<GlobalPos> expanded = new HashSet<>();        // graveminds that have run their stage-3 expansion
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
 
     public GravemindData() {}
@@ -129,6 +130,11 @@ public class GravemindData extends SavedData {
     public boolean isDomeBuilt(GlobalPos gravemind) { return domeBuilt.contains(gravemind); }
     public void markDomeBuilt(GlobalPos gravemind) { if (domeBuilt.add(gravemind)) setDirty(); }
 
+    // --- level-3 expansion: settlers found new buildings outside the wall (run once per gravemind) ---
+
+    public boolean isExpanded(GlobalPos gravemind) { return expanded.contains(gravemind); }
+    public void markExpanded(GlobalPos gravemind) { if (expanded.add(gravemind)) setDirty(); }
+
     // --- who placed a village bell (so the gravemind that rises there rewards them) ---
 
     public void recordBellPlacer(GlobalPos bell, java.util.UUID player) { bellPlacers.put(bell, player); setDirty(); }
@@ -147,6 +153,7 @@ public class GravemindData extends SavedData {
         readPositions(tag, "serviced", d.servicedCenters);
         readPositions(tag, "defenders", d.defendersBuilt);
         readPositions(tag, "dome", d.domeBuilt);
+        readPositions(tag, "expanded", d.expanded);
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
@@ -186,6 +193,7 @@ public class GravemindData extends SavedData {
         writePositions(tag, "serviced", servicedCenters);
         writePositions(tag, "defenders", defendersBuilt);
         writePositions(tag, "dome", domeBuilt);
+        writePositions(tag, "expanded", expanded);
         ListTag econList = new ListTag();
         for (Map.Entry<GlobalPos, Econ> e : econs.entrySet()) {
             CompoundTag c = new CompoundTag();

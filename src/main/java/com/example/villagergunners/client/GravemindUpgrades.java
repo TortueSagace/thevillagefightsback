@@ -60,7 +60,10 @@ public final class GravemindUpgrades {
             List.of(
                     new Upgrade(new ItemStack(com.example.villagergunners.ModItems.ALIEN_SLASHER.get()),
                             "Advanced Weaponry",
-                            "The battle power of villagers, guards and golems is strongly improved.")
+                            "The battle power of villagers, guards and golems is strongly improved."),
+                    new Upgrade(new ItemStack(ModBlocks.GREEN_TNT_ITEM.get()),
+                            "Expansion", "The village outgrows its wall: a wave of settlers streams out and "
+                            + "founds a ring of new houses and towers beyond it.")
             ),
             // --- Level 4 ---
             List.of(
