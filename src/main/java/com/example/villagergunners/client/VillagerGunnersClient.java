@@ -47,6 +47,11 @@ public final class VillagerGunnersClient {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);
         event.registerEntityRenderer(ModEntities.GRAVEMIND_WARDEN.get(), GravemindWardenRenderer::new);
+        // The boss reuses the green-warden + gravemind-head renderer (it extends GravemindWardenEntity).
+        event.registerEntityRenderer(ModEntities.UNLEASHED_GRAVEMIND.get(), GravemindWardenRenderer::new);
+        // Vindictive guards render as plain zombie villagers (vanilla renderer).
+        event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
+                net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));

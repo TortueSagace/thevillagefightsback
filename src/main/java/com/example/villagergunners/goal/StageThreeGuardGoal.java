@@ -301,8 +301,19 @@ public class StageThreeGuardGoal extends Goal {
     }
 
     private void refreshTarget() {
-        if (target != null && target.isAlive() && guard.distanceToSqr(target) <= FOLLOW_RANGE * FOLLOW_RANGE) return;
+        // Honor an externally-set target first (a vindictive guard's broad target goal sets guard.getTarget()
+        // to villagers/players/animals -- things that aren't Enemy), as long as it's valid and not a faction-mate.
+        LivingEntity ext = guard.getTarget();
+        if (ext != null && ext.isAlive() && !isFactionMate(ext)
+                && guard.distanceToSqr(ext) <= FOLLOW_RANGE * FOLLOW_RANGE) { target = ext; return; }
+        if (target != null && target.isAlive() && !isFactionMate(target)
+                && guard.distanceToSqr(target) <= FOLLOW_RANGE * FOLLOW_RANGE) return;
         target = nearestEnemy(FOLLOW_RANGE, null, true); // include creepers -- the crossbow can shoot them
+    }
+
+    /** A faction-mate this guard must never fight -- only when the guard itself is infected (boss / vindictive guard). */
+    private boolean isFactionMate(LivingEntity e) {
+        return com.example.villagergunners.Factions.isInfected(guard) && com.example.villagergunners.Factions.isInfected(e);
     }
 
     private LivingEntity nearestEnemy(double radius, LivingEntity exclude, boolean includeCreepers) {
@@ -310,7 +321,7 @@ public class StageThreeGuardGoal extends Goal {
         LivingEntity best = null;
         double bestD = radius * radius;
         for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
-                x -> x != guard && x != exclude && x instanceof Enemy
+                x -> x != guard && x != exclude && x instanceof Enemy && !isFactionMate(x)
                         && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {
             double d = guard.distanceToSqr(e);
             if (d <= bestD) { bestD = d; best = e; }

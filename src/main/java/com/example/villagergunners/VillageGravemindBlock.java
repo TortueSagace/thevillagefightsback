@@ -1,5 +1,7 @@
 package com.example.villagergunners;
 
+import java.util.List;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
@@ -146,14 +148,52 @@ public class VillageGravemindBlock extends Block {
         }
     }
 
+    // Packed pos + game-time of the last CLEAN gravemind break (silk touch / creative). onRemove consults it
+    // to tell a harmless pickup from any other removal -- a non-clean removal unleashes the boss.
+    private static long cleanBreakPos = Long.MIN_VALUE;
+    private static long cleanBreakTick = Long.MIN_VALUE;
+
+    /** Mark a silk-touch / creative break as "clean" so it does NOT summon the boss. */
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide) {
+            int silk = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
+                    net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, player.getMainHandItem());
+            if (silk > 0 || player.getAbilities().instabuild) {
+                cleanBreakPos = pos.asLong();
+                cleanBreakTick = level.getGameTime();
+            }
+        }
+        super.playerWillDestroy(level, pos, state, player);
+    }
+
+    /** Drops the gravemind ONLY on a silk-touch / creative break; any other break consumes it (it becomes the boss). */
+    @Override
+    public List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+        net.minecraft.world.entity.Entity breaker = params.getOptionalParameter(
+                net.minecraft.world.level.storage.loot.parameters.LootContextParams.THIS_ENTITY);
+        ItemStack tool = params.getOptionalParameter(
+                net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL);
+        int silk = tool == null ? 0 : net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
+                net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, tool);
+        boolean creative = breaker instanceof Player p && p.getAbilities().instabuild;
+        return (silk > 0 || creative) ? List.of(new ItemStack(this)) : List.of();
+    }
+
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!level.isClientSide && !newState.is(this)) {
-            GravemindData data = GravemindData.get(((ServerLevel) level).getServer());
+            ServerLevel sl = (ServerLevel) level;
+            GravemindData data = GravemindData.get(sl.getServer());
             GlobalPos key = GlobalPos.of(level.dimension(), pos.immutable());
             data.removeBlock(key);
             data.removeWallPlan(key); // forget the wall plan too -> replacing the gravemind recomputes it fresh
             GravemindEvents.clearSurveyBackoff(key);
+            // Any removal that is NOT a clean silk-touch / creative pickup unleashes the gravemind boss here.
+            boolean cleanBreak = cleanBreakPos == pos.asLong() && level.getGameTime() - cleanBreakTick <= 1;
+            if (!cleanBreak) {
+                UnleashedManager.summonBoss(sl, pos.immutable());
+            }
         }
         super.onRemove(state, level, pos, newState, moved);
     }

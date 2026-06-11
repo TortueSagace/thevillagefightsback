@@ -31,6 +31,11 @@ public final class ModNetwork {
                 .decoder(EmeraldTintPacket::decode)
                 .consumerMainThread(EmeraldTintPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(ScreenShakePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScreenShakePacket::encode)
+                .decoder(ScreenShakePacket::decode)
+                .consumerMainThread(ScreenShakePacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */

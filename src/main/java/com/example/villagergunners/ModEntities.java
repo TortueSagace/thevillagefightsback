@@ -44,6 +44,23 @@ public final class ModEntities {
                     .fireImmune()
                     .build("gravemind_warden"));
 
+    /** The Village Gravemind, Unleashed: the boss that erupts when a gravemind block is destroyed ({@link UnleashedGravemindEntity}). */
+    public static final RegistryObject<EntityType<UnleashedGravemindEntity>> UNLEASHED_GRAVEMIND = ENTITIES.register(
+            "unleashed_gravemind",
+            () -> EntityType.Builder.<UnleashedGravemindEntity>of(UnleashedGravemindEntity::new, MobCategory.MONSTER)
+                    .sized(0.9F, 2.9F)
+                    .clientTrackingRange(20)
+                    .fireImmune()
+                    .build("unleashed_gravemind"));
+
+    /** A "vindictive guard": a zombie-villager-looking stage-3 guard the boss makes ({@link VindictiveGuardEntity}). */
+    public static final RegistryObject<EntityType<VindictiveGuardEntity>> VINDICTIVE_GUARD = ENTITIES.register(
+            "vindictive_guard",
+            () -> EntityType.Builder.<VindictiveGuardEntity>of(VindictiveGuardEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)
+                    .clientTrackingRange(12)
+                    .build("vindictive_guard"));
+
     /** Native rocket projectile (the golem's JEG-free rocket launcher round). See {@link RocketEntity}. */
     public static final RegistryObject<EntityType<RocketEntity>> ROCKET = ENTITIES.register(
             "rocket",
@@ -63,5 +80,7 @@ public final class ModEntities {
         event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
         event.put(EMERALDGER.get(), Villager.createAttributes().build());
         event.put(GRAVEMIND_WARDEN.get(), Warden.createAttributes().build());
+        event.put(UNLEASHED_GRAVEMIND.get(), UnleashedGravemindEntity.createAttributes().build());
+        event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
     }
 }

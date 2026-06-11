@@ -100,6 +100,26 @@ public class GravemindData extends SavedData {
         return econ;
     }
 
+    /**
+     * Wipe ALL village state at/around {@code gravemind} so a freshly-placed block there starts at stage 1
+     * (used when the unleashed boss reverts to a gravemind on a win). Removes the proximity-matched economy
+     * and every per-gravemind once-only flag within {@value #CLUSTER} blocks, so wall/defenders/dome/expansion
+     * all rebuild from scratch.
+     */
+    public void eraseVillage(GlobalPos gravemind) {
+        boolean changed = econs.keySet().removeIf(k -> nearCluster(k, gravemind));
+        changed |= servicedCenters.removeIf(k -> nearCluster(k, gravemind));
+        changed |= defendersBuilt.removeIf(k -> nearCluster(k, gravemind));
+        changed |= domeBuilt.removeIf(k -> nearCluster(k, gravemind));
+        changed |= expanded.removeIf(k -> nearCluster(k, gravemind));
+        changed |= wallPlans.keySet().removeIf(k -> nearCluster(k, gravemind));
+        if (changed) setDirty();
+    }
+
+    private static boolean nearCluster(GlobalPos k, GlobalPos g) {
+        return k.dimension().equals(g.dimension()) && k.pos().distSqr(g.pos()) <= CLUSTER * CLUSTER;
+    }
+
     // --- placed blocks / serviced village centers ---
 
     public Set<GlobalPos> blocks() { return blocks; }
