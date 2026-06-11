@@ -195,16 +195,21 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || PENDING.isEmpty()) return;
+        // Drain the entries whose timer is up and remove them FIRST. Exploding (below) can kill nearby
+        // virus-carrying hosts, whose onDeath adds to PENDING -- so we must not be mid-iteration when that
+        // happens, or it.remove() throws a ConcurrentModificationException. New entries are handled next tick.
+        java.util.List<Pending> due = new java.util.ArrayList<>();
         Iterator<Pending> it = PENDING.iterator();
         while (it.hasNext()) {
             Pending p = it.next();
-            if (p.level.getGameTime() < p.when) continue;
+            if (p.level.getGameTime() >= p.when) { due.add(p); it.remove(); }
+        }
+        for (Pending p : due) {
             // Explode where the CORPSE ended up (it kept sliding from the knockback during its death
             // animation), not where it died. After removal the entity still reports its last position.
             double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
             explodeWithFire(p.level, x, y, z);
             if (p.spawnEmeraldger) spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
-            it.remove();
         }
     }
 
