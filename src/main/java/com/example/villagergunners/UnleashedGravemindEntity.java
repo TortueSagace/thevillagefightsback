@@ -338,6 +338,10 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.MOB_SUMMONED, null, null);
         g.setBaby(false);
         sl.addFreshEntity(g);
+        // Make the "killed -> vindictive guard" transformation clearly visible.
+        sl.sendParticles(ParticleTypes.SCULK_SOUL, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 24, 0.4, 0.6, 0.4, 0.02);
+        sl.sendParticles(ParticleTypes.SCULK_CHARGE_POP, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 12, 0.4, 0.6, 0.4, 0.0);
+        sl.playSound(null, pos, SoundEvents.SCULK_CATALYST_BLOOM, getSoundSource(), 1.0F, 1.3F);
     }
 
     private void winAndRevert(ServerLevel sl) {

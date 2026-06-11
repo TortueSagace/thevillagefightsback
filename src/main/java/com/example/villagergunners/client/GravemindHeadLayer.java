@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
 public class GravemindHeadLayer extends RenderLayer<GravemindWardenEntity, WardenModel<GravemindWardenEntity>> {
     private static final float SCALE = 1.05F;   // gravemind block ~ head-sized
     private static final float DX = -0.5F;      // centre horizontally on the bone
-    private static final float DY = -0.55F;     // raise to sit where the head was
+    private static final float DY = -1.05F;     // raise to sit where the head was (model space is y-flipped)
     private static final float DZ = -0.5F;
 
     private final BlockRenderDispatcher blocks;
