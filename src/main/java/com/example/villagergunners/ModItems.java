@@ -30,6 +30,27 @@ public final class ModItems {
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.EMERALDGER, 0x17DD62, 0x0A6E2E, new Item.Properties()));
 
+    // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a Gravemind stage,
+    //     even with no gravemind present (see StagedDefenderEggItem). ---
+    private static RegistryObject<Item> egg(String name, StagedDefenderEggItem.Kind kind, int stage, int primary, int secondary) {
+        return ITEMS.register(name, () -> new StagedDefenderEggItem(kind, stage, primary, secondary, new Item.Properties()));
+    }
+
+    public static final RegistryObject<Item> VILLAGER_STAGE1 = egg("villager_stage1", StagedDefenderEggItem.Kind.VILLAGER, 1, 0x8B6F47, 0xA0A0A0);
+    public static final RegistryObject<Item> VILLAGER_STAGE3 = egg("villager_stage3", StagedDefenderEggItem.Kind.VILLAGER, 3, 0x8B6F47, 0x2BBF4E);
+    public static final RegistryObject<Item> VILLAGER_STAGE4 = egg("villager_stage4", StagedDefenderEggItem.Kind.VILLAGER, 4, 0x2BBF4E, 0x0A5C28);
+    public static final RegistryObject<Item> GUARD_STAGE1 = egg("guard_stage1", StagedDefenderEggItem.Kind.GUARD, 1, 0x8E9BA8, 0xA0A0A0);
+    public static final RegistryObject<Item> GUARD_STAGE3 = egg("guard_stage3", StagedDefenderEggItem.Kind.GUARD, 3, 0x8E9BA8, 0x2BBF4E);
+    public static final RegistryObject<Item> GUARD_STAGE4 = egg("guard_stage4", StagedDefenderEggItem.Kind.GUARD, 4, 0x2BBF4E, 0x0A5C28);
+    public static final RegistryObject<Item> IRON_GOLEM = egg("iron_golem", StagedDefenderEggItem.Kind.GOLEM, 1, 0xDBD3D0, 0x70A35A);
+    public static final RegistryObject<Item> GIGACHAD_GOLEM = egg("gigachad_golem", StagedDefenderEggItem.Kind.GOLEM, 3, 0xFFD24D, 0xB8860B); // golden
+
+    /** All staged-defender eggs, in creative-tab / colour-handler order. */
+    public static final java.util.List<RegistryObject<Item>> STAGED_EGGS = java.util.List.of(
+            VILLAGER_STAGE1, VILLAGER_STAGE3, VILLAGER_STAGE4,
+            GUARD_STAGE1, GUARD_STAGE3, GUARD_STAGE4,
+            IRON_GOLEM, GIGACHAD_GOLEM);
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
     }

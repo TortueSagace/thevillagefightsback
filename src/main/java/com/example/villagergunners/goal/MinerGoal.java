@@ -45,6 +45,11 @@ public class MinerGoal extends Goal {
     private static final int SEEK_TIMEOUT = 160;   // ~8s of trying to reach a target before giving up on it
     private static final long BLACKLIST_TICKS = 600L; // ~30s before that block is reconsidered
 
+    // Fallback world-scan (only runs when the tracked rich set yields nothing nearby): a miner must never
+    // stand idle next to a rich block the tracker doesn't know about.
+    private static final int LOCAL_SCAN_RXZ = 6;
+    private static final int LOCAL_SCAN_RY = 4;
+
     private final Villager villager;
     private boolean carrying;          // holding an emerald to deliver
     private int carryTicks;            // how long we've carried (anti-deadlock)
@@ -70,11 +75,16 @@ public class MinerGoal extends Goal {
     public boolean canUse() {
         if (fighting() || !MinerRole.isMiner(villager)) return false;
         if (!(level() instanceof ServerLevel sl)) return false;
+        // An idle miner should always be visibly holding its pickaxe -- combat arming or a world reload may
+        // have swapped it out, and staffMiners won't re-equip an already-tagged miner.
+        if (!carrying && villager.getMainHandItem().getItem() != Items.IRON_PICKAXE) equipTool(Items.IRON_PICKAXE);
         if (carrying) return true;
         if (target != null) return true;
         if (villager.tickCount % SELECT_THROTTLE != 0) return false;
         pruneAvoid(sl.getGameTime());
-        BlockPos r = InfectionData.get(sl).nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
+        InfectionData inf = InfectionData.get(sl);
+        BlockPos r = inf.nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
+        if (r == null) r = scanLocalRich(sl, inf); // fallback: rich blocks the tracker doesn't know about
         if (r != null) { target = r; seekTicks = 0; return true; }
         return false;
     }
@@ -137,6 +147,7 @@ public class MinerGoal extends Goal {
         }
         if (target == null || avoid.containsKey(target.asLong())) {
             target = inf.nearestRich(here, SEARCH_RANGE, avoid.keySet());
+            if (target == null) target = scanLocalRich(sl, inf); // fallback for rich blocks the tracker missed
             seekTicks = 0;
             if (target == null) return;            // nothing minable right now -> let normal AI roam; canUse retries
         }
@@ -185,6 +196,29 @@ public class MinerGoal extends Goal {
         carryTicks = 0;
         gravemind = null;
         equipTool(Items.IRON_PICKAXE);
+    }
+
+    /**
+     * Fallback rich-block finder: {@link InfectionData}'s tracked rich set can be incomplete (blocks created
+     * before tracking existed, after a crash, etc.). Scan the nearby world directly so a miner never stands
+     * idle next to a rich block it could dig, and backfill the tracker with whatever we find.
+     */
+    private BlockPos scanLocalRich(ServerLevel sl, InfectionData inf) {
+        BlockPos here = villager.blockPosition();
+        BlockPos best = null;
+        double bestD = Double.MAX_VALUE;
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int dx = -LOCAL_SCAN_RXZ; dx <= LOCAL_SCAN_RXZ; dx++)
+            for (int dz = -LOCAL_SCAN_RXZ; dz <= LOCAL_SCAN_RXZ; dz++)
+                for (int dy = -LOCAL_SCAN_RY; dy <= LOCAL_SCAN_RY; dy++) {
+                    m.set(here.getX() + dx, here.getY() + dy, here.getZ() + dz);
+                    if (avoid.containsKey(m.asLong())) continue;
+                    if (!BlockMatcher.isRich(sl.getBlockState(m))) continue;
+                    inf.addRich(m.asLong());       // backfill so the tracker (and other miners) learn about it
+                    double d = m.distSqr(here);
+                    if (d < bestD) { bestD = d; best = m.immutable(); }
+                }
+        return best;
     }
 
     // --- navigation (with an underwater swim nudge) ---

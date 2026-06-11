@@ -44,5 +44,13 @@
   "effect.gobacktoyourworld.emerald_virus": "Emerald Virus",
   "entity.gobacktoyourworld.emeraldger": "Emeraldger",
   "entity.gobacktoyourworld.rocket": "Rocket",
+  "item.gobacktoyourworld.villager_stage1": "Villager (Stage 1)",
+  "item.gobacktoyourworld.villager_stage3": "Villager (Stage 3)",
+  "item.gobacktoyourworld.villager_stage4": "Villager (Stage 4)",
+  "item.gobacktoyourworld.guard_stage1": "Guard (Stage 1)",
+  "item.gobacktoyourworld.guard_stage3": "Guard (Stage 3)",
+  "item.gobacktoyourworld.guard_stage4": "Guard (Stage 4)",
+  "item.gobacktoyourworld.iron_golem": "Iron Golem",
+  "item.gobacktoyourworld.gigachad_golem": "Gigachad Golem",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

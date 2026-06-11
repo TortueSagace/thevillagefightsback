@@ -1,6 +1,8 @@
 package com.example.villagergunners.client;
 
 import com.example.villagergunners.ModEntities;
+import com.example.villagergunners.ModItems;
+import com.example.villagergunners.StagedDefenderEggItem;
 import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.client.model.IronGolemModel;
@@ -12,8 +14,10 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.RegistryObject;
 
 /** Client-only: attaches the decorative gun render layer to villager and iron golem renderers. */
 @Mod.EventBusSubscriber(modid = VillagerGunners.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -26,6 +30,16 @@ public final class VillagerGunnersClient {
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
+    }
+
+    /** Two-tone tint for the staged-defender spawn eggs (template_spawn_egg model, layers 0=base, 1=spots). */
+    @SubscribeEvent
+    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
+        net.minecraft.client.color.item.ItemColor handler =
+                (stack, layer) -> ((StagedDefenderEggItem) stack.getItem()).getColor(layer);
+        for (RegistryObject<net.minecraft.world.item.Item> ro : ModItems.STAGED_EGGS) {
+            event.register(handler, ro.get());
+        }
     }
 
     @SubscribeEvent
