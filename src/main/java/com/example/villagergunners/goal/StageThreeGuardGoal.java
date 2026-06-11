@@ -18,6 +18,7 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -37,13 +38,13 @@ public class StageThreeGuardGoal extends Goal {
 
     private static final double FOLLOW_RANGE = 24.0;
     private static final double CROSSBOW_RANGE = 10.0;   // > this -> crossbow
-    private static final int MIN_HEADROOM = 5;            // air blocks above the head needed to bounce
+    private static final int MIN_HEADROOM = 6;            // air blocks above the head needed to bounce
     private static final int RETARGET_INTERVAL = 10;
 
     private static final int FIRE_INTERVAL = 25;          // crossbow cadence (Quick Charge III ~ fast)
     private static final float ARROW_SPEED = 2.8F;
 
-    private static final double LAUNCH_VY = 0.85;         // wind-charge upward kick (~4-5 blocks, clears MIN_HEADROOM)
+    private static final double LAUNCH_VY = 1.2;          // wind-charge upward kick (~8 blocks)
     private static final double LAUNCH_HORIZ = 0.45;      // lean toward the target
     private static final int LAUNCH_COOLDOWN = 25;
     private static final double SMASH_RANGE_SQR = 9.0;    // smash when within 3 blocks while diving
@@ -109,7 +110,9 @@ public class StageThreeGuardGoal extends Goal {
         guard.getLookControl().setLookAt(t, 30.0F, 30.0F);
 
         double dist = guard.distanceTo(t);
-        if (!guard.onGround()) {               // already airborne -> keep diving / smashing / clutching
+        if (t instanceof Creeper) {            // never melee a creeper -- shoot it with the crossbow at any range
+            crossbow(t, dist);
+        } else if (!guard.onGround()) {        // already airborne -> keep diving / smashing / clutching
             diveAndSmash(t);
         } else if (dist > CROSSBOW_RANGE) {
             crossbow(t, dist);
@@ -141,6 +144,10 @@ public class StageThreeGuardGoal extends Goal {
         arrow.setPierceLevel((byte) 4);                       // Piercing IV
         arrow.getPersistentData().putBoolean(NBT_VIRUS_ARROW, true); // applies Emerald Virus on hit
         arrow.setBaseDamage(arrow.getBaseDamage() + 2.0);     // a bit punchier than a plain arrow
+        // green "poison-arrow" look: tint the vanilla tipped-arrow texture emerald (no vanilla potion attached).
+        ItemStack tip = new ItemStack(Items.TIPPED_ARROW);
+        tip.getOrCreateTag().putInt("CustomPotionColor", 0x2ECC40);
+        arrow.setEffectsFromItem(tip);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
         level.playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.CROSSBOW_SHOOT, SoundSource.HOSTILE, 1.0F, 1.0F);
@@ -192,7 +199,7 @@ public class StageThreeGuardGoal extends Goal {
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.8F, 1.4F);
         guard.fallDistance = 0.0F;
         // Wind Burst 3: bounce toward the next live target, else fall and clutch.
-        LivingEntity next = nearestEnemy(CROSSBOW_RANGE + 2.0, t.isAlive() ? null : t);
+        LivingEntity next = nearestEnemy(CROSSBOW_RANGE + 2.0, t.isAlive() ? null : t, false); // don't bounce onto a creeper
         if (next != null && hasHeadroom()) {
             target = next;
             Vec3 to = next.position().subtract(guard.position());
@@ -266,15 +273,16 @@ public class StageThreeGuardGoal extends Goal {
 
     private void refreshTarget() {
         if (target != null && target.isAlive() && guard.distanceToSqr(target) <= FOLLOW_RANGE * FOLLOW_RANGE) return;
-        target = nearestEnemy(FOLLOW_RANGE, null);
+        target = nearestEnemy(FOLLOW_RANGE, null, true); // include creepers -- the crossbow can shoot them
     }
 
-    private LivingEntity nearestEnemy(double radius, LivingEntity exclude) {
+    private LivingEntity nearestEnemy(double radius, LivingEntity exclude, boolean includeCreepers) {
         AABB box = guard.getBoundingBox().inflate(radius);
         LivingEntity best = null;
         double bestD = radius * radius;
         for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
-                x -> x != guard && x != exclude && x instanceof Enemy && !(x instanceof Creeper) && x.isAlive())) {
+                x -> x != guard && x != exclude && x instanceof Enemy
+                        && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {
             double d = guard.distanceToSqr(e);
             if (d <= bestD) { bestD = d; best = e; }
         }
