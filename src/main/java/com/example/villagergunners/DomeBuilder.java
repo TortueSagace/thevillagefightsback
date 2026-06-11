@@ -34,6 +34,7 @@ public final class DomeBuilder {
     private static final double RISE_FACTOR = 0.22; // dome peak height as a fraction of its radius
     private static final int RISE_MIN = 2, RISE_MAX = 10;
     private static final int CLEARANCE = 3;         // air blocks the dome keeps above a building's roof
+    private static final int MAX_CLEARANCE_ABOVE_RIM = 16; // cap the building-drape so the roof hugs the rim
     private static final int MAX_DOME_HEIGHT = 64;  // cap above the rim so a freak-tall build can't spike forever
 
     private static long key(int x, int z) { return (x & 0xFFFFFFFFL) | ((long) z << 32); }
@@ -85,7 +86,12 @@ public final class DomeBuilder {
                 double d = Math.hypot(x - cx, z - cz);
                 double f = Math.max(0.0, 1.0 - (d * d) / (R * R));
                 int paraboloid = H + (int) Math.round(rise * f);
-                int clearBuildings = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + CLEARANCE;
+                // Clearance over interior buildings -- but clamp it close to the rim. The world heightmap
+                // reports the far-above surface for a dug-in/cave village (and the tops of tall trees), which
+                // would otherwise lift the whole roof dozens of blocks above the base. Short interior houses
+                // sit only a few blocks over the rim, so they never reach this clamp.
+                int clearBuildings = Math.min(level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) + CLEARANCE,
+                        H + MAX_CLEARANCE_ABOVE_RIM);
                 int y = Math.max(paraboloid, clearBuildings);
                 if (y > H + MAX_DOME_HEIGHT) y = H + MAX_DOME_HEIGHT;
                 top.put(k, y);
