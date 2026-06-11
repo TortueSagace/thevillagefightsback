@@ -10,13 +10,16 @@ import java.util.function.Function;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.util.ITeleporter;
@@ -29,13 +32,12 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * Runs the Limbo "holding cell" rules:
- *  - Every creature teleported INTO Limbo gets a {@link LimboGravelBlock} marker dropped where it stood, and
- *    is remembered ({@link LimboData}) until it leaves or dies.
- *  - Destroying a creature's gravel marker (by any means, including sleeping in the {@link LimboBedBlock})
- *    returns that creature to the marker's exact spot.
+ *  - Every creature teleported INTO Limbo gets a {@link LimboGravelBlock} marker dropped where it stood (with
+ *    a floating name tag showing the creature's name), and is remembered ({@link LimboData}) until it leaves.
+ *  - The marker falls like gravel; falling just re-homes it (the creature stays). Only DESTROYING the marker
+ *    returns the creature, to the marker's most recent resting spot.
  *  - A creature that dies in Limbo has its marker instantly destroyed (no return).
- *  - If Limbo ever holds more than {@value #MAX_CREATURES} creatures, the most ancient are released until the
- *    count is back to the limit.
+ *  - If Limbo ever holds more than {@value #MAX_CREATURES} creatures, the most ancient are released first.
  */
 @Mod.EventBusSubscriber(modid = VillagerGunners.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboManager {
@@ -89,6 +91,7 @@ public final class LimboManager {
         MinecraftServer server = sl.getServer();
         LimboData.Entry entry = LimboData.get(server).removeByCreature(event.getEntity().getUUID());
         if (entry == null) return;
+        killMarker(server, entry);
         ServerLevel origin = server.getLevel(entry.originDim);
         if (origin != null) origin.removeBlock(entry.gravelPos, false); // entry already gone -> onRemove won't return
     }
@@ -103,20 +106,24 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         long now = limbo.getGameTime();
 
-        // 1. Register newly-arrived tracked creatures: drop their gravel marker where they came from.
+        // 1. Register newly-arrived tracked creatures: drop their gravel marker (+ name tag) where they came from.
         for (LivingEntity e : limbo.getEntitiesOfClass(LivingEntity.class, SCAN, LivingEntity::isAlive)) {
             UUID id = e.getUUID();
             if (data.getByCreature(id) != null) continue;
             PendingOrigin po = PENDING.remove(id);
             if (po == null) continue; // wasn't tracked-in via a dimension change (e.g. /summon) -> ignore
             BlockPos gravelPos = placeGravel(server, po.dim(), po.pos(), data);
-            data.add(new LimboData.Entry(id, po.dim(), gravelPos, now));
+            String name = e.getName().getString();
+            ServerLevel origin = server.getLevel(po.dim());
+            UUID marker = origin != null ? spawnMarker(origin, gravelPos, name) : null;
+            data.add(new LimboData.Entry(id, po.dim(), gravelPos, now, name, marker));
         }
 
-        // 2. Forget creatures that left Limbo some other way; clear their (now-meaningless) marker.
+        // 2. Forget creatures that left Limbo some other way; clear their (now-meaningless) marker + name tag.
         for (LimboData.Entry entry : data.entries()) {
             if (limbo.getEntity(entry.creature) == null) {
                 data.removeByCreature(entry.creature);
+                killMarker(server, entry);
                 ServerLevel origin = server.getLevel(entry.originDim);
                 if (origin != null && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
                     origin.removeBlock(entry.gravelPos, false);
@@ -132,8 +139,13 @@ public final class LimboManager {
             for (int i = 0; i < excess && i < all.size(); i++) {
                 LimboData.Entry old = all.get(i);
                 ServerLevel origin = server.getLevel(old.originDim);
-                if (origin != null) origin.removeBlock(old.gravelPos, false); // -> onRemove -> return
-                else data.removeByCreature(old.creature);                     // origin unloaded/gone -> just forget
+                if (origin != null && origin.getBlockState(old.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
+                    origin.removeBlock(old.gravelPos, false); // -> onGravelDestroyed -> kill marker + return
+                } else {                                      // gravel/origin not loaded -> release directly
+                    data.removeByCreature(old.creature);
+                    killMarker(server, old);
+                    teleportOut(server, old);
+                }
             }
         }
 
@@ -152,11 +164,23 @@ public final class LimboManager {
         return p;
     }
 
-    /** Called from {@link LimboGravelBlock#onRemove}: a marker vanished -> return its creature here. */
-    public static void onGravelRemoved(ServerLevel level, BlockPos pos) {
+    /** A marker was DESTROYED (not merely falling) -> return its creature to this, the most recent, spot. */
+    public static void onGravelDestroyed(ServerLevel level, BlockPos pos) {
         MinecraftServer server = level.getServer();
         LimboData.Entry entry = LimboData.get(server).removeByGravel(level.dimension(), pos);
-        if (entry != null) teleportOut(server, entry);
+        if (entry == null) return;
+        killMarker(server, entry);
+        teleportOut(server, entry);
+    }
+
+    /** A marker fell and came to rest at a new spot -> re-home the entry + its name tag (creature stays in Limbo). */
+    public static void onGravelLanded(ServerLevel level, BlockPos from, BlockPos to) {
+        MinecraftServer server = level.getServer();
+        LimboData data = LimboData.get(server);
+        LimboData.Entry e = data.removeByGravel(level.dimension(), from);
+        if (e == null) return; // untracked gravel (e.g. player-placed)
+        data.add(new LimboData.Entry(e.creature, e.originDim, to, e.entryTime, e.name, e.marker));
+        moveMarker(level, e.marker, to);
     }
 
     /** Sleeping in the Limbo bed = destroy your own marker = return. */
@@ -165,21 +189,22 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         LimboData.Entry entry = data.getByCreature(player.getUUID());
         if (entry == null) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("There is no way back from here.")
-                    .withStyle(net.minecraft.ChatFormatting.DARK_RED));
+            player.sendSystemMessage(Component.literal("There is no way back from here.")
+                    .withStyle(ChatFormatting.DARK_RED));
             return;
         }
         ServerLevel origin = server.getLevel(entry.originDim);
         boolean removed = origin != null
                 && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())
-                && origin.removeBlock(entry.gravelPos, false); // -> onRemove -> teleportOut
+                && origin.removeBlock(entry.gravelPos, false); // -> onGravelDestroyed -> kill marker + teleportOut
         if (!removed) { // marker already gone -> return directly
             data.removeByCreature(player.getUUID());
+            killMarker(server, entry);
             teleportOut(server, entry);
         }
     }
 
-    /** Move the entry's creature out of Limbo, back to its marker's exact location. */
+    /** Move the entry's creature out of Limbo, back to its marker's most recent location. */
     private static void teleportOut(MinecraftServer server, LimboData.Entry entry) {
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         ServerLevel dest = server.getLevel(entry.originDim);
@@ -200,5 +225,43 @@ public final class LimboManager {
                 }
             });
         }
+    }
+
+    // --- floating name-tag marker (an inert armor stand wearing the creature's name) ---
+
+    private static UUID spawnMarker(ServerLevel origin, BlockPos pos, String name) {
+        ArmorStand as = EntityType.ARMOR_STAND.create(origin);
+        if (as == null) return null;
+        as.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
+        as.setInvisible(true);
+        as.setSilent(true);
+        as.setInvulnerable(true);
+        as.setNoGravity(true);
+        as.setCustomName(Component.literal(name));
+        as.setCustomNameVisible(true);
+        // Marker (no hitbox), Small and NoBasePlate have no public setters -> set them via an NBT round-trip.
+        CompoundTag tag = new CompoundTag();
+        if (as.save(tag)) {
+            tag.putBoolean("Marker", true);
+            tag.putBoolean("Small", true);
+            tag.putBoolean("NoBasePlate", true);
+            as.load(tag);
+        }
+        origin.addFreshEntity(as);
+        return as.getUUID();
+    }
+
+    private static void moveMarker(ServerLevel origin, UUID marker, BlockPos pos) {
+        if (marker == null) return;
+        Entity m = origin.getEntity(marker);
+        if (m != null) m.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, m.getYRot(), m.getXRot());
+    }
+
+    private static void killMarker(MinecraftServer server, LimboData.Entry entry) {
+        if (entry.marker == null) return;
+        ServerLevel origin = server.getLevel(entry.originDim);
+        if (origin == null) return;
+        Entity m = origin.getEntity(entry.marker);
+        if (m != null) m.discard();
     }
 }

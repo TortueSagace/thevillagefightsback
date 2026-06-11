@@ -19,26 +19,31 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 /**
  * Global, persisted registry of every creature currently held in Limbo. For each one we remember the
- * dimension + block position it stood in just before it was pulled in (which is also where its Limbo-gravel
- * marker sits and where it returns to), and the game time it arrived (for the "release the most ancient"
- * over-population rule). Indexed both ways: by creature UUID (to find a sleeper's marker) and by gravel
- * position (so destroying the marker returns the right creature). Stored on the overworld's data storage.
+ * gravel-marker's CURRENT position (it moves as the gravel falls), the dimension it returns to, when it
+ * arrived (for the "release the most ancient" rule), the creature's name (shown on the marker's floating
+ * name tag), and that name-tag marker entity's UUID. Indexed by creature UUID and by gravel position.
+ * Stored on the overworld's data storage.
  */
 public class LimboData extends SavedData {
     private static final String NAME = "gobacktoyourworld_limbo";
 
-    /** One held creature: its return location (== the gravel marker) and when it entered. */
+    /** One held creature: its return marker (current gravel pos), arrival time, name and name-tag entity. */
     public static final class Entry {
         public final UUID creature;
         public final ResourceKey<Level> originDim;
         public final BlockPos gravelPos;
         public final long entryTime;
+        public final String name;
+        public final UUID marker; // floating name-tag armor stand, or null
 
-        public Entry(UUID creature, ResourceKey<Level> originDim, BlockPos gravelPos, long entryTime) {
+        public Entry(UUID creature, ResourceKey<Level> originDim, BlockPos gravelPos, long entryTime,
+                     String name, UUID marker) {
             this.creature = creature;
             this.originDim = originDim;
             this.gravelPos = gravelPos;
             this.entryTime = entryTime;
+            this.name = name;
+            this.marker = marker;
         }
     }
 
@@ -93,7 +98,9 @@ public class LimboData extends SavedData {
             UUID id = c.getUUID("uuid");
             ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
             BlockPos pos = BlockPos.of(c.getLong("pos"));
-            Entry e = new Entry(id, dim, pos, c.getLong("time"));
+            String name = c.getString("name");
+            UUID marker = c.hasUUID("marker") ? c.getUUID("marker") : null;
+            Entry e = new Entry(id, dim, pos, c.getLong("time"), name, marker);
             d.byCreature.put(id, e);
             d.byGravel.put(gravelKey(dim, pos), e);
         }
@@ -109,6 +116,8 @@ public class LimboData extends SavedData {
             c.putString("dim", e.originDim.location().toString());
             c.putLong("pos", e.gravelPos.asLong());
             c.putLong("time", e.entryTime);
+            c.putString("name", e.name == null ? "" : e.name);
+            if (e.marker != null) c.putUUID("marker", e.marker);
             list.add(c);
         }
         tag.put("entries", list);

@@ -1,32 +1,74 @@
 package com.example.villagergunners;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 
 /**
- * Limbo Gravel: a darker gravel that marks where a creature stood before it was pulled into Limbo. It falls
- * under gravity like real gravel -- and the moment it is removed by ANY means (broken, exploded, or the
- * ground beneath it pulled out so it falls away), the creature it belongs to is yanked back to this exact
- * spot ({@link LimboManager#onGravelRemoved}). It puffs soul particles, like soul soil, when walked on.
+ * Limbo Gravel: a darker gravel that marks where a creature was pulled into Limbo. It FALLS under gravity
+ * like real gravel -- but falling does NOT free the creature: the marker simply slides down and the held
+ * creature stays in Limbo. Only when the gravel is truly DESTROYED (broken, exploded, ...) is the creature
+ * returned, to the marker's most recent resting spot ({@link LimboManager#onGravelDestroyed}). It puffs soul
+ * particles, like soul soil, when walked on.
+ *
+ * To tell "fell away" from "destroyed", we flag the position for the brief instant the block turns into a
+ * falling-block entity, and re-home the marker when it lands.
  */
 public class LimboGravelBlock extends FallingBlock {
+    private static final Set<String> FALLING = ConcurrentHashMap.newKeySet();        // dim|pos currently falling
+    private static final Map<String, BlockPos> PENDING_FALL = new ConcurrentHashMap<>(); // dim@x,z -> pos it fell from
+
     public LimboGravelBlock(Properties properties) {
         super(properties);
     }
 
+    private static String posKey(ServerLevel level, BlockPos pos) {
+        return level.dimension().location() + "|" + pos.asLong();
+    }
+
+    private static String colKey(ServerLevel level, BlockPos pos) {
+        return level.dimension().location() + "@" + pos.getX() + "," + pos.getZ();
+    }
+
+    @Override
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        boolean willFall = FallingBlock.isFree(level.getBlockState(pos.below())) && pos.getY() >= level.getMinBuildHeight();
+        if (willFall) {
+            // Mark this removal as a FALL (so onRemove doesn't free the creature) and remember the column.
+            FALLING.add(posKey(level, pos));
+            PENDING_FALL.put(colKey(level, pos), pos.immutable());
+            super.tick(state, level, pos, random); // spawns the falling-block entity -> setBlock(air) -> onRemove
+            FALLING.remove(posKey(level, pos));
+        } else {
+            super.tick(state, level, pos, random);
+        }
+    }
+
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        // Only when the block at this position actually changes away from limbo gravel (not a same-block
-        // state update) does a creature get pulled back.
-        if (!state.is(newState.getBlock()) && level instanceof ServerLevel sl) {
-            LimboManager.onGravelRemoved(sl, pos);
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel sl && !FALLING.contains(posKey(sl, pos))) {
+            LimboManager.onGravelDestroyed(sl, pos); // a real destruction (not just falling) -> return the creature
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
+    public void onLand(Level level, BlockPos pos, BlockState state, BlockState replaceable, FallingBlockEntity fallingBlock) {
+        if (level instanceof ServerLevel sl) {
+            BlockPos from = PENDING_FALL.remove(colKey(sl, pos));
+            if (from != null && !from.equals(pos)) LimboManager.onGravelLanded(sl, from, pos);
+        }
+        super.onLand(level, pos, state, replaceable, fallingBlock);
     }
 
     @Override
