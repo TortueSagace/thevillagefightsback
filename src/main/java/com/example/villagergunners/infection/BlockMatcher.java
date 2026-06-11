@@ -144,6 +144,9 @@ public final class BlockMatcher {
         if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) return false; // must be solid
         if (b == Blocks.FARMLAND) return false;
         if (jobSites.contains(b)) return false;                        // keep village jobs (workstations + bell)
+        if (b instanceof net.minecraft.world.level.block.ChestBlock
+                || b instanceof net.minecraft.world.level.block.EnderChestBlock
+                || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
         if (s.is(BlockTags.PLANKS)) return false;
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 7) return false;                    // brighter than a redstone torch

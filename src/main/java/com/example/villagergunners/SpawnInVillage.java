@@ -9,8 +9,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Moves the overworld spawn point onto the nearest village when the server starts, so players spawn in
- * a village instead of a random place. If no village is within range we leave the vanilla spawn alone.
+ * Optionally moves the overworld spawn point onto the nearest village when the server starts, so players
+ * spawn in a village instead of a random place. OFF by default -- enable it via the
+ * {@code spawnAtNearestVillage} config option. If no village is within range we leave the vanilla spawn alone.
  *
  * Setting the world spawn (rather than teleporting each player) is the simplest, most robust option:
  * new players and bed-less respawns use it automatically, and players who already have a bed are
@@ -26,6 +27,7 @@ public final class SpawnInVillage {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        if (!Config.SPAWN_AT_NEAREST_VILLAGE.get()) return; // opt-in: off by default (config/gobacktoyourworld-common.toml)
         ServerLevel overworld = event.getServer().overworld();
         BlockPos from = overworld.getSharedSpawnPos();
 
