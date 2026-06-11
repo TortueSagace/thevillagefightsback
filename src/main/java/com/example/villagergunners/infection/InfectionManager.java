@@ -13,6 +13,7 @@ import com.example.villagergunners.wall.WallPlan;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -55,12 +56,9 @@ public final class InfectionManager {
     private static final int MAX_CELLS_PER_PASS = 8192;
     private static final double SAND_DROP_CHANCE = 0.04;  // a stuck path over air/water drips fertile sand
     private static final float RICH_CHANCE = 0.05F;       // converted block: 5% rich, else fertile
-    private static final long FAST_WINDOW = 200L;         // first 10s after a village triggers = 5x
-    private static final double FAST_MULT = 5.0;
     private static final long BOOST_DURATION = 600L;      // +100% for 30s near a lost block (spec 8)
     private static final double SLOW_FACTOR = 0.1;        // steady-state infection is 10x slower than the raw
-                                                          // chances; SKIPPED while fighting back (boost) or in
-                                                          // the 5x start window, so retaliation stays snappy.
+                                                          // chances; SKIPPED only while fighting back (a boost).
 
     private static final int SEED_RADIUS = 24;       // one-time scan for dirt paths around a new lvl-2 village
     private static final int SEED_Y = 5;
@@ -104,12 +102,15 @@ public final class InfectionManager {
                 long now = level.getGameTime();
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
-                if (inf.frontierSize() == 0) {
-                    // still let path heads grow even if the frontier momentarily empty
+                // Constant base speed (no first-seconds buff); only a local "fighting back" boost speeds things up.
+                growPaths(level, inf, now, 1.0);
+                convert(level, inf, now, 1.0);
+                // Tell players the first time the footprint cap is hit, so the sudden stop is understood.
+                if (inf.takeCapNotification()) {
+                    server.getPlayerList().broadcastSystemMessage(Component.literal(
+                            "§2The infection has reached its limit (" + InfectionData.MAX_CONVERTED
+                            + " blocks) and paused. Destroy some Fertile/Rich blocks to let it spread again."), false);
                 }
-                double globalMult = inf.isFast(now) ? FAST_MULT : 1.0;
-                growPaths(level, inf, now, globalMult);
-                convert(level, inf, now, globalMult);
             }
         }
     }
@@ -174,7 +175,6 @@ public final class InfectionManager {
     private static void seedVillage(ServerLevel level, InfectionData inf, GlobalPos gp, GravemindData data) {
         BlockPos center = gp.pos();
         inf.markSeeded(center.asLong());
-        inf.setFastUntil(level.getGameTime() + FAST_WINDOW); // spec 7: 5x for the first 10s
 
         // Stop building: demote nearby builders (they go idle; staffMiners then makes 20% of them miners).
         for (Villager v : level.getEntitiesOfClass(Villager.class,

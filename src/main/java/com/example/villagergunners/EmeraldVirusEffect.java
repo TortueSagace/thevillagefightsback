@@ -24,7 +24,8 @@ public class EmeraldVirusEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (entity.level().isClientSide()) return;
-        if (EmeraldVirus.isEvolved(entity.getServer())) {
+        // Evolved (Wither II) if this is Emerald Virus II (a stage-4 attacker's hit) OR any gravemind has hit level 4.
+        if (amplifier >= 1 || EmeraldVirus.isEvolved(entity.getServer())) {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 1, false, false, false)); // Wither II
         } else {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, false, false));          // Wither I

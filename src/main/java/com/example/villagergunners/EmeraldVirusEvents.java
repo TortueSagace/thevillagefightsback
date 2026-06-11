@@ -75,17 +75,22 @@ public final class EmeraldVirusEvents {
         // Emerald-virus tipped arrow (a stage-3 guard's crossbow): infect on hit, nothing else.
         if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow
                 && arrow.getPersistentData().getBoolean(com.example.villagergunners.goal.StageThreeGuardGoal.NBT_VIRUS_ARROW)) {
-            EmeraldVirus.infect(target);
+            EmeraldVirus.infect(target, virusLevel(arrow.getOwner())); // stage-4 guard's arrow -> Virus II
             return;
         }
         if (!(direct instanceof LivingEntity attacker)) return;
         if (!(attacker.getMainHandItem().getItem() instanceof AlienSlasherItem)) return;
 
         // Virus respects immunity / one-shot rule; the rest of the payload always lands.
-        EmeraldVirus.infect(target);
+        EmeraldVirus.infect(target, virusLevel(attacker)); // stage-4 attacker -> Virus II
         target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SLOWNESS_TICKS, 3, false, true)); // Slowness IV
         target.setSecondsOnFire(FIRE_SECONDS);
         applyHugeKnockback(attacker, target);
+    }
+
+    /** Emerald Virus amplifier an attacker imparts: 1 (Virus II) for a stage-4 defender, else 0 (Virus I). */
+    private static int virusLevel(Entity attacker) {
+        return attacker != null && UpgradeState.isStage4(attacker) ? 1 : 0;
     }
 
     /** Launch the target ~20 blocks away from the attacker, bypassing knockback resistance (direct velocity set). */

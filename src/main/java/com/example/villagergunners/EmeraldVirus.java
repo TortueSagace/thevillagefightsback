@@ -67,11 +67,16 @@ public final class EmeraldVirus {
      * No-op if the host cannot be infected. Returns true if a fresh infection was started.
      */
     public static boolean infect(LivingEntity e) {
+        return infect(e, 0);
+    }
+
+    /** Infect with a given strength: amplifier 0 = Emerald Virus I, amplifier 1 = Emerald Virus II (stage-4 hit). */
+    public static boolean infect(LivingEntity e, int amplifier) {
         if (!canInfect(e)) return false;
         CompoundTag data = e.getPersistentData();
         data.putBoolean(NBT_EVER, true);
         // ambient=false, showParticles=false, showIcon=true -> no swirl particles, but a HUD icon for players.
-        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), DURATION_TICKS, 0, false, false, true));
+        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), DURATION_TICKS, amplifier, false, false, true));
         // Seed a faint tint immediately so the colour shift is visible from the first second.
         if (progress(e) < 0.05F) setProgress(e, 0.05F);
         return true;

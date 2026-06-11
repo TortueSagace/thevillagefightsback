@@ -229,10 +229,29 @@ public final class GunnerEvents {
             golem.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.ROCKET_LAUNCHER.get()));
             golem.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
+        applyGolemArmor(golem); // gigachad: protection of a full iron set (idempotent; survives reload)
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
         golem.goalSelector.addGoal(2, new FlareRallyGoal(golem));
+    }
+
+    // Fixed UUID so re-applying the gigachad armour buff on world reload is idempotent.
+    private static final java.util.UUID GOLEM_ARMOR_UUID =
+            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000003");
+    private static final double IRON_ARMOR = 15.0; // full iron set: helmet 2 + chest 6 + legs 5 + boots 2
+
+    /** Give a stage-3 ("gigachad") iron golem the armour of a full iron set (+15 armour) as a permanent
+     *  attribute modifier. Idempotent via the fixed UUID, so a reload never stacks a second copy. */
+    private static void applyGolemArmor(IronGolem golem) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance inst =
+                golem.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+        if (inst == null) return;
+        net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_ARMOR_UUID,
+                        "gigachad iron armour", IRON_ARMOR,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
+        if (!inst.hasModifier(mod)) inst.addPermanentModifier(mod);
     }
 
     /** Remove every goal of {@code goalClass} from the mob's goal selector (used when upgrading). */
