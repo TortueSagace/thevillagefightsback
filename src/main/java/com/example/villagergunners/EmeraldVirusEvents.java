@@ -79,6 +79,13 @@ public final class EmeraldVirusEvents {
         if (!(direct instanceof LivingEntity attacker)) return;
         if (!(attacker.getMainHandItem().getItem() instanceof AlienSlasherItem)) return;
 
+        // Balance drawback: every hit with the Alien Slasher costs the WIELDER (player OR mob) 5 raw HP --
+        // armor-ignoring magic damage, like a sculk/sonic hit -- so the weapon isn't overpowered. magic() has
+        // no source entity, so re-entering this handler hits the early "direct instanceof LivingEntity" return
+        // (no recursion). Clearing i-frames guarantees the 5 HP always lands.
+        attacker.invulnerableTime = 0;
+        attacker.hurt(attacker.level().damageSources().magic(), 5.0F);
+
         // Virus respects immunity / one-shot rule; the rest of the payload always lands.
         EmeraldVirus.infect(target);
         target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SLOWNESS_TICKS, 3, false, true)); // Slowness IV
