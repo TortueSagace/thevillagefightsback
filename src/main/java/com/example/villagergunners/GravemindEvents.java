@@ -378,50 +378,15 @@ public final class GravemindEvents {
                 covered[d] = true;
             }
         }
-        int population = nearby.size(); // cap spawning so churn can't grow the crowd past BUILDER_COUNT bodies
+        // Fill uncovered doors ONLY from existing eligible villagers -- NEVER spawn new ones just because the
+        // village is short on builders. A door with no eligible villager is simply left uncovered this pass.
         java.util.Iterator<Villager> free = nearby.stream().filter(BuilderRole::eligible).iterator();
         for (int d = 0; d < covered.length; d++) {
-            if (covered[d]) continue;
-            Villager v;
-            if (free.hasNext()) v = free.next();
-            else if (population < slots) { v = spawnBuilder(level, gravemind); if (v != null) population++; }
-            else v = null;
-            if (v == null) continue;
+            if (covered[d] || !free.hasNext()) continue;
+            Villager v = free.next();
             BuilderRole.promote(v, d);
-            GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted/spawned builder can build
+            GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted builder can build
         }
-    }
-
-    /** Spawn an (armed-on-join) villager near the gravemind to serve as a wall builder, or null if no spot. */
-    private static Villager spawnBuilder(ServerLevel level, BlockPos gravemind) {
-        BlockPos spot = builderSpawnSpot(level, gravemind);
-        if (spot == null) return null;
-        Villager v = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
-        if (v == null) return null;
-        v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
-        v.setBaby(false);
-        level.addFreshEntity(v); // onEntityJoin arms it + adds the build goal
-        return v;
-    }
-
-    /** A standable surface spot near the gravemind (ring search outward), or null. */
-    private static BlockPos builderSpawnSpot(ServerLevel level, BlockPos gm) {
-        for (int r = 1; r <= 5; r++) {
-            for (int dx = -r; dx <= r; dx++) {
-                for (int dz = -r; dz <= r; dz++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue; // ring only
-                    BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, gm.offset(dx, 0, dz));
-                    if (Math.abs(surf.getY() - gm.getY()) > 6) continue;
-                    if (level.getBlockState(surf).getCollisionShape(level, surf).isEmpty()
-                            && level.getBlockState(surf.above()).getCollisionShape(level, surf.above()).isEmpty()
-                            && level.getBlockState(surf.below()).isFaceSturdy(level, surf.below(), Direction.UP)) {
-                        return surf;
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     /**
