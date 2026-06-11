@@ -3,6 +3,7 @@ package com.example.villagergunners.goal;
 import java.util.EnumSet;
 
 import com.example.villagergunners.GuardWeapons;
+import com.example.villagergunners.ModBlocks;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -59,9 +60,12 @@ public class StageThreeGuardGoal extends Goal {
     private static final double REACH_SQR = 4.0;          // slasher melee reach
     private static final int MELEE_COOLDOWN = 20;
 
+    private static final double CLIMB_THRESHOLD = 3.0;    // target this far above -> climb cheap scaffolds to reach it
+    private static final int CLIMB_INTERVAL = 3;          // ticks per scaffold step (a visible climb, not a teleport)
+
     private final PathfinderMob guard;
     private LivingEntity target;
-    private int fireCooldown, launchCooldown, meleeCooldown;
+    private int fireCooldown, launchCooldown, meleeCooldown, climbCooldown;
     private BlockPos clutchPos;
     private int clutchTimer;
 
@@ -98,6 +102,7 @@ public class StageThreeGuardGoal extends Goal {
         if (fireCooldown > 0) fireCooldown--;
         if (launchCooldown > 0) launchCooldown--;
         if (meleeCooldown > 0) meleeCooldown--;
+        if (climbCooldown > 0) climbCooldown--;
         tickClutch();
 
         if (guard.tickCount % RETARGET_INTERVAL == 0) refreshTarget();
@@ -116,8 +121,10 @@ public class StageThreeGuardGoal extends Goal {
             diveAndSmash(t);
         } else if (dist > CROSSBOW_RANGE) {
             crossbow(t, dist);
+        } else if (t.getY() - guard.getY() > CLIMB_THRESHOLD) {
+            climbWithScaffold(t, dist);         // reach a target well above us with cheap scaffolds (NOT wind charge)
         } else if (hasHeadroom()) {
-            launchAt(t);                        // begin a bounce
+            launchAt(t);                        // begin a bounce (wind charge = attack only)
         } else {
             slasher(t, dist);                   // low ceiling -> villager-style melee
         }
@@ -252,6 +259,28 @@ public class StageThreeGuardGoal extends Goal {
             guard.doHurtTarget(t); // Alien Slasher on-hit payload is applied by EmeraldVirusEvents
             meleeCooldown = MELEE_COOLDOWN;
         }
+    }
+
+    // --- climb to reach a high target (cheap scaffolds, NOT the wind charge) ---------------------
+    private void climbWithScaffold(LivingEntity t, double dist) {
+        setMainhand(GuardWeapons.mace());
+        int gx = guard.getBlockX(), gy = guard.getBlockY(), gz = guard.getBlockZ();
+        int hx = (int) Math.floor(t.getX()) - gx, hz = (int) Math.floor(t.getZ()) - gz;
+        if (Math.abs(hx) > 1 || Math.abs(hz) > 1) {       // walk under the target's column first
+            guard.getNavigation().moveTo(t.getX(), guard.getY(), t.getZ(), 1.15);
+            return;
+        }
+        if (climbCooldown > 0) return;
+        Level level = guard.level();
+        BlockPos feet = new BlockPos(gx, gy, gz);
+        if (level.getBlockState(feet.above()).blocksMotion()) { crossbow(t, dist); return; } // capped above -> shoot it
+        if (level.getBlockState(feet).canBeReplaced()) {
+            level.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+        }
+        guard.getNavigation().stop();
+        guard.setPos(gx + 0.5, gy + 1.0, gz + 0.5);       // step onto the scaffold (it self-expires in ~30s)
+        guard.fallDistance = 0.0F;
+        climbCooldown = CLIMB_INTERVAL;
     }
 
     // --- shared ---------------------------------------------------------------------------------

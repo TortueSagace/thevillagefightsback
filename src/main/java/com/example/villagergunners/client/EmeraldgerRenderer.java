@@ -5,37 +5,48 @@ import com.example.villagergunners.VillagerGunners;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.model.VillagerModel;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.entity.VillagerRenderer;
+import net.minecraft.client.renderer.entity.layers.CrossedArmsItemLayer;
 import net.minecraft.client.renderer.entity.layers.EyesLayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.npc.Villager;
 
 /**
- * Renders the Emeraldger as a villager that is (a) scaled to its HP-derived size and (b) wears an emissive
- * layer of shiny green eyes (fullbright, like spider/enderman eyes, so they glow in the dark). Everything
- * else -- body, held Alien Slasher (vanilla crossed-arms layer) -- is the normal villager appearance.
+ * Renders the Emeraldger: a villager-shaped mob with its OWN texture (white skin, yellow clothes) instead of
+ * the vanilla biome/profession-composited villager skin, scaled to its HP-derived size, holding its Alien
+ * Slasher (crossed-arms layer), and wearing an emissive layer of shiny green eyes (fullbright, like spider
+ * eyes, so they glow in the dark).
  */
-public class EmeraldgerRenderer extends VillagerRenderer {
+public class EmeraldgerRenderer extends MobRenderer<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> {
+    private static final ResourceLocation TEXTURE =
+            new ResourceLocation(VillagerGunners.MODID, "textures/entity/emeraldger.png");
+
     public EmeraldgerRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx);
+        super(ctx, new VillagerModel<>(ctx.bakeLayer(ModelLayers.VILLAGER)), 0.5F);
+        this.addLayer(new CrossedArmsItemLayer<>(this, ctx.getItemInHandRenderer())); // show the held Alien Slasher
         this.addLayer(new GreenEyesLayer(this));
     }
 
     @Override
-    protected void scale(Villager entity, PoseStack pose, float partialTick) {
-        float s = entity instanceof EmeraldgerEntity em ? em.getEmeraldgerScale() : 1.0F;
+    public ResourceLocation getTextureLocation(EmeraldgerEntity entity) {
+        return TEXTURE;
+    }
+
+    @Override
+    protected void scale(EmeraldgerEntity entity, PoseStack pose, float partialTick) {
+        float s = entity.getEmeraldgerScale();
         pose.scale(s, s, s);
     }
 
     /** Fullbright green-eyes overlay mapped onto the villager head UV. */
-    private static class GreenEyesLayer extends EyesLayer<Villager, VillagerModel<Villager>> {
+    private static class GreenEyesLayer extends EyesLayer<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> {
         private static final RenderType EYES = RenderType.eyes(
                 new ResourceLocation(VillagerGunners.MODID, "textures/entity/emeraldger_eyes.png"));
 
-        GreenEyesLayer(RenderLayerParent<Villager, VillagerModel<Villager>> parent) {
+        GreenEyesLayer(RenderLayerParent<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> parent) {
             super(parent);
         }
 

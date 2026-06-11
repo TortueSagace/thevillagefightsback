@@ -111,6 +111,32 @@ public class EmeraldgerEntity extends Villager {
         return false; // only the no-kill timer despawns it
     }
 
+    // --- total, permanent immunity (silent: no effect particles, since no effect ever lands) -------
+
+    /** Immune to fire/lava: never takes fire damage and never visually burns. */
+    @Override
+    public boolean fireImmune() {
+        return true;
+    }
+
+    /** Never catch fire (e.g. from the Alien Slasher's on-hit fire) -- belt-and-braces with fireImmune(). */
+    @Override
+    public void setSecondsOnFire(int seconds) {
+        // total immunity: ignored.
+    }
+
+    /** Immune to EVERY status effect, good or bad -- the addEffect call is rejected here, so no particles. */
+    @Override
+    public boolean canBeAffected(net.minecraft.world.effect.MobEffectInstance effect) {
+        return false;
+    }
+
+    /** Immune to freezing in powder snow too (it isn't a MobEffect, so it needs its own guard). */
+    @Override
+    public boolean canFreeze() {
+        return false;
+    }
+
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
