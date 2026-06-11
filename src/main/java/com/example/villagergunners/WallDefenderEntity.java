@@ -1,6 +1,10 @@
 package com.example.villagergunners;
 
+import net.minecraft.core.GlobalPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -23,14 +27,23 @@ import net.minecraft.world.phys.Vec3;
  */
 public class WallDefenderEntity extends Mob {
     private static final double RANGE = 24.0;
-    private static final int FIRE_INTERVAL = 20;     // one shot per second
+    private static final int FIRE_INTERVAL = 20;     // one bullet per second (pre-stage-4 revolver)
     private static final int RETARGET_INTERVAL = 10; // re-scan for a target only every 0.5s (the heavy part)
     private static final ResourceLocation GUN_ID = new ResourceLocation("jeg", "revolver"); // base dmg 5
     private static final float GUN_BONUS_DAMAGE = 5.0F; // + base 5 = ~10 damage per shot
 
+    // Stage 4: the defender fires our native rocket (the same RocketEntity the iron golems use), NOT a JEG
+    // bullet. Rockets only fly beyond MIN_ROCKET_RANGE so the radius-5 blast can never reach our own glass
+    // shell; a target closer than that is plinked with the revolver instead (so a point-blank attacker is
+    // still engaged without the turret blowing itself up).
+    private static final int ROCKET_INTERVAL = 40;    // one rocket per 2s at stage 4
+    private static final double MIN_ROCKET_RANGE = 8.0; // > blast radius (+ shell clearance) -> never self-blast
+    private static final double ROCKET_SPEED = 2.5;   // blocks/tick: fast, near-straight flight (matches golems)
+
     private static ItemStack gun; // lazily built once JEG's item registry is available
     private int fireCooldown;
     private int retargetCooldown;
+    private boolean rocketMode;   // our village is at stage 4 -> fire rockets (refreshed on each re-target)
     private LivingEntity cachedTarget;
 
     public WallDefenderEntity(EntityType<? extends Mob> type, Level level) {
@@ -69,15 +82,50 @@ public class WallDefenderEntity extends Mob {
         // target stays per-tick because that's just a cheap rotation.
         if (retargetCooldown <= 0 || !isValidTarget(cachedTarget)) {
             cachedTarget = acquireTarget();
+            rocketMode = isStage4();                   // refresh the stage gate alongside the (throttled) re-scan
             retargetCooldown = RETARGET_INTERVAL;
         }
         setTarget(cachedTarget);
         if (cachedTarget == null) return;
-        GunUtil.aimAt(this, cachedTarget);            // JEG fires along body rotation, so face the target first
-        if (fireCooldown <= 0 && !gun().isEmpty()) {
+        GunUtil.aimAt(this, cachedTarget);            // face the target (JEG fires along body rotation; the rocket aims by hand)
+        if (fireCooldown > 0) return;
+
+        // Stage 4: rocket distant targets like the iron golems do; closer than the safe blast range, fall back
+        // to the revolver so the immobile turret still engages a point-blank attacker without self-blasting.
+        if (rocketMode && distanceToSqr(cachedTarget) >= MIN_ROCKET_RANGE * MIN_ROCKET_RANGE) {
+            fireRocket(cachedTarget);
+            fireCooldown = ROCKET_INTERVAL;
+        } else if (!gun().isEmpty()) {
             GunUtil.fire(this, cachedTarget, gun(), 0.0F);  // real JEG bullet, perfect precision
             fireCooldown = FIRE_INTERVAL;
         }
+    }
+
+    /** Spawn a native rocket (our local clone, NOT JEG) aimed straight at the target. Mirrors GolemRocketGoal. */
+    private void fireRocket(LivingEntity target) {
+        RocketEntity rocket = new RocketEntity(level(), this);
+        Vec3 from = rocket.position();
+        Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
+        rocket.setDeltaMovement(dir.scale(ROCKET_SPEED));
+        rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
+        rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
+        level().addFreshEntity(rocket);
+        level().playSound(null, getX(), getY(), getZ(),
+                SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 1.4F, 0.7F);
+    }
+
+    /** True when the nearest Village Gravemind (this defender's village) has reached stage 4. */
+    private boolean isStage4() {
+        if (!(level() instanceof ServerLevel sl)) return false;
+        GravemindData data = GravemindData.get(sl.getServer());
+        GlobalPos nearest = null;
+        double best = Double.MAX_VALUE;
+        for (GlobalPos gp : data.blocks()) {
+            if (!gp.dimension().equals(sl.dimension())) continue;
+            double d = gp.pos().distSqr(blockPosition());
+            if (d < best) { best = d; nearest = gp; }
+        }
+        return nearest != null && data.econ(nearest).getLevel() >= 4;
     }
 
     /** Cheap per-tick check (no raytrace) so we can keep a target between full re-acquisitions. */
