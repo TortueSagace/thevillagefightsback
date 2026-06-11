@@ -111,14 +111,21 @@ public class InfectionData extends SavedData {
 
     public void removeRich(long pos) { if (rich.remove(pos)) setDirty(); }
 
-    /** A rich block within {@code range} of {@code from} (first hit; bounded scan), or null. */
+    /** A rich block within {@code range} of {@code from} (nearest; bounded scan), or null. */
     public BlockPos nearestRich(BlockPos from, double range) {
+        return nearestRich(from, range, null);
+    }
+
+    /** As {@link #nearestRich(BlockPos, double)} but skipping any position in {@code exclude} (e.g. a miner's
+     *  blacklist of rich blocks it couldn't reach), so a different reachable block is chosen instead. */
+    public BlockPos nearestRich(BlockPos from, double range, Set<Long> exclude) {
         double r2 = range * range;
         int scanned = 0;
         BlockPos best = null;
         double bestD = Double.MAX_VALUE;
         for (long l : rich) {
             if (++scanned > 2048) break;               // bound the per-call cost on huge sets
+            if (exclude != null && exclude.contains(l)) continue;
             BlockPos p = BlockPos.of(l);
             double d = p.distSqr(from);
             if (d <= r2 && d < bestD) { bestD = d; best = p; }

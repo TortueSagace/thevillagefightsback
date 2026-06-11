@@ -31,7 +31,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class MinerGoal extends Goal {
     private static final int SELECT_THROTTLE = 10;
-    private static final double SEARCH_RANGE = 32.0;     // look for rich blocks within this
+    private static final double SEARCH_RANGE = 48.0;     // look for rich blocks within this (roam across the zone)
     private static final double REACH_SQR = 3.2 * 3.2;   // close enough to dig
     private static final double FEED_RANGE_SQR = 3.0 * 3.0;
     private static final double GRAVEMIND_RANGE = 160.0; // search this far for a gravemind to feed
@@ -40,10 +40,17 @@ public class MinerGoal extends Goal {
 
     private static final int CARRY_TIMEOUT = 1200; // 60s to deliver; else drop the emerald and resume hunting
 
+    // Anti-stuck: a rich block the miner can't reach within SEEK_TIMEOUT ticks is blacklisted for
+    // BLACKLIST_TICKS so it picks a DIFFERENT reachable block instead of pathing at it forever.
+    private static final int SEEK_TIMEOUT = 160;   // ~8s of trying to reach a target before giving up on it
+    private static final long BLACKLIST_TICKS = 600L; // ~30s before that block is reconsidered
+
     private final Villager villager;
     private boolean carrying;          // holding an emerald to deliver
     private int carryTicks;            // how long we've carried (anti-deadlock)
     private BlockPos target;           // rich block being sought
+    private int seekTicks;             // how long we've been trying to reach the current target
+    private final java.util.HashMap<Long, Long> avoid = new java.util.HashMap<>(); // unreachable rich -> expiry
     private BlockPos gravemind;        // delivery target
     private int repathTimer;
 
@@ -66,9 +73,15 @@ public class MinerGoal extends Goal {
         if (carrying) return true;
         if (target != null) return true;
         if (villager.tickCount % SELECT_THROTTLE != 0) return false;
-        BlockPos r = InfectionData.get(sl).nearestRich(villager.blockPosition(), SEARCH_RANGE);
-        if (r != null) { target = r; return true; }
+        pruneAvoid(sl.getGameTime());
+        BlockPos r = InfectionData.get(sl).nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
+        if (r != null) { target = r; seekTicks = 0; return true; }
         return false;
+    }
+
+    /** Forget blacklisted rich blocks whose cool-down has elapsed so they can be tried again. */
+    private void pruneAvoid(long now) {
+        avoid.values().removeIf(expiry -> expiry <= now);
     }
 
     @Override
@@ -107,12 +120,20 @@ public class MinerGoal extends Goal {
         if (!BlockMatcher.isRich(sl.getBlockState(target))) {
             InfectionData.get(sl).removeRich(target.asLong());
             target = null;
+            seekTicks = 0;
             return;
         }
         Vec3 c = Vec3.atCenterOf(target);
         villager.getLookControl().setLookAt(c.x, c.y, c.z);
         if (villager.position().distanceToSqr(c) <= REACH_SQR) {
+            seekTicks = 0;
             startDig(target);
+        } else if (++seekTicks > SEEK_TIMEOUT) {
+            // Can't reach this block (no path / blocked): blacklist it briefly and pick another reachable one.
+            avoid.put(target.asLong(), sl.getGameTime() + BLACKLIST_TICKS);
+            villager.getNavigation().stop();
+            target = null;
+            seekTicks = 0;
         } else {
             navigate(target);
         }

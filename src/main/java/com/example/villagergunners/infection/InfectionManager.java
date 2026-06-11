@@ -47,8 +47,8 @@ public final class InfectionManager {
     private static final int STAFF_INTERVAL = 100;   // (re)staff miners every 5s -- the only entity scan, kept sparse
     private static final int START_LEVEL = 2;        // infection begins at gravemind level 2
 
-    private static final double PATH_GROW_CHANCE = 0.45;  // per head per pass (paths outrun conversion)
-    private static final double CONV_CHANCE = 0.35;       // per frontier cell per pass (smaller than paths)
+    private static final double PATH_GROW_CHANCE = 0.60;  // per head per pass -- paths must clearly outrun conversion
+    private static final double CONV_CHANCE = 0.15;       // per frontier cell per pass (well below paths so paths lead)
     // Process the WHOLE active frontier each pass (symmetric growth on every edge) up to this hard cap; the
     // frontier converges to the active perimeter (interior cells retire), so this stays cheap until very large
     // zones, where the cap bounds per-tick cost. (The old tiny budget made growth slow + lopsided.)
@@ -61,8 +61,8 @@ public final class InfectionManager {
 
     private static final int SEED_RADIUS = 24;       // one-time scan for dirt paths around a new lvl-2 village
     private static final int SEED_Y = 5;
-    private static final double MINER_FRACTION = 0.20;
-    private static final double MINER_AREA = 48.0;
+    private static final double MINER_FRACTION = 0.40;
+    private static final double MINER_AREA = 64.0;
 
     // 26-neighbourhood offsets (immediate +/-1 incl. diagonals).
     private static final int[][] N26;
@@ -137,6 +137,8 @@ public final class InfectionManager {
             inf.removeRich(key);
             inf.sanction(key, now);                                   // accounted for -> frontier scan won't re-boost
             if (!friendly) inf.addBoost(key, now + BOOST_DURATION);   // the ground feels attacked (spec 8)
+            inf.retire(key);                                          // it's gone -> drop it from the frontier
+            reactivateNeighbours(inf, sl, pos);                       // wake the surviving rim to reclaim the crater
         }
     }
 
@@ -158,6 +160,8 @@ public final class InfectionManager {
         inf.removeRich(key);
         inf.sanction(key, now);
         if (!(event.getEntity() instanceof Villager)) inf.addBoost(key, now + BOOST_DURATION);
+        inf.retire(key);
+        reactivateNeighbours(inf, sl, event.getPos());
     }
 
     // --- seeding (one-time per village when it reaches level 2) -------------------------------------
@@ -331,8 +335,13 @@ public final class InfectionManager {
                 if (!inf.wasSanctioned(key, now)) inf.addBoost(key, now + BOOST_DURATION);
                 inf.removeRich(key);
                 inf.retire(key);
+                reactivateNeighbours(inf, level, pos); // re-take the exposed ground (heals craters / damage)
                 continue;
             }
+
+            // The leading path tips (the <=100 newest path blocks) do NOT fertilize, so the dirt paths keep
+            // racing ahead onto fresh ground and conversion fills in BEHIND them (spec 3). Keep them active.
+            if (inf.isPathHead(key)) { inf.reactivate(key); continue; }
 
             BlockPos cand = findCandidate(level, pos, rnd);
             if (cand == null) { inf.retire(key); continue; }           // nothing left to convert here -> drop it
@@ -363,6 +372,21 @@ public final class InfectionManager {
             if (BlockMatcher.isCandidate(level, m, ns)) return m.immutable();
         }
         return null;
+    }
+
+    /**
+     * Re-add the still-standing infection blocks around {@code pos} to the frontier. Interior cells retire out
+     * of the frontier once they're boxed in, so a fully-converted zone goes dormant; when something blows a
+     * hole in it, the surviving rim blocks must be woken up to re-convert the freshly-exposed ground. Without
+     * this, an explosion in the middle of a large zone is never reclaimed.
+     */
+    private static void reactivateNeighbours(InfectionData inf, ServerLevel level, BlockPos pos) {
+        for (int[] o : N26) {
+            BlockPos np = new BlockPos(pos.getX() + o[0], pos.getY() + o[1], pos.getZ() + o[2]);
+            if (level.isLoaded(np) && BlockMatcher.isInfection(level.getBlockState(np))) {
+                inf.addFrontier(np.asLong());
+            }
+        }
     }
 
     // --- miners (spec 4 + spec 6) -------------------------------------------------------------------
