@@ -1,6 +1,5 @@
 package com.example.villagergunners.client;
 
-import com.example.villagergunners.GunUtil;
 import com.example.villagergunners.ModEntities;
 import com.example.villagergunners.VillagerGunners;
 
@@ -33,6 +32,9 @@ public final class VillagerGunnersClient {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);
+        // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
+        event.registerEntityRenderer(ModEntities.ROCKET.get(),
+                ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
     }
 
     @SubscribeEvent
@@ -46,8 +48,9 @@ public final class VillagerGunnersClient {
         // box and down to the hand. Big golem -> scale the gun up. (Orientation may need tuning.)
         LivingEntityRenderer<IronGolem, IronGolemModel<IronGolem>> golem = event.getRenderer(EntityType.IRON_GOLEM);
         if (golem != null) {
-            // Upgraded golems hold the rocket launcher (nerfed ones have an empty hand).
-            golem.addLayer(new HeldGunLayer<>(golem, GunUtil.ROCKET_LAUNCHER, "right_arm",
+            // Upgraded golems hold our NATIVE rocket launcher (nerfed ones have an empty hand).
+            golem.addLayer(new HeldGunLayer<>(golem,
+                    new ResourceLocation(VillagerGunners.MODID, "rocket_launcher"), "right_arm",
                     -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
                     HeldGunLayer.Gate.HELD_GUN));
         }

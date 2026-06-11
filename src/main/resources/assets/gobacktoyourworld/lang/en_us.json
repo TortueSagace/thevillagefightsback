@@ -32,7 +32,10 @@
   "item.gobacktoyourworld.emerald_chestplate": "Emerald Chestplate",
   "item.gobacktoyourworld.emerald_leggings": "Emerald Leggings",
   "item.gobacktoyourworld.emerald_boots": "Emerald Boots",
+  "item.gobacktoyourworld.rocket_launcher": "Rocket Launcher",
+  "item.gobacktoyourworld.rocket": "Rocket",
   "effect.gobacktoyourworld.emerald_virus": "Emerald Virus",
   "entity.gobacktoyourworld.emeraldger": "Emeraldger",
+  "entity.gobacktoyourworld.rocket": "Rocket",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

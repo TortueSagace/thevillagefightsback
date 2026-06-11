@@ -17,6 +17,14 @@ public final class ModItems {
     public static final RegistryObject<Item> ALIEN_SLASHER =
             ITEMS.register("alien_slasher", () -> new AlienSlasherItem(new Item.Properties().fireResistant()));
 
+    /** The iron golem's rocket launcher -- a native clone of JEG's, held for the visual ({@link RocketEntity}). */
+    public static final RegistryObject<Item> ROCKET_LAUNCHER =
+            ITEMS.register("rocket_launcher", () -> new Item(new Item.Properties().stacksTo(1).fireResistant()));
+
+    /** The flying rocket's billboard sprite (the projectile renders this; not obtainable on its own). */
+    public static final RegistryObject<Item> ROCKET =
+            ITEMS.register("rocket", () -> new Item(new Item.Properties()));
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
     }

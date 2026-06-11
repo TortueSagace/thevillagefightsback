@@ -3,14 +3,17 @@ package com.example.villagergunners.goal;
 import java.util.EnumSet;
 
 import com.example.villagergunners.GunUtil;
+import com.example.villagergunners.RocketEntity;
 
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Iron golem ranged behaviour: rocket a hostile when it can do so SAFELY, otherwise step aside and let
@@ -34,8 +37,9 @@ public class GolemRocketGoal extends Goal {
     private static final int COMBO_COOLDOWN = 100;     // ticks between pogo combos (~5s)
     private static final int MAX_RISE_TICKS = 60;      // safety: abort the combo if we never apex
 
+    private static final double ROCKET_SPEED = 2.5;    // blocks/tick: fast, near-straight flight
+
     private final IronGolem golem;
-    private final ItemStack rocket;
     private int cooldown;
     private int comboCooldown;
     private int allyScanTick = -1;
@@ -48,8 +52,21 @@ public class GolemRocketGoal extends Goal {
 
     public GolemRocketGoal(IronGolem golem) {
         this.golem = golem;
-        this.rocket = GunUtil.makeGun(GunUtil.ROCKET_LAUNCHER);
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+    }
+
+    /** Spawn a native rocket from the golem aimed at {@code target}, and play the launch sound. */
+    private void fireRocket(LivingEntity target) {
+        if (golem.level().isClientSide()) return;
+        RocketEntity rocket = new RocketEntity(golem.level(), golem);
+        Vec3 from = rocket.position();                                   // ~golem eye height (thrower ctor)
+        Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
+        rocket.setDeltaMovement(dir.scale(ROCKET_SPEED));
+        rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
+        rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
+        golem.level().addFreshEntity(rocket);
+        golem.level().playSound(null, golem.getX(), golem.getY(), golem.getZ(),
+                SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 1.4F, 0.7F);
     }
 
     /** A hostile we care about: alive Enemy within detection range. */
@@ -90,7 +107,6 @@ public class GolemRocketGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (rocket.isEmpty()) return false;
         if (rising) return true;                 // mid-combo: keep ticking to reach the apex
         LivingEntity cur = golem.getTarget();
         if (!isValidHostile(cur)) {
@@ -148,7 +164,7 @@ public class GolemRocketGoal extends Goal {
         golem.getNavigation().stop();
         if (cooldown <= 0) {
             GunUtil.aimAt(golem, t);
-            GunUtil.fire(golem, t, rocket, 0.0F);
+            fireRocket(t);
             cooldown = ROCKET_COOLDOWN;
         }
     }
@@ -179,7 +195,7 @@ public class GolemRocketGoal extends Goal {
             if (apex && t != null && isValidHostile(t)
                     && golem.getSensing().hasLineOfSight(t) && noAllyNearTarget(t)) {
                 GunUtil.aimAt(golem, t);
-                GunUtil.fire(golem, t, rocket, 0.0F); // fire down at the target from the apex
+                fireRocket(t); // fire down at the target from the apex
                 cooldown = ROCKET_COOLDOWN;
             }
             rising = false;

@@ -21,8 +21,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class EmeraldVirus {
     private EmeraldVirus() {}
 
-    /** Full virus length: 5 minutes. */
-    public static final int DURATION_TICKS = 5 * 60 * 20; // 6000
+    /** Full virus length: 1 minute. */
+    public static final int DURATION_TICKS = 60 * 20; // 1200
 
     private static final String NBT_EVER = "emerald_virus_ever";     // has this host EVER been infected?
     private static final String NBT_PROGRESS = "emerald_virus_tint"; // green-tint progress 0..1 (never reverts)
@@ -63,7 +63,7 @@ public final class EmeraldVirus {
     }
 
     /**
-     * Infect a host: stamp the permanent "ever" flag and apply the 5-minute, particle-free virus effect.
+     * Infect a host: stamp the permanent "ever" flag and apply the 1-minute, particle-free virus effect.
      * No-op if the host cannot be infected. Returns true if a fresh infection was started.
      */
     public static boolean infect(LivingEntity e) {

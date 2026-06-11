@@ -14,7 +14,7 @@ import net.minecraft.world.entity.npc.Villager;
 public final class BuilderRole {
     private BuilderRole() {}
 
-    public static final int BUILDER_COUNT = 4;          // one builder per gate (N/S/E/W)
+    public static final int BUILDER_COUNT = 12;         // cap; the actual count == the wall's gate count
     private static final String NBT_BUILDER = "vgun_builder";
     private static final String NBT_DOOR = "vgun_builder_door";
     private static final String NBT_COOLDOWN = "vgun_builder_cd"; // gametime a stepped-down villager is re-eligible

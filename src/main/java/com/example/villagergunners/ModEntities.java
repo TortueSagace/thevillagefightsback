@@ -34,6 +34,16 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("emeraldger"));
 
+    /** Native rocket projectile (the golem's JEG-free rocket launcher round). See {@link RocketEntity}. */
+    public static final RegistryObject<EntityType<RocketEntity>> ROCKET = ENTITIES.register(
+            "rocket",
+            () -> EntityType.Builder.<RocketEntity>of(RocketEntity::new, MobCategory.MISC)
+                    .sized(0.4F, 0.4F)
+                    .clientTrackingRange(8)
+                    .updateInterval(10)
+                    .setShouldReceiveVelocityUpdates(true)
+                    .build("rocket"));
+
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
     }

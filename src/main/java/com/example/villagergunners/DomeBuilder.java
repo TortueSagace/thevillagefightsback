@@ -105,6 +105,22 @@ public final class DomeBuilder {
             }
         }
 
+        // Keep the level-2 gate defenders working: carve the dome out of each defender shell (its 3x3
+        // protecting-glass box + a block of clearance above), so the wall-raise/roof never entombs the turret
+        // and it can still fire outward over the wall. The shell itself (solid glass) seals that spot.
+        List<BlockPos> gates = plan.gates();
+        if (!gates.isEmpty()) {
+            int sc = WallPlan.COURSES; // shell-centre offset above the gate (matches buildDefenderShell)
+            order.removeIf(p -> {
+                BlockPos q = p.pos();
+                for (BlockPos g : gates) {
+                    if (Math.abs(q.getX() - g.getX()) <= 1 && Math.abs(q.getZ() - g.getZ()) <= 1
+                            && q.getY() >= g.getY() + sc - 1 && q.getY() <= g.getY() + sc + 2) return true;
+                }
+                return false;
+            });
+        }
+
         if (order.isEmpty()) return;
         order.sort(Comparator.comparingInt(p -> p.pos().getY())); // rise bottom-up, like the TNT builds
         HouseBuildManager.submit(level, order, null, List.of());

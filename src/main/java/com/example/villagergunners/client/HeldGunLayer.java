@@ -66,7 +66,9 @@ public class HeldGunLayer<T extends LivingEntity, M extends EntityModel<T>> exte
         if (gate == Gate.EMPTY_HAND) {
             return entity.getMainHandItem().isEmpty();
         }
-        return entity.getMainHandItem().getItem() instanceof ttv.migami.jeg.item.GunItem; // Gate.HELD_GUN
+        // Gate.HELD_GUN: show only when the holder is actually holding the very item we render (the golem's
+        // native rocket launcher), so we no longer reference JEG's GunItem here.
+        return entity.getMainHandItem().getItem() == ForgeRegistries.ITEMS.getValue(gunId);
     }
 
     @Override

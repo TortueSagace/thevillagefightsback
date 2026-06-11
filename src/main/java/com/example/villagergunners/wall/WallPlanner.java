@@ -31,6 +31,8 @@ public final class WallPlanner {
     private static final int MAX_GRID = 220 * 220; // footprint-grid cell cap (runaway-village guard)
     private static final int MAX_COLUMNS = 1000;    // perimeter cap
     private static final int MAX_BLOCKS = 6500;     // total placement cap
+    private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
+    private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
 
     /** Compute the wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds) {
@@ -82,7 +84,10 @@ public final class WallPlanner {
         cells.sort(Comparator.comparingDouble(c -> Math.atan2(c.z - centroid[1], c.x - centroid[0])));
 
         // Gates: one 2-wide fake-cobblestone passage at the middle of each of the four sides.
-        java.util.Set<Long> doors = pickDoors(cells, centroid);
+        // Number of gates (== builders == defenders) scales with the wall's size, capped at MAX_DOORS, and
+        // the gates are spread evenly around the ring so each builder gets a near-equal-length section.
+        int doorCount = Math.max(1, Math.min(MAX_DOORS, Math.round(cells.size() / (float) DOOR_SPACING)));
+        java.util.Set<Long> doors = pickDoors(cells, doorCount);
 
         List<List<WallBlock>> columns = new ArrayList<>();
         int total = 0;
@@ -288,26 +293,27 @@ public final class WallPlanner {
     }
 
     /** Pick one gate cell at the middle of each of the four sides, plus its along-segment neighbour (2 wide). */
-    private static java.util.Set<Long> pickDoors(List<Col> cells, double[] centroid) {
-        Col cn = null, cs = null, ce = null, cw = null;
-        double bn = Double.MAX_VALUE, bs = Double.MAX_VALUE, be = Double.MAX_VALUE, bw = Double.MAX_VALUE;
-        for (Col c : cells) {
-            if (c.outward == null) continue; // corners aren't gates
-            switch (c.outward) {
-                case NORTH -> { double d = Math.abs(c.x - centroid[0]); if (d < bn) { bn = d; cn = c; } }
-                case SOUTH -> { double d = Math.abs(c.x - centroid[0]); if (d < bs) { bs = d; cs = c; } }
-                case EAST  -> { double d = Math.abs(c.z - centroid[1]); if (d < be) { be = d; ce = c; } }
-                case WEST  -> { double d = Math.abs(c.z - centroid[1]); if (d < bw) { bw = d; cw = c; } }
-                default -> { }
-            }
-        }
+    /**
+     * Place {@code doorCount} gates at evenly-spaced positions around the (angle-ordered) perimeter, so each
+     * builder's door-to-door section spans a near-equal number of columns. Each gate is the first flat
+     * (non-corner) column at/after its even-spacing index, marked 2-wide.
+     */
+    private static java.util.Set<Long> pickDoors(List<Col> cells, int doorCount) {
+        java.util.Set<Long> doors = new java.util.HashSet<>();
+        int n = cells.size();
+        if (n == 0 || doorCount <= 0) return doors;
         java.util.Map<Long, Col> byPos = new java.util.HashMap<>();
         for (Col c : cells) byPos.put(pack(c.x, c.z), c);
-        java.util.Set<Long> doors = new java.util.HashSet<>();
-        markDoor(doors, byPos, cn);
-        markDoor(doors, byPos, cs);
-        markDoor(doors, byPos, ce);
-        markDoor(doors, byPos, cw);
+        for (int j = 0; j < doorCount; j++) {
+            int target = (int) ((long) j * n / doorCount);
+            for (int k = 0; k < n; k++) {                      // first flat column at/after the spacing index
+                Col c = cells.get((target + k) % n);
+                if (c.outward == null) continue;               // corners aren't gates
+                if (doors.contains(pack(c.x, c.z))) continue;  // don't double up an existing gate
+                markDoor(doors, byPos, c);
+                break;
+            }
+        }
         return doors;
     }
 

@@ -58,9 +58,11 @@ public final class EmeraldVirusEvents {
     private static final float BLAST_RADIUS = 4.0F;     // TNT-strength blast
     private static final int FIRE_PASS_RADIUS = 4;      // set the whole blast range on fire
 
-    /** Pending post-death explosions, processed when their corpse fades (~1s later). {@code deadMaxHp} drives
-     *  the Emeraldger that rises after the blast (stage-4 only; {@code spawnEmeraldger} captured at death time). */
-    private record Pending(ServerLevel level, double x, double y, double z, long when,
+    /** Pending post-death explosion, fired when the corpse fades (~1s later). We keep the corpse ENTITY (not a
+     *  fixed point), because the Alien Slasher's huge knockback keeps flinging the dead body during its death
+     *  animation -- so we explode where the corpse actually ends up, not where it died. {@code deadMaxHp}
+     *  drives the Emeraldger that rises after the blast (stage-4 only). */
+    private record Pending(ServerLevel level, LivingEntity corpse, long when,
                            float deadMaxHp, boolean spawnEmeraldger) {}
     private static final List<Pending> PENDING = new ArrayList<>();
 
@@ -78,13 +80,6 @@ public final class EmeraldVirusEvents {
         }
         if (!(direct instanceof LivingEntity attacker)) return;
         if (!(attacker.getMainHandItem().getItem() instanceof AlienSlasherItem)) return;
-
-        // Balance drawback: every hit with the Alien Slasher costs the WIELDER (player OR mob) 5 raw HP --
-        // armor-ignoring magic damage, like a sculk/sonic hit -- so the weapon isn't overpowered. magic() has
-        // no source entity, so re-entering this handler hits the early "direct instanceof LivingEntity" return
-        // (no recursion). Clearing i-frames guarantees the 5 HP always lands.
-        attacker.invulnerableTime = 0;
-        attacker.hurt(attacker.level().damageSources().magic(), 5.0F);
 
         // Virus respects immunity / one-shot rule; the rest of the payload always lands.
         EmeraldVirus.infect(target);
@@ -186,8 +181,7 @@ public final class EmeraldVirusEvents {
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
         // At stage 4 the virus has evolved: after the blast, an Emeraldger rises from the corpse.
         boolean spawnEmeraldger = EmeraldVirus.isEvolved(sl.getServer()) && !(e instanceof EmeraldgerEntity);
-        PENDING.add(new Pending(sl, e.getX(), e.getY() + 0.5, e.getZ(), sl.getGameTime() + CORPSE_DELAY,
-                e.getMaxHealth(), spawnEmeraldger));
+        PENDING.add(new Pending(sl, e, sl.getGameTime() + CORPSE_DELAY, e.getMaxHealth(), spawnEmeraldger));
     }
 
     @SubscribeEvent
@@ -205,8 +199,11 @@ public final class EmeraldVirusEvents {
         while (it.hasNext()) {
             Pending p = it.next();
             if (p.level.getGameTime() < p.when) continue;
-            explodeWithFire(p.level, p.x, p.y, p.z);
-            if (p.spawnEmeraldger) spawnEmeraldger(p.level, p.x, p.y, p.z, p.deadMaxHp);
+            // Explode where the CORPSE ended up (it kept sliding from the knockback during its death
+            // animation), not where it died. After removal the entity still reports its last position.
+            double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
+            explodeWithFire(p.level, x, y, z);
+            if (p.spawnEmeraldger) spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
             it.remove();
         }
     }

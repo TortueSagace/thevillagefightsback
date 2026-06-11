@@ -42,8 +42,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import ttv.migami.jeg.item.GunItem;
-
 /**
  * Arms villagers, iron golems, and Guard Villagers guards, and wires the combat behaviour to them.
  *
@@ -219,10 +217,11 @@ public final class GunnerEvents {
     }
 
     private static void armGolemFull(IronGolem golem) {
-        // Equip the rocket launcher so the render layer can show it (and only on upgraded golems). JEG's
-        // auto gunner goal is stripped in onEquipmentChange; our GolemRocketGoal fires from a cached stack.
-        if (!(golem.getMainHandItem().getItem() instanceof GunItem)) {
-            golem.setItemSlot(EquipmentSlot.MAINHAND, GunUtil.makeGun(GunUtil.ROCKET_LAUNCHER));
+        // Equip our NATIVE rocket launcher so the render layer can show it (and only on upgraded golems).
+        // It is a plain item (not a JEG GunItem), so JEG never hijacks the golem; GolemRocketGoal fires our
+        // own RocketEntity. The held item also gates the decorative HeldGunLayer (it shows only this item).
+        if (golem.getMainHandItem().getItem() != ModItems.ROCKET_LAUNCHER.get()) {
+            golem.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.ROCKET_LAUNCHER.get()));
             golem.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
         if (hasGoal(golem, GolemRocketGoal.class)) return;
