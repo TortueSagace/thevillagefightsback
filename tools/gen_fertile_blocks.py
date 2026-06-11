@@ -29,14 +29,15 @@ BASES = {
     "netherrack": ("all", "netherrack"),
     "end_stone":  ("all", "end_stone"),
     "sculk":      ("all", "sculk"),
+    "leaves":     ("leaves", "oak_leaves"),  # cutout cube_all (non-decaying), green-tinted
 }
 
 def mkdir(p): os.makedirs(p, exist_ok=True)
 
-def load_vanilla(zf, name, crop=True):
-    """Load assets/minecraft/textures/block/<name>.png. By default crops to its first square frame
+def load_vanilla(zf, name, crop=True, folder="block"):
+    """Load assets/minecraft/textures/<folder>/<name>.png. By default crops to its first square frame
     (handles animated textures); pass crop=False to keep the full animation strip."""
-    with zf.open(f"assets/minecraft/textures/block/{name}.png") as fh:
+    with zf.open(f"assets/minecraft/textures/{folder}/{name}.png") as fh:
         img = Image.open(fh).convert("RGBA")
     w, h = img.size
     if crop and h > w:  # animation strip -> take the top frame
@@ -119,6 +120,16 @@ def write_cube_all(bid):
     write_json(os.path.join(ASSETS, "models", "item", bid + ".json"),
                {"parent": f"{MODID}:block/{bid}"})
 
+def write_leaves(bid):
+    # cube_all but cutout (the leaf gaps are transparent). Plain block (no decay) -> simple variant.
+    write_json(os.path.join(ASSETS, "blockstates", bid + ".json"),
+               {"variants": {"": {"model": tex(bid)}}})
+    write_json(os.path.join(ASSETS, "models", "block", bid + ".json"),
+               {"parent": "minecraft:block/cube_all", "render_type": "minecraft:cutout_mipped",
+                "textures": {"all": tex(bid)}})
+    write_json(os.path.join(ASSETS, "models", "item", bid + ".json"),
+               {"parent": f"{MODID}:block/{bid}"})
+
 def write_log(bid):
     # cube_column with axis variants, like vanilla logs
     write_json(os.path.join(ASSETS, "blockstates", bid + ".json"), {"variants": {
@@ -158,6 +169,62 @@ def write_loot_emerald(bid):
         }]}]
     })
 
+def save_item_png(img, name):
+    d = os.path.join(ASSETS, "textures", "item"); mkdir(d)
+    img.save(os.path.join(d, name + ".png"))
+
+# facing -> base (closed) Y rotation for a door
+DOOR_FACING_ROT = {"east": 0, "south": 90, "west": 180, "north": 270}
+
+def gen_door():
+    """Generate the single 'fertile_door' (replaces any wooden door). Textures green-tinted from oak_door;
+    blockstate/models reuse the vanilla door parents; loot drops once (lower half)."""
+    name = "fertile_door"
+    with zipfile.ZipFile(JAR) as zf:
+        save_png(green_tint(load_vanilla(zf, "oak_door_bottom")), name + "_bottom")
+        save_png(green_tint(load_vanilla(zf, "oak_door_top")), name + "_top")
+        save_item_png(green_tint(load_vanilla(zf, "oak_door", folder="item")), name)
+
+    # 8 block models (parents are the vanilla door geometry; we just re-skin the top/bottom textures).
+    for half in ("bottom", "top"):
+        for side in ("left", "right"):
+            for op in ("", "_open"):
+                mname = f"{name}_{half}_{side}{op}"
+                write_json(os.path.join(ASSETS, "models", "block", mname + ".json"),
+                           {"parent": f"minecraft:block/door_{half}_{side}{op}",
+                            "textures": {"top": tex(name + "_top"), "bottom": tex(name + "_bottom")}})
+
+    # blockstate: 4 facings x {lower,upper} x {left,right} x {closed,open}
+    variants = {}
+    for half, hmodel in (("lower", "bottom"), ("upper", "top")):
+        for hinge in ("left", "right"):
+            for is_open in (False, True):
+                for facing, base_rot in DOOR_FACING_ROT.items():
+                    rot = base_rot
+                    if is_open:
+                        rot = (base_rot + (90 if hinge == "left" else 270)) % 360
+                    model = f"{MODID}:block/{name}_{hmodel}_{hinge}{'_open' if is_open else ''}"
+                    val = {"model": model}
+                    if rot != 0:
+                        val["y"] = rot
+                    key = f"facing={facing},half={half},hinge={hinge},open={'true' if is_open else 'false'}"
+                    variants[key] = val
+    write_json(os.path.join(ASSETS, "blockstates", name + ".json"), {"variants": variants})
+
+    # item model + single-drop loot (only the lower half drops, like vanilla doors)
+    write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
+               {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}})
+    write_json(os.path.join(DATA, "loot_tables", "blocks", name + ".json"), {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1, "bonus_rolls": 0,
+                   "entries": [{"type": "minecraft:item", "name": f"{MODID}:{name}"}],
+                   "conditions": [
+                       {"condition": "minecraft:block_state_property", "block": f"{MODID}:{name}",
+                        "properties": {"half": "lower"}},
+                       {"condition": "minecraft:survives_explosion"}]}]
+    })
+    print("generated", name)
+
 def main():
     with zipfile.ZipFile(JAR) as zf:
         gems = gem_overlay(zf)
@@ -169,6 +236,11 @@ def main():
                 save_png(ft, fertile); save_mcmeta(fertile)
                 save_png(overlay_strip(ft, gems), rich); save_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
+            elif kind == "leaves":
+                ft = green_tint(load_vanilla(zf, srcs))
+                save_png(ft, fertile)
+                save_png(overlay_onto(ft, gems), rich)
+                write_leaves(fertile); write_leaves(rich)
             elif kind == "all":
                 ft = green_tint(load_vanilla(zf, srcs))
                 save_png(ft, fertile)
@@ -183,6 +255,7 @@ def main():
             write_loot_self(fertile)
             write_loot_emerald(rich)
             print("generated", fertile, "+", rich)
+    gen_door()
 
 if __name__ == "__main__":
     main()

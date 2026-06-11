@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "gobacktoyourworld:fertile_sculk",
-    "gobacktoyourworld:rich_sculk"
+    "gobacktoyourworld:rich_sculk",
+    "gobacktoyourworld:fertile_leaves",
+    "gobacktoyourworld:rich_leaves"
   ]
 }

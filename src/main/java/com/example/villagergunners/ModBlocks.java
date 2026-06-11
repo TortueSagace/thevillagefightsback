@@ -157,7 +157,7 @@ public final class ModBlocks {
     // axis-aware (RotatedPillarBlock). Textures/models/blockstates/loot are data-generated under resources.
     public static final java.util.List<RegistryObject<Item>> FERTILE_RICH_ITEMS = new java.util.ArrayList<>();
 
-    private enum FertileKind { CUBE, FALLING, LOG, SCULK }
+    private enum FertileKind { CUBE, FALLING, LOG, SCULK, LEAVES }
 
     static {
         registerFertileRich("dirt", Blocks.DIRT, FertileKind.CUBE);
@@ -169,6 +169,7 @@ public final class ModBlocks {
         registerFertileRich("gravel", Blocks.GRAVEL, FertileKind.FALLING);
         registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
         registerFertileRich("deepslate", Blocks.DEEPSLATE, FertileKind.LOG); // axis pillar like logs
+        registerFertileRich("leaves", Blocks.OAK_LEAVES, FertileKind.LEAVES); // any leaves; oak is the basis
     }
 
     private static void registerFertileRich(String base, Block vanilla, FertileKind kind) {
@@ -182,6 +183,11 @@ public final class ModBlocks {
             BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
             if (kind == FertileKind.FALLING) return new FallingBlock(p);
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
+            if (kind == FertileKind.LEAVES) {
+                // A plain (non-LeavesBlock) block so infected leaves NEVER decay; copy() carries leaves'
+                // non-occlusion. The model is cutout_mipped so the leaf gaps show.
+                return new Block(p.noOcclusion());
+            }
             if (kind == FertileKind.SCULK) {
                 // Render fullbright like vanilla sculk so the texture glows in the dark (copy() doesn't
                 // carry emissiveRendering over). The block still emits no light into the world.
@@ -208,6 +214,14 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
             () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
 
+    /** Fertile door: the infection replaces every (wooden) door with this. Oak-door shape, green-tinted. */
+    public static final RegistryObject<Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(
+                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+    public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
+            () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -228,6 +242,7 @@ public final class ModBlocks {
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
+                output.accept(FERTILE_DOOR_ITEM.get());
             })
             .build());
 

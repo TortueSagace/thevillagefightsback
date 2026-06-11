@@ -363,18 +363,48 @@ public final class InfectionManager {
             double slow = (mult > 1.0 || globalMult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
             double chance = Math.min(1.0, CONV_CHANCE * globalMult * mult * slow);
             if (inf.canConvertMore() && rnd.nextDouble() < chance) {    // footprint cap -> pause new conversions
-                boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
-                BlockState conv = BlockMatcher.convertedState(level.getBlockState(cand), richVariant);
-                if (conv != null) {
-                    conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
-                    level.setBlock(cand, conv, 3);     // updateFromNeighbourShapes -> fertile fences keep connections
+                BlockState src = level.getBlockState(cand);
+                if (BlockMatcher.isWoodenDoor(src)) {                   // doors: replace BOTH halves at once
+                    placeFertileDoor(level, cand, src);
                     inf.addFrontier(cand.asLong());
                     inf.incConverted();
-                    if (richVariant) inf.addRich(cand.asLong());
+                } else {
+                    boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
+                    BlockState conv = BlockMatcher.convertedState(src, richVariant);
+                    if (conv != null) {
+                        conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
+                        level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
+                        inf.addFrontier(cand.asLong());
+                        inf.incConverted();
+                        if (richVariant) inf.addRich(cand.asLong());
+                    }
                 }
             }
             inf.reactivate(key); // may still have other candidates next time
         }
+    }
+
+    /** Replace a (wooden) door with the fertile door -- BOTH halves -- preserving facing/hinge/open/powered. */
+    private static void placeFertileDoor(ServerLevel level, BlockPos cell, BlockState src) {
+        net.minecraft.world.level.block.state.properties.DoubleBlockHalf half =
+                src.getValue(net.minecraft.world.level.block.DoorBlock.HALF);
+        BlockPos lower = half == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
+                ? cell : cell.below();
+        BlockState lowerSrc = level.getBlockState(lower);
+        if (!(lowerSrc.getBlock() instanceof net.minecraft.world.level.block.DoorBlock)) return;
+        BlockState fd = com.example.villagergunners.ModBlocks.FERTILE_DOOR.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.DoorBlock.FACING,
+                        lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.FACING))
+                .setValue(net.minecraft.world.level.block.DoorBlock.HINGE,
+                        lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.HINGE))
+                .setValue(net.minecraft.world.level.block.DoorBlock.OPEN,
+                        lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.OPEN))
+                .setValue(net.minecraft.world.level.block.DoorBlock.POWERED,
+                        lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.POWERED));
+        level.setBlock(lower, fd.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 3);
+        level.setBlock(lower.above(), fd.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 3);
     }
 
     /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias), or null. */

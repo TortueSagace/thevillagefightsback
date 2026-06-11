@@ -38,7 +38,7 @@ public final class BlockMatcher {
 
     /** Base names, MOST-SPECIFIC FIRST so id-substring matching prefers "end_stone"/"deepslate" over "stone". */
     static final String[] BASES = {
-            "deepslate", "end_stone", "netherrack", "sculk", "gravel", "sand", "dirt", "log", "stone"
+            "deepslate", "end_stone", "netherrack", "sculk", "leaves", "gravel", "sand", "dirt", "log", "stone"
     };
 
     /** Reference hardness per base (vanilla destroy time) for the closest-toughness fallback. */
@@ -53,6 +53,7 @@ public final class BlockMatcher {
         BASE_HARDNESS.put("end_stone", 3.0F);
         BASE_HARDNESS.put("sculk", 0.2F);
         BASE_HARDNESS.put("log", 2.0F);
+        BASE_HARDNESS.put("leaves", 0.2F);
     }
 
     // Lazily initialised (blocks don't exist until registration completes).
@@ -97,6 +98,7 @@ public final class BlockMatcher {
         if (ModBlocks.FERTILE_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
         if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
         if (ModBlocks.FERTILE_FENCE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
+        if (ModBlocks.FERTILE_DOOR.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_DOOR.get());
 
         exact = new HashMap<>();
         putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
@@ -134,12 +136,14 @@ public final class BlockMatcher {
      */
     public static boolean isCandidate(LevelReader level, BlockPos pos, BlockState s) {
         init();
-        if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) return false; // must be solid
         Block b = s.getBlock();
         if (infectionBlocks.contains(b)) return false;                 // already part of our extension
+        if (b == Blocks.IRON_DOOR || b == Blocks.IRON_TRAPDOOR) return false; // iron doors are immune
+        // Wooden doors convert to the fertile door even when open (no solid collision then) -> handle first.
+        if (b instanceof net.minecraft.world.level.block.DoorBlock) return hasAirContact(level, pos);
+        if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) return false; // must be solid
         if (b == Blocks.FARMLAND) return false;
         if (jobSites.contains(b)) return false;                        // keep village jobs (workstations + bell)
-        if (b == Blocks.IRON_DOOR || b == Blocks.IRON_TRAPDOOR) return false; // iron doors are immune
         if (s.is(BlockTags.PLANKS)) return false;
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 7) return false;                    // brighter than a redstone torch
@@ -152,11 +156,23 @@ public final class BlockMatcher {
             // cobblestone (incl. mossy/stairs/slabs/walls -> protects the village wall) and any brick block.
             if (path.contains("cobblestone") || path.contains("brick")) return false;
         }
-        for (Direction d : Direction.values()) {                       // must touch a non-solid cell
-            BlockState ns = level.getBlockState(pos.relative(d));
-            if (isAirContact(ns)) return true;
+        return hasAirContact(level, pos);
+    }
+
+    /** True if any of the 6 face neighbours of {@code pos} is a non-solid cell (air/fluid/snow/carpet). */
+    private static boolean hasAirContact(LevelReader level, BlockPos pos) {
+        for (Direction d : Direction.values()) {
+            if (isAirContact(level.getBlockState(pos.relative(d)))) return true;
         }
         return false;
+    }
+
+    /** A wooden (non-iron) door -- converts to the fertile door; iron doors are filtered out earlier. */
+    public static boolean isWoodenDoor(BlockState s) {
+        init();
+        Block b = s.getBlock();
+        return b instanceof net.minecraft.world.level.block.DoorBlock
+                && b != Blocks.IRON_DOOR && !infectionBlocks.contains(b);
     }
 
     /** Counts as "contact with a non-solid cell": air, any fluid, or a thin snow/carpet layer (spec). */
