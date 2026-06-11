@@ -12,7 +12,7 @@ public final class GravemindScreenHooks {
     private GravemindScreenHooks() {}
 
     public static void open(OpenGravemindScreenPacket msg) {
-        Minecraft.getInstance().setScreen(
-                new GravemindScreen(msg.level, msg.maxLevel, msg.emeralds, msg.costNext));
+        Minecraft.getInstance().setScreen(new GravemindScreen(
+                msg.level, msg.maxLevel, msg.emeralds, msg.costNext, msg.villagers, msg.guards, msg.golems));
     }
 }

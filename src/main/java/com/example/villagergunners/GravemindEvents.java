@@ -661,6 +661,20 @@ public final class GravemindEvents {
         return level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive() && isDefender(x)).size();
     }
 
+    /** Counts of [villagers, guards, iron golems] alive within {@value #INCOME_RADIUS} of a gravemind (for the
+     *  UI). Emeraldgers are villager-based virus warriors, so they are NOT counted as villagers. */
+    public static int[] countDefenderTypes(ServerLevel level, BlockPos pos) {
+        AABB box = new AABB(pos).inflate(INCOME_RADIUS);
+        int villagers = 0, guards = 0, golems = 0;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
+            if (e instanceof EmeraldgerEntity) continue;
+            if (e instanceof Villager) villagers++;
+            else if (e instanceof net.minecraft.world.entity.animal.IronGolem) golems++;
+            else if (GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) guards++;
+        }
+        return new int[]{villagers, guards, golems};
+    }
+
     /** Keep each loaded gravemind showing its OWN village's level; prune positions whose block is gone. */
     private static void syncVisuals(MinecraftServer server, GravemindData data) {
         List<GlobalPos> stale = new ArrayList<>();
