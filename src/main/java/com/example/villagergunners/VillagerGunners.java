@@ -25,6 +25,7 @@ public class VillagerGunners {
         ModItems.register(modBus);
         ModArmor.register(modBus);
         ModEffects.register(modBus);
+        ModPotions.register(modBus);
         ModEntities.register(modBus);
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(

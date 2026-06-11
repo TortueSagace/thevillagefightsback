@@ -17,6 +17,10 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_VIRUS =
             EFFECTS.register("emerald_virus", EmeraldVirusEffect::new);
 
+    /** "Immunity": holder takes no damage while active (see {@link ImmunityEffect}). Gravemind aura + potion. */
+    public static final RegistryObject<MobEffect> IMMUNITY =
+            EFFECTS.register("immunity", ImmunityEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }

@@ -37,6 +37,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
@@ -334,6 +335,16 @@ public final class GunnerEvents {
             if (d <= bestD) { bestD = d; best = gp; }
         }
         if (best != null) data.econ(best).addEmeralds(1); // addEmeralds() self-dirties the saved data
+    }
+
+    /** Immunity effect: the holder takes NO damage while it is active -- except sources that bypass
+     *  invulnerability (the void, /kill), so an immune entity can never get permanently stuck. */
+    @SubscribeEvent
+    public static void onImmunityAttack(LivingAttackEvent event) {
+        if (event.getEntity().hasEffect(ModEffects.IMMUNITY.get())
+                && !event.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            event.setCanceled(true);
+        }
     }
 
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */

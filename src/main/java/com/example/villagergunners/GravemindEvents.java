@@ -68,11 +68,33 @@ public final class GravemindEvents {
         GravemindData data = GravemindData.get(server);
         spawnInVillages(server, data);
         driveWalls(server, data);
+        applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
         manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
+    }
+
+    private static final int IMMUNITY_RADIUS = 10; // shield allies this close to a gravemind
+
+    /** At ANY stage, a Village Gravemind shields the village core: every villager and iron golem within
+     *  {@value #IMMUNITY_RADIUS} blocks gets our Immunity effect (takes no damage), refreshed each pass and
+     *  with NO particles. */
+    private static void applyImmunityAura(MinecraftServer server, GravemindData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            net.minecraft.world.phys.Vec3 center = net.minecraft.world.phys.Vec3.atCenterOf(gp.pos());
+            double r2 = (double) IMMUNITY_RADIUS * IMMUNITY_RADIUS;
+            AABB box = new AABB(gp.pos()).inflate(IMMUNITY_RADIUS);
+            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive()
+                    && (x instanceof Villager || x instanceof net.minecraft.world.entity.animal.IronGolem))) {
+                if (e.distanceToSqr(center) > r2) continue;
+                // ambient=false, showParticles=false, showIcon=false -> a silent, particle-free shield.
+                e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY.get(), 200, 0, false, false, false));
+            }
+        }
     }
 
     private static final int HERO_TICKS = 60 * 60 * 20; // Hero of the Village for 1 hour

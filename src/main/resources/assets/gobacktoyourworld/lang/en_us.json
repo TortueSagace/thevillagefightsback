@@ -52,5 +52,10 @@
   "item.gobacktoyourworld.guard_stage4": "Guard (Stage 4)",
   "item.gobacktoyourworld.iron_golem": "Iron Golem",
   "item.gobacktoyourworld.gigachad_golem": "Gigachad Golem",
+  "effect.gobacktoyourworld.immunity": "Immunity",
+  "item.minecraft.potion.effect.immunity": "Potion of Immunity",
+  "item.minecraft.splash_potion.effect.immunity": "Splash Potion of Immunity",
+  "item.minecraft.lingering_potion.effect.immunity": "Lingering Potion of Immunity",
+  "item.minecraft.tipped_arrow.effect.immunity": "Arrow of Immunity",
   "itemGroup.gobacktoyourworld": "Go Back To Your World"
 }

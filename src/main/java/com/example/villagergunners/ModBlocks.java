@@ -239,6 +239,8 @@ public final class ModBlocks {
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
+                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
