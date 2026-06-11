@@ -543,7 +543,7 @@ public final class GravemindEvents {
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
 
-            reinforceVillage(level, gp.pos()); // reinforcements (independent of emerald income)
+            reinforceVillage(level, gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
 
             int income = countDefendersNear(level, gp.pos());
             if (income <= 0) continue;
@@ -557,21 +557,37 @@ public final class GravemindEvents {
     }
 
     /**
-     * A village raises 1 guard + 2 villagers at sunset, UNLESS the villagers within {@value #INCOME_RADIUS}
-     * blocks already exceed {@value #VILLAGER_BED_RATIO_CAP}x the bed count (so it can't endlessly
-     * overpopulate). The spawned mobs auto-arm through the normal entity-join handler.
+     * Daily sunset reinforcements, scaled by the village's gravemind {@code stage} (1..4):
+     * <pre>
+     *   stage 1: 2 villagers + 1 guard
+     *   stage 2: 4 villagers + 2 guards
+     *   stage 3: 6 villagers + 3 guards + 1 iron golem
+     *   stage 4: 8 villagers + 4 guards + 2 iron golems
+     * </pre>
+     * Villagers consume beds, so the villager portion is skipped when the villagers within
+     * {@value #INCOME_RADIUS} blocks already exceed {@value #VILLAGER_BED_RATIO_CAP}x the bed count (so the
+     * worker population can't endlessly overpopulate). Guards and iron golems are military -- they don't use
+     * beds, so they always arrive. The spawned mobs auto-arm through the normal entity-join handler.
      */
-    private static void reinforceVillage(ServerLevel level, BlockPos pos) {
+    private static void reinforceVillage(ServerLevel level, BlockPos pos, int stage) {
+        int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
+        int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
+        int golemsToSpawn = Math.max(0, stage - 2);  // 0 / 0 / 1 / 2
+
         AABB box = new AABB(pos).inflate(INCOME_RADIUS);
         int villagers = level.getEntitiesOfClass(Villager.class, box, Villager::isAlive).size();
         long beds = level.getPoiManager().getCountInRange(
                 h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
-        if (beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds) return;
+        boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
+        if (!overpopulated) {
+            for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER);
+        }
 
-        spawnDefender(level, pos, EntityType.VILLAGER);
-        spawnDefender(level, pos, EntityType.VILLAGER);
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
-        if (guardType != null) spawnDefender(level, pos, guardType);
+        if (guardType != null) {
+            for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType);
+        }
+        for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM);
     }
 
     /** Spawn one entity of {@code type} on the surface near {@code center} (it auto-arms on join). */
