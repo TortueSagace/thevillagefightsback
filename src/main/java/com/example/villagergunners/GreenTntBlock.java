@@ -13,12 +13,16 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * "Green TNT" -- a tower-spawning TNT. It detonates the instant it is placed: instead of exploding it
- * builds the big square {@code village_tower_fix} structure centered on this block (the block sits one
- * above the tower's base), block-by-block via {@link HouseBuildManager}. Sensitive blocks go in last and
- * chests get village loot. No explosion damage -- only the carved tower footprint is touched.
+ * builds a big square tower structure centered on this block (the block sits one above the tower's base),
+ * block-by-block via {@link HouseBuildManager}. One of three variants is picked at random (40% original,
+ * 40% stone-brick, 20% deepslate). Sensitive blocks go in last and chests get village loot. No explosion
+ * damage -- only the carved tower footprint is touched.
  */
 public class GreenTntBlock extends Block {
+    // Tower variants and their cumulative spawn weights: original 40%, stone 40%, deepslate 20%.
     private static final ResourceLocation TOWER = new ResourceLocation(VillagerGunners.MODID, "village_tower_fix");
+    private static final ResourceLocation TOWER_STONE = new ResourceLocation(VillagerGunners.MODID, "village_tower_fix_stone");
+    private static final ResourceLocation TOWER_DEEPSLATE = new ResourceLocation(VillagerGunners.MODID, "village_tower_fix_deepslate");
     private static final ResourceLocation LOOT = new ResourceLocation(VillagerGunners.MODID, "chests/basic_house");
 
     public GreenTntBlock(Properties properties) {
@@ -35,11 +39,13 @@ public class GreenTntBlock extends Block {
         super.onPlace(state, level, pos, oldState, isMoving);
         if (!(level instanceof ServerLevel sl)) return;
         BlockPos at = pos.immutable();
+        int roll = sl.random.nextInt(100);
+        ResourceLocation tower = roll < 40 ? TOWER : roll < 80 ? TOWER_STONE : TOWER_DEEPSLATE; // 40 / 40 / 20
         HouseBuildManager.detonateNextTick(sl, at, () -> {
             sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 0.8F);
             sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
                     10, 2.0, 2.0, 2.0, 0.0);
-            HousePlacer.place(sl, at, Rotation.NONE, TOWER, LOOT);
+            HousePlacer.place(sl, at, Rotation.NONE, tower, LOOT);
         });
     }
 }
