@@ -10,8 +10,11 @@ import net.minecraft.world.item.ScaffoldingBlockItem;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.HalfTransparentBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -189,6 +192,22 @@ public final class ModBlocks {
         FERTILE_RICH_ITEMS.add(ITEMS.register(name, () -> new BlockItem(block.get(), new Item.Properties())));
     }
 
+    // Shape-preserving fertile blocks: an infected stair/slab/fence becomes one of these (same shape) so the
+    // structure keeps its geometry instead of being filled with a solid fertile cube. The base material is
+    // arbitrary -- only the SHAPE matters; they reuse the fertile_stone texture.
+    public static final RegistryObject<Block> FERTILE_STAIRS = BLOCKS.register("fertile_stairs",
+            () -> new StairBlock(() -> Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
+    public static final RegistryObject<Block> FERTILE_SLAB = BLOCKS.register("fertile_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
+    public static final RegistryObject<Block> FERTILE_FENCE = BLOCKS.register("fertile_fence",
+            () -> new FenceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
+    public static final RegistryObject<Item> FERTILE_STAIRS_ITEM = ITEMS.register("fertile_stairs",
+            () -> new BlockItem(FERTILE_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_SLAB_ITEM = ITEMS.register("fertile_slab",
+            () -> new BlockItem(FERTILE_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
+            () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -205,6 +224,9 @@ public final class ModBlocks {
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
+                output.accept(FERTILE_STAIRS_ITEM.get());
+                output.accept(FERTILE_SLAB_ITEM.get());
+                output.accept(FERTILE_FENCE_ITEM.get());
             })
             .build());
 

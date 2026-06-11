@@ -49,9 +49,12 @@ public class WallBuildGoal extends Goal {
     private static final int SKIP_TICKS = 200;         // skip an unreachable cell for ~10s, then retry
                                                        // (short, so the gravemind's fallback seal kicks in ~3x faster)
     private static final int ABANDON_LIMIT = 3;        // give up the builder role after this many fails in a row
+    private static final int IDLE_LIMIT = 100;         // ~5s in WAIT with no reachable cell => step down (never idle-tagged)
     private static final float TOUGH_HARDNESS = 25.0F; // at/above this hardness a block can't be dug (obsidian=50)
 
-    private enum Phase { APPROACH, PILLAR, PLACE, DESCEND }
+    // WAIT = tagged but between targets: we HOLD the villager (no vanilla wandering) and re-seek; APPROACH/
+    // PILLAR/PLACE/DESCEND are the active build states.
+    private enum Phase { WAIT, APPROACH, PILLAR, PLACE, DESCEND }
 
     private final Villager villager;
     private int consecutiveFails; // abandons in a row; at ABANDON_LIMIT the villager steps down
@@ -62,6 +65,8 @@ public class WallBuildGoal extends Goal {
     private int baseY;            // the wall's foundation Y at this column -- we never dig below it (no breach)
     private Phase phase;
 
+    private int idleTicks;        // consecutive ticks spent in WAIT without acquiring a target
+    private int scanTimer;        // throttle between target-acquisition scans while in WAIT
     private int repathTimer;
     private int stuckTimer;
     private double lastDistSqr;
@@ -89,32 +94,54 @@ public class WallBuildGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (fighting()) return false;
+        if (fighting()) return false;                       // a threat -> BuilderDefenseGoal (prio 2) takes over
         if (!BuilderRole.isBuilder(villager)) return false; // only the tagged builders build
-        if (villager.tickCount % SELECT_THROTTLE != 0) return false;
         if (!(level() instanceof ServerLevel sl)) return false;
         WallPlan p = WallBuild.planFor(sl, villager.blockPosition());
-        if (p == null) { BuilderRole.demote(villager); return false; } // not at any wall -> don't stay tagged
-        if (p.isComplete()) return false;                              // completion sweep demotes everyone
+        if (p == null) { BuilderRole.demote(villager); return false; }      // not at any wall -> drop the tag
+        if (p.isComplete()) { BuilderRole.demote(villager); return false; } // wall done -> drop the tag (any range)
+        // Claim the villager for the WHOLE time it's a builder, so it never falls back to vanilla wandering
+        // while tagged. The actual build target is (re-)acquired inside tick()'s WAIT handling.
+        this.plan = p;
+        this.target = null;
+        this.phase = Phase.WAIT;
+        this.idleTicks = 0;
+        this.scanTimer = 0;
+        return true;
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        if (fighting()) return false;
+        if (!BuilderRole.isBuilder(villager)) return false;  // self-demoted (idle/complete) -> release the villager
+        if (plan == null || plan.isComplete()) return false;
+        if (phase == Phase.DESCEND) return descendTimer > 0; // keep climbing down
+        if (phase == Phase.WAIT) return true;                // holding/seeking a target -- stay claimed, don't wander
+        if (target == null) return false;
+        if (digPos != null) return true;                     // finish the current dig before re-evaluating
+        return !plan.satisfied(level(), target);             // built or blocked -> re-seek (handled via WAIT)
+    }
+
+    /** Try to claim the next reachable unbuilt cell. Returns true and enters APPROACH on success. */
+    private boolean acquireTarget(ServerLevel sl) {
         long now = sl.getGameTime();
         // A cell is unavailable if it's parked (no builder could reach/finish it) OR another builder owns it
         // (live reservation) -- so two builders never pile on the same block and collide.
         java.util.function.Predicate<BlockPos> taken = pos ->
-                WallBuild.isSkipped(p.gravemind(), pos, now) || WallBuild.isReserved(p.gravemind(), pos, now);
+                WallBuild.isSkipped(plan.gravemind(), pos, now) || WallBuild.isReserved(plan.gravemind(), pos, now);
         // Build MY section: from my door rightward to the next door, raising each column as a full pillar.
-        int[] doors = p.doorColumns();
+        int[] doors = plan.doorColumns();
         int from = 0;
         WallBlock t = null;
         if (doors.length > 0) {
             int d = Math.floorMod(BuilderRole.door(villager), doors.length);
             from = doors[d];
-            t = p.nextInSection(sl, from, doors[(d + 1) % doors.length], taken);
+            t = plan.nextInSection(sl, from, doors[(d + 1) % doors.length], taken);
         }
-        // My section is done (or there are no gates) -> help finish the rest of the wall before standing idle.
-        if (t == null) t = p.nextAnyUnbuilt(sl, from, taken);
-        if (t == null) { BuilderRole.demote(villager); return false; } // nothing to build -> drop the role
-        if (!WallBuild.reserve(p.gravemind(), t.pos(), now)) return false; // lost the race this tick; retry soon
-        this.plan = p;
+        // My section is done (or there are no gates) -> help finish the rest of the wall.
+        if (t == null) t = plan.nextAnyUnbuilt(sl, from, taken);
+        if (t == null) return false;                                       // nothing buildable right now
+        if (!WallBuild.reserve(plan.gravemind(), t.pos(), now)) return false; // lost the race; retry next scan
         this.target = t;
         this.stand = exteriorColumn(t.pos());
         this.baseY = t.pos().getY() - t.course(); // course 0 sits on the foundation; never dig below it
@@ -125,16 +152,8 @@ public class WallBuildGoal extends Goal {
         this.pillarSteps = 0;
         this.bridgeSteps = 0;
         clearDig();
+        villager.getNavigation().moveTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, BUILD_SPEED);
         return true;
-    }
-
-    @Override
-    public boolean canContinueToUse() {
-        if (fighting() || plan == null) return false;
-        if (phase == Phase.DESCEND) return descendTimer > 0; // keep climbing down
-        if (target == null || plan.isComplete()) return false;
-        if (digPos != null) return true;                     // finish the current dig before re-evaluating
-        return !plan.satisfied(level(), target);             // built or blocked -> re-seek
     }
 
     @Override
@@ -144,7 +163,7 @@ public class WallBuildGoal extends Goal {
 
     @Override
     public void start() {
-        villager.getNavigation().moveTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, BUILD_SPEED);
+        villager.getNavigation().stop(); // begin in WAIT, planted; acquireTarget() will drive movement
     }
 
     @Override
@@ -168,8 +187,9 @@ public class WallBuildGoal extends Goal {
         if (target != null && plan != null && level() instanceof ServerLevel rsl)
             WallBuild.refresh(plan.gravemind(), target.pos(), rsl.getGameTime());
 
+        if (phase == Phase.WAIT) { tickWait(); return; }
         if (phase == Phase.DESCEND) { tickDescend(); return; }
-        if (target == null) return;
+        if (target == null) { phase = Phase.WAIT; return; }
 
         if (digPos != null) { tickDig(); return; } // a progressive break takes precedence
 
@@ -182,6 +202,21 @@ public class WallBuildGoal extends Goal {
             case PLACE -> tickPlace();
             default -> { }
         }
+    }
+
+    /**
+     * Tagged, between targets: stand PUT (never wander) and periodically try to claim the next reachable cell.
+     * If none can be found for {@link #IDLE_LIMIT} ticks, step down to a normal villager rather than linger
+     * tagged-but-idle -- the village then refills the freed door from another villager.
+     */
+    private void tickWait() {
+        villager.getNavigation().stop(); // hold position; the brain's WALK_TARGET is wiped in tick()
+        idleTicks++;
+        if (--scanTimer <= 0) {
+            scanTimer = SELECT_THROTTLE;
+            if (level() instanceof ServerLevel sl && acquireTarget(sl)) { idleTicks = 0; return; }
+        }
+        if (idleTicks >= IDLE_LIMIT) BuilderRole.demote(villager); // no reachable work -> drop the builder role
     }
 
     private void tickApproach() {
@@ -323,13 +358,17 @@ public class WallBuildGoal extends Goal {
             descendTimer = DESCEND_TIMEOUT;
             repathTimer = 0;
         } else {
-            phase = Phase.APPROACH; // target null -> goal ends -> re-seek
+            phase = Phase.WAIT; // re-seek while staying claimed (no wander gap)
+            idleTicks = 0;
+            scanTimer = 0;
         }
     }
 
     private void tickDescend() {
         if (--descendTimer <= 0 || villager.getBlockY() <= descendY + 1) {
-            phase = Phase.APPROACH; // reached the bottom / timed out -> goal ends -> re-seek
+            phase = Phase.WAIT; // reached the bottom / timed out -> re-seek (stay claimed)
+            idleTicks = 0;
+            scanTimer = 0;
             return;
         }
         if (--repathTimer <= 0) {
@@ -458,6 +497,9 @@ public class WallBuildGoal extends Goal {
             WallBuild.release(plan.gravemind(), target.pos());
         }
         target = null;
+        phase = Phase.WAIT; // re-seek a different cell while staying claimed (no wander gap)
+        idleTicks = 0;
+        scanTimer = 0;
         // Persistent failure (can't finish several cells in a row) -> drop the builder role so a villager
         // that CAN build takes over. A one-off (e.g. a momentary jostle while builders fan out at the start)
         // is tolerated; a successful placement resets the counter.

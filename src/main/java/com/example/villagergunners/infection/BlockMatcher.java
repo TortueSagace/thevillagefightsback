@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.example.villagergunners.ModBlocks;
 import com.example.villagergunners.VillagerGunners;
 
 import net.minecraft.core.BlockPos;
@@ -14,9 +15,13 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.common.Tags;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -77,6 +82,10 @@ public final class BlockMatcher {
             if (r != null) { richByBase.put(b, r); infectionBlocks.add(r); richBlockSet.add(r); }
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
+        // our shape-preserving fertile blocks count as infection too, so they are never re-converted to cubes.
+        if (ModBlocks.FERTILE_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
+        if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
+        if (ModBlocks.FERTILE_FENCE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
 
         exact = new HashMap<>();
         putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
@@ -166,6 +175,8 @@ public final class BlockMatcher {
     /** The fertile (or rich) blockstate a candidate should become, preserving pillar AXIS where applicable. */
     public static BlockState convertedState(BlockState source, boolean richVariant) {
         init();
+        BlockState shaped = shapedConversion(source); // stairs/slabs/fences keep their shape (not a solid cube)
+        if (shaped != null) return shaped;
         String base = baseFor(source);
         Block target = (richVariant ? richByBase : fertileByBase).get(base);
         if (target == null) target = (richVariant ? richByBase : fertileByBase).get("stone");
@@ -176,6 +187,39 @@ public final class BlockMatcher {
             out = out.setValue(BlockStateProperties.AXIS, source.getValue(BlockStateProperties.AXIS));
         }
         return out;
+    }
+
+    /**
+     * Stairs, slabs and fences convert to a fertile block of the SAME shape (instead of a solid cube), so the
+     * infection doesn't fill the cell and wreck the structure's geometry. Returns null for any other block.
+     */
+    private static BlockState shapedConversion(BlockState source) {
+        Block b = source.getBlock();
+        Block target;
+        Property<?>[] props;
+        if (b instanceof StairBlock) {
+            target = ModBlocks.FERTILE_STAIRS.get();
+            props = new Property<?>[]{BlockStateProperties.HORIZONTAL_FACING, BlockStateProperties.HALF,
+                    BlockStateProperties.STAIRS_SHAPE, BlockStateProperties.WATERLOGGED};
+        } else if (b instanceof SlabBlock) {
+            target = ModBlocks.FERTILE_SLAB.get();
+            props = new Property<?>[]{BlockStateProperties.SLAB_TYPE, BlockStateProperties.WATERLOGGED};
+        } else if (b instanceof FenceBlock) {
+            target = ModBlocks.FERTILE_FENCE.get();
+            props = new Property<?>[]{BlockStateProperties.NORTH, BlockStateProperties.EAST,
+                    BlockStateProperties.SOUTH, BlockStateProperties.WEST, BlockStateProperties.WATERLOGGED};
+        } else {
+            return null;
+        }
+        if (target == null) return null;
+        BlockState out = target.defaultBlockState();
+        for (Property<?> p : props) out = copyProp(source, out, p);
+        return out;
+    }
+
+    /** Copy property {@code p}'s value from source to out, if both states have it. */
+    private static <T extends Comparable<T>> BlockState copyProp(BlockState src, BlockState out, Property<T> p) {
+        return (src.hasProperty(p) && out.hasProperty(p)) ? out.setValue(p, src.getValue(p)) : out;
     }
 
     public static Block fertileSand() {

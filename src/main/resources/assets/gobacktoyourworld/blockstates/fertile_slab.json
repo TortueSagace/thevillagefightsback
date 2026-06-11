@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "gobacktoyourworld:block/fertile_slab"
+    },
+    "type=top": {
+      "model": "gobacktoyourworld:block/fertile_slab_top"
+    },
+    "type=double": {
+      "model": "gobacktoyourworld:block/fertile_stone"
+    }
+  }
+}

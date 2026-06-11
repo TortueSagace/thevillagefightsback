@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "gobacktoyourworld:block/fertile_stone",
+    "top": "gobacktoyourworld:block/fertile_stone",
+    "side": "gobacktoyourworld:block/fertile_stone"
+  }
+}
