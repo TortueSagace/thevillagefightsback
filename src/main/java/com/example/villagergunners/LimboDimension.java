@@ -55,7 +55,10 @@ public final class LimboDimension {
         BlockPos corner = new BlockPos(MIN_X, MIN_Y, MIN_Z);
         if (level.getBlockState(corner).is(Blocks.BEDROCK)) return false; // already built
 
-        level.setDefaultSpawnPos(SPAWN, 0.0F); // compass / default arrivals point into the room
+        // NOTE: deliberately NOT calling level.setDefaultSpawnPos(): it adds a TicketType.START region
+        // ticket (radius 11) that keeps Limbo's spawn chunks loaded forever (like the overworld's spawn).
+        // We don't need a dimension spawn -- entry is via explicit command coords -- so we skip it, letting
+        // the cube chunks unload normally once no player is there.
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
