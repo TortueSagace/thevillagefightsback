@@ -35,6 +35,7 @@ public final class EmeraldVirus {
                 || e instanceof Villager
                 || e instanceof IronGolem
                 || e instanceof SnowGolem
+                || e instanceof VindictiveGuardEntity   // the boss's own guards are immune to the virus
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 

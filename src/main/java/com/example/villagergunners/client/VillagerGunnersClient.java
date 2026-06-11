@@ -43,6 +43,13 @@ public final class VillagerGunnersClient {
     }
 
     @SubscribeEvent
+    public static void onRegisterParticles(net.minecraftforge.client.event.RegisterParticleProvidersEvent event) {
+        // Our green sonic-boom reuses the vanilla SonicBoomParticle renderer with green sprites.
+        event.registerSpriteSet(com.example.villagergunners.ModParticles.GREEN_SONIC_BOOM.get(),
+                net.minecraft.client.particle.SonicBoomParticle.Provider::new);
+    }
+
+    @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);

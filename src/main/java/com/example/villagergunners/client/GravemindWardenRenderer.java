@@ -30,6 +30,17 @@ public class GravemindWardenRenderer extends MobRenderer<GravemindWardenEntity, 
         return TEXTURE;
     }
 
+    /** The boss is bigger -- a taller body. The gravemind-block head keeps its absolute size (the head layer
+     *  counter-scales by 1/MODEL_SCALE), so it ends up relatively smaller than on a normal warden. */
+    static final float BOSS_SCALE = 1.5F;
+
+    @Override
+    protected void scale(GravemindWardenEntity entity, PoseStack pose, float partialTick) {
+        if (entity instanceof com.example.villagergunners.UnleashedGravemindEntity) {
+            pose.scale(BOSS_SCALE, BOSS_SCALE, BOSS_SCALE);
+        }
+    }
+
     @Override
     public void render(GravemindWardenEntity entity, float yaw, float partialTicks, PoseStack pose,
                        MultiBufferSource buffer, int light) {

@@ -132,6 +132,7 @@ public final class UnleashedManager {
         if (!(event.getSource().getEntity() instanceof UnleashedGravemindEntity boss)) return;
         if (victim instanceof Player) return;        // players die normally (the boss doesn't recruit players)
         if (Factions.isInfected(victim)) return;     // never convert faction-mates
+        if (!boss.canMakeGuard()) return;            // at the 20-guard cap -> let the victim just die normally
         event.setCanceled(true);                      // do not actually die -- transform instead
         boss.onDirectKill(victim);
         victim.discard();

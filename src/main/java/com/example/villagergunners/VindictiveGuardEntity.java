@@ -51,6 +51,16 @@ public class VindictiveGuardEntity extends ZombieVillager {
                 e -> e != this && !Factions.isInfected(e) && (e instanceof Player || e instanceof Mob)));
     }
 
+    /** Wear the same emerald armour as a stage-3 guard (force-enchanted Fire + Blast Protection). */
+    @Override
+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
+            net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
+            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+        GuardWeapons.equipEmeraldArmor(this);
+        return r;
+    }
+
     /** Never burns in daylight (the village's failure made it permanent). */
     @Override
     protected boolean isSunSensitive() {

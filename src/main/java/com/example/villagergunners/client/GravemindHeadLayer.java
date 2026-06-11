@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * SCALE / DX-DY-DZ are visual tunables (model space is in block units but flipped y/z by the renderer).
  */
 public class GravemindHeadLayer extends RenderLayer<GravemindWardenEntity, WardenModel<GravemindWardenEntity>> {
-    private static final float SCALE = 1.05F;   // gravemind block ~ head-sized
+    private static final float SCALE = 0.7F;    // 1.05 / 1.5 boss model scale -> head keeps its absolute size
     private static final float DX = -0.5F;      // centre horizontally on the bone
     private static final float DY = -0.15F;     // height of the block over the bone (less negative = higher)
     private static final float DZ = -0.5F;

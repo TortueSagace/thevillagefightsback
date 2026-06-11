@@ -75,6 +75,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
 
     private int killCount;
     private int emergeTicks = EMERGE_TICKS;
+    private int glowTicks;              // glow for ~3s after spawning, then stop (0 = not glowing)
     @Nullable private LivingEntity currentTarget;
     private int greenWaveCd, jumpCd, circularCd, meleeCd, retargetCd, teleportCd;
     private boolean jumping;
@@ -105,6 +106,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
         setPose(Pose.EMERGING);
         this.emergeTicks = EMERGE_TICKS;
+        this.glowTicks = 60;          // glow for ~3s on spawn so the player can spot it
         playSound(SoundEvents.WARDEN_EMERGE, 5.0F, 0.8F);
         return r;
     }
@@ -113,7 +115,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     @Override
     protected void customServerAiStep() {
         if (!(level() instanceof ServerLevel sl)) return;
-        setGlowingTag(true); // always glow so players can see the boss (outline through walls)
+        if (glowTicks > 0) { setGlowingTag(true); if (--glowTicks == 0) setGlowingTag(false); } // ~3s spawn glow
         bossBar.setProgress(getHealth() / getMaxHealth());
 
         if (hasPose(Pose.EMERGING) || hasPose(Pose.DIGGING)) { // rise from the ground (invulnerable while doing so)
@@ -160,11 +162,10 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         if (t == null) return;
         Vec3 origin = position().add(0.0, 1.6, 0.0);
         Vec3 dir = t.getEyePosition().subtract(origin).normalize();
-        double range = 32.0;
-        for (int i = 1; i < range + 7; i++) {
+        double range = 48.0;
+        for (int i = 1; i < range + 7; i++) {       // the green warden sonic-boom rings, one per block
             Vec3 p = origin.add(dir.scale(i));
-            sl.sendParticles(ParticleTypes.SCULK_CHARGE_POP, p.x, p.y, p.z, 2, 0.1, 0.1, 0.1, 0.0);
-            sl.sendParticles(ParticleTypes.SCULK_SOUL, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+            sl.sendParticles(ModParticles.GREEN_SONIC_BOOM.get(), p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
         playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 1.3F);
         Vec3 end = origin.add(dir.scale(range));
@@ -223,10 +224,10 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         double rad = Math.toRadians(spinAngle);
         Vec3 dir = new Vec3(-Math.sin(rad), 0.0, Math.cos(rad));
         Vec3 origin = position().add(0.0, 1.0, 0.0);
-        double range = 12.0;
+        double range = 24.0;
         for (int i = 1; i < range; i++) {
             Vec3 p = origin.add(dir.scale(i));
-            sl.sendParticles(ParticleTypes.SCULK_CHARGE_POP, p.x, p.y, p.z, 1, 0.05, 0.05, 0.05, 0.0);
+            sl.sendParticles(ModParticles.GREEN_SONIC_BOOM.get(), p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, new AABB(origin, origin.add(dir.scale(range))).inflate(1.5), this::isHostileTarget)) {
             if (!spinHit.add(e.getId())) continue; // hit each target at most once per sweep
@@ -323,6 +324,15 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     }
 
     // --- kill -> vindictive guard + 64-kill win -------------------------------------------------
+    private static final int MAX_GUARDS = 20; // cap simultaneous vindictive guards in the boss's reach
+
+    /** True if there is room for another vindictive guard (fewer than {@value #MAX_GUARDS} within the boss's
+     *  reach). When false, a killed creature just dies normally instead of converting. */
+    public boolean canMakeGuard() {
+        if (!(level() instanceof ServerLevel sl)) return false;
+        return sl.getEntitiesOfClass(VindictiveGuardEntity.class, getBoundingBox().inflate(DETECT_RANGE)).size() < MAX_GUARDS;
+    }
+
     /** Called from {@link UnleashedManager} when a creature dies to a DIRECT hit from this boss. */
     public void onDirectKill(LivingEntity victim) {
         if (!(level() instanceof ServerLevel sl)) return;

@@ -48,7 +48,7 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<UnleashedGravemindEntity>> UNLEASHED_GRAVEMIND = ENTITIES.register(
             "unleashed_gravemind",
             () -> EntityType.Builder.<UnleashedGravemindEntity>of(UnleashedGravemindEntity::new, MobCategory.MONSTER)
-                    .sized(0.9F, 2.9F)
+                    .sized(1.35F, 4.35F)            // ~1.5x a warden (taller body)
                     .clientTrackingRange(20)
                     .fireImmune()
                     .build("unleashed_gravemind"));
