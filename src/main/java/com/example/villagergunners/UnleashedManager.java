@@ -82,7 +82,7 @@ public final class UnleashedManager {
         boss.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null); // triggers emerge
         sl.addFreshEntity(boss);
 
-        Component title = Component.literal("Prepare...").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD);
+        Component title = Component.literal("Prepare...").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD);
         for (ServerPlayer p : sl.players()) {
             if (p.distanceToSqr(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > SHAKE_RADIUS * SHAKE_RADIUS) continue;
             ModNetwork.sendTo(p, new ScreenShakePacket(1.3F, 70));

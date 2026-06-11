@@ -154,7 +154,7 @@ public final class ModBlocks {
     /** Spawn egg for the {@link GravemindWardenEntity} (a green Warden with a gravemind-block head). */
     public static final RegistryObject<Item> GRAVEMIND_WARDEN_SPAWN = ITEMS.register(
             "gravemind_warden",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.GRAVEMIND_WARDEN,
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.UNLEASHED_GRAVEMIND,
                     0x16331a, 0x55e07a, new Item.Properties()));
 
     // --- Fertile / Rich block family --------------------------------------------------------------

@@ -93,7 +93,9 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         return Warden.createAttributes()
                 .add(Attributes.MOVEMENT_SPEED, 0.4)        // sprinting-warden pace
                 .add(Attributes.FOLLOW_RANGE, DETECT_RANGE)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
+                .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
+                .add(Attributes.ARMOR, 20.0)                // equivalent to a full diamond armour set
+                .add(Attributes.ARMOR_TOUGHNESS, 8.0);
     }
 
     // --- emerge on summon -----------------------------------------------------------------------
@@ -111,6 +113,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     @Override
     protected void customServerAiStep() {
         if (!(level() instanceof ServerLevel sl)) return;
+        setGlowingTag(true); // always glow so players can see the boss (outline through walls)
         bossBar.setProgress(getHealth() / getMaxHealth());
 
         if (hasPose(Pose.EMERGING) || hasPose(Pose.DIGGING)) { // rise from the ground (invulnerable while doing so)
@@ -346,8 +349,12 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
 
     private void winAndRevert(ServerLevel sl) {
         BlockPos at = blockPosition();
+        GlobalPos gp = GlobalPos.of(sl.dimension(), at);
         GravemindData data = GravemindData.get(sl.getServer());
-        data.eraseVillage(GlobalPos.of(sl.dimension(), at)); // wipe leftovers so it's a true stage-1 rebirth
+        data.eraseVillage(gp); // wipe the saved per-village state so it's a true stage-1 rebirth
+        // Also drop the TRANSIENT wall-build state (reservations / skips / abandon counts) at this spot, so a
+        // wall rebuilt here can't inherit "abandoned >3 times" cells from the previous village and stall.
+        com.example.villagergunners.wall.WallBuild.clearPlan(gp);
         sl.setBlock(at, ModBlocks.VILLAGE_GRAVEMIND.get().defaultBlockState(), 3);
         for (VindictiveGuardEntity vg : sl.getEntitiesOfClass(VindictiveGuardEntity.class, getBoundingBox().inflate(DETECT_RANGE))) {
             BlockPos p = vg.blockPosition();
