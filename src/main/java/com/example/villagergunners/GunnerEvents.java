@@ -201,17 +201,20 @@ public final class GunnerEvents {
         }
     }
 
+    /**
+     * STAGE 3: guards drop JEG entirely and become emerald knights -- an enchanted mace + crossbow + emerald
+     * armour (Fire/Blast Protection), driven by {@link com.example.villagergunners.goal.StageThreeGuardGoal}.
+     */
     private static void armGuardFull(PathfinderMob guard) {
-        // Guards are humanoid and render their main-hand item, so equip the minigun for the visual.
-        // Firing still uses the goal's own cached stacks. JEG's auto gunner goal is stripped below.
-        if (!(guard.getMainHandItem().getItem() instanceof GunItem)) {
-            guard.setItemSlot(EquipmentSlot.MAINHAND, GunUtil.makeGun(GunUtil.MINIGUN));
-            guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-        }
-        if (hasGoal(guard, GunCombatGoal.class)) return;
+        if (hasGoal(guard, com.example.villagergunners.goal.StageThreeGuardGoal.class)) return; // re-added each load
+        removeGoal(guard, GunCombatGoal.class); // strip the old minigun combat goal if this guard had it
         GunUtil.extendFollowRange(guard, FOLLOW_RANGE);
-        guard.goalSelector.addGoal(1, new GunCombatGoal(
-                guard, GunUtil.MINIGUN, MINIGUN_BONUS, GunUtil.FLAMETHROWER, FLAME_BONUS));
+        // The mace replaces any JEG gun (the equipment change makes onEquipmentChange strip JEG's gun goal);
+        // the combat goal swaps in the crossbow / Alien Slasher as the situation demands.
+        guard.setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.mace().copy());
+        guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        GuardWeapons.equipEmeraldArmor(guard);
+        guard.goalSelector.addGoal(1, new com.example.villagergunners.goal.StageThreeGuardGoal(guard));
         guard.goalSelector.addGoal(2, new FlareRallyGoal(guard));
     }
 
@@ -266,20 +269,6 @@ public final class GunnerEvents {
         if (isAlly(event.getEntity()) && event.getNewTarget() != null && isAlly(event.getNewTarget())) {
             event.setCanceled(true);
         }
-    }
-
-    /** A killed guard has a 50% chance to drop a fire grenade (JEG molotov cocktail). */
-    @SubscribeEvent
-    public static void onLivingDrops(LivingDropsEvent event) {
-        LivingEntity entity = event.getEntity();
-        if (entity.level().isClientSide()) return;
-        if (!isGuard(entity)) return;
-        if (!UpgradeState.isUpgraded(entity)) return; // molotov drop is a level-3 unlock
-        if (entity.getRandom().nextFloat() >= GUARD_MOLOTOV_DROP_CHANCE) return;
-        Item molotov = ForgeRegistries.ITEMS.getValue(MOLOTOV);
-        if (molotov == null) return; // JEG not present / item missing -> no drop
-        event.getDrops().add(new ItemEntity(entity.level(),
-                entity.getX(), entity.getY(), entity.getZ(), new ItemStack(molotov)));
     }
 
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */

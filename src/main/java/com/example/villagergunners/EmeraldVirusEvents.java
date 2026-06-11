@@ -70,6 +70,12 @@ public final class EmeraldVirusEvents {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
         Entity direct = event.getSource().getDirectEntity();
+        // Emerald-virus tipped arrow (a stage-3 guard's crossbow): infect on hit, nothing else.
+        if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow
+                && arrow.getPersistentData().getBoolean(com.example.villagergunners.goal.StageThreeGuardGoal.NBT_VIRUS_ARROW)) {
+            EmeraldVirus.infect(target);
+            return;
+        }
         if (!(direct instanceof LivingEntity attacker)) return;
         if (!(attacker.getMainHandItem().getItem() instanceof AlienSlasherItem)) return;
 
