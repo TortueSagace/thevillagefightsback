@@ -85,10 +85,11 @@ public class VillageGravemindBlock extends Block {
         // Empty hand (or any non-emerald item): open the upgrade screen for THIS village.
         if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
             int[] defenders = GravemindEvents.countDefenderTypes(sl, pos); // [villagers, guards, golems] in radius
+            int fertilized = com.example.villagergunners.infection.InfectionData.get(sl).convertedCount();
             com.example.villagergunners.network.ModNetwork.sendTo(sp,
                     new com.example.villagergunners.network.OpenGravemindScreenPacket(
                             econ.getLevel(), GravemindData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
-                            defenders[0], defenders[1], defenders[2]));
+                            defenders[0], defenders[1], defenders[2], fertilized));
         }
         return InteractionResult.CONSUME;
     }

@@ -19,7 +19,7 @@ public class GravemindScreen extends Screen {
     private static final int PANEL_W = 252;
     private static final int HEADER_H = 26;
     private static final int ROW_H = 28;
-    private static final int FOOTER_H = 40; // emerald progress line + the defender-count line
+    private static final int FOOTER_H = 52; // emerald progress + defender-count + fertilized-count lines
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -31,13 +31,14 @@ public class GravemindScreen extends Screen {
     private final int villagers;
     private final int guards;
     private final int golems;
+    private final int fertilized;
 
     private int leftPos;
     private int topPos;
     private int panelH;
 
     public GravemindScreen(int level, int maxLevel, int emeralds, int costNext,
-                           int villagers, int guards, int golems) {
+                           int villagers, int guards, int golems, int fertilized) {
         super(Component.literal("Village Gravemind"));
         this.level = level;
         this.maxLevel = maxLevel;
@@ -46,6 +47,7 @@ public class GravemindScreen extends Screen {
         this.villagers = villagers;
         this.guards = guards;
         this.golems = golems;
+        this.fertilized = fertilized;
     }
 
     @Override
@@ -126,6 +128,11 @@ public class GravemindScreen extends Screen {
                 .append(Component.literal("   Golems: ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(String.valueOf(golems)).withStyle(ChatFormatting.WHITE));
         g.drawString(font, counts, leftPos + 8, footerY + 12, 0xFFFFFFFF, false);
+
+        // Fertilized blocks spread by the village (the green takeover footprint).
+        Component fert = Component.literal("Fertilized blocks: ").withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
+        g.drawString(font, fert, leftPos + 8, footerY + 24, 0xFFFFFFFF, false);
 
         super.render(g, mouseX, mouseY, partial);
 

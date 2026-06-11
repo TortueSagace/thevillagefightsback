@@ -124,6 +124,13 @@ public final class BlockMatcher {
         return s.is(Blocks.DIRT_PATH);
     }
 
+    /** A "fertilized" block that counts toward the footprint cap: any fertile/rich/shaped/door block, but NOT
+     *  a dirt-path vector (paths are just spread routes -- and plain dirt paths also occur naturally). */
+    public static boolean isConverted(BlockState s) {
+        init();
+        return infectionBlocks.contains(s.getBlock()) && !s.is(Blocks.DIRT_PATH);
+    }
+
     public static boolean isRich(BlockState s) {
         init();
         return richBlockSet.contains(s.getBlock());

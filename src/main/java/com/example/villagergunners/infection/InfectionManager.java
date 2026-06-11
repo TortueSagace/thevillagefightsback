@@ -13,7 +13,6 @@ import com.example.villagergunners.wall.WallPlan;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -105,12 +104,6 @@ public final class InfectionManager {
                 // Constant base speed (no first-seconds buff); only a local "fighting back" boost speeds things up.
                 growPaths(level, inf, now, 1.0);
                 convert(level, inf, now, 1.0);
-                // Tell players the first time the footprint cap is hit, so the sudden stop is understood.
-                if (inf.takeCapNotification()) {
-                    server.getPlayerList().broadcastSystemMessage(Component.literal(
-                            "§2The infection has reached its limit (" + InfectionData.MAX_CONVERTED
-                            + " blocks) and paused. Destroy some Fertile/Rich blocks to let it spread again."), false);
-                }
             }
         }
     }
@@ -124,7 +117,7 @@ public final class InfectionManager {
         InfectionData inf = InfectionData.get(sl);
         long key = event.getPos().asLong();
         inf.sanction(key, sl.getGameTime());
-        inf.decConverted();                  // player cleared one of our blocks -> frees the footprint cap
+        if (BlockMatcher.isConverted(s)) inf.decConverted(); // a fertilized block cleared -> frees the cap (paths don't count)
         if (BlockMatcher.isRich(s)) inf.removeRich(key);
     }
 
@@ -137,10 +130,11 @@ public final class InfectionManager {
         InfectionData inf = InfectionData.get(sl);
         long now = sl.getGameTime();
         for (BlockPos pos : event.getAffectedBlocks()) {
-            if (!BlockMatcher.isInfection(sl.getBlockState(pos))) continue;
+            BlockState bs = sl.getBlockState(pos);
+            if (!BlockMatcher.isInfection(bs)) continue;
             long key = pos.asLong();
             inf.removeRich(key);
-            inf.decConverted();                                      // frees the footprint cap to regrow
+            if (BlockMatcher.isConverted(bs)) inf.decConverted();    // count only fertilized blocks (not paths)
             inf.sanction(key, now);                                   // accounted for -> frontier scan won't re-boost
             if (!friendly) inf.addBoost(key, now + BOOST_DURATION);   // the ground feels attacked (spec 8)
             inf.retire(key);                                          // it's gone -> drop it from the frontier
@@ -164,7 +158,7 @@ public final class InfectionManager {
         long key = event.getPos().asLong();
         long now = sl.getGameTime();
         inf.removeRich(key);
-        inf.decConverted();
+        if (BlockMatcher.isConverted(event.getState())) inf.decConverted(); // count only fertilized blocks (not paths)
         inf.sanction(key, now);
         if (!(event.getEntity() instanceof Villager)) inf.addBoost(key, now + BOOST_DURATION);
         inf.retire(key);
@@ -232,7 +226,6 @@ public final class InfectionManager {
             if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
                 level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
                 inf.addPathHead(g.asLong());
-                inf.incConverted();
                 return;
             }
         }
@@ -301,7 +294,6 @@ public final class InfectionManager {
         if (targets[chosen] == null) return 0; // the weighted pick was a no-op direction this attempt
         level.setBlock(targets[chosen], Blocks.DIRT_PATH.defaultBlockState(), 3);
         inf.addPathHead(targets[chosen].asLong());
-        inf.incConverted();
         return 1;
     }
 

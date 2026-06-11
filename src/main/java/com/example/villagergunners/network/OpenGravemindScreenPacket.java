@@ -19,9 +19,10 @@ public class OpenGravemindScreenPacket {
     public final int villagers; // defenders within the gravemind's radius, by type
     public final int guards;
     public final int golems;
+    public final int fertilized; // count of fertilized (fertile/rich) blocks in this dimension
 
     public OpenGravemindScreenPacket(int level, int maxLevel, int emeralds, int costNext,
-                                     int villagers, int guards, int golems) {
+                                     int villagers, int guards, int golems, int fertilized) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -29,6 +30,7 @@ public class OpenGravemindScreenPacket {
         this.villagers = villagers;
         this.guards = guards;
         this.golems = golems;
+        this.fertilized = fertilized;
     }
 
     public static void encode(OpenGravemindScreenPacket msg, FriendlyByteBuf buf) {
@@ -39,11 +41,12 @@ public class OpenGravemindScreenPacket {
         buf.writeVarInt(msg.villagers);
         buf.writeVarInt(msg.guards);
         buf.writeVarInt(msg.golems);
+        buf.writeVarInt(msg.fertilized);
     }
 
     public static OpenGravemindScreenPacket decode(FriendlyByteBuf buf) {
         return new OpenGravemindScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
     }
 
     public static void handle(OpenGravemindScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {
