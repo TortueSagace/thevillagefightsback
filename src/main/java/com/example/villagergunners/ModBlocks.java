@@ -100,11 +100,12 @@ public final class ModBlocks {
     /**
      * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
      * blast resistance 1200, and needs a diamond+ pickaxe to break (see the mineable/pickaxe +
-     * needs_diamond_tool tags). HalfTransparentBlock gives proper glass face-culling.
+     * needs_diamond_tool tags). {@link ReinforcedGlassBlock} makes it fully light-transparent so a dome
+     * never darkens the village.
      */
     public static final RegistryObject<Block> REINFORCED_GLASS = BLOCKS.register(
             "reinforced_glass",
-            () -> new HalfTransparentBlock(BlockBehaviour.Properties.of()
+            () -> new ReinforcedGlassBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GREEN)
                     .strength(30.0F, 1200.0F)              // ancient debris toughness
                     .requiresCorrectToolForDrops()
