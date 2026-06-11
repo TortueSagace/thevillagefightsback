@@ -120,13 +120,23 @@ public final class LimboDimension {
             }
         }
 
-        // Drop the indestructible Limbo Bed at a random interior floor cell (never on the spawn column).
+        // Drop the indestructible two-part Limbo Bed at a random interior floor cell (foot + head toward
+        // north, both kept inside the room, never on the spawn column).
         int bx, bz;
         do {
-            bx = MIN_X + 1 + level.random.nextInt(MAX_X - MIN_X - 1);
-            bz = MIN_Z + 1 + level.random.nextInt(MAX_Z - MIN_Z - 1);
-        } while (bx == SPAWN.getX() && bz == SPAWN.getZ());
-        level.setBlock(new BlockPos(bx, MIN_Y + 1, bz), ModBlocks.LIMBO_BED.get().defaultBlockState(), 3);
+            bx = MIN_X + 1 + level.random.nextInt(MAX_X - MIN_X - 1);   // -10..9
+            bz = MIN_Z + 2 + level.random.nextInt(MAX_Z - MIN_Z - 2);   // -9..9 (head at bz-1 stays interior)
+        } while (bx == SPAWN.getX() && (bz == SPAWN.getZ() || bz - 1 == SPAWN.getZ()));
+        net.minecraft.core.Direction facing = net.minecraft.core.Direction.NORTH;
+        BlockPos footPos = new BlockPos(bx, MIN_Y + 1, bz);
+        BlockState foot = ModBlocks.LIMBO_BED.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.FOOT)
+                .setValue(net.minecraft.world.level.block.BedBlock.FACING, facing);
+        BlockState head = ModBlocks.LIMBO_BED.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.BedBlock.PART, net.minecraft.world.level.block.state.properties.BedPart.HEAD)
+                .setValue(net.minecraft.world.level.block.BedBlock.FACING, facing);
+        level.setBlock(footPos, foot, 3);
+        level.setBlock(footPos.relative(facing), head, 3);
         return true;
     }
 }
