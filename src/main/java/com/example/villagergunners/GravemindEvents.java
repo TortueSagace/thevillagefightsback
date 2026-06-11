@@ -239,10 +239,54 @@ public final class GravemindEvents {
                     for (Villager v : nearby) BuilderRole.demote(v); // wall finished -> drop the builder tags
                     com.example.villagergunners.wall.WallBuild.clearPlan(gp); // free the reservation map
                     data.setDirty();
+                    launchWallFireworks(level, plan); // celebrate over the gates
                     broadcast(server, "§aThe village wall is complete.");
                 }
             }
         }
+    }
+
+    // Bright firework burst palette for the wall-completion celebration.
+    private static final int[] FIREWORK_COLORS = {
+            0xFF2D2D, 0xFF9A2D, 0xFFE92D, 0x57FF2D, 0x2DFFD0, 0x2D8CFF, 0x9A2DFF, 0xFF2DD0, 0xFFFFFF
+    };
+
+    /** Launch a handful of celebratory fireworks above the gates the moment the wall is finished. */
+    private static void launchWallFireworks(ServerLevel level, WallPlan plan) {
+        List<BlockPos> spots = new ArrayList<>(plan.gates());
+        if (spots.isEmpty()) spots.add(plan.gravemind().pos()); // wall with no gates -> fire over the centre
+        int n = Math.min(spots.size(), 6);
+        for (int i = 0; i < n; i++) {
+            BlockPos s = spots.get(i);
+            double x = s.getX() + 0.5, y = s.getY() + WallPlan.COURSES + 1.0, z = s.getZ() + 0.5;
+            level.addFreshEntity(new net.minecraft.world.entity.projectile.FireworkRocketEntity(
+                    level, x, y, z, celebrationRocket(level.getRandom())));
+        }
+    }
+
+    /** A random colourful firework rocket item (purely visual -- a free-flying firework deals no damage). */
+    private static net.minecraft.world.item.ItemStack celebrationRocket(net.minecraft.util.RandomSource rand) {
+        net.minecraft.world.item.ItemStack stack =
+                new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FIREWORK_ROCKET);
+        net.minecraft.nbt.CompoundTag fireworks = new net.minecraft.nbt.CompoundTag();
+        fireworks.putByte("Flight", (byte) (1 + rand.nextInt(2)));
+        net.minecraft.nbt.ListTag explosions = new net.minecraft.nbt.ListTag();
+        int bursts = 1 + rand.nextInt(2);
+        for (int b = 0; b < bursts; b++) {
+            net.minecraft.nbt.CompoundTag ex = new net.minecraft.nbt.CompoundTag();
+            ex.putByte("Type", (byte) rand.nextInt(5));   // 0 small ball .. 4 burst
+            ex.putBoolean("Flicker", rand.nextBoolean());
+            ex.putBoolean("Trail", rand.nextBoolean());
+            int[] colors = new int[1 + rand.nextInt(3)];
+            for (int c = 0; c < colors.length; c++) colors[c] = FIREWORK_COLORS[rand.nextInt(FIREWORK_COLORS.length)];
+            ex.putIntArray("Colors", colors);
+            explosions.add(ex);
+        }
+        fireworks.put("Explosions", explosions);
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        tag.put("Fireworks", fireworks);
+        stack.setTag(tag);
+        return stack;
     }
 
     // A cell abandoned by builders this many times is sealed directly by the gravemind (builders can't reach
