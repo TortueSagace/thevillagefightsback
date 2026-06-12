@@ -85,7 +85,7 @@ public class FoundingSettlerGoal extends Goal {
 
     private void moveTo(BlockPos t) {
         t = keepClearOfGravemind(t);
-        villager.getNavigation().moveTo(t.getX() + 0.5, t.getY(), t.getZ() + 0.5, WANDER_SPEED);
+        com.example.villagergunners.NavThrottle.goTo(villager, t.getX() + 0.5, t.getY(), t.getZ() + 0.5, WANDER_SPEED);
     }
 
     /** Push a target out so it (and the house built there) stays at least SAFE_RADIUS from the gravemind. */

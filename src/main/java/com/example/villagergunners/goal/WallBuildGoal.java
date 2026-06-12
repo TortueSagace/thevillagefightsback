@@ -155,7 +155,7 @@ public class WallBuildGoal extends Goal {
         this.pillarSteps = 0;
         this.bridgeSteps = 0;
         clearDig();
-        villager.getNavigation().moveTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, BUILD_SPEED);
+        com.example.villagergunners.NavThrottle.goTo(villager, stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, BUILD_SPEED);
         return true;
     }
 
@@ -240,7 +240,7 @@ public class WallBuildGoal extends Goal {
 
         if (--repathTimer <= 0) {
             // Navigate to the work column at our OWN height (a reachable ground node), not the block's height.
-            villager.getNavigation().moveTo(stand.getX() + 0.5, villager.getY(), stand.getZ() + 0.5, BUILD_SPEED);
+            com.example.villagergunners.NavThrottle.goTo(villager, stand.getX() + 0.5, villager.getY(), stand.getZ() + 0.5, BUILD_SPEED);
             repathTimer = REPATH;
         }
         boolean stuck = villager.getNavigation().isDone();
@@ -377,7 +377,7 @@ public class WallBuildGoal extends Goal {
         if (--repathTimer <= 0) {
             // Navigate to the column base; the cheap scaffolds we placed are climbable, so the path goes
             // down them rather than off the wall.
-            villager.getNavigation().moveTo(stand.getX() + 0.5, descendY, stand.getZ() + 0.5, BUILD_SPEED);
+            com.example.villagergunners.NavThrottle.goTo(villager, stand.getX() + 0.5, descendY, stand.getZ() + 0.5, BUILD_SPEED);
             repathTimer = REPATH;
         }
     }

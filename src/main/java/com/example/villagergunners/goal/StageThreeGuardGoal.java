@@ -133,7 +133,7 @@ public class StageThreeGuardGoal extends Goal {
     // --- CROSSBOW -------------------------------------------------------------------------------
     private void crossbow(LivingEntity t, double dist) {
         setMainhand(GuardWeapons.crossbow());
-        if (dist > 18.0) guard.getNavigation().moveTo(t, 1.0); else guard.getNavigation().stop();
+        if (dist > 18.0) com.example.villagergunners.NavThrottle.follow(guard, t, 1.0); else guard.getNavigation().stop();
         if (fireCooldown <= 0 && guard.getSensing().hasLineOfSight(t)) {
             fireVirusArrow(t);
             fireCooldown = FIRE_INTERVAL;
@@ -165,7 +165,7 @@ public class StageThreeGuardGoal extends Goal {
     // --- MACE bounce ----------------------------------------------------------------------------
     private void launchAt(LivingEntity t) {
         setMainhand(GuardWeapons.mace());
-        if (guard.distanceToSqr(t) > 16.0) { guard.getNavigation().moveTo(t, 1.1); return; } // close in first
+        if (guard.distanceToSqr(t) > 16.0) { com.example.villagergunners.NavThrottle.follow(guard, t, 1.1); return; } // close in first
         if (launchCooldown > 0) return;
         Vec3 to = t.position().subtract(guard.position());
         double hl = Math.sqrt(to.x * to.x + to.z * to.z);
@@ -253,7 +253,7 @@ public class StageThreeGuardGoal extends Goal {
     // --- SLASHER (low ceiling fallback) ---------------------------------------------------------
     private void slasher(LivingEntity t, double dist) {
         setMainhand(GuardWeapons.slasher());
-        guard.getNavigation().moveTo(t, 1.15);
+        com.example.villagergunners.NavThrottle.follow(guard, t, 1.15);
         if (guard.distanceToSqr(t) <= REACH_SQR && meleeCooldown <= 0) {
             guard.swing(InteractionHand.MAIN_HAND);
             guard.doHurtTarget(t); // Alien Slasher on-hit payload is applied by EmeraldVirusEvents
@@ -267,7 +267,7 @@ public class StageThreeGuardGoal extends Goal {
         int gx = guard.getBlockX(), gy = guard.getBlockY(), gz = guard.getBlockZ();
         int hx = (int) Math.floor(t.getX()) - gx, hz = (int) Math.floor(t.getZ()) - gz;
         if (Math.abs(hx) > 1 || Math.abs(hz) > 1) {       // walk under the target's column first
-            guard.getNavigation().moveTo(t.getX(), guard.getY(), t.getZ(), 1.15);
+            com.example.villagergunners.NavThrottle.goTo(guard, t.getX(), guard.getY(), t.getZ(), 1.15);
             return;
         }
         if (climbCooldown > 0) return;

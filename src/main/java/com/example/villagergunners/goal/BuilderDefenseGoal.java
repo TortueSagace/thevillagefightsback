@@ -83,7 +83,7 @@ public class BuilderDefenseGoal extends Goal {
 
         villager.setTarget(t);
         villager.getLookControl().setLookAt(t, 30.0F, 30.0F);
-        villager.getNavigation().moveTo(t, 1.2D);
+        com.example.villagergunners.NavThrottle.follow(villager, t, 1.2D); // throttled repath
 
         if (attackCooldown > 0) attackCooldown--;
         if (villager.distanceToSqr(t) <= REACH_SQR && attackCooldown <= 0) {
