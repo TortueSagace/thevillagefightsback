@@ -66,6 +66,9 @@ public final class VillagerGunnersClient {
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
         event.registerEntityRenderer(ModEntities.LIMBO_ARROW.get(), LimboArrowRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
+        // The bullet is invisible; its yellow particle tracer is the visual.
+        event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);
     }
 
     @SubscribeEvent

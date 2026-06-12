@@ -49,6 +49,8 @@
   "entity.gobacktoyourworld.limbo_arrow": "Limbo Arrow",
   "item.gobacktoyourworld.emeraldger_spawn": "Emeraldger Spawn Egg",
   "item.gobacktoyourworld.emerald_apple": "Emerald Apple",
+  "item.gobacktoyourworld.emerald_virus_arrow": "Emerald Virus Arrow",
+  "entity.gobacktoyourworld.emerald_virus_arrow": "Emerald Virus Arrow",
   "item.minecraft.potion.effect.emerald_virus": "Potion of Emerald Virus",
   "item.minecraft.splash_potion.effect.emerald_virus": "Splash Potion of Emerald Virus",
   "item.minecraft.lingering_potion.effect.emerald_virus": "Lingering Potion of Emerald Virus",

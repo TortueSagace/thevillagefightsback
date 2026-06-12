@@ -88,6 +88,17 @@ public final class ModEntities {
                     .setShouldReceiveVelocityUpdates(true)
                     .build("rocket"));
 
+    /** Native bullet projectile -- a JEG-free clone of the revolver round. See {@link BulletEntity}. */
+    public static final RegistryObject<EntityType<BulletEntity>> BULLET = ENTITIES.register(
+            "bullet",
+            () -> EntityType.Builder.<BulletEntity>of(BulletEntity::new, MobCategory.MISC)
+                    .sized(0.1F, 0.1F)             // tiny, like jeg's projectile size 0.05
+                    .clientTrackingRange(6)
+                    .updateInterval(1)
+                    .setShouldReceiveVelocityUpdates(true)
+                    .fireImmune()
+                    .build("bullet"));
+
     /** Limbo Arrow projectile -- banishes whatever it hits to Limbo. See {@link LimboArrowEntity}. */
     public static final RegistryObject<EntityType<LimboArrowEntity>> LIMBO_ARROW = ENTITIES.register(
             "limbo_arrow",
@@ -96,6 +107,15 @@ public final class ModEntities {
                     .clientTrackingRange(4)
                     .updateInterval(20)
                     .build("limbo_arrow"));
+
+    /** Emerald Virus arrow projectile -- infects whatever it hits. See {@link EmeraldVirusArrowEntity}. */
+    public static final RegistryObject<EntityType<EmeraldVirusArrowEntity>> EMERALD_VIRUS_ARROW = ENTITIES.register(
+            "emerald_virus_arrow",
+            () -> EntityType.Builder.<EmeraldVirusArrowEntity>of(EmeraldVirusArrowEntity::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F)
+                    .clientTrackingRange(4)
+                    .updateInterval(20)
+                    .build("emerald_virus_arrow"));
 
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);

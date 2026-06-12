@@ -38,23 +38,20 @@ public class VillagerGunners {
 
     private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder/dragon-breath then give
-            // the splash + lingering versions, and the lingering one makes "Arrow of Emerald Virus" via the
-            // vanilla tipped-arrow recipe. StrictNBTIngredient so only the exact source potion matches.
+            // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder makes the splash
+            // version. The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe),
+            // so we deliberately do NOT add the lingering step (no expensive vanilla tipped-arrow path).
+            // StrictNBTIngredient so only the exact source potion matches.
             net.minecraft.world.item.ItemStack awkward = potion(net.minecraft.world.item.Items.POTION,
                     net.minecraft.world.item.alchemy.Potions.AWKWARD);
             net.minecraft.world.item.ItemStack virus = potion(net.minecraft.world.item.Items.POTION, null);
             net.minecraft.world.item.ItemStack splash = potion(net.minecraft.world.item.Items.SPLASH_POTION, null);
-            net.minecraft.world.item.ItemStack linger = potion(net.minecraft.world.item.Items.LINGERING_POTION, null);
             net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
                     net.minecraftforge.common.crafting.StrictNBTIngredient.of(awkward),
                     net.minecraft.world.item.crafting.Ingredient.of(ModItems.EMERALD_APPLE.get()), virus);
             net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
                     net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
                     net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(splash),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.DRAGON_BREATH), linger);
         });
     }
 

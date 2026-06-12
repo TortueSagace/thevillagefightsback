@@ -277,6 +277,20 @@ def main():
     gen_door()
     gen_catalyst(gems)
     gen_emerald_apple(gems)
+    gen_emerald_virus_arrow()
+
+def gen_emerald_virus_arrow():
+    """The Emerald Virus arrow: a green-tinted arrow (item sprite + entity texture)."""
+    name = "emerald_virus_arrow"
+    with zipfile.ZipFile(JAR) as zf:
+        item = green_tint(load_vanilla(zf, "arrow", folder="item"))
+        ent = green_tint(load_vanilla(zf, "projectiles/arrow", folder="entity"))
+    save_item_png(item, name)
+    d = os.path.join(ASSETS, "textures", "entity"); mkdir(d)
+    ent.save(os.path.join(d, name + ".png"))
+    write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
+               {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}})
+    print("generated", name)
 
 def gen_emerald_apple(gems):
     """The emerald apple item: a green-tinted apple with the emerald-gem overlay."""

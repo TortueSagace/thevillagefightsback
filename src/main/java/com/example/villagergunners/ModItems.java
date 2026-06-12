@@ -36,6 +36,11 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_ARROW =
             ITEMS.register("limbo_arrow", () -> new LimboArrowItem(new Item.Properties()));
 
+    /** Emerald Virus Arrow: a green arrow that infects whatever it hits ({@link EmeraldVirusArrowItem}).
+     *  Crafted from 8 arrows + a (regular) Potion of Emerald Virus. */
+    public static final RegistryObject<Item> EMERALD_VIRUS_ARROW =
+            ITEMS.register("emerald_virus_arrow", () -> new EmeraldVirusArrowItem(new Item.Properties()));
+
     /** Emerald Apple: edible, but eating it inflicts the Emerald Virus. The base brewing component for the
      *  Emerald Virus potion (and, via that potion's tipped arrows, the Emerald Virus arrows). Drops rarely
      *  from fertile leaves. */

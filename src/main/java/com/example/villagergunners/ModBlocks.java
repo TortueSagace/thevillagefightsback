@@ -300,6 +300,7 @@ public final class ModBlocks {
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(ModItems.LIMBO_POTION.get());
                 output.accept(ModItems.LIMBO_ARROW.get());
+                output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
             })
             .build());
 
