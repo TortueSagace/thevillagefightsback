@@ -57,6 +57,7 @@ public final class UnleashedManager {
         if (event.phase != TickEvent.Phase.END) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % 40 != 0) return;
+        long _p = ModProfiler.now();
         GravemindData data = GravemindData.get(server);
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
@@ -71,6 +72,7 @@ public final class UnleashedManager {
             }
             LAST_COUNT.put(gp, count);
         }
+        ModProfiler.add("boss.manager", _p);
     }
 
     // --- the summon -----------------------------------------------------------------------------

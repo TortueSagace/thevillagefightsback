@@ -65,6 +65,7 @@ public final class GravemindEvents {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
 
+        long _p = ModProfiler.now();
         GravemindData data = GravemindData.get(server);
         spawnInVillages(server, data);
         driveWalls(server, data);
@@ -75,6 +76,7 @@ public final class GravemindEvents {
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
+        ModProfiler.add("gravemind", _p);
     }
 
     private static final int IMMUNITY_RADIUS = 10; // shield allies this close to a gravemind

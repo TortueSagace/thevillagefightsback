@@ -70,9 +70,14 @@ public class AxeCombatGoal extends Goal {
     @Override
     public boolean canUse() {
         if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
-        this.target = acquireTarget();
-        if (GunnerEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
-        return target != null;
+        long _p = com.example.villagergunners.ModProfiler.now();
+        try {
+            this.target = acquireTarget();
+            if (GunnerEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
+            return target != null;
+        } finally {
+            com.example.villagergunners.ModProfiler.add("ai.axe", _p);
+        }
     }
 
     @Override

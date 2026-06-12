@@ -85,6 +85,7 @@ public final class InfectionManager {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         long tc = server.getTickCount();
+        long _p = com.example.villagergunners.ModProfiler.now();
 
         if (tc % MANAGE_INTERVAL == 0) {
             boolean doStaff = (tc % STAFF_INTERVAL == 0); // entity scans only every 5s
@@ -113,6 +114,7 @@ public final class InfectionManager {
                 convert(level, inf, now, ranges);
             }
         }
+        com.example.villagergunners.ModProfiler.add("infection", _p);
     }
 
     /** Per-gravemind infection reach in {@code level}: {centreX+0.5, centreZ+0.5, rangeSqr} for each gravemind

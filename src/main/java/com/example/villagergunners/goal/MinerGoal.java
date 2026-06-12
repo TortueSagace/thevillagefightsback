@@ -82,12 +82,17 @@ public class MinerGoal extends Goal {
         if (carrying) return true;
         if (target != null) return true;
         if (villager.tickCount % SELECT_THROTTLE != 0) return false;
-        pruneAvoid(sl.getGameTime());
-        InfectionData inf = InfectionData.get(sl);
-        BlockPos r = inf.nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
-        if (r == null) r = scanLocalRich(sl, inf); // fallback: rich blocks the tracker doesn't know about
-        if (r != null) { target = r; seekTicks = 0; return true; }
-        return false;
+        long _p = com.example.villagergunners.ModProfiler.now();
+        try {
+            pruneAvoid(sl.getGameTime());
+            InfectionData inf = InfectionData.get(sl);
+            BlockPos r = inf.nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
+            if (r == null) r = scanLocalRich(sl, inf); // fallback: rich blocks the tracker doesn't know about
+            if (r != null) { target = r; seekTicks = 0; return true; }
+            return false;
+        } finally {
+            com.example.villagergunners.ModProfiler.add("ai.miner", _p);
+        }
     }
 
     /** Forget blacklisted rich blocks whose cool-down has elapsed so they can be tried again. */

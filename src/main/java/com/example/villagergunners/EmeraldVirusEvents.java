@@ -118,22 +118,27 @@ public final class EmeraldVirusEvents {
         Level level = e.level();
         if (level.isClientSide()) return;
 
-        boolean active = EmeraldVirus.isActive(e);
-        if (!active && EmeraldVirus.progress(e) <= 0.0F) return; // not, and never, infected
+        long _p = ModProfiler.now(); // fires for EVERY living entity each tick -> profile the aggregate cost
+        try {
+            boolean active = EmeraldVirus.isActive(e);
+            if (!active && EmeraldVirus.progress(e) <= 0.0F) return; // not, and never, infected
 
-        if (active) {
-            EmeraldVirus.setProgress(e, EmeraldVirus.progress(e) + 1.0F / EmeraldVirus.DURATION_TICKS);
-        }
-        if (e.tickCount % TINT_SYNC_INTERVAL == 0) {
-            ModNetwork.sendToTracking(e, new EmeraldTintPacket(e.getId(), EmeraldVirus.progress(e)));
-        }
-        if (!active) return; // cured but still green: no more spreading / ground-rot
+            if (active) {
+                EmeraldVirus.setProgress(e, EmeraldVirus.progress(e) + 1.0F / EmeraldVirus.DURATION_TICKS);
+            }
+            if (e.tickCount % TINT_SYNC_INTERVAL == 0) {
+                ModNetwork.sendToTracking(e, new EmeraldTintPacket(e.getId(), EmeraldVirus.progress(e)));
+            }
+            if (!active) return; // cured but still green: no more spreading / ground-rot
 
-        if (e.tickCount % SPREAD_INTERVAL == 0) {
-            spread(e, level);
-        }
-        if (e.tickCount % PATH_INTERVAL == 0) {
-            rotGroundUnder(e, level);
+            if (e.tickCount % SPREAD_INTERVAL == 0) {
+                spread(e, level);
+            }
+            if (e.tickCount % PATH_INTERVAL == 0) {
+                rotGroundUnder(e, level);
+            }
+        } finally {
+            ModProfiler.add("virus.entityTick", _p);
         }
     }
 
@@ -202,6 +207,7 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || PENDING.isEmpty()) return;
+        long _p = ModProfiler.now();
         // Drain a few due entries and remove them FIRST, then explode. We remove before exploding for two
         // reasons: (1) the blast kills nearby virus hosts whose onDeath re-adds to PENDING, so we must not be
         // mid-iteration (ConcurrentModificationException); (2) on world load every queued corpse comes due at
@@ -226,6 +232,7 @@ public final class EmeraldVirusEvents {
             explodeWithFire(p.level, x, y, z);
             if (p.spawnEmeraldger) spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
         }
+        ModProfiler.add("virus.explode", _p);
     }
 
     /** Raise an Emeraldger from a corpse: HP = 50% of the dead host, scaled body, armed as a stage-3 villager. */

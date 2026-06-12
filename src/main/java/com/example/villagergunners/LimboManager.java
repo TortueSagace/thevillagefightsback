@@ -103,6 +103,7 @@ public final class LimboManager {
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null) return;
+        long _p = ModProfiler.now();
         LimboData data = LimboData.get(server);
         long now = limbo.getGameTime();
 
@@ -151,6 +152,7 @@ public final class LimboManager {
 
         // 4. Drop stale pending-origins (a travel that never completed).
         PENDING.values().removeIf(po -> now - po.tick() > PENDING_STALE_TICKS);
+        ModProfiler.add("limbo", _p);
     }
 
     /** Place a gravel marker at (or just above) the creature's origin position; returns the actual spot used. */

@@ -45,6 +45,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
 
     @Override
     public void tick() {
+        long _p = ModProfiler.now();
         super.tick();
         if (level() instanceof net.minecraft.server.level.ServerLevel sl) {
             // Firework-style trail: smoke + sparks, interpolated along this tick's path (it moves fast).
@@ -60,6 +61,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         if (!level().isClientSide() && tickCount > MAX_LIFETIME) {
             discard();
         }
+        ModProfiler.add("rocket", _p);
     }
 
     /** Direct impact: a heavy hit on the struck entity, attributed to the golem (owner). */

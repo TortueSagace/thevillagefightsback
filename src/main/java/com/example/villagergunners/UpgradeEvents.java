@@ -34,6 +34,7 @@ public final class UpgradeEvents {
         if (event.phase != TickEvent.Phase.END) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
+        long _p = ModProfiler.now();
 
         GravemindData data = GravemindData.get(server);
 
@@ -48,6 +49,7 @@ public final class UpgradeEvents {
                 GunnerEvents.applyUpgrade(e);
             }
         }
+        ModProfiler.add("upgrades", _p);
     }
 
     private static boolean isUpgradable(LivingEntity e) {

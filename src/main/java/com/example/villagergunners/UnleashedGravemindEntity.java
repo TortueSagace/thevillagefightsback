@@ -117,6 +117,14 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         return r;
     }
 
+    // Profile the boss's ENTIRE per-tick cost (vanilla Warden tick + our customServerAiStep below).
+    @Override
+    public void tick() {
+        long _p = ModProfiler.now();
+        super.tick();
+        ModProfiler.add("boss.tick", _p);
+    }
+
     // --- AI: drive everything ourselves; the Warden brain is registered but never ticked ---------
     @Override
     protected void customServerAiStep() {
@@ -292,6 +300,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     }
 
     private void breakBlocksAround(ServerLevel sl) {
+        long _p = ModProfiler.now();
         AABB box = getBoundingBox().inflate(0.15);
         for (BlockPos p : BlockPos.betweenClosed(
                 (int) Math.floor(box.minX), (int) Math.floor(box.minY + 0.2), (int) Math.floor(box.minZ),
@@ -302,6 +311,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
             if (s.getDestroySpeed(sl, p) < 0) continue;                      // unbreakable (bedrock)
             sl.destroyBlock(p, false);
         }
+        ModProfiler.add("boss.breakBlocks", _p);
     }
 
     private boolean hasJumpRoom(ServerLevel sl) {
