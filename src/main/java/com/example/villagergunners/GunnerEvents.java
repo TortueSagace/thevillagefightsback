@@ -122,13 +122,32 @@ public final class GunnerEvents {
         boolean upgraded = UpgradeState.isUpgraded(mob);
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
-            if (upgraded) armGolemFull(golem);          // else: normal iron golem
+            // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
+            // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 gravemind.
+            if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
         } else if (mob instanceof Villager villager) {
             if (upgraded) armVillagerFull(villager);
             else armVillagerNerfed(villager);
         } else if (isGuard(mob)) {
             if (upgraded) armGuardFull(mob);            // else: normal guard
         }
+    }
+
+    /** Replace a plain village iron golem with a {@link GigachadGolemEntity} at the same spot; the new type
+     *  arms itself in finalizeSpawn. Used when a village golem first reaches a level-3 gravemind. */
+    public static void convertToGigachad(IronGolem old) {
+        if (old instanceof GigachadGolemEntity) return;
+        if (!(old.level() instanceof ServerLevel sl)) return;
+        GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(sl);
+        if (g == null) return;
+        g.moveTo(old.getX(), old.getY(), old.getZ(), old.getYRot(), old.getXRot());
+        g.yBodyRot = old.yBodyRot;
+        g.yHeadRot = old.yHeadRot;
+        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(old.blockPosition()),
+                net.minecraft.world.entity.MobSpawnType.CONVERSION, null, null);
+        UpgradeState.setUpgraded(g);
+        sl.addFreshEntity(g);
+        old.discard();
     }
 
     /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 gravemind). */
@@ -232,10 +251,8 @@ public final class GunnerEvents {
         }
         applyGolemArmor(golem);  // gigachad: protection of a full iron set (idempotent; survives reload)
         applyGolemHealth(golem); // gigachad: 200 HP (base 100 + 100)
-        // From now on a rocket-armed golem is a "Gigachad Golem" -- or a "Vindictive Gigachad" if it's a boss minion.
-        String name = golem instanceof VindictiveGigachadEntity ? "Vindictive Gigachad" : "Gigachad Golem";
-        golem.setCustomName(net.minecraft.network.chat.Component.literal(name));
-        golem.setCustomNameVisible(true);
+        // No artificial name tag: a gigachad/vindictive gigachad is its own creature TYPE, so its name comes
+        // from the entity type (lang) and shows on hover/death like any mob -- no floating custom name.
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));

@@ -61,6 +61,14 @@ public final class ModEntities {
                     .clientTrackingRange(12)
                     .build("vindictive_guard"));
 
+    /** The "Gigachad Golem": an upgraded village iron golem, its own creature type ({@link GigachadGolemEntity}). */
+    public static final RegistryObject<EntityType<GigachadGolemEntity>> GIGACHAD_GOLEM = ENTITIES.register(
+            "gigachad_golem",
+            () -> EntityType.Builder.<GigachadGolemEntity>of(GigachadGolemEntity::new, MobCategory.MISC)
+                    .sized(1.4F, 2.7F)             // same hitbox as a vanilla iron golem
+                    .clientTrackingRange(12)
+                    .build("gigachad_golem"));
+
     /** The "Vindictive Gigachad": a boss-minion gigachad golem the unleashed gravemind summons ({@link VindictiveGigachadEntity}). */
     public static final RegistryObject<EntityType<VindictiveGigachadEntity>> VINDICTIVE_GIGACHAD = ENTITIES.register(
             "vindictive_gigachad",
@@ -100,6 +108,7 @@ public final class ModEntities {
         event.put(GRAVEMIND_WARDEN.get(), Warden.createAttributes().build());
         event.put(UNLEASHED_GRAVEMIND.get(), UnleashedGravemindEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
+        event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
     }
 }

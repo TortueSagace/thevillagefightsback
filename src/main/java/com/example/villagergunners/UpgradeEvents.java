@@ -43,17 +43,30 @@ public final class UpgradeEvents {
             if (level == null || !level.isLoaded(gp.pos())) continue;
             if (data.econ(gp).getLevel() < REQUIRED_LEVEL) continue; // only this village's defenders, at level 3+
             AABB box = new AABB(gp.pos()).inflate(RADIUS);
-            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
-                    x -> x.isAlive() && !UpgradeState.isUpgraded(x) && isUpgradable(x))) {
-                UpgradeState.setUpgraded(e);
-                GunnerEvents.applyUpgrade(e);
+            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, UpgradeEvents::needsProcessing)) {
+                if (e instanceof IronGolem golem) {
+                    GunnerEvents.convertToGigachad(golem); // a village golem becomes its own gigachad creature type
+                } else {
+                    UpgradeState.setUpgraded(e);
+                    GunnerEvents.applyUpgrade(e);
+                }
             }
         }
         ModProfiler.add("upgrades", _p);
     }
 
+    /** What the upgrade scan acts on: any plain village golem (-> converted to a gigachad creature type), or a
+     *  not-yet-upgraded villager/guard (-> armed in place). */
+    private static boolean needsProcessing(LivingEntity e) {
+        if (!e.isAlive()) return false;
+        if (e instanceof IronGolem golem) {
+            return !golem.isPlayerCreated() && !(golem instanceof GigachadGolemEntity);
+        }
+        return !UpgradeState.isUpgraded(e) && isUpgradable(e);
+    }
+
     private static boolean isUpgradable(LivingEntity e) {
-        if (e instanceof VindictiveGigachadEntity) return false; // boss minion, already fully armed
+        if (e instanceof GigachadGolemEntity) return false; // gigachad (+ vindictive) are already fully armed
         if (e instanceof IronGolem golem) return !golem.isPlayerCreated();
         if (e instanceof Villager) return true;
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));

@@ -111,7 +111,7 @@ public class AxeCombatGoal extends Goal {
 
         villager.setTarget(t);
         villager.getLookControl().setLookAt(t, 30.0F, 30.0F);
-        villager.getNavigation().moveTo(t, 1.15D);
+        com.example.villagergunners.NavThrottle.follow(villager, t, 1.15D); // throttled repath (pathfinding was the #1 cost)
 
         if (attackCooldown > 0) attackCooldown--;
         if (inMeleeReach(t) && attackCooldown <= 0) {

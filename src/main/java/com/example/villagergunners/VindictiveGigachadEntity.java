@@ -18,7 +18,7 @@ import net.minecraft.world.level.Level;
  * gigachad applies here too. The differences are: its faction, the "Vindictive Gigachad" name (set inside
  * armGolemFull), fire immunity, and the green-vine re-skin (client-side {@code VindictiveVinesLayer}).
  */
-public class VindictiveGigachadEntity extends IronGolem {
+public class VindictiveGigachadEntity extends GigachadGolemEntity {
     public VindictiveGigachadEntity(EntityType<? extends IronGolem> type, Level level) {
         super(type, level);
         setPersistenceRequired();
@@ -33,14 +33,7 @@ public class VindictiveGigachadEntity extends IronGolem {
                 e -> e != this && !Factions.isInfected(e) && (e instanceof Player || e instanceof Mob)));
     }
 
-    @Override
-    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
-            net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
-            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
-        GunnerEvents.armGolemFull(this); // SHARED gigachad kit (rocket launcher, armour, 200 HP, rocket goal, name)
-        return r;
-    }
+    // finalizeSpawn is inherited from GigachadGolemEntity (it calls armGolemFull -> the shared gigachad kit).
 
     /** Fire-immune like the rest of the infected faction. */
     @Override

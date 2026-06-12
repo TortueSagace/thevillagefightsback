@@ -59,8 +59,9 @@ public final class VillagerGunnersClient {
         // Vindictive guards render as plain zombie villagers (vanilla renderer).
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
                 net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);
-        // Vindictive gigachads: iron golem + rocket launcher + green vines.
-        event.registerEntityRenderer(ModEntities.VINDICTIVE_GIGACHAD.get(), VindictiveGigachadRenderer::new);
+        // Gigachad golems + their vindictive (boss-minion) subclass: gold-skinned golem + rocket launcher.
+        event.registerEntityRenderer(ModEntities.GIGACHAD_GOLEM.get(), GigachadGolemRenderer::new);
+        event.registerEntityRenderer(ModEntities.VINDICTIVE_GIGACHAD.get(), GigachadGolemRenderer::new);
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
@@ -73,19 +74,7 @@ public final class VillagerGunnersClient {
         // CrossedArmsItemLayer renders it (nerfed villagers hold a stone axe, also rendered by it). A
         // villager therefore only ever shows whatever it actually holds -- no gun before the upgrade.
 
-        // Iron golem: no vanilla item layer. Anchor to right_arm. NOTE: the right_arm PIVOT is at
-        // x=0 (centre); the visible arm box is at x -13..-9 and 30px long. So we offset to the arm
-        // box and down to the hand. Big golem -> scale the gun up. (Orientation may need tuning.)
-        LivingEntityRenderer<IronGolem, IronGolemModel<IronGolem>> golem = event.getRenderer(EntityType.IRON_GOLEM);
-        if (golem != null) {
-            // Stage-3 (upgraded) golems get a fancy metallic-gold re-skin. Added first so it draws under the
-            // held gun.
-            golem.addLayer(new GoldGolemLayer(golem));
-            // Upgraded golems hold our NATIVE rocket launcher (nerfed ones have an empty hand).
-            golem.addLayer(new HeldGunLayer<>(golem,
-                    new ResourceLocation(VillagerGunners.MODID, "rocket_launcher"), "right_arm",
-                    -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
-                    HeldGunLayer.Gate.HELD_GUN));
-        }
+        // Gold re-skin + held rocket launcher now live on GigachadGolemRenderer (gigachads are their own
+        // creature type), so the VANILLA iron golem renderer is left untouched.
     }
 }
