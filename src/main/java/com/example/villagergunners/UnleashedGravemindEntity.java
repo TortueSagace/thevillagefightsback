@@ -84,6 +84,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     private static final int MAX_GIGACHADS = 5;       // cap on jump-summoned gigachads alive in the boss's reach
     @Nullable private LivingEntity currentTarget;
     private int greenWaveCd, jumpCd, circularCd, meleeCd, retargetCd, teleportCd;
+    private int repathCd; // throttle the (very expensive) Warden-sized pathfind: recompute at most ~2x/sec
     private boolean jumping;
     private int jumpWatch;
     private int spinTicks;
@@ -167,7 +168,16 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
             getNavigation().stop();
             if (meleeCd <= 0) { swing(InteractionHand.MAIN_HAND); doHurtTarget(t); meleeCd = MELEE_CD; }
         } else {
-            boolean moving = getNavigation().moveTo(t, WALK_SPEED);
+            // Re-path at most ~twice a second instead of every tick: a Warden-sized pathfind over the village
+            // is hugely expensive and was ~3% of the whole server tick on its own. In between, keep following
+            // the cached path (moving = path still in progress) so the teleport-fallback logic is unchanged.
+            boolean moving;
+            if (--repathCd <= 0) {
+                moving = getNavigation().moveTo(t, WALK_SPEED);
+                repathCd = 10;
+            } else {
+                moving = !getNavigation().isDone();
+            }
             if ((!moving || distSqr > 576.0) && teleportCd <= 0) { teleportTowards(sl, t); teleportCd = 40; }
         }
     }
