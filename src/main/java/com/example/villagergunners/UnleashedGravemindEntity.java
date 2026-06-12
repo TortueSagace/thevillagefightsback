@@ -208,7 +208,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 0.6F);
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(10.0), this::isHostileTarget)) {
             if (distanceToSqr(e) > 100.0) continue;
-            e.hurt(damageSources().magic(), 20.0F); // armour-bypassing -> a clean 20 (spec), not ~18 after armour
+            e.hurt(damageSources().magic(), 18.0F); // armour-bypassing -> a clean 18
             EmeraldVirus.infect(e, 0);
             e.setDeltaMovement(e.getDeltaMovement().x, PROPEL_VELOCITY, e.getDeltaMovement().z);
             e.hasImpulse = true;
