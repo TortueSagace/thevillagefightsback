@@ -36,6 +36,16 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_ARROW =
             ITEMS.register("limbo_arrow", () -> new LimboArrowItem(new Item.Properties()));
 
+    /** Emerald Apple: edible, but eating it inflicts the Emerald Virus. The base brewing component for the
+     *  Emerald Virus potion (and, via that potion's tipped arrows, the Emerald Virus arrows). Drops rarely
+     *  from fertile leaves. */
+    public static final RegistryObject<Item> EMERALD_APPLE =
+            ITEMS.register("emerald_apple", () -> new Item(new Item.Properties().food(
+                    new net.minecraft.world.food.FoodProperties.Builder().nutrition(4).saturationMod(0.3F).alwaysEat()
+                            .effect(() -> new net.minecraft.world.effect.MobEffectInstance(
+                                    ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS), 1.0F)
+                            .build())));
+
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(

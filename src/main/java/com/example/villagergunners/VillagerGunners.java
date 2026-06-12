@@ -29,9 +29,40 @@ public class VillagerGunners {
         ModEntities.register(modBus);
         ModParticles.register(modBus);
         ModLoot.register(modBus);
+        modBus.addListener(this::commonSetup); // brewing recipes (must be added off the main init thread)
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/gobacktoyourworld-common.toml
         LOGGER.info("[Go Back To Your World] loaded.");
+    }
+
+    private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder/dragon-breath then give
+            // the splash + lingering versions, and the lingering one makes "Arrow of Emerald Virus" via the
+            // vanilla tipped-arrow recipe. StrictNBTIngredient so only the exact source potion matches.
+            net.minecraft.world.item.ItemStack awkward = potion(net.minecraft.world.item.Items.POTION,
+                    net.minecraft.world.item.alchemy.Potions.AWKWARD);
+            net.minecraft.world.item.ItemStack virus = potion(net.minecraft.world.item.Items.POTION, null);
+            net.minecraft.world.item.ItemStack splash = potion(net.minecraft.world.item.Items.SPLASH_POTION, null);
+            net.minecraft.world.item.ItemStack linger = potion(net.minecraft.world.item.Items.LINGERING_POTION, null);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(awkward),
+                    net.minecraft.world.item.crafting.Ingredient.of(ModItems.EMERALD_APPLE.get()), virus);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(splash),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.DRAGON_BREATH), linger);
+        });
+    }
+
+    /** A potion-tagged stack of the given container item; {@code potion == null} means our Emerald Virus potion. */
+    private static net.minecraft.world.item.ItemStack potion(net.minecraft.world.item.Item container,
+                                                             net.minecraft.world.item.alchemy.Potion potion) {
+        return net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                new net.minecraft.world.item.ItemStack(container),
+                potion != null ? potion : ModPotions.EMERALD_VIRUS.get());
     }
 }

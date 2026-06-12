@@ -143,6 +143,22 @@ def write_log(bid):
     write_json(os.path.join(ASSETS, "models", "item", bid + ".json"),
                {"parent": f"{MODID}:block/{bid}"})
 
+def write_loot_leaves(bid):
+    # leaves drop themselves (like our other fertile blocks) AND occasionally an emerald apple (like oak->apple)
+    write_json(os.path.join(DATA, "loot_tables", "blocks", bid + ".json"), {
+        "type": "minecraft:block",
+        "pools": [
+            {"rolls": 1, "bonus_rolls": 0,
+             "entries": [{"type": "minecraft:item", "name": f"{MODID}:{bid}"}],
+             "conditions": [{"condition": "minecraft:survives_explosion"}]},
+            {"rolls": 1, "bonus_rolls": 0,
+             "entries": [{"type": "minecraft:item", "name": f"{MODID}:emerald_apple"}],
+             "conditions": [
+                 {"condition": "minecraft:survives_explosion"},
+                 {"condition": "minecraft:random_chance", "chance": 0.01}]},
+        ]
+    })
+
 def write_loot_self(bid):
     write_json(os.path.join(DATA, "loot_tables", "blocks", bid + ".json"), {
         "type": "minecraft:block",
@@ -252,11 +268,25 @@ def main():
                 save_png(fs, fertile); save_png(ftp, fertile + "_top")
                 save_png(overlay_onto(fs, gems), rich); save_png(overlay_onto(ftp, gems), rich + "_top")
                 write_log(fertile); write_log(rich)
-            write_loot_self(fertile)
+            if base == "leaves":
+                write_loot_leaves(fertile) # fertile leaves also drop the emerald apple
+            else:
+                write_loot_self(fertile)
             write_loot_emerald(rich)
             print("generated", fertile, "+", rich)
     gen_door()
     gen_catalyst(gems)
+    gen_emerald_apple(gems)
+
+def gen_emerald_apple(gems):
+    """The emerald apple item: a green-tinted apple with the emerald-gem overlay."""
+    name = "emerald_apple"
+    with zipfile.ZipFile(JAR) as zf:
+        img = overlay_onto(green_tint(load_vanilla(zf, "apple", folder="item")), gems)
+    save_item_png(img, name)
+    write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
+               {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}})
+    print("generated", name)
 
 def gen_catalyst(gems):
     """fertile_sculk_catalyst + rich_sculk_catalyst: green-tinted sculk-catalyst skins (top/bottom/side),

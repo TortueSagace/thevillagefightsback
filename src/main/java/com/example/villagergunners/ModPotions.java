@@ -20,6 +20,11 @@ public final class ModPotions {
     public static final RegistryObject<Potion> IMMUNITY = POTIONS.register("immunity",
             () -> new Potion(new MobEffectInstance(ModEffects.IMMUNITY.get(), IMMUNITY_POTION_TICKS)));
 
+    /** Potion of Emerald Virus -- brewed from awkward + an Emerald Apple. Splash / lingering / tipped arrows
+     *  ("Arrow of Emerald Virus") all follow automatically from vanilla brewing. */
+    public static final RegistryObject<Potion> EMERALD_VIRUS = POTIONS.register("emerald_virus",
+            () -> new Potion(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS)));
+
     public static void register(IEventBus modBus) {
         POTIONS.register(modBus);
     }
