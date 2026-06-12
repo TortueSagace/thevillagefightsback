@@ -221,6 +221,17 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
             () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
 
+    // Fertile / Rich sculk catalyst: on a nearby mob death it spreads fertile / rich sculk like vanilla
+    // sculk spreads from a catalyst (see SculkCatalystEvents). Glows like the sculk family.
+    public static final RegistryObject<Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true)));
+    public static final RegistryObject<Block> RICH_SCULK_CATALYST = BLOCKS.register("rich_sculk_catalyst",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true)));
+    public static final RegistryObject<Item> FERTILE_SCULK_CATALYST_ITEM = ITEMS.register("fertile_sculk_catalyst",
+            () -> new BlockItem(FERTILE_SCULK_CATALYST.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RICH_SCULK_CATALYST_ITEM = ITEMS.register("rich_sculk_catalyst",
+            () -> new BlockItem(RICH_SCULK_CATALYST.get(), new Item.Properties()));
+
     /** Fertile door: the infection replaces every (wooden) door with this. Oak-door shape, green-tinted. */
     public static final RegistryObject<Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
             () -> new net.minecraft.world.level.block.DoorBlock(
@@ -280,6 +291,8 @@ public final class ModBlocks {
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
                 output.accept(FERTILE_DOOR_ITEM.get());
+                output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
+                output.accept(RICH_SCULK_CATALYST_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(ModItems.LIMBO_POTION.get());

@@ -272,6 +272,12 @@ public final class BlockMatcher {
         return fertileByBase.get("sand");
     }
 
+    /** Our fertile (or rich) sculk block -- what the matching sculk catalyst spreads. */
+    public static Block sculk(boolean rich) {
+        init();
+        return (rich ? richByBase : fertileByBase).get("sculk");
+    }
+
     /** Ground a dirt-path may spread across (dirt-family / grass / our fertile dirt). Excludes existing paths. */
     public static boolean isPathGround(BlockState s) {
         init();

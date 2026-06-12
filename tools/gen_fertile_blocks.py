@@ -256,6 +256,31 @@ def main():
             write_loot_emerald(rich)
             print("generated", fertile, "+", rich)
     gen_door()
+    gen_catalyst(gems)
+
+def gen_catalyst(gems):
+    """fertile_sculk_catalyst + rich_sculk_catalyst: green-tinted sculk-catalyst skins (top/bottom/side),
+    a cube_bottom_top model, item model and self-drop loot. Rich adds the emerald-gem overlay."""
+    with zipfile.ZipFile(JAR) as zf:
+        top = green_tint(load_vanilla(zf, "sculk_catalyst_top"))
+        bottom = green_tint(load_vanilla(zf, "sculk_catalyst_bottom"))
+        side = green_tint(load_vanilla(zf, "sculk_catalyst_side"))
+    for variant, gemize in (("fertile", False), ("rich", True)):
+        name = variant + "_sculk_catalyst"
+        t, b, s = top, bottom, side
+        if gemize:
+            t, b, s = overlay_onto(top, gems), overlay_onto(bottom, gems), overlay_onto(side, gems)
+        save_png(t, name + "_top"); save_png(b, name + "_bottom"); save_png(s, name + "_side")
+        write_json(os.path.join(ASSETS, "blockstates", name + ".json"),
+                   {"variants": {"": {"model": tex(name)}}})
+        write_json(os.path.join(ASSETS, "models", "block", name + ".json"),
+                   {"parent": "minecraft:block/cube_bottom_top",
+                    "textures": {"top": tex(name + "_top"), "bottom": tex(name + "_bottom"),
+                                 "side": tex(name + "_side")}})
+        write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
+                   {"parent": f"{MODID}:block/{name}"})
+        write_loot_self(name)
+        print("generated", name)
 
 if __name__ == "__main__":
     main()

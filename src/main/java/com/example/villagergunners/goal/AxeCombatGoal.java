@@ -25,7 +25,7 @@ import net.minecraft.world.phys.AABB;
  */
 public class AxeCombatGoal extends Goal {
     private static final double SEE_RANGE = 24.0;     // detect hostiles within this
-    private static final double REACH_SQR = 4.0;      // melee reach (~2 blocks)
+    private static final double REACH = 1.2;          // melee reach: gap beyond the body (size-independent)
     private static final float AXE_DAMAGE = 10.0F;    // netherite-axe damage
     private static final int ATTACK_COOLDOWN = 20;    // 1s between swings
     private static final int RETARGET_INTERVAL = 5;
@@ -114,10 +114,24 @@ public class AxeCombatGoal extends Goal {
         villager.getNavigation().moveTo(t, 1.15D);
 
         if (attackCooldown > 0) attackCooldown--;
-        if (villager.distanceToSqr(t) <= REACH_SQR && attackCooldown <= 0) {
+        if (inMeleeReach(t) && attackCooldown <= 0) {
             villager.swing(InteractionHand.MAIN_HAND);
             t.hurt(villager.level().damageSources().mobAttack(villager), AXE_DAMAGE);
             attackCooldown = ATTACK_COOLDOWN;
         }
+    }
+
+    /**
+     * In melee reach if the GAP between the two bounding boxes is within {@link #REACH}. Using box-to-box
+     * distance (not centre-to-centre) is size-independent: a giant scaled emeraldger can still hit a small
+     * target standing at its feet, where a centre-to-centre check would read the big vertical offset as
+     * "too far".
+     */
+    private boolean inMeleeReach(LivingEntity t) {
+        AABB me = villager.getBoundingBox(), other = t.getBoundingBox();
+        double dx = Math.max(0.0, Math.max(me.minX - other.maxX, other.minX - me.maxX));
+        double dy = Math.max(0.0, Math.max(me.minY - other.maxY, other.minY - me.maxY));
+        double dz = Math.max(0.0, Math.max(me.minZ - other.maxZ, other.minZ - me.maxZ));
+        return dx * dx + dy * dy + dz * dz <= REACH * REACH;
     }
 }

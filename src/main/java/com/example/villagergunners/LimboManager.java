@@ -213,6 +213,7 @@ public final class LimboManager {
         if (limbo == null || dest == null) return;
         Entity e = limbo.getEntity(entry.creature);
         if (e == null || !e.isAlive()) return;
+        if (e instanceof net.minecraft.world.entity.LivingEntity le) le.removeAllEffects(); // leave limbo clean of effects
         double x = entry.gravelPos.getX() + 0.5, y = entry.gravelPos.getY(), z = entry.gravelPos.getZ() + 0.5;
         if (e instanceof ServerPlayer sp) {
             sp.teleportTo(dest, x, y, z, sp.getYRot(), sp.getXRot());
@@ -234,7 +235,7 @@ public final class LimboManager {
     private static UUID spawnMarker(ServerLevel origin, BlockPos pos, String name) {
         ArmorStand as = EntityType.ARMOR_STAND.create(origin);
         if (as == null) return null;
-        as.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
+        as.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 0.0F, 0.0F); // float the name ABOVE the block
         as.setInvisible(true);
         as.setSilent(true);
         as.setInvulnerable(true);
@@ -256,7 +257,7 @@ public final class LimboManager {
     private static void moveMarker(ServerLevel origin, UUID marker, BlockPos pos) {
         if (marker == null) return;
         Entity m = origin.getEntity(marker);
-        if (m != null) m.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, m.getYRot(), m.getXRot());
+        if (m != null) m.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, m.getYRot(), m.getXRot());
     }
 
     private static void killMarker(MinecraftServer server, LimboData.Entry entry) {
