@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "APA",
+    "AAA"
+  ],
+  "key": {
+    "A": { "item": "minecraft:arrow" },
+    "P": { "item": "gobacktoyourworld:limbo_potion" }
+  },
+  "result": {
+    "item": "gobacktoyourworld:limbo_arrow",
+    "count": 8
+  }
+}

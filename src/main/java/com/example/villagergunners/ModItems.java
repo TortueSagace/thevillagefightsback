@@ -26,9 +26,15 @@ public final class ModItems {
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
     /** Limbo Potion: drink it to be flung into Limbo (a Limbo-gravel marker is auto-dropped where you stood,
-     *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}. */
+     *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}.
+     *  Leaves a glass bottle when used in crafting (the Limbo Arrow recipe). */
     public static final RegistryObject<Item> LIMBO_POTION =
-            ITEMS.register("limbo_potion", () -> new LimboPotionItem(new Item.Properties().stacksTo(16)));
+            ITEMS.register("limbo_potion", () -> new LimboPotionItem(
+                    new Item.Properties().stacksTo(16).craftRemainder(net.minecraft.world.item.Items.GLASS_BOTTLE)));
+
+    /** Limbo Arrow: a black-tipped arrow that banishes whatever it hits to Limbo ({@link LimboArrowItem}). */
+    public static final RegistryObject<Item> LIMBO_ARROW =
+            ITEMS.register("limbo_arrow", () -> new LimboArrowItem(new Item.Properties()));
 
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =

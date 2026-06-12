@@ -71,6 +71,15 @@ public final class ModEntities {
                     .setShouldReceiveVelocityUpdates(true)
                     .build("rocket"));
 
+    /** Limbo Arrow projectile -- banishes whatever it hits to Limbo. See {@link LimboArrowEntity}. */
+    public static final RegistryObject<EntityType<LimboArrowEntity>> LIMBO_ARROW = ENTITIES.register(
+            "limbo_arrow",
+            () -> EntityType.Builder.<LimboArrowEntity>of(LimboArrowEntity::new, MobCategory.MISC)
+                    .sized(0.5F, 0.5F)
+                    .clientTrackingRange(4)
+                    .updateInterval(20)
+                    .build("limbo_arrow"));
+
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
     }

@@ -283,6 +283,7 @@ public final class ModBlocks {
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(ModItems.LIMBO_POTION.get());
+                output.accept(ModItems.LIMBO_ARROW.get());
             })
             .build());
 

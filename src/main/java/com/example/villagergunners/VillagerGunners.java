@@ -28,6 +28,7 @@ public class VillagerGunners {
         ModPotions.register(modBus);
         ModEntities.register(modBus);
         ModParticles.register(modBus);
+        ModLoot.register(modBus);
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/gobacktoyourworld-common.toml

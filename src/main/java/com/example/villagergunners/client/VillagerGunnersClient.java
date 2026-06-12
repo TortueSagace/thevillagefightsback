@@ -62,6 +62,7 @@ public final class VillagerGunnersClient {
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
+        event.registerEntityRenderer(ModEntities.LIMBO_ARROW.get(), LimboArrowRenderer::new);
     }
 
     @SubscribeEvent
