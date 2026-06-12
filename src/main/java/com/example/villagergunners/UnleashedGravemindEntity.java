@@ -76,6 +76,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     private int killCount;
     private int emergeTicks = EMERGE_TICKS;
     private int glowTicks;              // glow for ~3s after spawning, then stop (0 = not glowing)
+    private boolean reverted;           // true once the 64-kill win has fired (guards against double-revert)
     @Nullable private LivingEntity currentTarget;
     private int greenWaveCd, jumpCd, circularCd, meleeCd, retargetCd, teleportCd;
     private boolean jumping;
@@ -130,7 +131,8 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         if (meleeCd > 0) meleeCd--;
         if (teleportCd > 0) teleportCd--;
 
-        breakBlocksAround(sl);                       // smash through walls it bumps into
+        if ((tickCount & 1) == 0) breakBlocksAround(sl); // smash through walls; every 2 ticks is lossless
+                                                         // (a block sits in the box >2 ticks at the boss's speed)
 
         if (spinTicks > 0) { tickCircular(sl); return; }
         if (jumping) { tickJump(sl); return; }
@@ -175,6 +177,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
             // iron golems, ravagers, the boss-sized -- are caught instead of slipping through.
             if (e.getBoundingBox().inflate(radius).clip(origin, end).isPresent()) {
                 LimboDimension.sendToLimbo(e); // no damage -- banished
+                registerKill();               // a banished creature counts toward the 64-kill win
             }
         }
     }
@@ -205,7 +208,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 0.6F);
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(10.0), this::isHostileTarget)) {
             if (distanceToSqr(e) > 100.0) continue;
-            e.hurt(damageSources().mobAttack(this), 20.0F);
+            e.hurt(damageSources().magic(), 20.0F); // armour-bypassing -> a clean 20 (spec), not ~18 after armour
             EmeraldVirus.infect(e, 0);
             e.setDeltaMovement(e.getDeltaMovement().x, PROPEL_VELOCITY, e.getDeltaMovement().z);
             e.hasImpulse = true;
@@ -338,9 +341,17 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     public void onDirectKill(LivingEntity victim) {
         if (!(level() instanceof ServerLevel sl)) return;
         spawnVindictiveGuard(sl, victim.blockPosition());
+        registerKill();
+    }
+
+    /** Count ONE creature toward the 64-kill win (update the bar; win at the cap). Every way the boss
+     *  removes a creature funnels through here: direct-hit conversion, a Limbo banish, or -- when the
+     *  20-guard cap is full -- a creature that just dies. Guarded so the win fires exactly once. */
+    public void registerKill() {
+        if (reverted) return;
         killCount++;
         bossBar.setName(Component.literal("Village Gravemind, Unleashed  (" + killCount + "/" + KILLS_TO_WIN + ")"));
-        if (killCount >= KILLS_TO_WIN) winAndRevert(sl);
+        if (killCount >= KILLS_TO_WIN && level() instanceof ServerLevel sl) { reverted = true; winAndRevert(sl); }
     }
 
     public int getKillCount() { return killCount; }

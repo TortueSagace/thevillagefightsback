@@ -39,8 +39,11 @@ public class GolemRocketGoal extends Goal {
 
     private static final double ROCKET_SPEED = 2.5;    // blocks/tick: fast, near-straight flight
 
+    private static final int WINDUP_TICKS = 5;         // raise the arm this many ticks before the rocket leaves
+
     private final IronGolem golem;
     private int cooldown;
+    private int windup;                                // >0 while the firing arm is being raised
     private int comboCooldown;
     private int allyScanTick = -1;
     private boolean allyClear;
@@ -137,6 +140,7 @@ public class GolemRocketGoal extends Goal {
     public void stop() {
         golem.getNavigation().stop(); // keep the target so native melee can finish the job
         rising = false;
+        windup = 0;
     }
 
     @Override
@@ -160,12 +164,17 @@ public class GolemRocketGoal extends Goal {
             return;
         }
 
-        // In the firing band: hold ground, aim, fire on cooldown.
+        // In the firing band: hold ground, aim, raise the arm, then fire.
         golem.getNavigation().stop();
         if (cooldown <= 0) {
             GunUtil.aimAt(golem, t);
-            fireRocket(t);
-            cooldown = ROCKET_COOLDOWN;
+            if (windup == 0) {
+                golem.level().broadcastEntityEvent(golem, (byte) 4); // native golem attack anim -> arm lifts
+                windup = WINDUP_TICKS;
+            } else if (--windup == 0) {
+                fireRocket(t);
+                cooldown = ROCKET_COOLDOWN;
+            }
         }
     }
 
@@ -195,6 +204,7 @@ public class GolemRocketGoal extends Goal {
             if (apex && t != null && isValidHostile(t)
                     && golem.getSensing().hasLineOfSight(t) && noAllyNearTarget(t)) {
                 GunUtil.aimAt(golem, t);
+                golem.level().broadcastEntityEvent(golem, (byte) 4); // arm-raise animation
                 fireRocket(t); // fire down at the target from the apex
                 cooldown = ROCKET_COOLDOWN;
             }

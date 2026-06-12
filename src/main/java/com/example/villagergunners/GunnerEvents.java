@@ -232,6 +232,9 @@ public final class GunnerEvents {
         }
         applyGolemArmor(golem);  // gigachad: protection of a full iron set (idempotent; survives reload)
         applyGolemHealth(golem); // gigachad: 200 HP (base 100 + 100)
+        // From now on a rocket-armed golem is a "Gigachad Golem", not an iron golem.
+        golem.setCustomName(net.minecraft.network.chat.Component.literal("Gigachad Golem"));
+        golem.setCustomNameVisible(true);
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));

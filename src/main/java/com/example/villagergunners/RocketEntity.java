@@ -46,6 +46,17 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     @Override
     public void tick() {
         super.tick();
+        if (level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            // Firework-style trail: smoke + sparks, interpolated along this tick's path (it moves fast).
+            net.minecraft.world.phys.Vec3 now = position();
+            net.minecraft.world.phys.Vec3 prev = new net.minecraft.world.phys.Vec3(xOld, yOld, zOld);
+            int steps = 3;
+            for (int i = 1; i <= steps; i++) {
+                net.minecraft.world.phys.Vec3 p = prev.lerp(now, (double) i / steps);
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.02);
+            }
+        }
         if (!level().isClientSide() && tickCount > MAX_LIFETIME) {
             discard();
         }
