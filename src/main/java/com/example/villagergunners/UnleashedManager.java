@@ -137,11 +137,4 @@ public final class UnleashedManager {
         boss.onDirectKill(victim);
         victim.discard();
     }
-
-    /** True if a living Unleashed Gravemind boss is within {@code radius} of {@code pos} in this level.
-     *  Used to shut down the normal gravemind's golem/reinforcement systems while the boss is loose. */
-    public static boolean bossNear(ServerLevel sl, BlockPos pos, double radius) {
-        return !sl.getEntitiesOfClass(UnleashedGravemindEntity.class,
-                new AABB(pos).inflate(radius)).isEmpty();
-    }
 }

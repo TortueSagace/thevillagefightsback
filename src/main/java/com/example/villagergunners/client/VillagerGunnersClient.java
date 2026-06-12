@@ -59,6 +59,8 @@ public final class VillagerGunnersClient {
         // Vindictive guards render as plain zombie villagers (vanilla renderer).
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
                 net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);
+        // Vindictive gigachads: iron golem + rocket launcher + green vines.
+        event.registerEntityRenderer(ModEntities.VINDICTIVE_GIGACHAD.get(), VindictiveGigachadRenderer::new);
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));

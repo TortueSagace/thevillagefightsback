@@ -10,8 +10,10 @@ import net.minecraft.world.entity.Entity;
 public final class Factions {
     private Factions() {}
 
-    /** True for the unleashed gravemind boss and its vindictive guards. */
+    /** True for the unleashed gravemind boss and its minions (vindictive guards + vindictive gigachads). */
     public static boolean isInfected(Entity e) {
-        return e instanceof UnleashedGravemindEntity || e instanceof VindictiveGuardEntity;
+        return e instanceof UnleashedGravemindEntity
+                || e instanceof VindictiveGuardEntity
+                || e instanceof VindictiveGigachadEntity;
     }
 }

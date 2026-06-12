@@ -621,7 +621,6 @@ public final class GravemindEvents {
      * beds, so they always arrive. The spawned mobs auto-arm through the normal entity-join handler.
      */
     private static void reinforceVillage(ServerLevel level, BlockPos pos, int stage) {
-        if (UnleashedManager.bossNear(level, pos, 128.0)) return; // boss loose: the normal gravemind is dormant
         int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
         int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
         int golemsToSpawn = Math.max(0, stage - 2);  // 0 / 0 / 1 / 2

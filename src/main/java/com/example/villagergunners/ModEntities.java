@@ -61,6 +61,15 @@ public final class ModEntities {
                     .clientTrackingRange(12)
                     .build("vindictive_guard"));
 
+    /** The "Vindictive Gigachad": a boss-minion gigachad golem the unleashed gravemind summons ({@link VindictiveGigachadEntity}). */
+    public static final RegistryObject<EntityType<VindictiveGigachadEntity>> VINDICTIVE_GIGACHAD = ENTITIES.register(
+            "vindictive_gigachad",
+            () -> EntityType.Builder.<VindictiveGigachadEntity>of(VindictiveGigachadEntity::new, MobCategory.MONSTER)
+                    .sized(1.4F, 2.7F)             // same hitbox as a vanilla iron golem
+                    .clientTrackingRange(12)
+                    .fireImmune()
+                    .build("vindictive_gigachad"));
+
     /** Native rocket projectile (the golem's JEG-free rocket launcher round). See {@link RocketEntity}. */
     public static final RegistryObject<EntityType<RocketEntity>> ROCKET = ENTITIES.register(
             "rocket",
@@ -91,5 +100,6 @@ public final class ModEntities {
         event.put(GRAVEMIND_WARDEN.get(), Warden.createAttributes().build());
         event.put(UNLEASHED_GRAVEMIND.get(), UnleashedGravemindEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
+        event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
     }
 }

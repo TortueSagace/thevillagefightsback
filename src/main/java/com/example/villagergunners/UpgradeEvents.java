@@ -41,7 +41,6 @@ public final class UpgradeEvents {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
             if (data.econ(gp).getLevel() < REQUIRED_LEVEL) continue; // only this village's defenders, at level 3+
-            if (UnleashedManager.bossNear(level, gp.pos(), 128.0)) continue; // boss loose: no new gigachad golems
             AABB box = new AABB(gp.pos()).inflate(RADIUS);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
                     x -> x.isAlive() && !UpgradeState.isUpgraded(x) && isUpgradable(x))) {
@@ -52,6 +51,7 @@ public final class UpgradeEvents {
     }
 
     private static boolean isUpgradable(LivingEntity e) {
+        if (e instanceof VindictiveGigachadEntity) return false; // boss minion, already fully armed
         if (e instanceof IronGolem golem) return !golem.isPlayerCreated();
         if (e instanceof Villager) return true;
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));

@@ -222,7 +222,7 @@ public final class GunnerEvents {
         guard.goalSelector.addGoal(2, new FlareRallyGoal(guard));
     }
 
-    private static void armGolemFull(IronGolem golem) {
+    static void armGolemFull(IronGolem golem) {
         // Equip our NATIVE rocket launcher so the render layer can show it (and only on upgraded golems).
         // It is a plain item (not a JEG GunItem), so JEG never hijacks the golem; GolemRocketGoal fires our
         // own RocketEntity. The held item also gates the decorative HeldGunLayer (it shows only this item).
@@ -232,8 +232,9 @@ public final class GunnerEvents {
         }
         applyGolemArmor(golem);  // gigachad: protection of a full iron set (idempotent; survives reload)
         applyGolemHealth(golem); // gigachad: 200 HP (base 100 + 100)
-        // From now on a rocket-armed golem is a "Gigachad Golem", not an iron golem.
-        golem.setCustomName(net.minecraft.network.chat.Component.literal("Gigachad Golem"));
+        // From now on a rocket-armed golem is a "Gigachad Golem" -- or a "Vindictive Gigachad" if it's a boss minion.
+        String name = golem instanceof VindictiveGigachadEntity ? "Vindictive Gigachad" : "Gigachad Golem";
+        golem.setCustomName(net.minecraft.network.chat.Component.literal(name));
         golem.setCustomNameVisible(true);
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);

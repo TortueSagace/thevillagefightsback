@@ -77,6 +77,11 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     private int emergeTicks = EMERGE_TICKS;
     private int glowTicks;              // glow for ~3s after spawning, then stop (0 = not glowing)
     private boolean reverted;           // true once the 64-kill win has fired (guards against double-revert)
+    private int golemSummonTimer;       // ticks until a jump's vindictive gigachad spawns (0 = none pending)
+    private BlockPos golemSummonPos;    // where that gigachad spawns (the jump's takeoff spot)
+
+    private static final int GOLEM_SUMMON_DELAY = 12; // 0.6s after a jump -> a vindictive gigachad rises
+    private static final int MAX_GIGACHADS = 5;       // cap on jump-summoned gigachads alive in the boss's reach
     @Nullable private LivingEntity currentTarget;
     private int greenWaveCd, jumpCd, circularCd, meleeCd, retargetCd, teleportCd;
     private boolean jumping;
@@ -117,6 +122,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     protected void customServerAiStep() {
         if (!(level() instanceof ServerLevel sl)) return;
         if (glowTicks > 0) { setGlowingTag(true); if (--glowTicks == 0) setGlowingTag(false); } // ~3s spawn glow
+        if (golemSummonTimer > 0 && --golemSummonTimer == 0) summonGigachad(sl); // a jump's delayed gigachad
         bossBar.setProgress(getHealth() / getMaxHealth());
 
         if (hasPose(Pose.EMERGING) || hasPose(Pose.DIGGING)) { // rise from the ground (invulnerable while doing so)
@@ -137,7 +143,7 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         if (spinTicks > 0) { tickCircular(sl); return; }
         if (jumping) { tickJump(sl); return; }
 
-        if (--retargetCd <= 0) { currentTarget = pickTarget(sl, false); retargetCd = 10; }
+        if (--retargetCd <= 0) { currentTarget = pickTarget(sl, false); retargetCd = 20; } // re-scan ~1s (cheaper)
         LivingEntity t = currentTarget;
         if (t == null || !t.isAlive()) { getNavigation().stop(); return; }
         getLookControl().setLookAt(t, 30.0F, 30.0F);
@@ -193,6 +199,8 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         fallDistance = 0.0F;
         jumping = true;
         jumpWatch = 0;
+        golemSummonPos = blockPosition();          // a vindictive gigachad rises here ~0.6s later
+        golemSummonTimer = GOLEM_SUMMON_DELAY;
         playSound(SoundEvents.WARDEN_ATTACK_IMPACT, 2.0F, 0.6F);
     }
 
@@ -367,6 +375,21 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         sl.sendParticles(ParticleTypes.SCULK_SOUL, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 24, 0.4, 0.6, 0.4, 0.02);
         sl.sendParticles(ParticleTypes.SCULK_CHARGE_POP, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 12, 0.4, 0.6, 0.4, 0.0);
         sl.playSound(null, pos, SoundEvents.SCULK_CATALYST_BLOOM, getSoundSource(), 1.0F, 1.3F);
+    }
+
+    /** Summon a vindictive gigachad at the last jump's takeoff spot, capped at {@value #MAX_GIGACHADS} in reach. */
+    private void summonGigachad(ServerLevel sl) {
+        BlockPos at = golemSummonPos;
+        golemSummonPos = null;
+        if (at == null || reverted) return;
+        if (sl.getEntitiesOfClass(VindictiveGigachadEntity.class, getBoundingBox().inflate(DETECT_RANGE)).size() >= MAX_GIGACHADS) return;
+        VindictiveGigachadEntity g = ModEntities.VINDICTIVE_GIGACHAD.get().create(sl);
+        if (g == null) return;
+        g.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360.0F, 0.0F);
+        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(at), MobSpawnType.MOB_SUMMONED, null, null);
+        sl.addFreshEntity(g);
+        sl.sendParticles(ParticleTypes.SCULK_SOUL, at.getX() + 0.5, at.getY() + 1.0, at.getZ() + 0.5, 24, 0.5, 0.8, 0.5, 0.02);
+        sl.playSound(null, at, SoundEvents.SCULK_CATALYST_BLOOM, getSoundSource(), 1.2F, 0.7F);
     }
 
     private void winAndRevert(ServerLevel sl) {

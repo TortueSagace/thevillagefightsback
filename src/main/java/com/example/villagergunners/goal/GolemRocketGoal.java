@@ -72,10 +72,12 @@ public class GolemRocketGoal extends Goal {
                 SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 1.4F, 0.7F);
     }
 
-    /** A hostile we care about: alive Enemy within detection range. */
+    /** A hostile we care about: alive Enemy within detection range -- or, for a vindictive (boss-minion)
+     *  gigachad, any non-infected creature in range (it rockets players/villagers too). */
     private boolean isValidHostile(LivingEntity t) {
-        return t != null && t.isAlive() && t instanceof Enemy
-                && golem.distanceToSqr(t) <= SEE_RANGE * SEE_RANGE;
+        if (t == null || !t.isAlive() || golem.distanceToSqr(t) > SEE_RANGE * SEE_RANGE) return false;
+        if (t instanceof Enemy) return true;
+        return com.example.villagergunners.Factions.isInfected(golem) && !com.example.villagergunners.Factions.isInfected(t);
     }
 
     /** Can we rocket this target right now (in range band, LOS, no ally near it)? */
@@ -98,6 +100,7 @@ public class GolemRocketGoal extends Goal {
 
     /** The golem "knows" ally positions around the target even without seeing them. Throttled. */
     private boolean noAllyNearTarget(LivingEntity t) {
+        if (com.example.villagergunners.Factions.isInfected(golem)) return true; // a vindictive gigachad spares no one
         int now = golem.tickCount;
         if (allyScanTick < 0 || now - allyScanTick >= ALLY_SCAN_INTERVAL) {
             allyScanTick = now;
