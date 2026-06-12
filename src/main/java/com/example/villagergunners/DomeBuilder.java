@@ -87,15 +87,22 @@ public final class DomeBuilder {
                 top.put(k, H + (int) Math.round(rise * f));
             }
             // Watertight fill: each column drops to its LOWEST orthogonal neighbour's top, so adjacent columns
-            // always share a layer -> no holes (even at diagonal steps), a continuous shell.
+            // always share a layer -> no holes (even at diagonal steps), a continuous shell. AND: any column
+            // that borders a wall column (the dome's rim ring) drops ALL the way to the rim plane H, so the
+            // roof edge is bridged down to the raised wall everywhere -- otherwise the gentle paraboloid only
+            // touches the wall at its single farthest point, leaving an open gap around the whole rim.
+            int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
             for (long k : interior) {
                 int x = kx(k), z = kz(k), yTop = top.get(k);
                 int floorY = yTop;
-                Integer n;
-                if ((n = top.get(key(x + 1, z))) != null) floorY = Math.min(floorY, n);
-                if ((n = top.get(key(x - 1, z))) != null) floorY = Math.min(floorY, n);
-                if ((n = top.get(key(x, z + 1))) != null) floorY = Math.min(floorY, n);
-                if ((n = top.get(key(x, z - 1))) != null) floorY = Math.min(floorY, n);
+                boolean touchesWall = false;
+                for (int[] d : dirs) {
+                    long nk = key(x + d[0], z + d[1]);
+                    Integer n = top.get(nk);
+                    if (n != null) floorY = Math.min(floorY, n);
+                    else if (wallTop.containsKey(nk)) touchesWall = true; // neighbour is a wall column -> on the rim
+                }
+                if (touchesWall) floorY = H;                      // bridge the roof edge down to the wall rim
                 if (floorY < H) floorY = H;                       // never below the rim plane
                 for (int y = floorY; y <= yTop; y++) order.add(place(x, y, z, glass));
             }
