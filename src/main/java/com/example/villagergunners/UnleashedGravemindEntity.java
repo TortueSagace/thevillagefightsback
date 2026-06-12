@@ -162,19 +162,20 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         if (t == null) return;
         Vec3 origin = position().add(0.0, 1.6, 0.0);
         Vec3 dir = t.getEyePosition().subtract(origin).normalize();
-        double range = 48.0;
+        double range = 100.0;
+        double radius = 5.0;                        // twice the old 2.5 -- a fat banishing beam
         for (int i = 1; i < range + 7; i++) {       // the green warden sonic-boom rings, one per block
             Vec3 p = origin.add(dir.scale(i));
             sl.sendParticles(ModParticles.GREEN_SONIC_BOOM.get(), p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
         playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 1.3F);
         Vec3 end = origin.add(dir.scale(range));
-        for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, new AABB(origin, end).inflate(2.5), this::isHostileTarget)) {
-            Vec3 c = e.position().add(0.0, e.getBbHeight() * 0.5, 0.0);
-            double along = c.subtract(origin).dot(dir);
-            if (along < 0 || along > range) continue;
-            if (origin.add(dir.scale(along)).distanceTo(c) > 2.5) continue;
-            LimboDimension.sendToLimbo(e); // no damage -- banished
+        for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, new AABB(origin, end).inflate(radius), this::isHostileTarget)) {
+            // Test the mob's WHOLE hitbox against the beam (not just its centre point) so big/tall mobs --
+            // iron golems, ravagers, the boss-sized -- are caught instead of slipping through.
+            if (e.getBoundingBox().inflate(radius).clip(origin, end).isPresent()) {
+                LimboDimension.sendToLimbo(e); // no damage -- banished
+            }
         }
     }
 

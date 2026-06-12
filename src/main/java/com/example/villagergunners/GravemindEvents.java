@@ -432,8 +432,11 @@ public final class GravemindEvents {
                 }
             }
         }
-        if (pts.size() >= WallPlanner.MIN_BEDS) return pts;
-        return collectBeds(level, center); // sparse-cobblestone village -> fall back to beds
+        List<BlockPos> result = pts.size() >= WallPlanner.MIN_BEDS ? pts : collectBeds(level, center);
+        // The Gravemind block itself must always sit INSIDE the wall envelope -- it isn't "village material",
+        // so nothing else marks its column. Add its (x,z) so the footprint is always grown to enclose it.
+        result.add(new BlockPos(center.getX(), 0, center.getZ()));
+        return result;
     }
 
     /** Forget a gravemind's survey back-off (called when it's removed, so a replacement re-surveys at once). */
@@ -517,15 +520,12 @@ public final class GravemindEvents {
         GlobalPos key = GlobalPos.of(level.dimension(), bell.immutable());
         if (data.isServiced(key)) return;
 
-        // Preferred: the block directly under the bell (the pedestal). A full solid gravemind still
-        // supports the floor-standing bell, so the bell stays. Fall back to a nearby ground spot only
-        // when that block is air/bedrock (e.g. a wall-mounted bell over a gap).
-        BlockPos under = bell.below();
-        BlockState underState = level.getBlockState(under);
-        boolean replaceable = !underState.isAir()
-                && !underState.is(ModBlocks.VILLAGE_GRAVEMIND.get())
-                && underState.getDestroySpeed(level, under) >= 0; // not bedrock/unbreakable
-        BlockPos spot = replaceable ? under : findGravemindSpot(level, bell);
+        // The gravemind takes the bell's place DIRECTLY: it replaces the bell block, so a village shows a
+        // gravemind at its heart instead of a bell. If the bell is wall/ceiling-mounted (nothing solid below
+        // -> the gravemind would float), fall back to the nearest open ground spot instead.
+        BlockPos spot = level.getBlockState(bell.below()).isFaceSturdy(level, bell.below(), Direction.UP)
+                ? bell.immutable()
+                : findGravemindSpot(level, bell);
         if (spot == null) return; // no good spot yet; retry next scan
 
         // One gravemind per area: skip if another already exists within 100 blocks (overlapping
