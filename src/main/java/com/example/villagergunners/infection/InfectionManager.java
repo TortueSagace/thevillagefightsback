@@ -427,10 +427,15 @@ public final class InfectionManager {
                         lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.OPEN))
                 .setValue(net.minecraft.world.level.block.DoorBlock.POWERED,
                         lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.POWERED));
+        // Place BOTH halves with UPDATE_KNOWN_SHAPE so the door's shape self-validation never runs mid-swap:
+        // with plain flag 3, setting the lower while the old (oak) upper is still there makes the door logic
+        // break the mismatched neighbour, cascading into a lone half-door that villagers can't open.
+        int flag = net.minecraft.world.level.block.Block.UPDATE_CLIENTS
+                | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE;
         level.setBlock(lower, fd.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
-                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 3);
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), flag);
         level.setBlock(lower.above(), fd.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
-                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 3);
+                net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), flag);
     }
 
     /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias) that is
