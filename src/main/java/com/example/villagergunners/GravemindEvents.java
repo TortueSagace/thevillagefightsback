@@ -98,6 +98,11 @@ public final class GravemindEvents {
                 if (e.distanceToSqr(center) > r2) continue;
                 // ambient=false, showParticles=false, showIcon=false -> a silent, particle-free shield.
                 e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY.get(), 200, 0, false, false, false));
+                // Also clear any harmful effect already on it (GunnerEvents blocks NEW ones from landing).
+                List<net.minecraft.world.effect.MobEffect> bad = e.getActiveEffects().stream()
+                        .filter(i -> i.getEffect().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
+                        .map(MobEffectInstance::getEffect).toList();
+                bad.forEach(e::removeEffect);
             }
         }
     }

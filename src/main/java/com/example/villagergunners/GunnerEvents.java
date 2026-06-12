@@ -372,6 +372,17 @@ public final class GunnerEvents {
         }
     }
 
+    /** Immunity also blocks every HARMFUL status effect (poison, wither, slowness, the emerald virus, ...)
+     *  from ever landing on the holder. Beneficial effects (incl. Immunity itself) are unaffected. */
+    @SubscribeEvent
+    public static void onImmunityEffect(net.minecraftforge.event.entity.living.MobEffectEvent.Applicable event) {
+        if (event.getEffectInstance().getEffect().getCategory()
+                    == net.minecraft.world.effect.MobEffectCategory.HARMFUL
+                && event.getEntity().hasEffect(ModEffects.IMMUNITY.get())) {
+            event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+        }
+    }
+
     /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
