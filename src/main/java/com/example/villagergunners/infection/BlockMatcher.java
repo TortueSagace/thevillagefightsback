@@ -154,6 +154,7 @@ public final class BlockMatcher {
         if (b instanceof net.minecraft.world.level.block.ChestBlock
                 || b instanceof net.minecraft.world.level.block.EnderChestBlock
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
+        if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
         // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
         if (b == Blocks.HAY_BLOCK
                 || b instanceof net.minecraft.world.level.block.CropBlock
