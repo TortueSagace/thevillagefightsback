@@ -28,6 +28,7 @@ public class VillagerGunners {
         ModPotions.register(modBus);
         ModEntities.register(modBus);
         ModParticles.register(modBus);
+        ModSounds.register(modBus);
         ModLoot.register(modBus);
         modBus.addListener(this::commonSetup); // brewing recipes (must be added off the main init thread)
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel

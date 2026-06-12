@@ -1,7 +1,6 @@
 package com.example.villagergunners;
 
 import net.minecraft.core.GlobalPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -11,7 +10,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -29,8 +27,7 @@ public class WallDefenderEntity extends Mob {
     private static final double RANGE = 24.0;
     private static final int FIRE_INTERVAL = 20;     // one bullet per second (pre-stage-4 revolver)
     private static final int RETARGET_INTERVAL = 10; // re-scan for a target only every 0.5s (the heavy part)
-    private static final ResourceLocation GUN_ID = new ResourceLocation("jeg", "revolver"); // base dmg 5
-    private static final float GUN_BONUS_DAMAGE = 5.0F; // + base 5 = ~10 damage per shot
+    private static final float REVOLVER_DAMAGE = 10.0F; // jeg revolver base 5 + our +5 bonus = ~10 per shot
 
     // Stage 4: the defender fires our native rocket (the same RocketEntity the iron golems use), NOT a JEG
     // bullet. Rockets only fly beyond MIN_ROCKET_RANGE so the radius-5 blast can never reach our own glass
@@ -40,7 +37,6 @@ public class WallDefenderEntity extends Mob {
     private static final double MIN_ROCKET_RANGE = 8.0; // > blast radius (+ shell clearance) -> never self-blast
     private static final double ROCKET_SPEED = 2.5;   // blocks/tick: fast, near-straight flight (matches golems)
 
-    private static ItemStack gun; // lazily built once JEG's item registry is available
     private int fireCooldown;
     private int retargetCooldown;
     private boolean rocketMode;   // our village is at stage 4 -> fire rockets (refreshed on each re-target)
@@ -58,11 +54,6 @@ public class WallDefenderEntity extends Mob {
                 .add(Attributes.MOVEMENT_SPEED, 0.0)
                 .add(Attributes.FOLLOW_RANGE, RANGE)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
-    }
-
-    private static ItemStack gun() {
-        if (gun == null) gun = GunUtil.makeGun(GUN_ID, GUN_BONUS_DAMAGE);
-        return gun;
     }
 
     @Override
@@ -95,8 +86,8 @@ public class WallDefenderEntity extends Mob {
         if (rocketMode && distanceToSqr(cachedTarget) >= MIN_ROCKET_RANGE * MIN_ROCKET_RANGE) {
             fireRocket(cachedTarget);
             fireCooldown = ROCKET_INTERVAL;
-        } else if (!gun().isEmpty()) {
-            GunUtil.fire(this, cachedTarget, gun(), 0.0F);  // real JEG bullet, perfect precision
+        } else {
+            BulletEntity.fire(this, cachedTarget, REVOLVER_DAMAGE); // our native bullet (JEG-free), perfect precision
             fireCooldown = FIRE_INTERVAL;
         }
     }
