@@ -321,7 +321,15 @@ public final class ModBlocks {
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(ModItems.LIMBO_POTION.get());
-                output.accept(ModItems.LIMBO_ARROW.get());
+                output.accept(ModItems.VOLATILE_LIMBO_POTION.get());
+                output.accept(ModItems.LIMBO_MEMBRANE.get());
+                output.accept(ModItems.LIMBO_INGOT.get());
+                output.accept(ModItems.LIMBO_SMITHING_TEMPLATE.get());
+                output.accept(ModArmor.LIMBO_HELMET.get());
+                output.accept(ModArmor.LIMBO_CHESTPLATE.get());
+                output.accept(ModArmor.LIMBO_LEGGINGS.get());
+                output.accept(ModArmor.LIMBO_BOOTS.get());
+                output.accept(ModItems.LIMBO_PICKAXE.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
             })
             .build());

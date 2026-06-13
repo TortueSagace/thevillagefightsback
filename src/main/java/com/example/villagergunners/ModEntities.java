@@ -99,14 +99,15 @@ public final class ModEntities {
                     .fireImmune()
                     .build("bullet"));
 
-    /** Limbo Arrow projectile -- banishes whatever it hits to Limbo. See {@link LimboArrowEntity}. */
-    public static final RegistryObject<EntityType<LimboArrowEntity>> LIMBO_ARROW = ENTITIES.register(
-            "limbo_arrow",
-            () -> EntityType.Builder.<LimboArrowEntity>of(LimboArrowEntity::new, MobCategory.MISC)
-                    .sized(0.5F, 0.5F)
+    /** Volatile Limbo Potion projectile -- thrown; bursts and banishes nearby creatures to Limbo. See
+     *  {@link VolatileLimboPotionEntity}. */
+    public static final RegistryObject<EntityType<VolatileLimboPotionEntity>> VOLATILE_LIMBO_POTION = ENTITIES.register(
+            "volatile_limbo_potion",
+            () -> EntityType.Builder.<VolatileLimboPotionEntity>of(VolatileLimboPotionEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
                     .clientTrackingRange(4)
-                    .updateInterval(20)
-                    .build("limbo_arrow"));
+                    .updateInterval(10)
+                    .build("volatile_limbo_potion"));
 
     /** Fire Grenade projectile -- a throwable fire bomb (native molotov replacement). See {@link FireGrenadeEntity}. */
     public static final RegistryObject<EntityType<FireGrenadeEntity>> FIRE_GRENADE = ENTITIES.register(

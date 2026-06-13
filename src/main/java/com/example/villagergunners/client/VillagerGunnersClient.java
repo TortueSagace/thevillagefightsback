@@ -68,7 +68,9 @@ public final class VillagerGunnersClient {
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
-        event.registerEntityRenderer(ModEntities.LIMBO_ARROW.get(), LimboArrowRenderer::new);
+        // Thrown volatile limbo potion: billboard its item sprite as it flies.
+        event.registerEntityRenderer(ModEntities.VOLATILE_LIMBO_POTION.get(),
+                ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
         event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
         // The bullet is invisible; its yellow particle tracer is the visual.
         event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);

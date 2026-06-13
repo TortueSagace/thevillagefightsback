@@ -26,15 +26,31 @@ public final class ModItems {
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
     /** Limbo Potion: drink it to be flung into Limbo (a Limbo-gravel marker is auto-dropped where you stood,
-     *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}.
-     *  Leaves a glass bottle when used in crafting (the Limbo Arrow recipe). */
+     *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}. */
     public static final RegistryObject<Item> LIMBO_POTION =
             ITEMS.register("limbo_potion", () -> new LimboPotionItem(
                     new Item.Properties().stacksTo(16).craftRemainder(net.minecraft.world.item.Items.GLASS_BOTTLE)));
 
-    /** Limbo Arrow: a black-tipped arrow that banishes whatever it hits to Limbo ({@link LimboArrowItem}). */
-    public static final RegistryObject<Item> LIMBO_ARROW =
-            ITEMS.register("limbo_arrow", () -> new LimboArrowItem(new Item.Properties()));
+    /** Volatile Limbo Potion: a THROWN (not lingering) limbo potion that bursts and banishes everyone in the
+     *  blast to Limbo ({@link VolatileLimboPotionItem}). The area-weapon counterpart of the drinkable potion. */
+    public static final RegistryObject<Item> VOLATILE_LIMBO_POTION =
+            ITEMS.register("volatile_limbo_potion", () -> new VolatileLimboPotionItem(
+                    new Item.Properties().stacksTo(16)));
+
+    /** Limbo Membrane: a black, faintly green-glowing phantom membrane dropped by the Limbo Phantom. Eight of
+     *  them + an Emerald Apple craft a Limbo Ingot. */
+    public static final RegistryObject<Item> LIMBO_MEMBRANE =
+            ITEMS.register("limbo_membrane", () -> new Item(new Item.Properties()));
+
+    /** Limbo Ingot: crafted from 8 Limbo Membrane + 1 Emerald Apple. The "addition" that smiths netherite gear
+     *  into Limbo gear, and the repair material for the set. */
+    public static final RegistryObject<Item> LIMBO_INGOT =
+            ITEMS.register("limbo_ingot", () -> new Item(new Item.Properties().fireResistant()));
+
+    /** Limbo Smithing Template: a rare (1%) village-chest find. Together with a Limbo Ingot it upgrades a
+     *  netherite piece into Limbo gear at a smithing table. */
+    public static final RegistryObject<Item> LIMBO_SMITHING_TEMPLATE =
+            ITEMS.register("limbo_smithing_template", () -> new Item(new Item.Properties()));
 
     /** Emerald Virus Arrow: a green arrow that infects whatever it hits ({@link EmeraldVirusArrowItem}).
      *  Crafted from 8 arrows + a (regular) Potion of Emerald Virus. */
@@ -66,6 +82,11 @@ public final class ModItems {
             () -> new net.minecraft.world.item.ShovelItem(EmeraldTier.INSTANCE, 1.5F, -3.0F, new Item.Properties()));
     public static final RegistryObject<Item> EMERALD_HOE = ITEMS.register("emerald_hoe",
             () -> new net.minecraft.world.item.HoeItem(EmeraldTier.INSTANCE, -2, -1.0F, new Item.Properties()));
+
+    /** Limbo Pickaxe: a netherite-grade pick (smithed) that also smashes bedrock + reinforced deepslate
+     *  ({@link LimboPickaxeItem} / {@link LimboPickaxeEvents}). */
+    public static final RegistryObject<Item> LIMBO_PICKAXE = ITEMS.register("limbo_pickaxe",
+            () -> new LimboPickaxeItem(new Item.Properties().fireResistant()));
 
     /** The emerald tools, in tab order. */
     public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(

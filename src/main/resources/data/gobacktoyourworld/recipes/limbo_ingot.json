@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:limbo_membrane"
+    },
+    {
+      "item": "gobacktoyourworld:emerald_apple"
+    }
+  ],
+  "result": {
+    "item": "gobacktoyourworld:limbo_ingot",
+    "count": 1
+  }
+}
