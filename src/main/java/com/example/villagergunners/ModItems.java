@@ -99,13 +99,21 @@ public final class ModItems {
     // --- The rest of the Limbo tool set: smithed from netherite, more efficient than netherite
     //     (LimboToolTier: speed 10 vs 9, 2500 vs 2031 uses). ---
     public static final RegistryObject<Item> LIMBO_SWORD = ITEMS.register("limbo_sword",
-            () -> new net.minecraft.world.item.SwordItem(LimboToolTier.INSTANCE, 4, -2.4F, new Item.Properties().fireResistant())); // +1 dmg vs netherite
+            () -> new net.minecraft.world.item.SwordItem(LimboToolTier.INSTANCE, 4, -2.4F, new Item.Properties().fireResistant()) { // +1 dmg vs netherite
+                @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+            });
     public static final RegistryObject<Item> LIMBO_AXE = ITEMS.register("limbo_axe",
-            () -> new net.minecraft.world.item.AxeItem(LimboToolTier.INSTANCE, 5.0F, -3.0F, new Item.Properties().fireResistant()));
+            () -> new net.minecraft.world.item.AxeItem(LimboToolTier.INSTANCE, 5.0F, -3.0F, new Item.Properties().fireResistant()) {
+                @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+            });
     public static final RegistryObject<Item> LIMBO_SHOVEL = ITEMS.register("limbo_shovel",
-            () -> new net.minecraft.world.item.ShovelItem(LimboToolTier.INSTANCE, 1.5F, -3.0F, new Item.Properties().fireResistant()));
+            () -> new net.minecraft.world.item.ShovelItem(LimboToolTier.INSTANCE, 1.5F, -3.0F, new Item.Properties().fireResistant()) {
+                @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+            });
     public static final RegistryObject<Item> LIMBO_HOE = ITEMS.register("limbo_hoe",
-            () -> new net.minecraft.world.item.HoeItem(LimboToolTier.INSTANCE, -4, 0.0F, new Item.Properties().fireResistant()));
+            () -> new net.minecraft.world.item.HoeItem(LimboToolTier.INSTANCE, -4, 0.0F, new Item.Properties().fireResistant()) {
+                @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+            });
 
     /** Forgotten Powder: dropped by Forgotten Glowstone (like glowstone dust). Four craft the block back. */
     public static final RegistryObject<Item> FORGOTTEN_POWDER =

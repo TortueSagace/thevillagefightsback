@@ -89,6 +89,7 @@ public class LimboEggBlock extends FallingBlock {
         if (phantom != null) {
             phantom.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
             phantom.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+            phantom.setPersistenceRequired(); // hatched in a cube -> stays put
             level.addFreshEntity(phantom);
         }
         level.sendParticles(ParticleTypes.SOUL, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,

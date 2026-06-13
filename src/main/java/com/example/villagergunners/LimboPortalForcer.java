@@ -34,15 +34,33 @@ public final class LimboPortalForcer {
     public static void teleport(Entity entity, ServerLevel from) {
         MinecraftServer server = from.getServer();
         if (server == null) return;
-        boolean toLimbo = !LimboDimension.LIMBO.equals(from.dimension());
-        ServerLevel dest = server.getLevel(toLimbo ? LimboDimension.LIMBO : Level.OVERWORLD);
+        boolean inLimbo = LimboDimension.LIMBO.equals(from.dimension());
+        boolean destIsLimbo = !inLimbo;
+
+        ServerLevel dest;
+        int tx, tz;
+        if (!inLimbo) {
+            // Entering Limbo: compress 16x.
+            dest = server.getLevel(LimboDimension.LIMBO);
+            tx = (int) Math.floor(entity.getX() / 16.0);
+            tz = (int) Math.floor(entity.getZ() / 16.0);
+        } else {
+            // Leaving Limbo: a portal in a nether-drift chunk returns to the nether (at the twin spot);
+            // otherwise back to the overworld (de-compressed 16x).
+            int cx = entity.blockPosition().getX() >> 4, cz = entity.blockPosition().getZ() >> 4;
+            if (LimboDrift.type(from.getSeed(), cx, cz) == LimboDrift.Type.NETHER) {
+                dest = server.getLevel(Level.NETHER);
+                tx = ((cx >> 3) << 4) + (entity.blockPosition().getX() & 15);
+                tz = ((cz >> 3) << 4) + (entity.blockPosition().getZ() & 15);
+            } else {
+                dest = server.getLevel(Level.OVERWORLD);
+                tx = (int) Math.floor(entity.getX() * 16.0);
+                tz = (int) Math.floor(entity.getZ() * 16.0);
+            }
+        }
         if (dest == null) return;
 
-        double scale = toLimbo ? (1.0 / 16.0) : 16.0;
-        int tx = (int) Math.floor(entity.getX() * scale);
-        int tz = (int) Math.floor(entity.getZ() * scale);
-
-        BlockPos stand = findOrBuildPortal(dest, tx, tz, toLimbo);
+        BlockPos stand = findOrBuildPortal(dest, tx, tz, destIsLimbo);
         double x = stand.getX() + 0.5, y = stand.getY(), z = stand.getZ() + 0.5;
 
         if (entity instanceof ServerPlayer player) {

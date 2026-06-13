@@ -66,7 +66,8 @@ public class LimboPortalBlock extends Block {
         if (DWELL.size() > 128) DWELL.values().removeIf(e -> now - e[0] > 100); // prune entities that wandered off
         DWELL.put(id, new long[]{now, count});
 
-        int needed = entity instanceof Player ? 40 : 1; // players must dwell ~2s; mobs/items go at once
+        // Survival players must dwell ~2s; creative players + mobs/items go through at once.
+        int needed = (entity instanceof Player p && !p.getAbilities().instabuild) ? 40 : 1;
         if (count >= needed) {
             DWELL.remove(id);
             entity.setPortalCooldown();

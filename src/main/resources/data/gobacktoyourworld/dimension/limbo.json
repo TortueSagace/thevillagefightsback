@@ -3,11 +3,14 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:basalt_deltas",
+      "biome": "gobacktoyourworld:limbo",
       "lakes": false,
       "features": false,
       "layers": [
-        { "height": 1, "block": "minecraft:air" }
+        {
+          "height": 1,
+          "block": "minecraft:air"
+        }
       ],
       "structure_overrides": []
     }

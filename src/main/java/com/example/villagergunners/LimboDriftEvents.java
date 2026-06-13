@@ -41,8 +41,6 @@ public final class LimboDriftEvents {
 
     private static final int BUDGET = 4;             // sections copied per tick (16,384 blocks max)
     private static final int SECTIONS = 24;          // 384-high Limbo / 16
-    private static final int REFRESH_INTERVAL = 200; // ~10s: re-copy twin->limbo to catch fluids/fire/crops
-    private static int refreshTimer = 0;
 
     private static String twinKey(ResourceKey<Level> dim, ChunkPos cp) {
         return dim.location() + "|" + cp.toLong();
@@ -89,10 +87,9 @@ public final class LimboDriftEvents {
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null) return;
 
-        if (++refreshTimer >= REFRESH_INTERVAL) {
-            refreshTimer = 0;
-            for (Long key : LINKS.keySet()) enqueue(key); // periodic twin->limbo refresh
-        }
+        // NOTE: no periodic twin->limbo re-copy. Re-copying + resending overwrote player edits (a broken block
+        // would reappear / go invisible-but-solid). Player break/place still crosses both ways via the event
+        // mirror below; only the one-time activation copy fills a chunk.
         if (QUEUE.isEmpty()) return;
 
         long _p = ModProfiler.now();

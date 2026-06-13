@@ -27,13 +27,13 @@ public final class ModArmor {
     //     netherite, full knockback immunity (material), and -- as a worn SET -- the bonuses in LimboGearEvents.
     //     Pieces are fireResistant() so they survive lava like netherite. ---
     public static final RegistryObject<Item> LIMBO_HELMET = ITEMS.register("limbo_helmet",
-            () -> new ArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_CHESTPLATE = ITEMS.register("limbo_chestplate",
-            () -> new ArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_LEGGINGS = ITEMS.register("limbo_leggings",
-            () -> new ArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_BOOTS = ITEMS.register("limbo_boots",
-            () -> new ArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant()));
 
     /** Call from the mod constructor. */
     public static void register(IEventBus modBus) {

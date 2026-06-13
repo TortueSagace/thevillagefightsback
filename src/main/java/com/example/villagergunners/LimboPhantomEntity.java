@@ -38,7 +38,8 @@ public class LimboPhantomEntity extends Phantom {
 
     public LimboPhantomEntity(EntityType<? extends Phantom> type, Level level) {
         super(type, level);
-        setPersistenceRequired(); // hatched in a cube -> don't despawn
+        // NOT persistent by default: naturally-spawned phantoms despawn when players leave. Egg-hatched ones
+        // are made persistent in LimboEggBlock so a cube keeps its phantom.
         this.xpReward = 12;
     }
 

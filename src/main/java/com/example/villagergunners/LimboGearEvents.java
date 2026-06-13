@@ -5,8 +5,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -36,31 +34,16 @@ public final class LimboGearEvents {
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof ServerPlayer sp) || !(sp.level() instanceof ServerLevel sl)) return;
+        if (!(event.player instanceof ServerPlayer sp) || sp.level().isClientSide()) return;
 
-        int pieces = LimboGear.wornCount(sp);
-        boolean full = pieces >= 4;
+        boolean full = LimboGear.wornCount(sp) >= 4;
 
         // Track set completion -> push the cooldown to the client so the HUD is correct the instant it appears.
+        // (The "shine" is the gear's own animated/foil look, NOT particles around the player.)
         if (full) {
             if (FULL_SET.add(sp.getUUID())) LimboAbility.syncOnEquip(sp);
         } else {
             FULL_SET.remove(sp.getUUID());
-        }
-
-        // Green shimmer (worn armour, denser with more pieces)...
-        if ((sp.tickCount & 1) == 0) {
-            if (pieces > 0) {
-                sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                        sp.getX(), sp.getY() + sp.getBbHeight() * 0.5, sp.getZ(),
-                        1 + pieces, sp.getBbWidth() * 0.55, sp.getBbHeight() * 0.55, sp.getBbWidth() * 0.55, 0.0);
-            }
-            if (sp.getMainHandItem().is(ModItems.LIMBO_PICKAXE.get())
-                    || sp.getOffhandItem().is(ModItems.LIMBO_PICKAXE.get())) {
-                sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                        sp.getX(), sp.getY() + sp.getBbHeight() * 0.7, sp.getZ(),
-                        1, sp.getBbWidth() * 0.5, 0.3, sp.getBbWidth() * 0.5, 0.0);
-            }
         }
 
         if (full) {

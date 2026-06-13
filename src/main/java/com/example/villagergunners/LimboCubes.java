@@ -16,7 +16,7 @@ public final class LimboCubes {
     private LimboCubes() {}
 
     /** ~1 in this many chunks originates a cube. */
-    private static final int RARITY = 16;
+    private static final int RARITY = 9;
     private static final int MIN_SIZE = 5, MAX_SIZE = 15; // <=16 so a cube fits inside its origin chunk
     private static final int MIN_Y = 24, MAX_Y = 232;
     /** Fraction of shell blocks swapped for Forgotten Glowstone. */
