@@ -284,6 +284,7 @@ public final class ModBlocks {
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
+                output.accept(ModItems.FIRE_GRENADE.get());
                 // Emerald gear (built from emeralds; stats between iron and diamond) -- in OUR tab.
                 output.accept(ModArmor.EMERALD_HELMET.get());
                 output.accept(ModArmor.EMERALD_CHESTPLATE.get());

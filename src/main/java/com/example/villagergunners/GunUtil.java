@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -18,33 +17,17 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import ttv.migami.jeg.common.Gun;
-import ttv.migami.jeg.entity.ai.AIGunEvent;
-import ttv.migami.jeg.entity.throwable.ThrowableGrenadeEntity;
-import ttv.migami.jeg.item.GunItem;
-
-/** Helpers for handing out JEG guns, firing them from mobs, and finding hostiles. */
+/** Helpers for aiming mobs, finding hostiles, and a few soft-dependency integrations. (No longer touches JEG.) */
 public final class GunUtil {
     private GunUtil() {}
 
-    public static final ResourceLocation REVOLVER = new ResourceLocation("jeg", "revolver");
-    public static final ResourceLocation MINIGUN = new ResourceLocation("jeg", "minigun");
-    public static final ResourceLocation FLAMETHROWER = new ResourceLocation("jeg", "flamethrower");
-    public static final ResourceLocation ROCKET_LAUNCHER = new ResourceLocation("jeg", "rocket_launcher");
-    public static final ResourceLocation FLARE_GUN = new ResourceLocation("jeg", "flare_gun");
-
     // Soft integration with Mace Combat Backport (mace_port): its wind charge.
     public static final ResourceLocation WIND_CHARGE = new ResourceLocation("mace_port", "wind_charge");
-
-    // JEG's throwable fragmentation grenade -- summoned (not recreated) when a defender is desperate.
-    public static final ResourceLocation GRENADE = new ResourceLocation("jeg", "grenade");
 
     // From Another World mod namespace. FAW is NOT a dependency, so its "infection" blocks (assimilated/
     // "converted" sculk, gore, tentacles, ...) are matched by namespace string rather than class.
@@ -53,84 +36,13 @@ public final class GunUtil {
     // Fixed UUID so re-applying the follow-range boost on world reload is idempotent.
     private static final UUID FOLLOW_RANGE_BOOST_UUID = UUID.fromString("c0ffee00-0000-4000-8000-000000000001");
 
-    /** Build a JEG gun ItemStack by registry id. Returns EMPTY if the item is missing. */
-    public static ItemStack makeGun(ResourceLocation id) {
-        Item item = ForgeRegistries.ITEMS.getValue(id);
-        return item == null ? ItemStack.EMPTY : new ItemStack(item);
-    }
-
     /**
-     * Build a JEG gun ItemStack with bonus damage. JEG's performGunAttack adds the stack's
-     * "AdditionalDamage" NBT to the projectile's base damage, so this makes the gun hit harder
-     * (and partly offsets damage-over-life falloff on guns like the minigun).
-     */
-    public static ItemStack makeGun(ResourceLocation id, float additionalDamage) {
-        ItemStack stack = makeGun(id);
-        if (!stack.isEmpty() && additionalDamage != 0.0F) {
-            stack.getOrCreateTag().putFloat("AdditionalDamage", additionalDamage);
-        }
-        return stack;
-    }
-
-    /** A gun's base per-projectile damage from its JEG data, or {@code fallback}. */
-    public static float projectileDamage(ItemStack gunStack, float fallback) {
-        if (gunStack.getItem() instanceof GunItem gunItem) {
-            Gun gun = gunItem.getModifiedGun(gunStack);
-            if (gun != null && gun.getProjectile() != null) {
-                return gun.getProjectile().getDamage();
-            }
-        }
-        return fallback;
-    }
-
-    /**
-     * Build a JEG gun whose projectile does EXACTLY {@code flatDamage} per shot, by setting AdditionalDamage
-     * to (flatDamage - the gun's base projectile damage). JEG adds AdditionalDamage to the base, so the two
-     * sum to flatDamage. Used to nerf a gun to a fixed value regardless of its data-driven base damage.
-     */
-    public static ItemStack makeGunFlatDamage(ResourceLocation id, float flatDamage) {
-        ItemStack stack = makeGun(id);
-        if (stack.isEmpty()) return stack;
-        float add = flatDamage - projectileDamage(stack, flatDamage);
-        if (add != 0.0F) stack.getOrCreateTag().putFloat("AdditionalDamage", add);
-        return stack;
-    }
-
-    /**
-     * Snap the shooter to face the target. JEG's getDirection() builds the shot from the entity's
-     * own rotation (getXRot/getYRot), NOT a straight line to the target -- and a mob's body yaw lags
-     * its head when turning. So we must orient the entity at the target right before firing, or it
-     * shoots wherever its body happens to face (the "aims badly" symptom).
+     * Snap the shooter to face the target's centre of mass, so a subsequent straight-line shot (e.g. our
+     * native rocket/bullet, which is aimed by hand) lines up with where the turret is visibly looking.
      */
     public static void aimAt(Mob shooter, LivingEntity target) {
-        // Aim the shooter's eyes at the target's centre of mass (robust hit point). With spread 0 the
-        // projectile then flies dead-straight along this rotation.
         shooter.lookAt(EntityAnchorArgument.Anchor.EYES, target.getBoundingBox().getCenter());
         shooter.setYHeadRot(shooter.getYRot()); // align head to body so the aim vector is consistent
-    }
-
-    /**
-     * Fire a JEG gun at a target, server-side. Spawns the projectile(s) via JEG's own firing
-     * primitive and plays the gun's fire sound. No ammo is required or consumed.
-     *
-     * NOTE: call {@link #aimAt} first -- this does not aim, it just fires along the entity's facing.
-     */
-    public static void fire(Mob shooter, LivingEntity target, ItemStack gunStack, float spread) {
-        Level level = shooter.level();
-        if (level.isClientSide()) return;
-        if (!(gunStack.getItem() instanceof GunItem gunItem)) return;
-        Gun gun = gunItem.getModifiedGun(gunStack);
-        if (gun == null) return;
-
-        AIGunEvent.performGunAttack(shooter, target, gunStack, gun, spread);
-
-        ResourceLocation fireSound = gun.getSounds() != null ? gun.getSounds().getFire() : null;
-        if (fireSound != null) {
-            level.playSound(null,
-                    shooter.getX(), shooter.getY() + shooter.getEyeHeight(), shooter.getZ(),
-                    SoundEvent.createVariableRangeEvent(fireSound),
-                    SoundSource.HOSTILE, 1.0F, 0.9F + level.getRandom().nextFloat() * 0.2F);
-        }
     }
 
     /** True if Mace Combat Backport's wind charge is present (soft dependency). */
@@ -153,47 +65,6 @@ public final class GunUtil {
         proj.shootFromRotation(shooter, 90.0F, shooter.getYRot(), 0.0F, 1.5F, 0.0F); // 90 pitch = straight down
         shooter.level().addFreshEntity(proj);
         return true;
-    }
-
-    /**
-     * Fire a JEG flare gun straight up above the shooter's head (a reinforcement signal). Returns true
-     * if fired. JEG derives a generic mob's shot direction from its rotation, so we pitch the shooter
-     * straight up for the shot and restore its rotation afterwards.
-     */
-    public static boolean fireFlareUp(Mob shooter) {
-        Level level = shooter.level();
-        if (level.isClientSide()) return false;
-        ItemStack flareGun = makeGun(FLARE_GUN);
-        if (!(flareGun.getItem() instanceof GunItem gunItem)) return false;
-        Gun gun = gunItem.getModifiedGun(flareGun);
-        if (gun == null) return false;
-
-        LivingEntity aimTarget = shooter.getTarget() != null ? shooter.getTarget() : shooter;
-        float oldXRot = shooter.getXRot();
-        float oldYRot = shooter.getYRot();
-        shooter.setXRot(-90.0F);                 // straight up
-        shooter.setYHeadRot(shooter.getYRot());
-        AIGunEvent.performGunAttack(shooter, aimTarget, flareGun, gun, 0.0F);
-        shooter.setXRot(oldXRot);                // restore so the next combat shot aims normally
-        shooter.setYHeadRot(oldYRot);
-
-        ResourceLocation fireSound = gun.getSounds() != null ? gun.getSounds().getFire() : null;
-        if (fireSound != null) {
-            level.playSound(null, shooter.getX(), shooter.getY() + shooter.getEyeHeight(), shooter.getZ(),
-                    SoundEvent.createVariableRangeEvent(fireSound), SoundSource.HOSTILE, 1.2F, 1.0F);
-        }
-        return true;
-    }
-
-    /** A gun's fire-rate (ticks between shots) from its data, or {@code fallback}. */
-    public static int fireRate(ItemStack gunStack, int fallback) {
-        if (gunStack.getItem() instanceof GunItem gunItem) {
-            Gun gun = gunItem.getModifiedGun(gunStack);
-            if (gun != null && gun.getGeneral() != null) {
-                return Math.max(1, gun.getGeneral().getRate());
-            }
-        }
-        return fallback;
     }
 
     /** Raise FOLLOW_RANGE to at least {@code target} blocks so the mob can detect hostiles that far. */
@@ -239,27 +110,6 @@ public final class GunUtil {
         return mob.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> e instanceof Enemy && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr).size();
-    }
-
-    /**
-     * Summon JEG's own fragmentation grenade from the mob and lob it forward along the mob's facing.
-     * This does NOT recreate the grenade -- it spawns JEG's {@link ThrowableGrenadeEntity} with the mob
-     * as owner, so JEG's native cook/explosion/fire logic runs. {@code fuseTicks} is the grenade's life
-     * before it detonates. Server-side only.
-     */
-    public static void throwGrenade(Mob shooter, int fuseTicks) {
-        Level level = shooter.level();
-        if (level.isClientSide()) return;
-        // Owner = shooter; spawns at the shooter's eyes (vanilla ThrowableProjectile constructor).
-        ThrowableGrenadeEntity grenade = new ThrowableGrenadeEntity(level, shooter, fuseTicks);
-        // Gentle forward lob so it lands a few blocks ahead (toward the threat the mob is facing), not on
-        // the mob's own feet as it turns to flee.
-        grenade.shootFromRotation(shooter, shooter.getXRot(), shooter.getYRot(), 0.0F, 0.5F, 1.0F);
-        level.addFreshEntity(grenade);
-
-        // Pull the pin: play the grenade's throw sound so the toss reads clearly.
-        level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
-                net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.4F, 1.6F);
     }
 
     /**

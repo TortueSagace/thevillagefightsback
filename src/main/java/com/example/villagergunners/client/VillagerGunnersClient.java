@@ -72,6 +72,9 @@ public final class VillagerGunnersClient {
         event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
         // The bullet is invisible; its yellow particle tracer is the visual.
         event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);
+        // Fire grenade: billboard its item sprite as it flies.
+        event.registerEntityRenderer(ModEntities.FIRE_GRENADE.get(),
+                ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
     }
 
     @SubscribeEvent

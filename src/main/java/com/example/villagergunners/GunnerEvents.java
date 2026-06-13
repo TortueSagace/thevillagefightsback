@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.villagergunners.goal.AxeCombatGoal;
-import com.example.villagergunners.goal.FlareRallyGoal;
 import com.example.villagergunners.wall.WallBuild;
 import com.example.villagergunners.wall.WallPlan;
 import com.example.villagergunners.goal.GolemRocketGoal;
-import com.example.villagergunners.goal.GunCombatGoal;
 import com.example.villagergunners.goal.StoneAxeDefenseGoal;
 import com.example.villagergunners.goal.TntFleeGoal;
 import com.example.villagergunners.goal.WallBuildGoal;
@@ -73,9 +71,8 @@ public final class GunnerEvents {
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
-    // JEG's "fire grenade" -- the molotov cocktail; guards have a chance to drop one on death.
-    private static final ResourceLocation MOLOTOV = new ResourceLocation("jeg", "molotov_cocktail");
-    private static final float GUARD_MOLOTOV_DROP_CHANCE = 0.5F;
+    // Guards have a chance to drop our native Fire Grenade on death.
+    private static final float GUARD_FIRE_GRENADE_DROP_CHANCE = 0.5F;
 
     /** Arm villagers / iron golems / guards whenever they join a level (including world reload). */
     @SubscribeEvent
@@ -230,7 +227,6 @@ public final class GunnerEvents {
      */
     private static void armGuardFull(PathfinderMob guard) {
         if (hasGoal(guard, com.example.villagergunners.goal.StageThreeGuardGoal.class)) return; // re-added each load
-        removeGoal(guard, GunCombatGoal.class); // strip the old minigun combat goal if this guard had it
         GunUtil.extendFollowRange(guard, FOLLOW_RANGE);
         // The mace replaces any JEG gun (the equipment change makes onEquipmentChange strip JEG's gun goal);
         // the combat goal swaps in the crossbow / Alien Slasher as the situation demands.
@@ -238,7 +234,6 @@ public final class GunnerEvents {
         guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         GuardWeapons.equipEmeraldArmor(guard);
         guard.goalSelector.addGoal(1, new com.example.villagergunners.goal.StageThreeGuardGoal(guard));
-        guard.goalSelector.addGoal(2, new FlareRallyGoal(guard));
     }
 
     static void armGolemFull(IronGolem golem) {
@@ -256,7 +251,6 @@ public final class GunnerEvents {
         if (hasGoal(golem, GolemRocketGoal.class)) return;
         GunUtil.extendFollowRange(golem, FOLLOW_RANGE);
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
-        golem.goalSelector.addGoal(2, new FlareRallyGoal(golem));
     }
 
     // Fixed UUID so re-applying the gigachad armour buff on world reload is idempotent.
@@ -306,24 +300,14 @@ public final class GunnerEvents {
         for (Goal g : remove) mob.goalSelector.removeGoal(g);
     }
 
-    /**
-     * After a guard's hand becomes a JEG gun, JEG's GunnerMobSpawner adds its own GunAttackGoal.
-     * We run at LOWEST priority (after JEG) and strip it so only our GunCombatGoal drives the guard.
-     */
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
-        if (event.getEntity().level().isClientSide()) return;
-        if (!(event.getEntity() instanceof PathfinderMob mob)) return;
-        if (!isAlly(mob)) return; // any armed defender (guard/golem) that now holds a gun
-        List<Goal> remove = new ArrayList<>();
-        for (WrappedGoal w : mob.goalSelector.getAvailableGoals()) {
-            if (w.getGoal() instanceof ttv.migami.jeg.entity.ai.GunAttackGoal) {
-                remove.add(w.getGoal());
-            }
-        }
-        for (Goal g : remove) {
-            mob.goalSelector.removeGoal(g);
-        }
+    /** Guards have a chance to drop our native Fire Grenade when they die. */
+    @SubscribeEvent
+    public static void onGuardDeathDrops(LivingDropsEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead.level().isClientSide() || !isGuard(dead)) return;
+        if (dead.getRandom().nextFloat() >= GUARD_FIRE_GRENADE_DROP_CHANCE) return;
+        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+                dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.FIRE_GRENADE.get())));
     }
 
     /**

@@ -108,6 +108,15 @@ public final class ModEntities {
                     .updateInterval(20)
                     .build("limbo_arrow"));
 
+    /** Fire Grenade projectile -- a throwable fire bomb (native molotov replacement). See {@link FireGrenadeEntity}. */
+    public static final RegistryObject<EntityType<FireGrenadeEntity>> FIRE_GRENADE = ENTITIES.register(
+            "fire_grenade",
+            () -> EntityType.Builder.<FireGrenadeEntity>of(FireGrenadeEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build("fire_grenade"));
+
     /** Emerald Virus arrow projectile -- infects whatever it hits. See {@link EmeraldVirusArrowEntity}. */
     public static final RegistryObject<EntityType<EmeraldVirusArrowEntity>> EMERALD_VIRUS_ARROW = ENTITIES.register(
             "emerald_virus_arrow",

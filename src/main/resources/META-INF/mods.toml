@@ -25,18 +25,4 @@ description='''${mod_description}'''
     ordering="NONE"
     side="BOTH"
 
-# Just Enough Guns must be present and load BEFORE us (we hook its firing API).
-[[dependencies.${mod_id}]]
-    modId="jeg"
-    mandatory=true
-    versionRange="[0.13.2,)"
-    ordering="AFTER"
-    side="BOTH"
-
-# JEG's own mandatory dependency; declare it so load order is correct.
-[[dependencies.${mod_id}]]
-    modId="framework"
-    mandatory=true
-    versionRange="[0.7.0,)"
-    ordering="AFTER"
-    side="BOTH"
+# (Just Enough Guns + framework dependencies removed -- guns/ammo/explosions are all native now.)

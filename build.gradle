@@ -129,14 +129,7 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // Just Enough Guns (the gun mod we integrate with) + its MANDATORY mod dependencies.
-    // fg.deobf remaps the SRG-named Minecraft references inside each mod jar into our dev
-    // mappings so they compile and run in the dev environment. These must be 'implementation'
-    // (compile + runtime) because JEG's compiled classes reference framework/geckolib types
-    // directly, so javac needs them on the classpath when it loads referenced JEG classes.
-    implementation fg.deobf(files('libs/JustEnoughGuns-0.13.2-1.20.1.jar'))
-    implementation fg.deobf(files('libs/framework-forge-1.20.1-0.8.0.jar'))
-    implementation fg.deobf(files('libs/geckolib-forge-1.20.1-4.8.3.jar'))
+    // (JEG dependency removed -- the mod's guns/ammo/explosions are all native now. No third-party mod jars.)
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

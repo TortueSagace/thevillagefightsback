@@ -41,6 +41,10 @@ public final class ModItems {
     public static final RegistryObject<Item> EMERALD_VIRUS_ARROW =
             ITEMS.register("emerald_virus_arrow", () -> new EmeraldVirusArrowItem(new Item.Properties()));
 
+    /** Fire Grenade: a throwable fire bomb (our native replacement for JEG's molotov). See {@link FireGrenadeItem}. */
+    public static final RegistryObject<Item> FIRE_GRENADE =
+            ITEMS.register("fire_grenade", () -> new FireGrenadeItem(new Item.Properties().stacksTo(16)));
+
     /** Emerald Apple: edible, but eating it inflicts the Emerald Virus. The base brewing component for the
      *  Emerald Virus potion (and, via that potion's tipped arrows, the Emerald Virus arrows). Drops rarely
      *  from fertile leaves. */
