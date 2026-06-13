@@ -48,6 +48,10 @@ public final class LimboDimension {
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
+        // Multipart bosses can't change dimensions; banishing one leaves a ghost marker (and duplicates). Skip.
+        if (e instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
+                || e instanceof net.minecraft.world.entity.boss.EnderDragonPart
+                || !e.canChangeDimensions()) return e;
         MinecraftServer server = e.getServer();
         if (server == null) return e;
         ServerLevel limbo = server.getLevel(LIMBO);
