@@ -160,6 +160,14 @@ public final class ExpansionManager {
         CLAIMS.put(centre.asLong(), level.getGameTime() + CLAIM_TTL);
     }
 
+    /** True if any unplaced expansion settler (still carrying {@link #NBT_EXPANSION}) is alive within
+     *  {@code radius} of {@code centre} -- i.e. not every expansion building has been dropped yet. */
+    public static boolean hasActiveSettlersNear(ServerLevel level, BlockPos centre, double radius) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(centre).inflate(radius);
+        return !level.getEntitiesOfClass(Villager.class, box,
+                v -> v.isAlive() && v.getPersistentData().getBoolean(NBT_EXPANSION)).isEmpty();
+    }
+
     // --- death fallback: an unplaced settler that dies drops its TNT where it falls ------------------
     @SubscribeEvent
     public static void onSettlerDeath(LivingDeathEvent event) {

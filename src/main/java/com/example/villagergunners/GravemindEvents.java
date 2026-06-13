@@ -290,9 +290,9 @@ public final class GravemindEvents {
         }
     }
 
-    private static final long OUTER_WALL_DELAY = 1200L; // wait ~1 min after expansion launches so the buildings exist
+    private static final long OUTER_SETTLE_GRACE = 200L; // require this many ticks of expansion-quiet before fixing the plan
     private static final int OUTER_SCAN_RADIUS = 140;   // larger survey so the obsidian ring encloses the expansion
-    private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: when to first survey
+    private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: earliest gametime to survey
 
     /**
      * Stage-3 OUTER obsidian wall. After the settler expansion has launched its buildings (and a short delay so
@@ -311,8 +311,15 @@ public final class GravemindEvents {
             WallPlan plan = data.getOuterWallPlan(gp);
             if (plan == null) {
                 long now = level.getGameTime();
+                // Don't fix the plan until the expansion has fully materialized: every settler has dropped its
+                // TNT AND the structure builder has finished. While still busy, keep pushing the survey time
+                // out, so we only plan after OUTER_SETTLE_GRACE ticks of continuous quiet -> the obsidian ring
+                // is guaranteed to go around the finished buildings.
+                boolean busy = ExpansionManager.hasActiveSettlersNear(level, gp.pos(), OUTER_SCAN_RADIUS)
+                        || HouseBuildManager.hasPendingNear(level, gp.pos(), OUTER_SCAN_RADIUS);
+                if (busy) { outerWallReadyAt.put(gp, now + OUTER_SETTLE_GRACE); continue; }
                 Long readyAt = outerWallReadyAt.get(gp);
-                if (readyAt == null) { outerWallReadyAt.put(gp, now + OUTER_WALL_DELAY); continue; } // start the timer
+                if (readyAt == null) { outerWallReadyAt.put(gp, now + OUTER_SETTLE_GRACE); continue; } // begin the grace
                 if (now < readyAt || !trySurvey) continue;
                 WallPlan computed = WallPlanner.plan(level, gp,
                         collectVillagePoints(level, gp.pos(), OUTER_SCAN_RADIUS), true /* obsidian */);

@@ -75,6 +75,20 @@ public final class HouseBuildManager {
         if (!order.isEmpty() || !entities.isEmpty()) JOBS.add(new BuildJob(level, order, loot, entities));
     }
 
+    /** True if a TNT detonation or structure build is still pending within {@code radius} of {@code center}.
+     *  Lets the stage-3 outer wall wait until the expansion buildings have fully materialized before fixing
+     *  its plan. */
+    public static boolean hasPendingNear(ServerLevel level, BlockPos center, double radius) {
+        double r2 = radius * radius;
+        for (PendingTnt d : DETONATIONS) {
+            if (d.level() == level && d.pos().distSqr(center) <= r2) return true;
+        }
+        for (BuildJob j : JOBS) {
+            if (j.level == level && !j.order.isEmpty() && j.order.get(0).pos().distSqr(center) <= r2) return true;
+        }
+        return false;
+    }
+
     /** Blocks that hang on / sit atop a neighbour (or fall) -> place them after the structure is up. */
     public static boolean isDeferred(BlockState s) {
         Block b = s.getBlock();
