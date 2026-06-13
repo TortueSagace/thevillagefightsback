@@ -296,6 +296,20 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
             () -> new BlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties()));
 
+    /**
+     * The Limbo Portal: a green nether-portal that forms inside a lit {@link #FAKE_OBSIDIAN} frame and
+     * teleports between the overworld and Limbo at 16x compression ({@link LimboPortalBlock} /
+     * {@link LimboPortalForcer}). No item form (like the nether portal); unbreakable; glows.
+     */
+    public static final RegistryObject<Block> LIMBO_PORTAL = BLOCKS.register("limbo_portal",
+            () -> new LimboPortalBlock(BlockBehaviour.Properties.of()
+                    .noCollission()
+                    .strength(-1.0F)
+                    .sound(SoundType.GLASS)
+                    .lightLevel(s -> 11)
+                    .noLootTable()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))

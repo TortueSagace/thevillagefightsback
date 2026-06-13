@@ -96,5 +96,6 @@
   "item.minecraft.tipped_arrow.effect.immunity": "Arrow of Immunity",
   "itemGroup.gobacktoyourworld": "Go Back To Your World",
   "block.gobacktoyourworld.forgotten_glowstone": "Forgotten Glowstone",
-  "item.gobacktoyourworld.forgotten_powder": "Forgotten Powder"
+  "item.gobacktoyourworld.forgotten_powder": "Forgotten Powder",
+  "block.gobacktoyourworld.limbo_portal": "Limbo Portal"
 }

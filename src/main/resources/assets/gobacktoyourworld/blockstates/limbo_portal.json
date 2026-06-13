@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "gobacktoyourworld:block/limbo_portal_ns"
+    },
+    "axis=z": {
+      "model": "gobacktoyourworld:block/limbo_portal_ew"
+    }
+  }
+}
