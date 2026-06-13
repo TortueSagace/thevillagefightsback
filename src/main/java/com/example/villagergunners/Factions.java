@@ -16,4 +16,9 @@ public final class Factions {
                 || e instanceof VindictiveGuardEntity
                 || e instanceof VindictiveGigachadEntity;
     }
+
+    /** The "limbo" faction: creatures native to Limbo (the Limbo Phantom). They never attack one another. */
+    public static boolean isLimbo(Entity e) {
+        return e instanceof LimboPhantomEntity;
+    }
 }

@@ -94,7 +94,15 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
     public UnleashedGravemindEntity(EntityType<? extends Warden> type, Level level) {
         super(type, level);
         this.bossBar.setDarkenScreen(true);
-        this.xpReward = 50;
+        this.xpReward = 500; // a boss-sized XP reward
+    }
+
+    /** On death the boss yields its prize: the Village Gravemind block (you can re-found a village with it). */
+    @Override
+    protected void dropCustomDeathLoot(net.minecraft.world.damagesource.DamageSource source, int looting,
+                                       boolean recentlyHit) {
+        super.dropCustomDeathLoot(source, looting, recentlyHit);
+        this.spawnAtLocation(new net.minecraft.world.item.ItemStack(ModBlocks.VILLAGE_GRAVEMIND_ITEM.get()));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
