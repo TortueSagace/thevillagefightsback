@@ -18,5 +18,10 @@
         "to": "gobacktoyourworld:limbo"
       }
     }
-  }
+  },
+  "requirements": [
+    [
+      "enter"
+    ]
+  ]
 }

@@ -42,6 +42,7 @@ public class VillagerGunners {
 
     private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            ModTriggers.register(); // custom advancement triggers (gravemind stage)
             // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder makes the splash
             // version. The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe),
             // so we deliberately do NOT add the lingering step (no expensive vanilla tipped-arrow path).

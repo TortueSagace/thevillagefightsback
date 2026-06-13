@@ -1,24 +1,23 @@
 {
-  "parent": "gobacktoyourworld:limbo/root",
   "display": {
     "icon": {
-      "item": "gobacktoyourworld:forgotten_glowstone"
+      "item": "gobacktoyourworld:emerald_chestplate"
     },
-    "title": "Forgotten Light",
-    "description": "Gather some forgotten powder.",
+    "title": "Emerald Knight",
+    "description": "Forge a piece of emerald armor.",
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
   },
   "criteria": {
-    "have_item": {
+    "have": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
             "items": [
-              "gobacktoyourworld:forgotten_powder"
+              "gobacktoyourworld:emerald_chestplate"
             ]
           }
         ]
@@ -27,7 +26,8 @@
   },
   "requirements": [
     [
-      "have_item"
+      "have"
     ]
-  ]
+  ],
+  "parent": "gobacktoyourworld:gravemind/root"
 }

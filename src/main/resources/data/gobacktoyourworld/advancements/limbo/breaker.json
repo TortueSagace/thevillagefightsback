@@ -1,24 +1,23 @@
 {
-  "parent": "gobacktoyourworld:limbo/limbo_forged",
   "display": {
     "icon": {
-      "item": "gobacktoyourworld:volatile_limbo_potion"
+      "item": "gobacktoyourworld:limbo_pickaxe"
     },
-    "title": "Banisher",
-    "description": "Wear the full Limbo set and command the void.",
+    "title": "Breaker Of The Unbreakable",
+    "description": "Forge the Limbo Pickaxe, which mines bedrock.",
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
   },
   "criteria": {
-    "have_item": {
+    "have": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
             "items": [
-              "gobacktoyourworld:limbo_helmet"
+              "gobacktoyourworld:limbo_pickaxe"
             ]
           }
         ]
@@ -27,7 +26,8 @@
   },
   "requirements": [
     [
-      "have_item"
+      "have"
     ]
-  ]
+  ],
+  "parent": "gobacktoyourworld:limbo/root"
 }

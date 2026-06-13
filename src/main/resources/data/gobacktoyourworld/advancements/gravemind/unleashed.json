@@ -1,12 +1,11 @@
 {
-  "parent": "gobacktoyourworld:limbo/root",
   "display": {
     "icon": {
-      "item": "gobacktoyourworld:limbo_membrane"
+      "item": "gobacktoyourworld:gravemind_warden"
     },
-    "title": "Phantom Hunter",
-    "description": "Slay a Limbo Phantom.",
-    "frame": "goal",
+    "title": "The Gravemind Unleashed",
+    "description": "Defeat the Unleashed Village Gravemind.",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
@@ -16,7 +15,7 @@
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
         "entity": {
-          "type": "gobacktoyourworld:limbo_phantom"
+          "type": "gobacktoyourworld:unleashed_gravemind"
         }
       }
     }
@@ -25,5 +24,6 @@
     [
       "kill"
     ]
-  ]
+  ],
+  "parent": "gobacktoyourworld:gravemind/culmination"
 }

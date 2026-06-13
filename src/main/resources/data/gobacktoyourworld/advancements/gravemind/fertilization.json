@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "gobacktoyourworld:rich_dirt"
+    },
+    "title": "Fertilization Phase",
+    "description": "Evolve a gravemind to the Fertilization Phase (stage 2).",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "stage": {
+      "trigger": "gobacktoyourworld:gravemind_stage",
+      "conditions": {
+        "stage": 2
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stage"
+    ]
+  ],
+  "parent": "gobacktoyourworld:gravemind/root"
+}
