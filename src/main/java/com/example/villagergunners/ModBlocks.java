@@ -287,6 +287,18 @@ public final class ModBlocks {
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
 
     /**
+     * Limbo Egg: a black-and-white dragon egg that nests in the Limbo. It does NOT teleport when clicked;
+     * destroying it (other than with Silk Touch) hatches a Limbo Phantom ({@link LimboEggBlock}).
+     */
+    public static final RegistryObject<Block> LIMBO_EGG = BLOCKS.register("limbo_egg",
+            () -> new LimboEggBlock(BlockBehaviour.Properties.copy(Blocks.DRAGON_EGG)
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .randomTicks()));        // enables the small natural-hatch chance
+    public static final RegistryObject<Item> LIMBO_EGG_ITEM = ITEMS.register("limbo_egg",
+            () -> new TooltipBlockItem(LIMBO_EGG.get(), new Item.Properties(),
+                    "block.gobacktoyourworld.limbo_egg.desc"));
+
+    /**
      * Forgotten Glowstone: a vivid green glowstone that sparsely encrusts Limbo's bedrock cubes (placed like
      * moss). It glows at the engine maximum (light 15 -- "twice glowstone" is capped there) and is as tough as
      * obsidian (needs a diamond+ pickaxe). Drops Forgotten Powder unless mined with Silk Touch (loot table).
@@ -300,7 +312,8 @@ public final class ModBlocks {
                     .lightLevel(s -> 15)                   // max light (the engine cap)
                     .isValidSpawn((s, l, p, e) -> false)));
     public static final RegistryObject<Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
-            () -> new BlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties()));
+            () -> new TooltipBlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties(),
+                    "block.gobacktoyourworld.forgotten_glowstone.desc"));
 
     /**
      * The Limbo Portal: a green nether-portal that forms inside a lit {@link #FAKE_OBSIDIAN} frame and
@@ -359,6 +372,7 @@ public final class ModBlocks {
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
+                output.accept(LIMBO_EGG_ITEM.get());
                 output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
                 output.accept(ModItems.FORGOTTEN_POWDER.get());
                 output.accept(ModItems.LIMBO_POTION.get());
