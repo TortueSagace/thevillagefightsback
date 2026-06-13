@@ -284,6 +284,12 @@ public final class ModBlocks {
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
+                // Emerald gear (built from emeralds; stats between iron and diamond) -- in OUR tab.
+                output.accept(ModArmor.EMERALD_HELMET.get());
+                output.accept(ModArmor.EMERALD_CHESTPLATE.get());
+                output.accept(ModArmor.EMERALD_LEGGINGS.get());
+                output.accept(ModArmor.EMERALD_BOOTS.get());
+                for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
                 output.accept(ModItems.EMERALD_APPLE.get());

@@ -51,6 +51,22 @@ public final class ModItems {
                                     ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS), 1.0F)
                             .build())));
 
+    // --- Emerald tools: stats between iron and diamond, like the emerald armour (see EmeraldTier). ---
+    public static final RegistryObject<Item> EMERALD_SWORD = ITEMS.register("emerald_sword",
+            () -> new net.minecraft.world.item.SwordItem(EmeraldTier.INSTANCE, 3, -2.4F, new Item.Properties()));
+    public static final RegistryObject<Item> EMERALD_PICKAXE = ITEMS.register("emerald_pickaxe",
+            () -> new net.minecraft.world.item.PickaxeItem(EmeraldTier.INSTANCE, 1, -2.8F, new Item.Properties()));
+    public static final RegistryObject<Item> EMERALD_AXE = ITEMS.register("emerald_axe",
+            () -> new net.minecraft.world.item.AxeItem(EmeraldTier.INSTANCE, 6.0F, -3.1F, new Item.Properties()));
+    public static final RegistryObject<Item> EMERALD_SHOVEL = ITEMS.register("emerald_shovel",
+            () -> new net.minecraft.world.item.ShovelItem(EmeraldTier.INSTANCE, 1.5F, -3.0F, new Item.Properties()));
+    public static final RegistryObject<Item> EMERALD_HOE = ITEMS.register("emerald_hoe",
+            () -> new net.minecraft.world.item.HoeItem(EmeraldTier.INSTANCE, -2, -1.0F, new Item.Properties()));
+
+    /** The emerald tools, in tab order. */
+    public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(
+            EMERALD_SWORD, EMERALD_PICKAXE, EMERALD_AXE, EMERALD_SHOVEL, EMERALD_HOE);
+
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(

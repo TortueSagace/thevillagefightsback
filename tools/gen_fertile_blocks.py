@@ -282,6 +282,18 @@ def main():
     gen_catalyst(gems)
     gen_emerald_apple(gems)
     gen_emerald_virus_arrow()
+    gen_emerald_tools()
+
+def gen_emerald_tools():
+    """Emerald tool item sprites: the iron tools, green-tinted. Handheld item models."""
+    tools = {"emerald_sword": "iron_sword", "emerald_pickaxe": "iron_pickaxe", "emerald_axe": "iron_axe",
+             "emerald_shovel": "iron_shovel", "emerald_hoe": "iron_hoe"}
+    with zipfile.ZipFile(JAR) as zf:
+        for out, src in tools.items():
+            save_item_png(green_tint(load_vanilla(zf, src, folder="item")), out)
+            write_json(os.path.join(ASSETS, "models", "item", out + ".json"),
+                       {"parent": "minecraft:item/handheld", "textures": {"layer0": f"{MODID}:item/{out}"}})
+            print("generated", out)
 
 def gen_emerald_virus_arrow():
     """The Emerald Virus arrow: a green-tinted arrow (item sprite + entity texture)."""
