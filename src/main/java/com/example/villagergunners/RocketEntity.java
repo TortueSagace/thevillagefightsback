@@ -22,7 +22,26 @@ import net.minecraftforge.network.NetworkHooks;
 public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     public static final float DIRECT_DAMAGE = 28.0F;     // matches JEG's rocket projectile damage
     public static final float EXPLOSION_RADIUS = 5.0F;   // matches JEG's default missile blast
+    public static final double SPEED = 2.5;              // blocks/tick: fast, near-straight flight
     private static final int MAX_LIFETIME = 200;         // self-destruct if it never hits anything (~10s)
+
+    /**
+     * The ONE shared rocket attack: launch a rocket from {@code shooter} straight at {@code target}'s centre,
+     * with the launch sound. Both the gigachad golems and the stage-4 wall defender fire through here, so any
+     * future change to the launch (muzzle effect, animation hook, sound) automatically applies to both.
+     */
+    public static void fire(net.minecraft.world.entity.Mob shooter, LivingEntity target) {
+        if (shooter.level().isClientSide()) return;
+        RocketEntity rocket = new RocketEntity(shooter.level(), shooter);
+        net.minecraft.world.phys.Vec3 from = rocket.position();
+        net.minecraft.world.phys.Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
+        rocket.setDeltaMovement(dir.scale(SPEED));
+        rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
+        rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
+        shooter.level().addFreshEntity(rocket);
+        shooter.level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.HOSTILE, 1.4F, 0.7F);
+    }
 
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);

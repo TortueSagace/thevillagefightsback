@@ -55,6 +55,7 @@ public final class VillagerGunnersClient {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
+        event.registerEntityRenderer(ModEntities.WALL_DEFENDER_STAGE4.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);
         event.registerEntityRenderer(ModEntities.GRAVEMIND_WARDEN.get(), GravemindWardenRenderer::new);
         // The boss reuses the green-warden + gravemind-head renderer (it extends GravemindWardenEntity).
@@ -72,6 +73,7 @@ public final class VillagerGunnersClient {
         event.registerEntityRenderer(ModEntities.VOLATILE_LIMBO_POTION.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
         event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
+        event.registerEntityRenderer(ModEntities.LIMBO_PHANTOM.get(), LimboPhantomRenderer::new);
         // The bullet is invisible; its yellow particle tracer is the visual.
         event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);
         // Fire grenade: billboard its item sprite as it flies.

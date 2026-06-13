@@ -165,6 +165,12 @@ public final class ModBlocks {
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER,
                     0x1b4a4a, 0x78ebf5, new Item.Properties()));
 
+    /** Stage-4 (rocket) wall defender spawn egg -- always in rocket mode + the gold stage-4 texture. */
+    public static final RegistryObject<Item> WALL_DEFENDER_STAGE4_SPAWN = ITEMS.register(
+            "wall_defender_stage4",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
+                    0x6e3a10, 0xffb020, new Item.Properties()));
+
     /** Spawn egg for the {@link GravemindWardenEntity} (a green Warden with a gravemind-block head). */
     public static final RegistryObject<Item> GRAVEMIND_WARDEN_SPAWN = ITEMS.register(
             "gravemind_warden",
@@ -324,7 +330,9 @@ public final class ModBlocks {
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
+                output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
                 output.accept(GRAVEMIND_WARDEN_SPAWN.get());
+                output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());

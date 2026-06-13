@@ -58,18 +58,10 @@ public class GolemRocketGoal extends Goal {
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
-    /** Spawn a native rocket from the golem aimed at {@code target}, and play the launch sound. */
+    /** Fire the shared rocket attack (see {@link RocketEntity#fire}) so the golem and the stage-4 wall
+     *  defender stay the exact same attack. */
     private void fireRocket(LivingEntity target) {
-        if (golem.level().isClientSide()) return;
-        RocketEntity rocket = new RocketEntity(golem.level(), golem);
-        Vec3 from = rocket.position();                                   // ~golem eye height (thrower ctor)
-        Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
-        rocket.setDeltaMovement(dir.scale(ROCKET_SPEED));
-        rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
-        rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
-        golem.level().addFreshEntity(rocket);
-        golem.level().playSound(null, golem.getX(), golem.getY(), golem.getZ(),
-                SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 1.4F, 0.7F);
+        RocketEntity.fire(golem, target);
     }
 
     /** A hostile we care about: alive Enemy within detection range -- or, for a vindictive (boss-minion)

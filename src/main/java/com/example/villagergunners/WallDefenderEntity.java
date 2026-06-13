@@ -1,9 +1,10 @@
 package com.example.villagergunners;
 
 import net.minecraft.core.GlobalPos;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -33,10 +34,14 @@ public class WallDefenderEntity extends Mob {
     // bullet. Rockets only fly beyond MIN_ROCKET_RANGE so the radius-5 blast can never reach our own glass
     // shell; a target closer than that is plinked with the revolver instead (so a point-blank attacker is
     // still engaged without the turret blowing itself up).
-    private static final int ROCKET_INTERVAL = 40;    // one rocket per 2s at stage 4
+    private static final int ROCKET_INTERVAL = 40;    // one rocket per 2s at stage 4 (very powerful)
     private static final double MIN_ROCKET_RANGE = 8.0; // > blast radius (+ shell clearance) -> never self-blast
-    private static final double ROCKET_SPEED = 2.5;   // blocks/tick: fast, near-straight flight (matches golems)
 
+    // Synced to the client so the renderer can pick the stage-4 texture.
+    private static final EntityDataAccessor<Boolean> DATA_STAGE4 =
+            SynchedEntityData.defineId(WallDefenderEntity.class, EntityDataSerializers.BOOLEAN);
+
+    private final boolean forcedStage4; // true for the stage-4 spawn-egg variant (always rocket mode)
     private int fireCooldown;
     private int retargetCooldown;
     private boolean rocketMode;   // our village is at stage 4 -> fire rockets (refreshed on each re-target)
@@ -46,6 +51,18 @@ public class WallDefenderEntity extends Mob {
         super(type, level);
         setNoGravity(true);
         setPersistenceRequired();
+        this.forcedStage4 = type == ModEntities.WALL_DEFENDER_STAGE4.get();
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_STAGE4, false);
+    }
+
+    /** Client-side: true if this defender should render as a stage-4 (rocket) defender. */
+    public boolean isStage4Visual() {
+        return this.entityData.get(DATA_STAGE4);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -74,39 +91,33 @@ public class WallDefenderEntity extends Mob {
         if (retargetCooldown <= 0 || !isValidTarget(cachedTarget)) {
             cachedTarget = acquireTarget();
             rocketMode = isStage4();                   // refresh the stage gate alongside the (throttled) re-scan
+            this.entityData.set(DATA_STAGE4, rocketMode); // sync to the client for the stage-4 texture
             retargetCooldown = RETARGET_INTERVAL;
         }
         setTarget(cachedTarget);
         if (cachedTarget == null) return;
-        GunUtil.aimAt(this, cachedTarget);            // face the target (JEG fires along body rotation; the rocket aims by hand)
+        GunUtil.aimAt(this, cachedTarget);            // face the target (the rocket/bullet is aimed by hand)
         if (fireCooldown > 0) return;
 
-        // Stage 4: rocket distant targets like the iron golems do; closer than the safe blast range, fall back
-        // to the revolver so the immobile turret still engages a point-blank attacker without self-blasting.
-        if (rocketMode && distanceToSqr(cachedTarget) >= MIN_ROCKET_RANGE * MIN_ROCKET_RANGE) {
-            fireRocket(cachedTarget);
+        if (rocketMode) {
+            // Stage 4: the EXACT same rocket attack as the gigachad golems (RocketEntity.fire). A point-blank
+            // target inside the safe blast range gets the revolver instead, so the immobile turret never blasts
+            // its own shell. Either way the powerful turret fires only every ROCKET_INTERVAL (2s).
+            if (distanceToSqr(cachedTarget) >= MIN_ROCKET_RANGE * MIN_ROCKET_RANGE) {
+                RocketEntity.fire(this, cachedTarget);
+            } else {
+                BulletEntity.fire(this, cachedTarget, REVOLVER_DAMAGE);
+            }
             fireCooldown = ROCKET_INTERVAL;
         } else {
-            BulletEntity.fire(this, cachedTarget, REVOLVER_DAMAGE); // our native bullet (JEG-free), perfect precision
+            BulletEntity.fire(this, cachedTarget, REVOLVER_DAMAGE); // pre-stage-4: revolver, once per second
             fireCooldown = FIRE_INTERVAL;
         }
     }
 
-    /** Spawn a native rocket (our local clone, NOT JEG) aimed straight at the target. Mirrors GolemRocketGoal. */
-    private void fireRocket(LivingEntity target) {
-        RocketEntity rocket = new RocketEntity(level(), this);
-        Vec3 from = rocket.position();
-        Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
-        rocket.setDeltaMovement(dir.scale(ROCKET_SPEED));
-        rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
-        rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
-        level().addFreshEntity(rocket);
-        level().playSound(null, getX(), getY(), getZ(),
-                SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 1.4F, 0.7F);
-    }
-
-    /** True when the nearest Village Gravemind (this defender's village) has reached stage 4. */
+    /** True when this defender fires rockets: forced (stage-4 spawn egg) or its nearest gravemind is stage 4. */
     private boolean isStage4() {
+        if (forcedStage4) return true;
         if (!(level() instanceof ServerLevel sl)) return false;
         GravemindData data = GravemindData.get(sl.getServer());
         GlobalPos nearest = null;

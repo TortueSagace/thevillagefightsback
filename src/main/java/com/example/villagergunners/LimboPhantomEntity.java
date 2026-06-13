@@ -43,9 +43,11 @@ public class LimboPhantomEntity extends Phantom {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Phantom.createAttributes()
-                .add(Attributes.MAX_HEALTH, 60.0)   // 3x a normal phantom (20)
-                .add(Attributes.ATTACK_DAMAGE, 9.0); // hits hard ("can also deal direct damage")
+        return net.minecraft.world.entity.monster.Monster.createMonsterAttributes()
+                .add(Attributes.MAX_HEALTH, 60.0)    // 3x a normal phantom (20)
+                .add(Attributes.ATTACK_DAMAGE, 9.0)  // hits hard ("can also deal direct damage")
+                .add(Attributes.FOLLOW_RANGE, 48.0)
+                .add(Attributes.MOVEMENT_SPEED, 0.25);
     }
 
     @Override

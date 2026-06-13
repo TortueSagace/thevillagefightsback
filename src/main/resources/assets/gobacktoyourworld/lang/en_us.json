@@ -97,5 +97,7 @@
   "itemGroup.gobacktoyourworld": "Go Back To Your World",
   "block.gobacktoyourworld.forgotten_glowstone": "Forgotten Glowstone",
   "item.gobacktoyourworld.forgotten_powder": "Forgotten Powder",
-  "block.gobacktoyourworld.limbo_portal": "Limbo Portal"
+  "block.gobacktoyourworld.limbo_portal": "Limbo Portal",
+  "entity.gobacktoyourworld.limbo_phantom": "Limbo Phantom",
+  "item.gobacktoyourworld.limbo_phantom_spawn": "Limbo Phantom Spawn Egg"
 }

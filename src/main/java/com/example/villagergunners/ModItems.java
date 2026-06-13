@@ -96,6 +96,11 @@ public final class ModItems {
     public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(
             EMERALD_SWORD, EMERALD_PICKAXE, EMERALD_AXE, EMERALD_SHOVEL, EMERALD_HOE);
 
+    /** Creative spawn egg for the Limbo Phantom. */
+    public static final RegistryObject<Item> LIMBO_PHANTOM_SPAWN =
+            ITEMS.register("limbo_phantom_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.LIMBO_PHANTOM, 0x101018, 0xE8F0E8, new Item.Properties()));
+
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(

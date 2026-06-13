@@ -27,6 +27,15 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("wall_defender"));
 
+    /** Stage-4 (rocket) wall defender -- same class, but its own type so a separate spawn egg can force it
+     *  into permanent rocket mode + the stage-4 texture. */
+    public static final RegistryObject<EntityType<WallDefenderEntity>> WALL_DEFENDER_STAGE4 = ENTITIES.register(
+            "wall_defender_stage4",
+            () -> EntityType.Builder.<WallDefenderEntity>of(WallDefenderEntity::new, MobCategory.MISC)
+                    .sized(0.8F, 0.8F)
+                    .clientTrackingRange(10)
+                    .build("wall_defender_stage4"));
+
     /** The Emeraldger: a villager-based, virus-spawned combatant ({@link EmeraldgerEntity}). Summoned only. */
     public static final RegistryObject<EntityType<EmeraldgerEntity>> EMERALDGER = ENTITIES.register(
             "emeraldger",
@@ -118,6 +127,15 @@ public final class ModEntities {
                     .updateInterval(10)
                     .build("fire_grenade"));
 
+    /** The Limbo Phantom: a 3x black-and-white phantom that phases through bedrock. See {@link LimboPhantomEntity}. */
+    public static final RegistryObject<EntityType<LimboPhantomEntity>> LIMBO_PHANTOM = ENTITIES.register(
+            "limbo_phantom",
+            () -> EntityType.Builder.<LimboPhantomEntity>of(LimboPhantomEntity::new, MobCategory.MONSTER)
+                    .sized(0.9F * 3.0F, 0.5F * 3.0F)   // 3x the phantom hitbox
+                    .clientTrackingRange(16)            // glows from far -> track from far
+                    .fireImmune()
+                    .build("limbo_phantom"));
+
     /** Emerald Virus arrow projectile -- infects whatever it hits. See {@link EmeraldVirusArrowEntity}. */
     public static final RegistryObject<EntityType<EmeraldVirusArrowEntity>> EMERALD_VIRUS_ARROW = ENTITIES.register(
             "emerald_virus_arrow",
@@ -134,11 +152,13 @@ public final class ModEntities {
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
         event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
+        event.put(WALL_DEFENDER_STAGE4.get(), WallDefenderEntity.createAttributes().build());
         event.put(EMERALDGER.get(), Villager.createAttributes().build());
         event.put(GRAVEMIND_WARDEN.get(), Warden.createAttributes().build());
         event.put(UNLEASHED_GRAVEMIND.get(), UnleashedGravemindEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
+        event.put(LIMBO_PHANTOM.get(), LimboPhantomEntity.createAttributes().build());
     }
 }
