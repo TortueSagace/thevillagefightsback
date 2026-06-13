@@ -276,7 +276,7 @@ public final class GravemindEvents {
                     // (the goal only wakes itself while it is actively running).
                     if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
                 }
-                manageBuilders(level, gp.pos(), nearby, plan.doorColumns().length); // one builder per gate
+                manageBuilders(level, gp.pos(), nearby, plan, false); // inner wall: builders path there normally
                 sealStuckHoles(level, plan); // gravemind finishes cells the builders can't reach
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
@@ -340,7 +340,7 @@ public final class GravemindEvents {
                     GunnerEvents.ensureWallBuildGoal(v);
                     if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
                 }
-                manageBuilders(level, gp.pos(), nearby, plan.doorColumns().length); // one builder per outer gate
+                manageBuilders(level, gp.pos(), nearby, plan, true); // outer wall: dispatch builders to their gate
                 sealStuckHoles(level, plan);
                 if (plan.recheckCompletion(level)) {
                     cleanupScaffolds(level, plan);
@@ -442,7 +442,9 @@ public final class GravemindEvents {
      * so a village that's short on villagers gets staffed without the self-demotion cycle ever spawning an
      * ever-growing crowd. A door with no eligible villager is left uncovered this pass.
      */
-    private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby, int doorCount) {
+    private static void manageBuilders(ServerLevel level, BlockPos gravemind, List<Villager> nearby,
+                                       WallPlan plan, boolean dispatchToGate) {
+        int doorCount = plan.doorColumns().length;
         int slots = doorCount > 0 ? Math.min(BuilderRole.BUILDER_COUNT, doorCount) : BuilderRole.BUILDER_COUNT;
         boolean[] covered = new boolean[slots];
         for (Villager v : nearby) {
@@ -461,8 +463,26 @@ public final class GravemindEvents {
             if (covered[d] || !free.hasNext()) continue;
             Villager v = free.next();
             BuilderRole.promote(v, d);
+            // The outer (obsidian) wall is far outside the inner-walled village, so a freshly-promoted builder
+            // can't path out to it -- dispatch it straight to its gate on the outer perimeter, just outside.
+            if (dispatchToGate) dispatchToDoor(level, gravemind, v, plan, d);
             GunnerEvents.ensureWallBuildGoal(v); // make sure the just-promoted builder can build
         }
+    }
+
+    /** Teleport a builder to a spot just OUTSIDE its assigned gate (a couple of blocks out from the wall, on the
+     *  surface), so it starts right at the future door instead of being trapped inside the inner wall. */
+    private static void dispatchToDoor(ServerLevel level, BlockPos gravemind, Villager v, WallPlan plan, int doorIndex) {
+        BlockPos gate = plan.doorBasePos(doorIndex);
+        if (gate == null) return;
+        double dx = gate.getX() - gravemind.getX(), dz = gate.getZ() - gravemind.getZ();
+        double len = Math.sqrt(dx * dx + dz * dz);
+        double ox = len > 0.01 ? dx / len : 0.0, oz = len > 0.01 ? dz / len : 0.0; // outward = away from the centre
+        int tx = (int) Math.floor(gate.getX() + 0.5 + ox * 2.0);
+        int tz = (int) Math.floor(gate.getZ() + 0.5 + oz * 2.0);
+        BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(tx, gate.getY(), tz));
+        if (v.isSleeping()) v.stopSleeping();
+        v.moveTo(tx + 0.5, surf.getY(), tz + 0.5, v.getYRot(), 0.0F);
     }
 
     /**

@@ -90,6 +90,14 @@ public final class WallPlan {
     /** Perimeter-column indices of the gates (one per gate); a builder is assigned one and builds rightward. */
     public int[] doorColumns() { return doorColumns; }
 
+    /** The course-0 (base) world position of the gate a builder with door index {@code doorIndex} starts from,
+     *  or null if this wall has no gates. Used to dispatch a builder straight to its door. */
+    public BlockPos doorBasePos(int doorIndex) {
+        if (doorColumns.length == 0) return null;
+        List<WallBlock> col = columns.get(doorColumns[Math.floorMod(doorIndex, doorColumns.length)]);
+        return col.isEmpty() ? null : col.get(0).pos();
+    }
+
     private static int[] computeCourseStarts(List<WallBlock> blocks) {
         int[] starts = new int[COURSES + 1];
         int idx = 0;
