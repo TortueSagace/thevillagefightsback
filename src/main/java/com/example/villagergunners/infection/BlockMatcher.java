@@ -163,7 +163,7 @@ public final class BlockMatcher {
                 || s.is(BlockTags.CROPS)) return false;
         if (s.is(BlockTags.PLANKS)) return false;
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
-        if (s.getLightEmission() > 7) return false;                    // brighter than a redstone torch
+        if (s.getLightEmission() > 0) return false;                    // any light source (torch/glowstone/lantern/...)
         if (b.getExplosionResistance() >= 1200.0F) return false;       // toughness must be < 1200
         ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
         if (id != null) {
