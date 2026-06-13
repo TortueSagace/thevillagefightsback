@@ -48,9 +48,19 @@ public final class LimboNest {
         }
     }
 
-    /** Egg placement -- filled in once {@code LIMBO_EGG} exists (Limbo eggs milestone). No-op for now. */
-    private static void populate(ServerLevel level, int floorTopY, int unusedY, int cz, long seed) {
-        // Intentionally empty until the Limbo Egg block is registered; cubes generated afterward get eggs.
+    /** Drop up to 3 Limbo Eggs into the 3x3 hollow of the bowl, at deterministic interior cells. */
+    private static void populate(ServerLevel level, int cx, int eggY, int cz, long seed) {
+        net.minecraft.util.RandomSource r = net.minecraft.util.RandomSource.create(seed);
+        int count = 1 + r.nextInt(3); // 1..3 eggs
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        java.util.List<int[]> cells = new java.util.ArrayList<>();
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) cells.add(new int[]{dx, dz});
+        java.util.Collections.shuffle(cells, new java.util.Random(seed));
+        BlockState egg = ModBlocks.LIMBO_EGG.get().defaultBlockState();
+        for (int i = 0; i < count && i < cells.size(); i++) {
+            m.set(cx + cells.get(i)[0], eggY, cz + cells.get(i)[1]);
+            if (level.getBlockState(m).isAir()) level.setBlock(m, egg, 2);
+        }
     }
 
     private static long seedFor(int x, int y, int z) {

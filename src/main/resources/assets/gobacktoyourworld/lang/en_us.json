@@ -103,7 +103,6 @@
   "entity.gobacktoyourworld.limbo_phantom": "Limbo Phantom",
   "item.gobacktoyourworld.limbo_phantom_spawn": "Limbo Phantom Spawn Egg",
   "block.gobacktoyourworld.forgotten_glowstone.desc": "A vivid green glowstone with obsidian toughness. Drops forgotten powder.",
-
   "block.gobacktoyourworld.village_gravemind.desc": "Drives a village's evolution. Right-click to inspect it; feed it emeralds to level it up.",
   "block.gobacktoyourworld.cheap_scaffold.desc": "A disposable scaffold that crumbles away after about a minute.",
   "block.gobacktoyourworld.blue_tnt.desc": "Detonates into a small village house.",
@@ -113,7 +112,6 @@
   "block.gobacktoyourworld.limbo_bed.desc": "Sleep in it to escape Limbo and wake up back home.",
   "block.gobacktoyourworld.limbo_gravel.desc": "Marks where someone vanished into Limbo. Break it to pull them back.",
   "block.gobacktoyourworld.limbo_portal.desc": "A gateway to the Limbo dimension.",
-
   "item.gobacktoyourworld.wall_defender.desc": "Summons a Wall Defender: an immobile turret that guns down nearby hostiles.",
   "item.gobacktoyourworld.wall_defender_stage4.desc": "Summons a stage-4 Wall Defender that fires rockets.",
   "item.gobacktoyourworld.emeraldger_spawn.desc": "Summons an Emeraldger: a stage-4 emerald-virus warrior.",
@@ -126,5 +124,7 @@
   "item.gobacktoyourworld.guard_stage3.desc": "Places an armed stage-3 guard.",
   "item.gobacktoyourworld.guard_stage4.desc": "Places an armed stage-4 guard (its hits spread Emerald Virus II).",
   "item.gobacktoyourworld.iron_golem.desc": "Places a village iron golem.",
-  "item.gobacktoyourworld.gigachad_golem.desc": "Places a Gigachad Golem: a stage-3 golem with a rocket launcher and iron armour."
+  "item.gobacktoyourworld.gigachad_golem.desc": "Places a Gigachad Golem: a stage-3 golem with a rocket launcher and iron armour.",
+  "block.gobacktoyourworld.limbo_egg": "Limbo Egg",
+  "block.gobacktoyourworld.limbo_egg.desc": "Breaking it hatches a Limbo Phantom, unless mined with Silk Touch."
 }

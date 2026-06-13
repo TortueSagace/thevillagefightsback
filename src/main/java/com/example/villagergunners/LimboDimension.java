@@ -78,6 +78,16 @@ public final class LimboDimension {
         if (limbo == null) return;
         forceLoadCube(limbo); // keep the room loaded + ticking even with no player present
         ensureCube(limbo);
+        ensureCentralNest(limbo);
+    }
+
+    /** The central cube is the only one with a nest on its TOP, in a corner. Idempotent (covers old worlds). */
+    private static void ensureCentralNest(ServerLevel limbo) {
+        int nx = MIN_X + 3, nz = MIN_Z + 3;   // a top corner of the cube
+        int topY = MAX_Y + 1;                  // one above the cube's top shell
+        if (!limbo.getBlockState(new BlockPos(nx, topY, nz)).is(Blocks.ANCIENT_DEBRIS)) {
+            LimboNest.placeOnTop(limbo, nx, topY, nz);
+        }
     }
 
     /** Safety net: if a player somehow enters before the room exists, build it and drop them inside. */
