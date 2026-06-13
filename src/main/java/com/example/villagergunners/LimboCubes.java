@@ -38,6 +38,7 @@ public final class LimboCubes {
     /** The cube originating in chunk (cx,cz), or null if none. Excludes the central cube's chunks. */
     public static Cube cubeForChunk(long seed, int cx, int cz) {
         if (Math.abs(cx) <= 1 && Math.abs(cz) <= 1) return null; // keep clear of the central cube/spawn
+        if (LimboDrift.type(seed, cx, cz) != LimboDrift.Type.NONE) return null; // never overlap a drift chunk
         RandomSource r = chunkRandom(seed, cx, cz);
         if (r.nextInt(RARITY) != 0) return null;
         int size = MIN_SIZE + r.nextInt(MAX_SIZE - MIN_SIZE + 1);

@@ -99,15 +99,29 @@ public final class LimboDrift {
 
     /** Copy container/sign/etc. contents (block-entity NBT) from the twin into the Limbo chunk. */
     public static void copyBlockEntities(ServerLevel limbo, LevelChunk limboChunk, LevelChunk twinChunk) {
+        ChunkPos lp = limboChunk.getPos();
         for (var e : twinChunk.getBlockEntities().entrySet()) {
-            BlockPos pos = e.getKey();
+            BlockPos tpos = e.getKey();
             BlockEntity tbe = e.getValue();
-            BlockEntity lbe = limboChunk.getBlockEntity(pos);
+            BlockPos lpos = new BlockPos(lp.getMinBlockX() + (tpos.getX() & 15), tpos.getY(),
+                    lp.getMinBlockZ() + (tpos.getZ() & 15));
+            BlockEntity lbe = limboChunk.getBlockEntity(lpos);
             if (lbe != null && lbe.getType() == tbe.getType()) {
-                CompoundTag tag = tbe.saveWithoutMetadata();
-                lbe.load(tag);
+                lbe.load(tbe.saveWithoutMetadata());
             }
         }
+    }
+
+    /** The twin block position for a Limbo block (same local x/z within the twin chunk; same Y). */
+    public static BlockPos toTwinBlock(ChunkPos twinChunkPos, BlockPos limboPos) {
+        return new BlockPos(twinChunkPos.getMinBlockX() + (limboPos.getX() & 15), limboPos.getY(),
+                twinChunkPos.getMinBlockZ() + (limboPos.getZ() & 15));
+    }
+
+    /** The Limbo block position for a twin block (same local x/z within the Limbo chunk; same Y). */
+    public static BlockPos toLimboBlock(ChunkPos limboChunkPos, BlockPos twinPos) {
+        return new BlockPos(limboChunkPos.getMinBlockX() + (twinPos.getX() & 15), twinPos.getY(),
+                limboChunkPos.getMinBlockZ() + (twinPos.getZ() & 15));
     }
 
     /** Resend the whole Limbo chunk to nearby players (one packet) after a bulk copy. */

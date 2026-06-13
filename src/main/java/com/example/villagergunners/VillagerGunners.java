@@ -31,6 +31,9 @@ public class VillagerGunners {
         ModSounds.register(modBus);
         ModLoot.register(modBus);
         modBus.addListener(this::commonSetup); // brewing recipes (must be added off the main init thread)
+        modBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent e) -> {
+            if (e.getConfig().getSpec() == Config.SPEC) Config.apply(); // push drift chances into LimboDrift
+        });
         com.example.villagergunners.network.ModNetwork.register(); // gravemind UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/gobacktoyourworld-common.toml
