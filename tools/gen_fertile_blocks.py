@@ -15,8 +15,10 @@ MODID = "gobacktoyourworld"
 JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
        r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
 
-GREEN_BLEND = 0.5          # how far to push toward green (0=none, 1=fully green-luminance)
-GREEN = (0.40, 0.85, 0.32) # the green the tint pushes toward (modulated by each pixel's brightness)
+GREEN_BLEND = 0.58         # how far to push toward green (0=none, 1=fully green-luminance)
+GREEN = (0.22, 1.00, 0.20) # the green the tint pushes toward -- saturated (low red/blue) so it reads vivid
+GREEN_LIFT = 0.30          # brightness floor (0..1): lifts dark pixels so the tint is vivid, not muddy/black-green
+GREEN_GAMMA = 0.80         # <1 brightens mid-tones (more punch)
 
 # base id -> (kind, vanilla source texture(s)). kind: "all" = cube_all, "log" = cube_column.
 BASES = {
@@ -64,8 +66,10 @@ def green_tint(img):
     for y in range(h):
         for x in range(w):
             r, g, b, a = src[x, y]
-            lum = 0.299 * r + 0.587 * g + 0.114 * b
-            tr, tg, tb = lum * GREEN[0], lum * GREEN[1], lum * GREEN[2]
+            lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+            lum = lum ** GREEN_GAMMA                       # brighten mid-tones
+            lum = GREEN_LIFT + (1.0 - GREEN_LIFT) * lum    # floor so darks stay vividly green, not muddy
+            tr, tg, tb = 255 * lum * GREEN[0], 255 * lum * GREEN[1], 255 * lum * GREEN[2]
             nr = int(round(r * (1 - GREEN_BLEND) + tr * GREEN_BLEND))
             ng = int(round(g * (1 - GREEN_BLEND) + tg * GREEN_BLEND))
             nb = int(round(b * (1 - GREEN_BLEND) + tb * GREEN_BLEND))
