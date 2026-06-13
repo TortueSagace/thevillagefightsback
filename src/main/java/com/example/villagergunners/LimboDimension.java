@@ -52,6 +52,7 @@ public final class LimboDimension {
         if (server == null) return e;
         ServerLevel limbo = server.getLevel(LIMBO);
         if (limbo == null) return e;
+        LimboBanishFx.start(e); // black spirals + soul + teleport swirl where its hitbox was, BEFORE it leaves
         forceLoadCube(limbo);
         ensureCube(limbo);
         double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
