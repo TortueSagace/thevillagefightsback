@@ -20,12 +20,25 @@ public final class LimboGearEvents {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer sp) || !(sp.level() instanceof ServerLevel sl)) return;
+        if ((sp.tickCount & 1) != 0) return; // ~10 emissions/second
+
+        // Green shimmer for worn Limbo armour (denser with a fuller set)...
         int pieces = LimboGear.wornCount(sp);
-        if (pieces <= 0) return;
-        // A faint green shimmer around the wearer; denser with a fuller set. Emits ~1/4 ticks.
-        if ((sp.tickCount & 3) != 0) return;
-        sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
-                sp.getX(), sp.getY() + sp.getBbHeight() * 0.5, sp.getZ(),
-                pieces, sp.getBbWidth() * 0.6, sp.getBbHeight() * 0.5, sp.getBbWidth() * 0.6, 0.0);
+        if (pieces > 0) {
+            sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    sp.getX(), sp.getY() + sp.getBbHeight() * 0.5, sp.getZ(),
+                    1 + pieces, sp.getBbWidth() * 0.55, sp.getBbHeight() * 0.55, sp.getBbWidth() * 0.55, 0.0);
+        }
+        // ...and for a held Limbo tool (the pickaxe), a little glow at the hand.
+        if (holdingLimboTool(sp)) {
+            sl.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    sp.getX(), sp.getY() + sp.getBbHeight() * 0.7, sp.getZ(),
+                    1, sp.getBbWidth() * 0.5, 0.3, sp.getBbWidth() * 0.5, 0.0);
+        }
+    }
+
+    private static boolean holdingLimboTool(ServerPlayer sp) {
+        return sp.getMainHandItem().is(ModItems.LIMBO_PICKAXE.get())
+                || sp.getOffhandItem().is(ModItems.LIMBO_PICKAXE.get());
     }
 }
