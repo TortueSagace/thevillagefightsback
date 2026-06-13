@@ -43,6 +43,19 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
                 net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.HOSTILE, 1.4F, 0.7F);
     }
 
+    /** Player-style fire: launch a rocket along the shooter's look direction (no locked target). */
+    public static void fireFromLook(LivingEntity shooter) {
+        if (shooter.level().isClientSide()) return;
+        RocketEntity rocket = new RocketEntity(shooter.level(), shooter);
+        net.minecraft.world.phys.Vec3 look = shooter.getViewVector(1.0F);
+        rocket.setDeltaMovement(look.scale(SPEED));
+        rocket.setYRot(shooter.getYRot());
+        rocket.setXRot(shooter.getXRot());
+        shooter.level().addFreshEntity(rocket);
+        shooter.level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+                net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.PLAYERS, 1.4F, 0.8F);
+    }
+
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);
     }

@@ -310,6 +310,17 @@ public final class GunnerEvents {
                 dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.FIRE_GRENADE.get())));
     }
 
+    /** Gigachad golems + vindictive gigachads drop their rocket launcher + a few rockets when they die. */
+    @SubscribeEvent
+    public static void onGigachadDrops(LivingDropsEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead.level().isClientSide() || !(dead instanceof GigachadGolemEntity)) return; // covers the vindictive subclass
+        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+                dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET_LAUNCHER.get())));
+        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+                dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET.get(), 1 + dead.getRandom().nextInt(3))));
+    }
+
     /**
      * Hard ally immunity: villagers, iron golems, and guards must NEVER target one another. Their
      * native AI (e.g. HurtByTargetGoal after rocket splash) tries to; we cancel any such target change.

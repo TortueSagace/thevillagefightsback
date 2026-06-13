@@ -17,11 +17,13 @@ public final class ModItems {
     public static final RegistryObject<Item> ALIEN_SLASHER =
             ITEMS.register("alien_slasher", () -> new AlienSlasherItem(new Item.Properties().fireResistant()));
 
-    /** The iron golem's rocket launcher -- a native clone of JEG's, held for the visual ({@link RocketEntity}). */
+    /** The Rocket Launcher: a usable weapon (right-click fires a {@link RocketEntity}, consuming a Rocket).
+     *  Held by gigachad golems and dropped by them. See {@link RocketLauncherItem}. */
     public static final RegistryObject<Item> ROCKET_LAUNCHER =
-            ITEMS.register("rocket_launcher", () -> new Item(new Item.Properties().stacksTo(1).fireResistant()));
+            ITEMS.register("rocket_launcher", () -> new RocketLauncherItem(new Item.Properties().stacksTo(1).fireResistant()));
 
-    /** The flying rocket's billboard sprite (the projectile renders this; not obtainable on its own). */
+    /** Rocket: the launcher's ammunition (also the flying rocket's billboard sprite). Crafted from fire charges
+     *  + gunpowder; dropped by gigachad golems. */
     public static final RegistryObject<Item> ROCKET =
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
