@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "gobacktoyourworld:block/rich_basalt"
+    },
+    "axis=z": {
+      "model": "gobacktoyourworld:block/rich_basalt",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "gobacktoyourworld:block/rich_basalt",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

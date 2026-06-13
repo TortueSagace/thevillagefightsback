@@ -6,6 +6,12 @@
     "gobacktoyourworld:fertile_sand",
     "gobacktoyourworld:rich_sand",
     "gobacktoyourworld:fertile_gravel",
-    "gobacktoyourworld:rich_gravel"
+    "gobacktoyourworld:rich_gravel",
+    "gobacktoyourworld:fertile_soul_sand",
+    "gobacktoyourworld:rich_soul_sand",
+    "gobacktoyourworld:fertile_soul_soil",
+    "gobacktoyourworld:rich_soul_soil",
+    "gobacktoyourworld:fertile_snow_block",
+    "gobacktoyourworld:rich_snow_block"
   ]
 }

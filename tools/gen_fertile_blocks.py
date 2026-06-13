@@ -32,6 +32,11 @@ BASES = {
     "end_stone":  ("all", "end_stone"),
     "sculk":      ("all", "sculk"),
     "leaves":     ("leaves", "oak_leaves"),  # cutout cube_all (non-decaying), green-tinted
+    "blackstone": ("all", "blackstone"),
+    "basalt":     ("log", ("basalt_side", "basalt_top")),  # axis pillar like logs
+    "soul_sand":  ("all", "soul_sand"),
+    "soul_soil":  ("all", "soul_soil"),
+    "snow_block": ("all", "snow"),
 }
 
 def mkdir(p): os.makedirs(p, exist_ok=True)

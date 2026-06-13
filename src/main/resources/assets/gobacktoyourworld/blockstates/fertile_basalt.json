@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "gobacktoyourworld:block/fertile_basalt"
+    },
+    "axis=z": {
+      "model": "gobacktoyourworld:block/fertile_basalt",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "gobacktoyourworld:block/fertile_basalt",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

@@ -197,6 +197,11 @@ public final class ModBlocks {
         registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
         registerFertileRich("deepslate", Blocks.DEEPSLATE, FertileKind.LOG); // axis pillar like logs
         registerFertileRich("leaves", Blocks.OAK_LEAVES, FertileKind.LEAVES); // any leaves; oak is the basis
+        registerFertileRich("blackstone", Blocks.BLACKSTONE, FertileKind.CUBE);
+        registerFertileRich("basalt", Blocks.BASALT, FertileKind.LOG);          // axis pillar
+        registerFertileRich("soul_sand", Blocks.SOUL_SAND, FertileKind.CUBE);
+        registerFertileRich("soul_soil", Blocks.SOUL_SOIL, FertileKind.CUBE);
+        registerFertileRich("snow_block", Blocks.SNOW_BLOCK, FertileKind.CUBE);
     }
 
     private static void registerFertileRich(String base, Block vanilla, FertileKind kind) {

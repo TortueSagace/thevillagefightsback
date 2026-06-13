@@ -38,7 +38,8 @@ public final class BlockMatcher {
 
     /** Base names, MOST-SPECIFIC FIRST so id-substring matching prefers "end_stone"/"deepslate" over "stone". */
     static final String[] BASES = {
-            "deepslate", "end_stone", "netherrack", "sculk", "leaves", "gravel", "sand", "dirt", "log", "stone"
+            "deepslate", "end_stone", "netherrack", "sculk", "leaves", "blackstone", "basalt",
+            "soul_sand", "soul_soil", "snow_block", "gravel", "sand", "dirt", "log", "stone"
     };
 
     /** Reference hardness per base (vanilla destroy time) for the closest-toughness fallback. */
@@ -54,6 +55,11 @@ public final class BlockMatcher {
         BASE_HARDNESS.put("sculk", 0.2F);
         BASE_HARDNESS.put("log", 2.0F);
         BASE_HARDNESS.put("leaves", 0.2F);
+        BASE_HARDNESS.put("blackstone", 1.5F);
+        BASE_HARDNESS.put("basalt", 1.25F);
+        BASE_HARDNESS.put("soul_sand", 0.5F);
+        BASE_HARDNESS.put("soul_soil", 0.5F);
+        BASE_HARDNESS.put("snow_block", 0.2F);
     }
 
     // Lazily initialised (blocks don't exist until registration completes).
@@ -111,6 +117,11 @@ public final class BlockMatcher {
         putAll(exact, "netherrack", Blocks.NETHERRACK, Blocks.CRIMSON_NYLIUM, Blocks.WARPED_NYLIUM);
         putAll(exact, "end_stone", Blocks.END_STONE);
         putAll(exact, "sculk", Blocks.SCULK);
+        putAll(exact, "blackstone", Blocks.BLACKSTONE); // polished/gilded/chiseled caught by id-substring
+        putAll(exact, "basalt", Blocks.BASALT, Blocks.SMOOTH_BASALT, Blocks.POLISHED_BASALT);
+        putAll(exact, "soul_sand", Blocks.SOUL_SAND);
+        putAll(exact, "soul_soil", Blocks.SOUL_SOIL);
+        putAll(exact, "snow_block", Blocks.SNOW_BLOCK);
         // logs are caught by id-substring ("oak_log", "spruce_log", ...).
     }
 
