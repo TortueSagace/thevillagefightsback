@@ -1,0 +1,33 @@
+{
+  "parent": "gobacktoyourworld:limbo/root",
+  "display": {
+    "icon": {
+      "item": "gobacktoyourworld:forgotten_glowstone"
+    },
+    "title": "Forgotten Light",
+    "description": "Gather some forgotten powder.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "gobacktoyourworld:forgotten_powder"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have_item"
+    ]
+  ]
+}
