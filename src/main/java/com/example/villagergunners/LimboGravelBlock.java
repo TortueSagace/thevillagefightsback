@@ -9,10 +9,10 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.entity.item.FallingBlockEntity;
 
 /**
  * Limbo Gravel: a darker gravel that marks where a creature was pulled into Limbo. It FALLS under gravity
@@ -78,6 +78,18 @@ public class LimboGravelBlock extends FallingBlock {
             sl.sendParticles(ParticleTypes.SOUL,
                     entity.getX(), pos.getY() + 1.0, entity.getZ(),
                     2, 0.2, 0.0, 0.2, 0.01);
+        }
+    }
+
+    /** Spontaneously puff soul particles, like soul soil/fire. Client-side ambient (called near the player). */
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        super.animateTick(state, level, pos, random);
+        if (random.nextInt(5) == 0) {
+            double x = pos.getX() + 0.2 + random.nextDouble() * 0.6;
+            double y = pos.getY() + 1.0;
+            double z = pos.getZ() + 0.2 + random.nextDouble() * 0.6;
+            level.addParticle(ParticleTypes.SOUL, x, y, z, 0.0, 0.02 + random.nextDouble() * 0.04, 0.0);
         }
     }
 }

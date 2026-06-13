@@ -47,6 +47,9 @@ public final class VillagerGunnersClient {
         // Our green sonic-boom reuses the vanilla SonicBoomParticle renderer with green sprites.
         event.registerSpriteSet(com.example.villagergunners.ModParticles.GREEN_SONIC_BOOM.get(),
                 net.minecraft.client.particle.SonicBoomParticle.Provider::new);
+        // JEG-style big explosion animation (scaled-up ExplodeParticle with our fireball sprites).
+        event.registerSpriteSet(com.example.villagergunners.ModParticles.GIGACHAD_EXPLOSION.get(),
+                GigachadExplosionParticle.Provider::new);
     }
 
     @SubscribeEvent

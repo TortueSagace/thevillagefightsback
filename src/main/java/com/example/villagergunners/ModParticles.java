@@ -18,6 +18,10 @@ public final class ModParticles {
     public static final RegistryObject<SimpleParticleType> GREEN_SONIC_BOOM =
             PARTICLES.register("green_sonic_boom", () -> new SimpleParticleType(true));
 
+    /** JEG's "big explosion" animation -- a scaled-up ExplodeParticle with custom fireball sprites. */
+    public static final RegistryObject<SimpleParticleType> GIGACHAD_EXPLOSION =
+            PARTICLES.register("gigachad_explosion", () -> new SimpleParticleType(true));
+
     public static void register(IEventBus modBus) {
         PARTICLES.register(modBus);
     }

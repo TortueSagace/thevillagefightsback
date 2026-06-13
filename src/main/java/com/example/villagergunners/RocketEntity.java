@@ -76,14 +76,29 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
                 DIRECT_DAMAGE);
     }
 
-    /** Any contact (block or entity): detonate, then vanish. */
+    /** Any contact (block or entity): detonate with JEG's explosion animation, then vanish. */
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (level().isClientSide()) return;
+        if (!(level() instanceof net.minecraft.server.level.ServerLevel sl)) return;
         Entity owner = getOwner();
-        // TNT-style, block-breaking blast (mobGriefing-gated since the source is the golem); no extra fire.
-        level().explode(owner, getX(), getY(), getZ(), EXPLOSION_RADIUS, false, Level.ExplosionInteraction.TNT);
+        // Same damage + block-breaking as a TNT blast (mobGriefing-gated), but built by hand so we DON'T send
+        // the vanilla explosion packet -- that lets us show JEG's big-explosion animation instead of the
+        // generic TNT poof. explode() applies entity damage + knockback; finalizeExplosion(false) destroys
+        // blocks with NO vanilla particles.
+        boolean grief = sl.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
+        net.minecraft.world.level.Explosion ex = new net.minecraft.world.level.Explosion(sl, owner, null, null,
+                getX(), getY(), getZ(), EXPLOSION_RADIUS, false,
+                grief ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
+                      : net.minecraft.world.level.Explosion.BlockInteraction.KEEP);
+        ex.explode();
+        ex.finalizeExplosion(false);
+        // JEG's big-explosion animation + a smoke cloud + the usual blast sound.
+        sl.sendParticles(ModParticles.GIGACHAD_EXPLOSION.get(), getX(), getY(), getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, getX(), getY(), getZ(), 10, 1.2, 1.2, 1.2, 0.02);
+        sl.playSound(null, getX(), getY(), getZ(), net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE,
+                net.minecraft.sounds.SoundSource.BLOCKS, 4.0F,
+                (1.0F + (random.nextFloat() - random.nextFloat()) * 0.2F) * 0.7F);
         discard();
     }
 
