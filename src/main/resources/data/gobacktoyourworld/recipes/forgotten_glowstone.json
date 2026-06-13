@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PP",
+    "PP"
+  ],
+  "key": {
+    "P": {
+      "item": "gobacktoyourworld:forgotten_powder"
+    }
+  },
+  "result": {
+    "item": "gobacktoyourworld:forgotten_glowstone",
+    "count": 1
+  }
+}

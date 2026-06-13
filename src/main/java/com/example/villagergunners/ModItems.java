@@ -88,6 +88,10 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_PICKAXE = ITEMS.register("limbo_pickaxe",
             () -> new LimboPickaxeItem(new Item.Properties().fireResistant()));
 
+    /** Forgotten Powder: dropped by Forgotten Glowstone (like glowstone dust). Four craft the block back. */
+    public static final RegistryObject<Item> FORGOTTEN_POWDER =
+            ITEMS.register("forgotten_powder", () -> new Item(new Item.Properties()));
+
     /** The emerald tools, in tab order. */
     public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(
             EMERALD_SWORD, EMERALD_PICKAXE, EMERALD_AXE, EMERALD_SHOVEL, EMERALD_HOE);

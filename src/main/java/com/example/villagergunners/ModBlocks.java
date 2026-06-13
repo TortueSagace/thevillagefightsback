@@ -280,6 +280,22 @@ public final class ModBlocks {
     public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
 
+    /**
+     * Forgotten Glowstone: a vivid green glowstone that sparsely encrusts Limbo's bedrock cubes (placed like
+     * moss). It glows at the engine maximum (light 15 -- "twice glowstone" is capped there) and is as tough as
+     * obsidian (needs a diamond+ pickaxe). Drops Forgotten Powder unless mined with Silk Touch (loot table).
+     */
+    public static final RegistryObject<Block> FORGOTTEN_GLOWSTONE = BLOCKS.register("forgotten_glowstone",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(50.0F, 1200.0F)              // obsidian toughness
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.GLASS)
+                    .lightLevel(s -> 15)                   // max light (the engine cap)
+                    .isValidSpawn((s, l, p, e) -> false)));
+    public static final RegistryObject<Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
+            () -> new BlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties()));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + VillagerGunners.MODID))
@@ -320,6 +336,8 @@ public final class ModBlocks {
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
+                output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
+                output.accept(ModItems.FORGOTTEN_POWDER.get());
                 output.accept(ModItems.LIMBO_POTION.get());
                 output.accept(ModItems.VOLATILE_LIMBO_POTION.get());
                 output.accept(ModItems.LIMBO_MEMBRANE.get());
