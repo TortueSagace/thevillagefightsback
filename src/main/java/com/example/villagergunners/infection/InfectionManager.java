@@ -403,6 +403,8 @@ public final class InfectionManager {
                         inf.addFrontier(cand.asLong());
                         inf.incConverted();
                         if (richVariant) inf.addRich(cand.asLong());
+                        // Sparse flora: a tiny chance to sprout a fertile tree / chorus on the new fertile ground.
+                        FertileFlora.onConverted(level, cand);
                     }
                 }
             }

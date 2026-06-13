@@ -424,6 +424,7 @@ public final class ModBlocks {
                 output.accept(FERTILE_CHORUS_FLOWER_ITEM.get());
                 output.accept(RICH_CHORUS_PLANT_ITEM.get());
                 output.accept(RICH_CHORUS_FLOWER_ITEM.get());
+                output.accept(ModItems.FERTILE_CHORUS.get());
                 output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());

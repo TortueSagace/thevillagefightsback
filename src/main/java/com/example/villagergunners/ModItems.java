@@ -73,6 +73,12 @@ public final class ModItems {
                                     ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS), 1.0F)
                             .build())));
 
+    /** Fertile Chorus: a chorus-fruit food (feeds + teleports on eat) dropped by the Fertile Chorus Plant.
+     *  Eating it has a 1% chance to inflict Emerald Diarrhea ({@link FertileChorusItem}). */
+    public static final RegistryObject<Item> FERTILE_CHORUS =
+            ITEMS.register("fertile_chorus", () -> new FertileChorusItem(new Item.Properties().food(
+                    new net.minecraft.world.food.FoodProperties.Builder().nutrition(4).saturationMod(0.3F).build())));
+
     // --- Emerald tools: stats between iron and diamond, like the emerald armour (see EmeraldTier). ---
     public static final RegistryObject<Item> EMERALD_SWORD = ITEMS.register("emerald_sword",
             () -> new net.minecraft.world.item.SwordItem(EmeraldTier.INSTANCE, 3, -2.4F, new Item.Properties()));

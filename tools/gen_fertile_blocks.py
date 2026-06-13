@@ -497,6 +497,7 @@ def main():
     gen_chorus(gems)
     gen_catalyst(gems)
     gen_emerald_apple(gems)
+    gen_fertile_chorus_item(gems)
     gen_emerald_virus_arrow()
     gen_emerald_tools()
     gen_fertile_wood_cobble()
@@ -556,6 +557,16 @@ def gen_emerald_apple(gems):
     name = "emerald_apple"
     with zipfile.ZipFile(JAR) as zf:
         img = overlay_onto(green_tint(load_vanilla(zf, "apple", folder="item")), gems)
+    save_item_png(img, name)
+    write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
+               {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}})
+    print("generated", name)
+
+def gen_fertile_chorus_item(gems):
+    """The Fertile Chorus food item: a green-tinted chorus fruit with the emerald-gem overlay."""
+    name = "fertile_chorus"
+    with zipfile.ZipFile(JAR) as zf:
+        img = overlay_onto(green_tint(load_vanilla(zf, "chorus_fruit", folder="item")), gems)
     save_item_png(img, name)
     write_json(os.path.join(ASSETS, "models", "item", name + ".json"),
                {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}})

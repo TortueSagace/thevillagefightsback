@@ -21,6 +21,10 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> IMMUNITY =
             EFFECTS.register("immunity", ImmunityEffect::new);
 
+    /** "Emerald Diarrhea": the rare funny side-effect of eating Fertile Chorus (see {@link EmeraldDiarrheaEffect}). */
+    public static final RegistryObject<MobEffect> EMERALD_DIARRHEA =
+            EFFECTS.register("emerald_diarrhea", EmeraldDiarrheaEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }
