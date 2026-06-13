@@ -34,8 +34,13 @@ public final class WallPlanner {
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
     private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
 
-    /** Compute the wall plan, or null if there aren't enough beds / the village is too large. */
+    /** Compute the inner (cobblestone) wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds) {
+        return plan(level, gravemind, beds, false);
+    }
+
+    /** Compute the wall plan. {@code obsidian} = the stage-3 OUTER wall (obsidian + fake-obsidian gates). */
+    public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds, boolean obsidian) {
         List<int[]> pts = distinctXz(beds);
         if (pts.size() < MIN_BEDS) return null;
 
@@ -97,7 +102,7 @@ public final class WallPlanner {
             int surfaceY = surfaceY(level, col.x, col.z, minY);
             if (surfaceY <= minY) continue;                            // void column -> skip
             List<WallBlock> colBlocks = new ArrayList<>();
-            expandColumn(col, surfaceY, colBlocks, doors.contains(pack(col.x, col.z)));
+            expandColumn(col, surfaceY, colBlocks, doors.contains(pack(col.x, col.z)), obsidian);
             if (!colBlocks.isEmpty()) { columns.add(colBlocks); total += colBlocks.size(); }
             if (total > MAX_BLOCKS) return null;
         }
@@ -107,12 +112,12 @@ public final class WallPlanner {
 
     // --- column -> course stack ---
 
-    private static void expandColumn(Col col, int surfaceY, List<WallBlock> out, boolean isDoor) {
+    private static void expandColumn(Col col, int surfaceY, List<WallBlock> out, boolean isDoor, boolean obsidian) {
         int base = surfaceY + 1;                 // wall sits ON the ground (one above the top solid block)
 
-        // Corners (where two straight segments meet): a plain 4-tall cobblestone pillar, nothing else.
+        // Corners (where two straight segments meet): a plain 4-tall solid pillar, nothing else.
         if (col.outward == null) {
-            for (int c = 0; c <= 3; c++) out.add(cobble(col.x, base + c, col.z, c));
+            for (int c = 0; c <= 3; c++) out.add(solid(col.x, base + c, col.z, c, obsidian));
             return;
         }
 
@@ -120,14 +125,13 @@ public final class WallPlanner {
         Direction in = o.getOpposite();          // toward the village interior
 
         if (isDoor) {
-            // A 3-high fake-cobblestone gate (courses 0..2) with a solid cobble cap above (course 3) -- the
-            // opening stays a clean 2-wide x 3-high passage for an iron golem. The only thing ON the column is
-            // a standing torch atop the cap (the 4th block above the door), to light the gate. No loophole/
-            // ladder (nothing is placed on the fake cobblestone itself).
-            out.add(fakeCobble(col.x, base, col.z, 0));
-            out.add(fakeCobble(col.x, base + 1, col.z, 1));
-            out.add(fakeCobble(col.x, base + 2, col.z, 2));
-            out.add(cobble(col.x, base + 3, col.z, 3));
+            // A 3-high fake-gate (courses 0..2) with a solid cap above (course 3) -- the opening stays a clean
+            // 2-wide x 3-high passage for an iron golem. The only thing ON the column is a standing torch atop
+            // the cap (the 4th block above the door), to light the gate. No loophole/ladder.
+            out.add(fakeGate(col.x, base, col.z, 0, obsidian));
+            out.add(fakeGate(col.x, base + 1, col.z, 1, obsidian));
+            out.add(fakeGate(col.x, base + 2, col.z, 2, obsidian));
+            out.add(solid(col.x, base + 3, col.z, 3, obsidian));
             // Standing torch on top of the cap (course 3 so it's placed last, after the cap is up).
             out.add(new WallBlock(new BlockPos(col.x, base + 4, col.z),
                     WallBlock.BlockType.STANDING_TORCH, null, false, 3));
@@ -146,12 +150,12 @@ public final class WallPlanner {
         // slit ends up on the wrong side, flip this to o.getCounterClockWise().)
         Direction stairFacing = o.getClockWise();
 
-        out.add(cobble(col.x, base, col.z, 0));
+        out.add(solid(col.x, base, col.z, 0, obsidian));
         out.add(loophole ? stair(col.x, base + 1, col.z, 1, stairFacing, false)
-                         : cobble(col.x, base + 1, col.z, 1));
+                         : solid(col.x, base + 1, col.z, 1, obsidian));
         out.add(loophole ? stair(col.x, base + 2, col.z, 2, stairFacing, true)
-                         : cobble(col.x, base + 2, col.z, 2));
-        out.add(cobble(col.x, base + 3, col.z, 3));
+                         : solid(col.x, base + 2, col.z, 2, obsidian));
+        out.add(solid(col.x, base + 3, col.z, 3, obsidian));
 
         if (ladder) {
             // Ladders climb the wall's INSIDE face: a ladder cell one block toward the interior, supported
@@ -170,12 +174,16 @@ public final class WallPlanner {
         }
     }
 
-    private static WallBlock cobble(int x, int y, int z, int course) {
-        return new WallBlock(new BlockPos(x, y, z), WallBlock.BlockType.COBBLE, null, false, course);
+    /** A solid wall block: obsidian for the stage-3 outer wall, cobblestone otherwise. */
+    private static WallBlock solid(int x, int y, int z, int course, boolean obsidian) {
+        return new WallBlock(new BlockPos(x, y, z),
+                obsidian ? WallBlock.BlockType.OBSIDIAN : WallBlock.BlockType.COBBLE, null, false, course);
     }
 
-    private static WallBlock fakeCobble(int x, int y, int z, int course) {
-        return new WallBlock(new BlockPos(x, y, z), WallBlock.BlockType.FAKE_COBBLE, null, false, course);
+    /** A gate (ally-phasing) block: fake obsidian for the outer wall, fake cobblestone otherwise. */
+    private static WallBlock fakeGate(int x, int y, int z, int course, boolean obsidian) {
+        return new WallBlock(new BlockPos(x, y, z),
+                obsidian ? WallBlock.BlockType.FAKE_OBSIDIAN : WallBlock.BlockType.FAKE_COBBLE, null, false, course);
     }
 
     private static WallBlock stair(int x, int y, int z, int course, Direction facing, boolean topHalf) {

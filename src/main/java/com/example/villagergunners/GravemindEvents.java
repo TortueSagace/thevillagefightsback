@@ -72,6 +72,7 @@ public final class GravemindEvents {
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
         manageExpansion(server, data); // level-3 settler wave (fires spontaneously on reaching level 3)
+        driveOuterWalls(server, data); // level-3 OUTER obsidian wall around the expansion buildings
         manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
@@ -289,6 +290,67 @@ public final class GravemindEvents {
         }
     }
 
+    private static final long OUTER_WALL_DELAY = 1200L; // wait ~1 min after expansion launches so the buildings exist
+    private static final int OUTER_SCAN_RADIUS = 140;   // larger survey so the obsidian ring encloses the expansion
+    private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: when to first survey
+
+    /**
+     * Stage-3 OUTER obsidian wall. After the settler expansion has launched its buildings (and a short delay so
+     * they're actually placed), survey the now-larger village footprint and plan a bigger wall around it -- all
+     * obsidian, with fake-obsidian gates. Builders raise it under the same rules as the inner wall; on completion
+     * it launches fireworks and instantly raises its gate turrets (like the inner wall's level-2 defenders).
+     */
+    private static void driveOuterWalls(MinecraftServer server, GravemindData data) {
+        boolean trySurvey = server.getTickCount() % 200 == 0; // the survey is heavy; throttle it
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.econ(gp).getLevel() < 3) continue;        // stage 3+
+            if (!data.isExpanded(gp)) continue;                // only after the settler expansion launched
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+
+            WallPlan plan = data.getOuterWallPlan(gp);
+            if (plan == null) {
+                long now = level.getGameTime();
+                Long readyAt = outerWallReadyAt.get(gp);
+                if (readyAt == null) { outerWallReadyAt.put(gp, now + OUTER_WALL_DELAY); continue; } // start the timer
+                if (now < readyAt || !trySurvey) continue;
+                WallPlan computed = WallPlanner.plan(level, gp,
+                        collectVillagePoints(level, gp.pos(), OUTER_SCAN_RADIUS), true /* obsidian */);
+                if (computed != null) {
+                    computed.setStartTick(now);
+                    data.putOuterWallPlan(computed);
+                    outerWallReadyAt.remove(gp);
+                    broadcast(server, "§5The Village Gravemind raises an OUTER obsidian wall §8("
+                            + computed.blocks().size() + " blocks)§5 — builders, to work.");
+                }
+                continue;
+            }
+            if (!plan.isComplete()) {
+                double radius = Math.max(ENSURE_GOAL_RADIUS, Math.sqrt(plan.joinRadiusSqr()));
+                List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
+                        new AABB(gp.pos()).inflate(radius), v -> v.isAlive());
+                for (Villager v : nearby) {
+                    GunnerEvents.ensureWallBuildGoal(v);
+                    if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
+                }
+                manageBuilders(level, gp.pos(), nearby, plan.doorColumns().length); // one builder per outer gate
+                sealStuckHoles(level, plan);
+                if (plan.recheckCompletion(level)) {
+                    cleanupScaffolds(level, plan);
+                    for (Villager v : nearby) BuilderRole.demote(v);
+                    com.example.villagergunners.wall.WallBuild.clearPlan(gp);
+                    if (!data.areOuterDefendersBuilt(gp)) {     // instantly summon the outer gate turrets
+                        for (BlockPos gate : plan.gates()) buildDefenderShell(level, gate);
+                        data.markOuterDefendersBuilt(gp);
+                    }
+                    data.setDirty();
+                    launchWallFireworks(level, plan);
+                    broadcast(server, "§aThe outer obsidian wall is complete.");
+                }
+            }
+        }
+    }
+
     // Bright firework burst palette for the wall-completion celebration.
     private static final int[] FIREWORK_COLORS = {
             0xFF2D2D, 0xFF9A2D, 0xFFE92D, 0x57FF2D, 0x2DFFD0, 0x2D8CFF, 0x9A2DFF, 0xFF2DD0, 0xFFFFFF
@@ -403,9 +465,13 @@ public final class GravemindEvents {
      * if too little cobblestone is found.
      */
     private static List<BlockPos> collectVillagePoints(ServerLevel level, BlockPos center) {
+        return collectVillagePoints(level, center, COBBLE_SCAN_RADIUS);
+    }
+
+    private static List<BlockPos> collectVillagePoints(ServerLevel level, BlockPos center, int scanRadius) {
         List<BlockPos> pts = new ArrayList<>();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-        int r = COBBLE_SCAN_RADIUS;
+        int r = scanRadius;
         int yLo = Math.max(level.getMinBuildHeight(), center.getY() - COBBLE_Y_BAND);
         int yHi = Math.min(level.getMaxBuildHeight() - 1, center.getY() + COBBLE_Y_BAND);
         int secLo = level.getSectionIndex(yLo), secHi = level.getSectionIndex(yHi);

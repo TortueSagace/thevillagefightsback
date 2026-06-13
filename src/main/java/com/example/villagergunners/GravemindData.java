@@ -42,7 +42,9 @@ public class GravemindData extends SavedData {
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed gravemind blocks
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a gravemind
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per gravemind
+    private final Map<GlobalPos, WallPlan> outerWallPlans = new HashMap<>(); // stage-3 OUTER obsidian wall per gravemind
     private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // graveminds whose level-2 gate turrets are placed
+    private final Set<GlobalPos> outerDefendersBuilt = new HashSet<>(); // graveminds whose OUTER-wall turrets are placed
     private final Set<GlobalPos> domeBuilt = new HashSet<>();       // graveminds whose level-4 glass dome is placed
     private final Set<GlobalPos> expanded = new HashSet<>();        // graveminds that have run their stage-3 expansion
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
@@ -113,6 +115,8 @@ public class GravemindData extends SavedData {
         changed |= domeBuilt.removeIf(k -> nearCluster(k, gravemind));
         changed |= expanded.removeIf(k -> nearCluster(k, gravemind));
         changed |= wallPlans.keySet().removeIf(k -> nearCluster(k, gravemind));
+        changed |= outerWallPlans.keySet().removeIf(k -> nearCluster(k, gravemind));
+        changed |= outerDefendersBuilt.removeIf(k -> nearCluster(k, gravemind));
         if (changed) setDirty();
     }
 
@@ -139,6 +143,14 @@ public class GravemindData extends SavedData {
         if (wallPlans.remove(gravemind) != null) setDirty();
         if (defendersBuilt.remove(gravemind)) setDirty(); // new wall -> let the gate turrets be rebuilt
     }
+
+    // --- stage-3 OUTER obsidian wall (one per gravemind) ---
+
+    public Collection<WallPlan> outerWallPlans() { return outerWallPlans.values(); }
+    public WallPlan getOuterWallPlan(GlobalPos gravemind) { return outerWallPlans.get(gravemind); }
+    public void putOuterWallPlan(WallPlan plan) { outerWallPlans.put(plan.gravemind(), plan); setDirty(); }
+    public boolean areOuterDefendersBuilt(GlobalPos gravemind) { return outerDefendersBuilt.contains(gravemind); }
+    public void markOuterDefendersBuilt(GlobalPos gravemind) { if (outerDefendersBuilt.add(gravemind)) setDirty(); }
 
     // --- level-2 gate turrets (built once per gravemind) ---
 
@@ -172,6 +184,7 @@ public class GravemindData extends SavedData {
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "serviced", d.servicedCenters);
         readPositions(tag, "defenders", d.defendersBuilt);
+        readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
         readPositions(tag, "dome", d.domeBuilt);
         readPositions(tag, "expanded", d.expanded);
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
@@ -198,6 +211,11 @@ public class GravemindData extends SavedData {
             WallPlan plan = WallPlan.load(walls.getCompound(i));
             d.wallPlans.put(plan.gravemind(), plan);
         }
+        ListTag outerWalls = tag.getList("outerWallPlans", Tag.TAG_COMPOUND);
+        for (int i = 0; i < outerWalls.size(); i++) {
+            WallPlan plan = WallPlan.load(outerWalls.getCompound(i));
+            d.outerWallPlans.put(plan.gravemind(), plan);
+        }
         ListTag bells = tag.getList("bellPlacers", Tag.TAG_COMPOUND);
         for (int i = 0; i < bells.size(); i++) {
             CompoundTag c = bells.getCompound(i);
@@ -212,6 +230,7 @@ public class GravemindData extends SavedData {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "serviced", servicedCenters);
         writePositions(tag, "defenders", defendersBuilt);
+        writePositions(tag, "outerDefenders", outerDefendersBuilt);
         writePositions(tag, "dome", domeBuilt);
         writePositions(tag, "expanded", expanded);
         ListTag econList = new ListTag();
@@ -228,6 +247,9 @@ public class GravemindData extends SavedData {
         ListTag walls = new ListTag();
         for (WallPlan plan : wallPlans.values()) walls.add(plan.save());
         tag.put("wallPlans", walls);
+        ListTag outerWalls = new ListTag();
+        for (WallPlan plan : outerWallPlans.values()) outerWalls.add(plan.save());
+        tag.put("outerWallPlans", outerWalls);
         ListTag bells = new ListTag();
         for (Map.Entry<GlobalPos, java.util.UUID> e : bellPlacers.entrySet()) {
             CompoundTag c = new CompoundTag();

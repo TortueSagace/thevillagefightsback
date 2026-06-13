@@ -64,14 +64,19 @@ public final class WallPlan {
         this.doorColumns = computeDoorColumns(columns);
     }
 
-    /** The perimeter-column index where each gate begins (a gate = a run of fake-cobblestone columns). */
+    /** A gate (ally-phasing) block type: fake cobblestone (inner wall) or fake obsidian (outer wall). */
+    private static boolean isGate(WallBlock.BlockType t) {
+        return t == WallBlock.BlockType.FAKE_COBBLE || t == WallBlock.BlockType.FAKE_OBSIDIAN;
+    }
+
+    /** The perimeter-column index where each gate begins (a gate = a run of fake-gate columns). */
     private static int[] computeDoorColumns(List<List<WallBlock>> columns) {
         List<Integer> doors = new ArrayList<>();
         boolean prevDoor = false;
         for (int i = 0; i < columns.size(); i++) {
             boolean isDoor = false;
             for (WallBlock wb : columns.get(i)) {
-                if (wb.type() == WallBlock.BlockType.FAKE_COBBLE) { isDoor = true; break; }
+                if (isGate(wb.type())) { isDoor = true; break; }
             }
             if (isDoor && !prevDoor) doors.add(i); // first column of a gate run
             prevDoor = isDoor;
@@ -241,7 +246,7 @@ public final class WallPlan {
     public List<BlockPos> gates() {
         List<List<BlockPos>> clusters = new ArrayList<>();
         for (WallBlock wb : blocks) {
-            if (wb.type() != WallBlock.BlockType.FAKE_COBBLE || wb.course() != 0) continue;
+            if (!isGate(wb.type()) || wb.course() != 0) continue;
             BlockPos p = wb.pos();
             List<BlockPos> c = null;
             for (List<BlockPos> cl : clusters) {

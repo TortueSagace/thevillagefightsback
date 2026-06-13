@@ -79,6 +79,20 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_COBBLESTONE.get(), new Item.Properties(),
                     "block.gobacktoyourworld.fake_cobblestone.desc"));
 
+    /** "Fake obsidian": the stage-3 OUTER wall's gate -- same smart-door phasing as fake cobblestone, but with
+     *  obsidian toughness so attackers can't break the gate. */
+    public static final RegistryObject<Block> FAKE_OBSIDIAN = BLOCKS.register(
+            "fake_obsidian",
+            () -> new FakeObsidianBlock(BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)
+                    .lightLevel(s -> 7)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> FAKE_OBSIDIAN_ITEM = ITEMS.register(
+            "fake_obsidian",
+            () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
+                    "block.gobacktoyourworld.fake_obsidian.desc"));
+
     /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
     public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
             "blue_tnt",
@@ -274,6 +288,7 @@ public final class ModBlocks {
                 output.accept(VILLAGE_GRAVEMIND_ITEM.get());
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
+                output.accept(FAKE_OBSIDIAN_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());

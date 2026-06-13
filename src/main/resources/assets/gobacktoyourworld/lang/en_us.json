@@ -3,6 +3,8 @@
   "block.gobacktoyourworld.cheap_scaffold": "Cheap Scaffold",
   "block.gobacktoyourworld.fake_cobblestone": "Fake Cobblestone",
   "block.gobacktoyourworld.fake_cobblestone.desc": "Villagers, golems and players can go through. Perfect to build a hidden door.",
+  "block.gobacktoyourworld.fake_obsidian": "Fake Obsidian",
+  "block.gobacktoyourworld.fake_obsidian.desc": "Villagers, golems and players can go through. Obsidian-tough -- the stage-3 outer wall's gate.",
   "block.gobacktoyourworld.blue_tnt": "Blue TNT",
   "block.gobacktoyourworld.green_tnt": "Green TNT",
   "block.gobacktoyourworld.reinforced_glass": "Reinforced Glass",

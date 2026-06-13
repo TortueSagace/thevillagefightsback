@@ -38,7 +38,14 @@ public final class WallBuild {
         GravemindData data = GravemindData.get(level.getServer());
         WallPlan best = null;
         double bestD = Double.MAX_VALUE;
+        // Consider BOTH the inner (cobblestone) and the stage-3 outer (obsidian) walls. The inner wall is
+        // complete (and skipped) by the time an outer wall is being built, so builders flow onto the outer one.
         for (WallPlan p : data.wallPlans()) {
+            if (p.isComplete() || !p.gravemind().dimension().equals(level.dimension())) continue;
+            double d = p.distSqrTo(near);
+            if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
+        }
+        for (WallPlan p : data.outerWallPlans()) {
             if (p.isComplete() || !p.gravemind().dimension().equals(level.dimension())) continue;
             double d = p.distSqrTo(near);
             if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
