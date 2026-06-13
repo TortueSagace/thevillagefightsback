@@ -1,0 +1,3 @@
+{ "type": "minecraft:crafting_shapeless",
+  "ingredients": [ { "item": "gobacktoyourworld:fertile_log" } ],
+  "result": { "item": "gobacktoyourworld:fertile_planks", "count": 4 } }

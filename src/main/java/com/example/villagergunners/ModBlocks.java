@@ -246,6 +246,26 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
             () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
 
+    // Craftable fertile wood + cobble: fertile_planks (from fertile logs) -> stairs/slabs; fertile_cobblestone
+    // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
+    // materials) -- no tint on the crafted output.
+    public static final RegistryObject<Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+    public static final RegistryObject<Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
+            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+    public static final RegistryObject<Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+    public static final RegistryObject<Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE)));
+    public static final RegistryObject<Item> FERTILE_PLANKS_ITEM = ITEMS.register("fertile_planks",
+            () -> new BlockItem(FERTILE_PLANKS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_PLANKS_STAIRS_ITEM = ITEMS.register("fertile_planks_stairs",
+            () -> new BlockItem(FERTILE_PLANKS_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_PLANKS_SLAB_ITEM = ITEMS.register("fertile_planks_slab",
+            () -> new BlockItem(FERTILE_PLANKS_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_COBBLESTONE_ITEM = ITEMS.register("fertile_cobblestone",
+            () -> new BlockItem(FERTILE_COBBLESTONE.get(), new Item.Properties()));
+
     // Fertile / Rich sculk catalyst: on a nearby mob death it spreads fertile / rich sculk like vanilla
     // sculk spreads from a catalyst (see SculkCatalystEvents). Glows like the sculk family.
     public static final RegistryObject<Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
@@ -372,6 +392,10 @@ public final class ModBlocks {
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
+                output.accept(FERTILE_PLANKS_ITEM.get());
+                output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
+                output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
+                output.accept(FERTILE_COBBLESTONE_ITEM.get());
                 output.accept(FERTILE_DOOR_ITEM.get());
                 output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());

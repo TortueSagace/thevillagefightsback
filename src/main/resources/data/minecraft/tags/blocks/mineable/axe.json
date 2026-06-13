@@ -3,6 +3,9 @@
   "values": [
     "gobacktoyourworld:fertile_log",
     "gobacktoyourworld:rich_log",
-    "gobacktoyourworld:fertile_door"
+    "gobacktoyourworld:fertile_door",
+    "gobacktoyourworld:fertile_planks",
+    "gobacktoyourworld:fertile_planks_stairs",
+    "gobacktoyourworld:fertile_planks_slab"
   ]
 }

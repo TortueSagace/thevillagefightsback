@@ -105,6 +105,10 @@ public final class BlockMatcher {
         if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
         if (ModBlocks.FERTILE_FENCE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
         if (ModBlocks.FERTILE_DOOR.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_DOOR.get());
+        if (ModBlocks.FERTILE_PLANKS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS.get());
+        if (ModBlocks.FERTILE_PLANKS_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_STAIRS.get());
+        if (ModBlocks.FERTILE_PLANKS_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_SLAB.get());
+        if (ModBlocks.FERTILE_COBBLESTONE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_COBBLESTONE.get());
 
         exact = new HashMap<>();
         putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,

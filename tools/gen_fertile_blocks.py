@@ -288,6 +288,21 @@ def main():
     gen_emerald_apple(gems)
     gen_emerald_virus_arrow()
     gen_emerald_tools()
+    gen_fertile_wood_cobble()
+
+def gen_fertile_wood_cobble():
+    """Craftable fertile wood + cobble: fertile_planks (from fertile logs) and fertile_cobblestone (from
+    mining fertile stone). Cube textures/models/items/loot here; stairs/slabs reuse the planks texture
+    (their JSON is authored separately)."""
+    with zipfile.ZipFile(JAR) as zf:
+        planks = green_tint(load_vanilla(zf, "oak_planks"))
+        cobble = green_tint(load_vanilla(zf, "cobblestone"))
+    save_png(planks, "fertile_planks")
+    save_png(cobble, "fertile_cobblestone")
+    for bid in ("fertile_planks", "fertile_cobblestone"):
+        write_cube_all(bid)
+        write_loot_self(bid)
+        print("generated", bid)
 
 def gen_emerald_tools():
     """Emerald tool item sprites: the iron tools, green-tinted. Handheld item models."""

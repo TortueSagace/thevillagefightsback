@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["PPP"],
+  "key": { "P": { "item": "gobacktoyourworld:fertile_planks" } },
+  "result": { "item": "gobacktoyourworld:fertile_planks_slab", "count": 6 } }
