@@ -55,7 +55,8 @@ public class LimboPhantomEntity extends Phantom {
         super.registerGoals(); // phantom flight, circling, sweep attack, sweep damage
         // Target ANY non-limbo creature (mobs + players), not just players.
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, true, false,
-                e -> e != this && e.isAlive() && !Factions.isLimbo(e) && (e instanceof Player || e instanceof Mob)));
+                e -> e != this && e.isAlive() && !Factions.isLimbo(e) && (e instanceof Player || e instanceof Mob)
+                        && !(e instanceof Player p && LimboGear.hasFullSet(p)))); // neutral to a full-set wearer
     }
 
     @Override

@@ -126,5 +126,7 @@
   "item.gobacktoyourworld.iron_golem.desc": "Places a village iron golem.",
   "item.gobacktoyourworld.gigachad_golem.desc": "Places a Gigachad Golem: a stage-3 golem with a rocket launcher and iron armour.",
   "block.gobacktoyourworld.limbo_egg": "Limbo Egg",
-  "block.gobacktoyourworld.limbo_egg.desc": "Breaking it hatches a Limbo Phantom, unless mined with Silk Touch."
+  "block.gobacktoyourworld.limbo_egg.desc": "Breaking it hatches a Limbo Phantom, unless mined with Silk Touch.",
+  "key.categories.gobacktoyourworld": "Go Back To Your World",
+  "key.gobacktoyourworld.limbo_beam": "Limbo Banish Beam"
 }

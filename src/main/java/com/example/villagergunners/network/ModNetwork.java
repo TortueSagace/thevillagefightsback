@@ -36,6 +36,16 @@ public final class ModNetwork {
                 .decoder(ScreenShakePacket::decode)
                 .consumerMainThread(ScreenShakePacket::handle)
                 .add();
+        CHANNEL.messageBuilder(LimboBeamPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(LimboBeamPacket::encode)
+                .decoder(LimboBeamPacket::decode)
+                .consumerMainThread(LimboBeamPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(LimboCooldownPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LimboCooldownPacket::encode)
+                .decoder(LimboCooldownPacket::decode)
+                .consumerMainThread(LimboCooldownPacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */
