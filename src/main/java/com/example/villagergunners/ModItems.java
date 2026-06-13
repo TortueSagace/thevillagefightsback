@@ -92,6 +92,8 @@ public final class ModItems {
 
     // --- The rest of the Limbo tool set: smithed from netherite, more efficient than netherite
     //     (LimboToolTier: speed 10 vs 9, 2500 vs 2031 uses). ---
+    public static final RegistryObject<Item> LIMBO_SWORD = ITEMS.register("limbo_sword",
+            () -> new net.minecraft.world.item.SwordItem(LimboToolTier.INSTANCE, 4, -2.4F, new Item.Properties().fireResistant())); // +1 dmg vs netherite
     public static final RegistryObject<Item> LIMBO_AXE = ITEMS.register("limbo_axe",
             () -> new net.minecraft.world.item.AxeItem(LimboToolTier.INSTANCE, 5.0F, -3.0F, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_SHOVEL = ITEMS.register("limbo_shovel",
