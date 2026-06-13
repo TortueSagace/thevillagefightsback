@@ -131,7 +131,7 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<LimboPhantomEntity>> LIMBO_PHANTOM = ENTITIES.register(
             "limbo_phantom",
             () -> EntityType.Builder.<LimboPhantomEntity>of(LimboPhantomEntity::new, MobCategory.MONSTER)
-                    .sized(0.9F * 3.0F, 0.5F * 3.0F)   // 3x the phantom hitbox
+                    .sized(0.9F, 0.5F)                  // base phantom box; getDimensions() applies the 3x
                     .clientTrackingRange(16)            // glows from far -> track from far
                     .fireImmune()
                     .build("limbo_phantom"));
@@ -144,6 +144,14 @@ public final class ModEntities {
                     .clientTrackingRange(4)
                     .updateInterval(20)
                     .build("emerald_virus_arrow"));
+
+    /** The Rich Sheep: a fertile/rich-looking sheep ({@link RichSheepEntity}) that drops lime wool + an emerald. */
+    public static final RegistryObject<EntityType<RichSheepEntity>> RICH_SHEEP = ENTITIES.register(
+            "rich_sheep",
+            () -> EntityType.Builder.<RichSheepEntity>of(RichSheepEntity::new, MobCategory.CREATURE)
+                    .sized(0.9F, 1.3F)
+                    .clientTrackingRange(10)
+                    .build("rich_sheep"));
 
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
@@ -160,5 +168,6 @@ public final class ModEntities {
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(LIMBO_PHANTOM.get(), LimboPhantomEntity.createAttributes().build());
+        event.put(RICH_SHEEP.get(), net.minecraft.world.entity.animal.Sheep.createAttributes().build());
     }
 }

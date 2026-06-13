@@ -31,21 +31,20 @@ public final class GravemindAchievementEvents {
 
         long _p = ModProfiler.now();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            int best = nearestVillageStage(data, player);
+            int best = maxNearbyStage(data, player);
             if (best > 0) ModTriggers.GRAVEMIND_STAGE.trigger(player, best);
         }
         ModProfiler.add("gravemind.advancements", _p);
     }
 
-    /** The stage of the nearest gravemind to the player (same dimension, within range), or 0 if none. */
-    private static int nearestVillageStage(GravemindData data, ServerPlayer player) {
-        double bestSqr = RANGE_SQR;
-        GlobalPos best = null;
+    /** The HIGHEST stage among graveminds near the player (same dimension, within range), or 0 if none. */
+    private static int maxNearbyStage(GravemindData data, ServerPlayer player) {
+        int max = 0;
         for (GlobalPos gp : data.blocks()) {
             if (!gp.dimension().equals(player.level().dimension())) continue;
-            double d = gp.pos().distToCenterSqr(player.getX(), player.getY(), player.getZ());
-            if (d <= bestSqr) { bestSqr = d; best = gp; }
+            if (gp.pos().distToCenterSqr(player.getX(), player.getY(), player.getZ()) > RANGE_SQR) continue;
+            max = Math.max(max, data.econ(gp).getLevel());
         }
-        return best == null ? 0 : data.econ(best).getLevel();
+        return max;
     }
 }

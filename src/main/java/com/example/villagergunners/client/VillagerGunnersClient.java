@@ -74,6 +74,8 @@ public final class VillagerGunnersClient {
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
         event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_PHANTOM.get(), LimboPhantomRenderer::new);
+        // Rich Sheep: vanilla sheep model/geometry + our green rich skin and (un-tinted) rich fur layer.
+        event.registerEntityRenderer(ModEntities.RICH_SHEEP.get(), RichSheepRenderer::new);
         // The bullet is invisible; its yellow particle tracer is the visual.
         event.registerEntityRenderer(ModEntities.BULLET.get(), BulletRenderer::new);
         // Fire grenade: billboard its item sprite as it flies.

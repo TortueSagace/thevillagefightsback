@@ -78,12 +78,14 @@ public final class LimboDrift {
 
         // Biomes (4x4x4 per section). getBiomes() is typed read-only but is a mutable PalettedContainer.
         LevelChunkSection lsec = limboChunk.getSection(sectionIndex);
+        if (lsec == null) return; // defensive: skip biome copy if the section isn't materialised
         @SuppressWarnings("unchecked")
         net.minecraft.world.level.chunk.PalettedContainer<Holder<net.minecraft.world.level.biome.Biome>> bio =
                 (net.minecraft.world.level.chunk.PalettedContainer<Holder<net.minecraft.world.level.biome.Biome>>)
                         lsec.getBiomes();
-        int qx0 = limboChunk.getPos().x << 2;
-        int qz0 = limboChunk.getPos().z << 2;
+        // Read biomes from the TWIN chunk's quart range (nether twin is at different coords than the limbo chunk).
+        int qx0 = twinChunk.getPos().x << 2;
+        int qz0 = twinChunk.getPos().z << 2;
         int qy0 = baseY >> 2;
         for (int by = 0; by < 4; by++) {
             int qy = nether ? Math.max(0, Math.min(63, qy0 + by)) : (qy0 + by);

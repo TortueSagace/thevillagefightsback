@@ -266,6 +266,28 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_COBBLESTONE_ITEM = ITEMS.register("fertile_cobblestone",
             () -> new BlockItem(FERTILE_COBBLESTONE.get(), new Item.Properties()));
 
+    // Fertile / Rich chorus: the fertile chorus FLOWER grows like a vanilla chorus flower but spreads OUR
+    // fertile chorus (plant + flower). The RICH variants are decorative / harvest-only -- they never grow and
+    // drop an emerald. The plant blocks are ChorusPlantBlock subclasses so they keep the chorus model/shape.
+    public static final RegistryObject<Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT)));
+    public static final RegistryObject<Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER)));
+    // Rich plant: a ChorusPlantBlock so it has the chorus geometry, but it never spreads (no flower drives it).
+    public static final RegistryObject<Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
+            () -> new net.minecraft.world.level.block.ChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT)));
+    // Rich flower: a plain decorative block using the chorus_flower model (no growth at all).
+    public static final RegistryObject<Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER)));
+    public static final RegistryObject<Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
+            () -> new BlockItem(FERTILE_CHORUS_PLANT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",
+            () -> new BlockItem(FERTILE_CHORUS_FLOWER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RICH_CHORUS_PLANT_ITEM = ITEMS.register("rich_chorus_plant",
+            () -> new BlockItem(RICH_CHORUS_PLANT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RICH_CHORUS_FLOWER_ITEM = ITEMS.register("rich_chorus_flower",
+            () -> new BlockItem(RICH_CHORUS_FLOWER.get(), new Item.Properties()));
+
     // Fertile / Rich sculk catalyst: on a nearby mob death it spreads fertile / rich sculk like vanilla
     // sculk spreads from a catalyst (see SculkCatalystEvents). Glows like the sculk family.
     public static final RegistryObject<Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
@@ -372,6 +394,7 @@ public final class ModBlocks {
                 output.accept(GRAVEMIND_WARDEN_SPAWN.get());
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
+                output.accept(ModItems.RICH_SHEEP_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
@@ -397,6 +420,10 @@ public final class ModBlocks {
                 output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
                 output.accept(FERTILE_COBBLESTONE_ITEM.get());
                 output.accept(FERTILE_DOOR_ITEM.get());
+                output.accept(FERTILE_CHORUS_PLANT_ITEM.get());
+                output.accept(FERTILE_CHORUS_FLOWER_ITEM.get());
+                output.accept(RICH_CHORUS_PLANT_ITEM.get());
+                output.accept(RICH_CHORUS_FLOWER_ITEM.get());
                 output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());

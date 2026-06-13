@@ -110,7 +110,9 @@ public class LimboPhantomEntity extends Phantom {
     }
 
     private boolean canGrab(LivingEntity e) {
-        return e.isAlive() && !Factions.isLimbo(e) && e.getBbHeight() < SCALE * 1.5F && !e.isPassenger();
+        // Grab mobs only -- dragging a player via server-side noPhysics rubber-bands their client.
+        return e.isAlive() && !(e instanceof Player) && !Factions.isLimbo(e)
+                && e.getBbHeight() < SCALE * 1.5F && !e.isPassenger();
     }
 
     private void tickGrab() {

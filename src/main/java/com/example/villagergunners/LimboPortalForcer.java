@@ -27,7 +27,7 @@ public final class LimboPortalForcer {
 
     private static final int SEARCH_RADIUS = 12;     // reuse a nearby existing portal instead of stacking new
     private static final int FLOAT_Y = 128;          // default altitude for a fresh Limbo portal in open void
-    private static final int CUBE_HALF = 12;         // |x|,|z| <= this counts as "on the original cube"
+    private static final int CUBE_MIN = -11, CUBE_MAX = 10; // the original cube spans x/z -11..10
     private static final int ABOVE_CUBE_Y = 83;      // cube top is 81 -> sit just above it
 
     /** Send {@code entity} through the portal it is standing in. */
@@ -77,7 +77,7 @@ public final class LimboPortalForcer {
     /** Where the portal's interior-bottom sits. Avoids the original Limbo cube (raises above it). */
     private static int chooseBaseY(ServerLevel dest, int tx, int tz, boolean inLimbo) {
         if (inLimbo) {
-            boolean onCube = Math.abs(tx) <= CUBE_HALF && Math.abs(tz) <= CUBE_HALF;
+            boolean onCube = tx >= CUBE_MIN && tx <= CUBE_MAX && tz >= CUBE_MIN && tz <= CUBE_MAX;
             return onCube ? ABOVE_CUBE_Y : FLOAT_Y;
         }
         // Overworld (or other natural world): land on the surface.

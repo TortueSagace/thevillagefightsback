@@ -99,4 +99,11 @@ public final class LimboGearEvents {
             event.setCanceled(true);
         }
     }
+
+    /** Drop per-player state on logout (no map leak, no stale cooldown/HUD on rejoin). */
+    @SubscribeEvent
+    public static void onLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        FULL_SET.remove(event.getEntity().getUUID());
+        LimboAbility.clear(event.getEntity().getUUID());
+    }
 }

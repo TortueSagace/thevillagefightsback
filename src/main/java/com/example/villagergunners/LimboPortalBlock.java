@@ -63,6 +63,7 @@ public class LimboPortalBlock extends Block {
         long[] d = DWELL.get(id);
         long count = (d != null && d[0] == now - 1) ? d[1] + 1 : 1;
         if (d != null && d[0] == now) return; // already counted this tick (overlapping portal blocks)
+        if (DWELL.size() > 128) DWELL.values().removeIf(e -> now - e[0] > 100); // prune entities that wandered off
         DWELL.put(id, new long[]{now, count});
 
         int needed = entity instanceof Player ? 40 : 1; // players must dwell ~2s; mobs/items go at once

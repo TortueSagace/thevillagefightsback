@@ -109,6 +109,17 @@ public final class BlockMatcher {
         if (ModBlocks.FERTILE_PLANKS_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_STAIRS.get());
         if (ModBlocks.FERTILE_PLANKS_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_SLAB.get());
         if (ModBlocks.FERTILE_COBBLESTONE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_COBBLESTONE.get());
+        // fertile + rich chorus blocks count as infection so they are never re-converted.
+        if (ModBlocks.FERTILE_CHORUS_PLANT.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_PLANT.get());
+        if (ModBlocks.FERTILE_CHORUS_FLOWER.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_FLOWER.get());
+        if (ModBlocks.RICH_CHORUS_PLANT.isPresent()) {
+            Block b = ModBlocks.RICH_CHORUS_PLANT.get();
+            infectionBlocks.add(b); richBlockSet.add(b);
+        }
+        if (ModBlocks.RICH_CHORUS_FLOWER.isPresent()) {
+            Block b = ModBlocks.RICH_CHORUS_FLOWER.get();
+            infectionBlocks.add(b); richBlockSet.add(b);
+        }
 
         exact = new HashMap<>();
         putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,

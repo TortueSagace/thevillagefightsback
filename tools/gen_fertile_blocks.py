@@ -250,6 +250,216 @@ def gen_door():
     })
     print("generated", name)
 
+def _chorus_flower_models(name, flower_tex, dead_tex, bottom_tex):
+    """Author the template_chorus_flower + flower + dead block models (retextured) for `name`.
+    Mirrors vanilla block/template_chorus_flower (the bottom faces use the plant texture)."""
+    tmpl = name + "_template"
+    write_json(os.path.join(ASSETS, "models", "block", tmpl + ".json"), {
+        "parent": "minecraft:block/block",
+        "textures": {"bottom": tex(bottom_tex), "particle": "#texture"},
+        "elements": [
+            {"from": [2, 14, 2], "to": [14, 16, 14], "faces": {
+                "up":    {"uv": [2, 2, 14, 14], "texture": "#texture"},
+                "north": {"uv": [2, 0, 14, 2], "texture": "#bottom"},
+                "south": {"uv": [2, 0, 14, 2], "texture": "#bottom"},
+                "west":  {"uv": [2, 0, 14, 2], "texture": "#bottom"},
+                "east":  {"uv": [2, 0, 14, 2], "texture": "#bottom"}}},
+            {"from": [0, 2, 2], "to": [2, 14, 14], "faces": {
+                "down":  {"uv": [16, 14, 14, 2], "texture": "#bottom"},
+                "up":    {"uv": [0, 2, 2, 14], "texture": "#bottom"},
+                "north": {"uv": [14, 2, 16, 14], "texture": "#bottom"},
+                "south": {"uv": [0, 2, 2, 14], "texture": "#bottom"},
+                "west":  {"uv": [2, 2, 14, 14], "texture": "#texture"}}},
+            {"from": [2, 2, 0], "to": [14, 14, 2], "faces": {
+                "down":  {"uv": [14, 2, 2, 0], "texture": "#bottom"},
+                "up":    {"uv": [2, 0, 14, 2], "texture": "#bottom"},
+                "north": {"uv": [2, 2, 14, 14], "texture": "#texture"},
+                "west":  {"uv": [0, 2, 2, 14], "texture": "#bottom"},
+                "east":  {"uv": [14, 2, 16, 14], "texture": "#bottom"}}},
+            {"from": [2, 2, 14], "to": [14, 14, 16], "faces": {
+                "down":  {"uv": [14, 16, 2, 14], "texture": "#bottom"},
+                "up":    {"uv": [2, 14, 14, 16], "texture": "#bottom"},
+                "south": {"uv": [2, 2, 14, 14], "texture": "#texture"},
+                "west":  {"uv": [14, 2, 16, 14], "texture": "#bottom"},
+                "east":  {"uv": [0, 2, 2, 14], "texture": "#bottom"}}},
+            {"from": [14, 2, 2], "to": [16, 14, 14], "faces": {
+                "down":  {"uv": [2, 14, 0, 2], "texture": "#bottom"},
+                "up":    {"uv": [14, 2, 16, 14], "texture": "#bottom"},
+                "north": {"uv": [0, 2, 2, 14], "texture": "#bottom"},
+                "south": {"uv": [14, 2, 16, 14], "texture": "#bottom"},
+                "east":  {"uv": [2, 2, 14, 14], "texture": "#texture"}}},
+            {"from": [2, 0, 2], "to": [14, 14, 14], "faces": {
+                "up":    {"uv": [2, 2, 14, 14], "texture": "#bottom"},
+                "down":  {"uv": [14, 14, 2, 2], "texture": "#bottom"},
+                "north": {"uv": [2, 2, 14, 16], "texture": "#bottom"},
+                "south": {"uv": [2, 2, 14, 16], "texture": "#bottom"},
+                "west":  {"uv": [2, 2, 14, 16], "texture": "#bottom"},
+                "east":  {"uv": [2, 2, 14, 16], "texture": "#bottom"}}},
+        ]
+    })
+    # the live flower model + dead model
+    write_json(os.path.join(ASSETS, "models", "block", name + ".json"),
+               {"parent": tex(tmpl), "textures": {"texture": tex(flower_tex)}})
+    write_json(os.path.join(ASSETS, "models", "block", name + "_dead.json"),
+               {"parent": tex(tmpl), "textures": {"texture": tex(dead_tex)}})
+
+
+def _chorus_plant_models(name, plant_tex):
+    """Author the chorus_plant + side/noside connection models (retextured) for `name`."""
+    t = {"texture": tex(plant_tex), "inside": tex(plant_tex), "particle": tex(plant_tex)}
+    write_json(os.path.join(ASSETS, "models", "block", name + ".json"), {
+        "parent": "minecraft:block/block", "textures": dict(t),
+        "elements": [
+            {"from": [2, 14, 2], "to": [14, 16, 14], "faces": {
+                "up":    {"uv": [2, 2, 14, 14], "texture": "#texture", "cullface": "up"},
+                "north": {"uv": [2, 0, 14, 2], "texture": "#texture", "cullface": "up"},
+                "south": {"uv": [2, 0, 14, 2], "texture": "#texture", "cullface": "up"},
+                "west":  {"uv": [2, 0, 14, 2], "texture": "#texture", "cullface": "up"},
+                "east":  {"uv": [2, 0, 14, 2], "texture": "#texture", "cullface": "up"}}},
+            {"from": [0, 2, 2], "to": [2, 14, 14], "faces": {
+                "down":  {"uv": [16, 14, 14, 2], "texture": "#texture", "cullface": "west"},
+                "up":    {"uv": [0, 2, 2, 14], "texture": "#texture", "cullface": "west"},
+                "north": {"uv": [14, 2, 16, 14], "texture": "#texture", "cullface": "west"},
+                "south": {"uv": [0, 2, 2, 14], "texture": "#texture", "cullface": "west"},
+                "west":  {"uv": [2, 2, 14, 14], "texture": "#texture", "cullface": "west"}}},
+            {"from": [2, 2, 0], "to": [14, 14, 2], "faces": {
+                "down":  {"uv": [14, 2, 2, 0], "texture": "#texture", "cullface": "north"},
+                "up":    {"uv": [2, 0, 14, 2], "texture": "#texture", "cullface": "north"},
+                "north": {"uv": [2, 2, 14, 14], "texture": "#texture", "cullface": "north"},
+                "west":  {"uv": [0, 2, 2, 14], "texture": "#texture", "cullface": "north"},
+                "east":  {"uv": [14, 2, 16, 14], "texture": "#texture", "cullface": "north"}}},
+            {"from": [2, 2, 14], "to": [14, 14, 16], "faces": {
+                "down":  {"uv": [14, 16, 2, 14], "texture": "#texture", "cullface": "south"},
+                "up":    {"uv": [2, 14, 14, 16], "texture": "#texture", "cullface": "south"},
+                "south": {"uv": [2, 2, 14, 14], "texture": "#texture", "cullface": "south"},
+                "west":  {"uv": [14, 2, 16, 14], "texture": "#texture", "cullface": "south"},
+                "east":  {"uv": [0, 2, 2, 14], "texture": "#texture", "cullface": "south"}}},
+            {"from": [14, 2, 2], "to": [16, 14, 14], "faces": {
+                "down":  {"uv": [2, 14, 0, 2], "texture": "#texture", "cullface": "east"},
+                "up":    {"uv": [14, 2, 16, 14], "texture": "#texture", "cullface": "east"},
+                "north": {"uv": [0, 2, 2, 14], "texture": "#texture", "cullface": "east"},
+                "south": {"uv": [14, 2, 16, 14], "texture": "#texture", "cullface": "east"},
+                "east":  {"uv": [2, 2, 14, 14], "texture": "#texture", "cullface": "east"}}},
+            {"from": [2, 0, 2], "to": [14, 2, 14], "faces": {
+                "down":  {"uv": [14, 14, 2, 2], "texture": "#texture", "cullface": "down"},
+                "north": {"uv": [2, 14, 14, 16], "texture": "#texture", "cullface": "down"},
+                "south": {"uv": [2, 14, 14, 16], "texture": "#texture", "cullface": "down"},
+                "west":  {"uv": [2, 14, 14, 16], "texture": "#texture", "cullface": "down"},
+                "east":  {"uv": [2, 14, 14, 16], "texture": "#texture", "cullface": "down"}}},
+            {"from": [2, 2, 2], "to": [14, 14, 14], "faces": {
+                "down":  {"uv": [14, 14, 2, 2], "texture": "#inside"},
+                "up":    {"uv": [2, 2, 14, 14], "texture": "#inside"},
+                "north": {"uv": [2, 2, 14, 14], "texture": "#inside"},
+                "south": {"uv": [2, 2, 14, 14], "texture": "#inside"},
+                "west":  {"uv": [2, 2, 14, 14], "texture": "#inside"},
+                "east":  {"uv": [2, 2, 14, 14], "texture": "#inside"}}},
+        ]
+    })
+    # side connection model
+    write_json(os.path.join(ASSETS, "models", "block", name + "_side.json"), {
+        "ambientocclusion": False, "textures": dict(t),
+        "elements": [{"from": [4, 4, 0], "to": [12, 12, 4], "faces": {
+            "down":  {"texture": "#texture"}, "up": {"texture": "#texture"},
+            "north": {"texture": "#texture", "cullface": "north"},
+            "west":  {"texture": "#texture"}, "east": {"texture": "#texture"}}}]
+    })
+    # noside (a stub pointing inward) + 3 longer stub variants
+    write_json(os.path.join(ASSETS, "models", "block", name + "_noside.json"), {
+        "ambientocclusion": False, "textures": dict(t),
+        "elements": [{"from": [4, 4, 4], "to": [12, 12, 12], "faces": {"north": {"texture": "#inside"}}}]
+    })
+    for n, frm in (("1", [4, 4, 3]), ("2", [5, 5, 2]), ("3", [4, 4, 3])):
+        to = [12, 12, 4] if n != "2" else [11, 11, 4]
+        write_json(os.path.join(ASSETS, "models", "block", name + "_noside" + n + ".json"), {
+            "ambientocclusion": False, "textures": dict(t),
+            "elements": [
+                {"from": [4, 4, 4], "to": [12, 12, 12], "faces": {"north": {"texture": "#inside"}}},
+                {"from": frm, "to": to, "faces": {
+                    "down":  {"texture": "#texture"}, "up": {"texture": "#texture"},
+                    "north": {"texture": "#texture"}, "west": {"texture": "#texture"},
+                    "east":  {"texture": "#texture"}}},
+            ]
+        })
+
+
+def _chorus_plant_blockstate(name):
+    """The multipart chorus_plant blockstate, retextured to `name`'s models (mirrors vanilla)."""
+    def m(suffix, **kw):
+        d = {"model": tex(name + suffix)}
+        d.update(kw)
+        return d
+    nosides = [m("_noside", weight=2), m("_noside1"), m("_noside2"), m("_noside3")]
+    def rotated(rotk, rotv):
+        # the 4 noside variants, each with the given rotation + uvlock (order rotates per vanilla)
+        order = [("_noside1", {}), ("_noside2", {}), ("_noside3", {}), ("_noside", {"weight": 2})]
+        out = []
+        for suf, extra in order:
+            d = {"model": tex(name + suf), "uvlock": True, rotk: rotv}
+            d.update(extra)
+            out.append(d)
+        return out
+    write_json(os.path.join(ASSETS, "blockstates", name + ".json"), {"multipart": [
+        {"apply": m("_side"), "when": {"north": "true"}},
+        {"apply": m("_side", uvlock=True, y=90), "when": {"east": "true"}},
+        {"apply": m("_side", uvlock=True, y=180), "when": {"south": "true"}},
+        {"apply": m("_side", uvlock=True, y=270), "when": {"west": "true"}},
+        {"apply": m("_side", uvlock=True, x=270), "when": {"up": "true"}},
+        {"apply": m("_side", uvlock=True, x=90), "when": {"down": "true"}},
+        {"apply": nosides, "when": {"north": "false"}},
+        {"apply": rotated("y", 90), "when": {"east": "false"}},
+        {"apply": rotated("y", 180), "when": {"south": "false"}},
+        {"apply": rotated("y", 270), "when": {"west": "false"}},
+        {"apply": rotated("x", 270), "when": {"up": "false"}},
+        {"apply": rotated("x", 90), "when": {"down": "false"}},
+    ]})
+
+
+def gen_chorus(gems):
+    """fertile_/rich_ chorus plant + flower. Fertile = green-tinted vanilla chorus textures; Rich adds the
+    emerald-gem overlay. Blockstates/models mirror vanilla chorus (flower = age variants -> flower/dead model;
+    plant = multipart connection models). Fertile flower drops 'fertile_chorus' (a later batch's item); fertile
+    plant drops itself; rich variants drop an emerald."""
+    with zipfile.ZipFile(JAR) as zf:
+        flower = green_tint(load_vanilla(zf, "chorus_flower"))
+        dead = green_tint(load_vanilla(zf, "chorus_flower_dead"))
+        plant = green_tint(load_vanilla(zf, "chorus_plant"))
+    # textures
+    save_png(flower, "fertile_chorus_flower"); save_png(dead, "fertile_chorus_flower_dead")
+    save_png(plant, "fertile_chorus_plant")
+    save_png(overlay_onto(flower, gems), "rich_chorus_flower")
+    save_png(overlay_onto(dead, gems), "rich_chorus_flower_dead")
+    save_png(overlay_onto(plant, gems), "rich_chorus_plant")
+
+    for variant in ("fertile", "rich"):
+        fl = variant + "_chorus_flower"
+        pl = variant + "_chorus_plant"
+        # ---- flower: block models, age blockstate, item model ----
+        _chorus_flower_models(fl, fl, fl + "_dead", pl)
+        write_json(os.path.join(ASSETS, "blockstates", fl + ".json"), {"variants": {
+            "age=0": {"model": tex(fl)}, "age=1": {"model": tex(fl)}, "age=2": {"model": tex(fl)},
+            "age=3": {"model": tex(fl)}, "age=4": {"model": tex(fl)}, "age=5": {"model": tex(fl + "_dead")},
+        } if variant == "fertile" else {"": {"model": tex(fl)}}})  # rich flower has no age property
+        write_json(os.path.join(ASSETS, "models", "item", fl + ".json"), {"parent": tex(fl)})
+        # ---- plant: connection models, multipart blockstate, item model (item/generated) ----
+        _chorus_plant_models(pl, pl)
+        _chorus_plant_blockstate(pl)
+        write_json(os.path.join(ASSETS, "models", "item", pl + ".json"),
+                   {"parent": "minecraft:item/generated", "textures": {"layer0": tex(pl)}})
+
+    # ---- loot ----
+    # fertile flower drops itself; fertile plant drops the (later-batch) fertile_chorus item.
+    write_loot_self("fertile_chorus_flower")
+    write_json(os.path.join(DATA, "loot_tables", "blocks", "fertile_chorus_plant.json"), {
+        "type": "minecraft:block",
+        "pools": [{"rolls": 1, "bonus_rolls": 0,
+                   "entries": [{"type": "minecraft:item", "name": f"{MODID}:fertile_chorus"}],
+                   "conditions": [{"condition": "minecraft:survives_explosion"}]}]
+    })
+    write_loot_emerald("rich_chorus_flower")
+    write_loot_emerald("rich_chorus_plant")
+    print("generated chorus (fertile + rich, plant + flower)")
+
+
 def main():
     with zipfile.ZipFile(JAR) as zf:
         gems = gem_overlay(zf)
@@ -284,11 +494,24 @@ def main():
             write_loot_emerald(rich)
             print("generated", fertile, "+", rich)
     gen_door()
+    gen_chorus(gems)
     gen_catalyst(gems)
     gen_emerald_apple(gems)
     gen_emerald_virus_arrow()
     gen_emerald_tools()
     gen_fertile_wood_cobble()
+    gen_rich_sheep(gems)
+
+def gen_rich_sheep(gems):
+    """The Rich Sheep entity textures: green-tinted sheep body + green-tinted, emerald-flecked fur.
+    The body uses entity/sheep/sheep.png; the fur uses entity/sheep/sheep_fur.png with the gem overlay."""
+    with zipfile.ZipFile(JAR) as zf:
+        body = green_tint(load_vanilla(zf, "sheep/sheep", folder="entity"))
+        fur = overlay_onto(green_tint(load_vanilla(zf, "sheep/sheep_fur", folder="entity")), gems)
+    d = os.path.join(ASSETS, "textures", "entity"); mkdir(d)
+    body.save(os.path.join(d, "rich_sheep.png"))
+    fur.save(os.path.join(d, "rich_sheep_fur.png"))
+    print("generated rich_sheep + rich_sheep_fur")
 
 def gen_fertile_wood_cobble():
     """Craftable fertile wood + cobble: fertile_planks (from fertile logs) and fertile_cobblestone (from

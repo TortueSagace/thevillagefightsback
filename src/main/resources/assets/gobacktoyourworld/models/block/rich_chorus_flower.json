@@ -1,0 +1,6 @@
+{
+  "parent": "gobacktoyourworld:block/rich_chorus_flower_template",
+  "textures": {
+    "texture": "gobacktoyourworld:block/rich_chorus_flower"
+  }
+}

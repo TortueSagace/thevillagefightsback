@@ -119,6 +119,11 @@ public final class ModItems {
             ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.EMERALDGER, 0x17DD62, 0x0A6E2E, new Item.Properties()));
 
+    /** Creative spawn egg for the Rich Sheep (the fertile/rich-looking, emerald-dropping sheep). */
+    public static final RegistryObject<Item> RICH_SHEEP_SPAWN =
+            ITEMS.register("rich_sheep_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.RICH_SHEEP, 0x2BBF4E, 0x17DD62, new Item.Properties()));
+
     // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a Gravemind stage,
     //     even with no gravemind present (see StagedDefenderEggItem). ---
     private static RegistryObject<Item> egg(String name, StagedDefenderEggItem.Kind kind, int stage, int primary, int secondary) {

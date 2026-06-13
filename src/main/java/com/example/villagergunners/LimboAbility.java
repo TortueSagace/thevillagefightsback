@@ -45,6 +45,11 @@ public final class LimboAbility {
         return COOLDOWN.getOrDefault(id, 0);
     }
 
+    /** Drop a player's cooldown state (call on logout to avoid a leak / stale rejoin state). */
+    public static void clear(UUID id) {
+        COOLDOWN.remove(id);
+    }
+
     private static void sync(ServerPlayer player, int ticks) {
         com.example.villagergunners.network.ModNetwork.sendTo(player,
                 new com.example.villagergunners.network.LimboCooldownPacket(ticks));
