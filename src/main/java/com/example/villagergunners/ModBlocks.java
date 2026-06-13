@@ -390,6 +390,9 @@ public final class ModBlocks {
                 output.accept(ModArmor.LIMBO_LEGGINGS.get());
                 output.accept(ModArmor.LIMBO_BOOTS.get());
                 output.accept(ModItems.LIMBO_PICKAXE.get());
+                output.accept(ModItems.LIMBO_AXE.get());
+                output.accept(ModItems.LIMBO_SHOVEL.get());
+                output.accept(ModItems.LIMBO_HOE.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
             })
             .build());

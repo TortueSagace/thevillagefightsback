@@ -90,6 +90,15 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_PICKAXE = ITEMS.register("limbo_pickaxe",
             () -> new LimboPickaxeItem(new Item.Properties().fireResistant()));
 
+    // --- The rest of the Limbo tool set: smithed from netherite, more efficient than netherite
+    //     (LimboToolTier: speed 10 vs 9, 2500 vs 2031 uses). ---
+    public static final RegistryObject<Item> LIMBO_AXE = ITEMS.register("limbo_axe",
+            () -> new net.minecraft.world.item.AxeItem(LimboToolTier.INSTANCE, 5.0F, -3.0F, new Item.Properties().fireResistant()));
+    public static final RegistryObject<Item> LIMBO_SHOVEL = ITEMS.register("limbo_shovel",
+            () -> new net.minecraft.world.item.ShovelItem(LimboToolTier.INSTANCE, 1.5F, -3.0F, new Item.Properties().fireResistant()));
+    public static final RegistryObject<Item> LIMBO_HOE = ITEMS.register("limbo_hoe",
+            () -> new net.minecraft.world.item.HoeItem(LimboToolTier.INSTANCE, -4, 0.0F, new Item.Properties().fireResistant()));
+
     /** Forgotten Powder: dropped by Forgotten Glowstone (like glowstone dust). Four craft the block back. */
     public static final RegistryObject<Item> FORGOTTEN_POWDER =
             ITEMS.register("forgotten_powder", () -> new Item(new Item.Properties()));
