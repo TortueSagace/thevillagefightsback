@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/cube_bottom_top",
-  "textures": {
-    "bottom": "gobacktoyourworld:block/green_tnt_bottom",
-    "top": "gobacktoyourworld:block/green_tnt_top",
-    "side": "gobacktoyourworld:block/green_tnt_side"
-  }
-}

@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/cube",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "thevillagefightsback:block/protecting_glass_side",
+    "down": "thevillagefightsback:block/protecting_glass_side",
+    "up": "thevillagefightsback:block/protecting_glass_side",
+    "north": "thevillagefightsback:block/protecting_glass_front",
+    "south": "thevillagefightsback:block/protecting_glass_side",
+    "east": "thevillagefightsback:block/protecting_glass_side",
+    "west": "thevillagefightsback:block/protecting_glass_side"
+  }
+}

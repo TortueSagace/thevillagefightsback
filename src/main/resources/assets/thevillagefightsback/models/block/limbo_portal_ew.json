@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/nether_portal_ew",
+  "textures": {
+    "portal": "thevillagefightsback:block/limbo_portal",
+    "particle": "thevillagefightsback:block/limbo_portal"
+  },
+  "render_type": "minecraft:translucent"
+}

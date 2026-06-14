@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "side": "gobacktoyourworld:block/rich_basalt",
-    "end": "gobacktoyourworld:block/rich_basalt_top"
-  }
-}

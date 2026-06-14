@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "thevillagefightsback:block/rich_log"
+    },
+    "axis=z": {
+      "model": "thevillagefightsback:block/rich_log",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "thevillagefightsback:block/rich_log",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

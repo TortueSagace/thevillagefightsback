@@ -9,13 +9,13 @@ import org.slf4j.Logger;
 /**
  * The Village Fights Back -- main mod class. A Village Gravemind evolves the village through stages and arms
  * its villagers, guards and iron golems (all native weapons/abilities; no third-party deps) to repel any
- * threat. Registers all content here; event handlers live in {@link VillageEvents} and friends. Note the
- * registry namespace (the {@code @Mod} id / {@link #MODID}) is kept as "gobacktoyourworld" so existing saved
- * worlds keep working -- only the display name and code were renamed.
+ * threat. Registers all content here; event handlers live in {@link VillageEvents} and friends. The registry
+ * namespace (the {@code @Mod} id / {@link #MODID}) is "thevillagefightsback"; it was renamed from the original
+ * "gobacktoyourworld", which orphans this mod's content in worlds saved under the old id.
  */
 @Mod(TheVillageFightsBack.MODID)
 public class TheVillageFightsBack {
-    public static final String MODID = "gobacktoyourworld";
+    public static final String MODID = "thevillagefightsback";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public TheVillageFightsBack() {
@@ -36,7 +36,7 @@ public class TheVillageFightsBack {
         });
         com.example.villagefightsback.network.ModNetwork.register(); // gravemind UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
-                net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/gobacktoyourworld-common.toml
+                net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/thevillagefightsback-common.toml
         LOGGER.info("[The Village Fights Back] loaded.");
     }
 

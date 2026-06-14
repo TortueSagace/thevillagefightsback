@@ -1,1 +1,0 @@
-{ "type": "minecraft:crafting_shaped", "pattern": ["EEE","E E"], "key": { "E": { "item": "minecraft:emerald_block" } }, "result": { "item": "gobacktoyourworld:emerald_helmet" } }

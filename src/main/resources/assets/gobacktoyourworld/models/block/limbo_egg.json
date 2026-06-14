@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/dragon_egg",
-  "textures": {
-    "particle": "gobacktoyourworld:block/limbo_egg",
-    "all": "gobacktoyourworld:block/limbo_egg"
-  }
-}

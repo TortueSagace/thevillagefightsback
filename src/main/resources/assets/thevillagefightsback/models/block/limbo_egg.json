@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/dragon_egg",
+  "textures": {
+    "particle": "thevillagefightsback:block/limbo_egg",
+    "all": "thevillagefightsback:block/limbo_egg"
+  }
+}

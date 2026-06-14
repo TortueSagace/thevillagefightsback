@@ -15,7 +15,7 @@ import net.minecraft.world.level.pathfinder.BlockPathTypes;
 public final class ModPathTypes {
     /** Default malus -1.0 => BLOCKED for every mob unless it overrides the malus to >= 0. */
     public static final BlockPathTypes ALLY_PASSABLE =
-            BlockPathTypes.create("gobacktoyourworld:ally_passable", -1.0F);
+            BlockPathTypes.create("thevillagefightsback:ally_passable", -1.0F);
 
     private ModPathTypes() {}
 

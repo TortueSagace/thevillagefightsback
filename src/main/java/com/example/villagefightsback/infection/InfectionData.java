@@ -23,7 +23,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  * Everything is stored as packed {@code BlockPos.asLong()}.
  */
 public class InfectionData extends SavedData {
-    private static final String NAME = "gobacktoyourworld_infection";
+    private static final String NAME = "thevillagefightsback_infection";
 
     public static final int PATH_HEAD_CAP = 100;     // only the 100 newest path blocks can grow (spec point 1)
     public static final int FRONTIER_CAP = 60_000;   // hard memory bound on the active conversion frontier

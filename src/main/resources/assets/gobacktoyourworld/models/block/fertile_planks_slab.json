@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/slab",
-  "textures": {
-    "bottom": "gobacktoyourworld:block/fertile_planks",
-    "top": "gobacktoyourworld:block/fertile_planks",
-    "side": "gobacktoyourworld:block/fertile_planks"
-  }
-}

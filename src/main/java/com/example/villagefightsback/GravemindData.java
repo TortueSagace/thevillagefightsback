@@ -28,7 +28,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  * storage, so it persists with the save and is the same no matter which gravemind you interact with.
  */
 public class GravemindData extends SavedData {
-    private static final String NAME = "gobacktoyourworld_gravemind";
+    private static final String NAME = "thevillagefightsback_gravemind";
 
     public static final int MAX_LEVEL = 4;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)

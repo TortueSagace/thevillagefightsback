@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    {
+      "item": "thevillagefightsback:emerald_apple"
+    }
+  ],
+  "result": {
+    "item": "thevillagefightsback:limbo_ingot",
+    "count": 1
+  }
+}

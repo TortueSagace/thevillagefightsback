@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "thevillagefightsback:block/fertile_deepslate"
+    },
+    "axis=z": {
+      "model": "thevillagefightsback:block/fertile_deepslate",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "thevillagefightsback:block/fertile_deepslate",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

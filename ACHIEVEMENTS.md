@@ -4,7 +4,7 @@ A running log of what the mod does (the "achievements" — features shipped) and
 roadmap). Grouped by system, not by commit. Update this when a **big** update lands — see the maintenance note
 at the bottom.
 
-> Minecraft Forge 1.20.1 (Java 17) · modid `gobacktoyourworld` · package `com.example.villagergunners`
+> Minecraft Forge 1.20.1 (Java 17) · modid `thevillagefightsback` · package `com.example.villagergunners`
 
 ---
 

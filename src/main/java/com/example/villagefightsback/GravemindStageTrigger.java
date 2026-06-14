@@ -14,7 +14,7 @@ import net.minecraft.util.GsonHelper;
 /**
  * Custom advancement trigger: a player is "near a village whose gravemind has reached stage N". Fired by the
  * poll in {@link GravemindAchievementEvents}. An advancement's criterion specifies the minimum stage, e.g.
- * {@code {"trigger":"gobacktoyourworld:gravemind_stage","conditions":{"stage":2}}}.
+ * {@code {"trigger":"thevillagefightsback:gravemind_stage","conditions":{"stage":2}}}.
  */
 public class GravemindStageTrigger extends SimpleCriterionTrigger<GravemindStageTrigger.Instance> {
     public static final ResourceLocation ID = new ResourceLocation(TheVillageFightsBack.MODID, "gravemind_stage");

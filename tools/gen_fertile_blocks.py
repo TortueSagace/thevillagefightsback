@@ -9,9 +9,9 @@ import json, os, zipfile
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # villager-arms-mod/
-ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "gobacktoyourworld")
-DATA = os.path.join(ROOT, "src", "main", "resources", "data", "gobacktoyourworld")
-MODID = "gobacktoyourworld"
+ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefightsback")
+DATA = os.path.join(ROOT, "src", "main", "resources", "data", "thevillagefightsback")
+MODID = "thevillagefightsback"
 JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
        r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
 

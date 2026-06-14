@@ -1,6 +1,0 @@
-{
-  "parent": "gobacktoyourworld:block/fertile_chorus_flower_template",
-  "textures": {
-    "texture": "gobacktoyourworld:block/fertile_chorus_flower_dead"
-  }
-}

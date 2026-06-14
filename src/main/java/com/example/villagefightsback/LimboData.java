@@ -25,7 +25,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  * Stored on the overworld's data storage.
  */
 public class LimboData extends SavedData {
-    private static final String NAME = "gobacktoyourworld_limbo";
+    private static final String NAME = "thevillagefightsback_limbo";
 
     /** One held creature: its return marker (current gravel pos), arrival time, name and name-tag entity. */
     public static final class Entry {

@@ -1,9 +1,0 @@
-{
-  "variants": {
-    "charges=0": { "model": "gobacktoyourworld:block/village_gravemind_0" },
-    "charges=1": { "model": "gobacktoyourworld:block/village_gravemind_1" },
-    "charges=2": { "model": "gobacktoyourworld:block/village_gravemind_2" },
-    "charges=3": { "model": "gobacktoyourworld:block/village_gravemind_3" },
-    "charges=4": { "model": "gobacktoyourworld:block/village_gravemind_4" }
-  }
-}

@@ -77,7 +77,7 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
             "fake_cobblestone",
             () -> new TooltipBlockItem(FAKE_COBBLESTONE.get(), new Item.Properties(),
-                    "block.gobacktoyourworld.fake_cobblestone.desc"));
+                    "block.thevillagefightsback.fake_cobblestone.desc"));
 
     /** "Fake obsidian": the stage-3 OUTER wall's gate -- same smart-door phasing as fake cobblestone, but with
      *  obsidian toughness so attackers can't break the gate. */
@@ -91,7 +91,7 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FAKE_OBSIDIAN_ITEM = ITEMS.register(
             "fake_obsidian",
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
-                    "block.gobacktoyourworld.fake_obsidian.desc"));
+                    "block.thevillagefightsback.fake_obsidian.desc"));
 
     /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
     public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
@@ -344,7 +344,7 @@ public final class ModBlocks {
                     .randomTicks()));        // enables the small natural-hatch chance
     public static final RegistryObject<Item> LIMBO_EGG_ITEM = ITEMS.register("limbo_egg",
             () -> new TooltipBlockItem(LIMBO_EGG.get(), new Item.Properties(),
-                    "block.gobacktoyourworld.limbo_egg.desc"));
+                    "block.thevillagefightsback.limbo_egg.desc"));
 
     /**
      * Forgotten Glowstone: a vivid green glowstone that sparsely encrusts Limbo's bedrock cubes (placed like
@@ -361,7 +361,7 @@ public final class ModBlocks {
                     .isValidSpawn((s, l, p, e) -> false)));
     public static final RegistryObject<Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
             () -> new TooltipBlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties(),
-                    "block.gobacktoyourworld.forgotten_glowstone.desc"));
+                    "block.thevillagefightsback.forgotten_glowstone.desc"));
 
     /**
      * The Limbo Portal: a green nether-portal that forms inside a lit {@link #FAKE_OBSIDIAN} frame and

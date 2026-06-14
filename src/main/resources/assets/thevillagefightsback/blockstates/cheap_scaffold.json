@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "bottom=false": {
+      "model": "thevillagefightsback:block/cheap_scaffold_stable"
+    },
+    "bottom=true": {
+      "model": "thevillagefightsback:block/cheap_scaffold_unstable"
+    }
+  }
+}

@@ -17,11 +17,11 @@ public final class LimboAbilityKeybinds {
     private LimboAbilityKeybinds() {}
 
     public static final KeyMapping LIMBO_BEAM = new KeyMapping(
-            "key.gobacktoyourworld.limbo_beam",
+            "key.thevillagefightsback.limbo_beam",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_G,
-            "key.categories.gobacktoyourworld");
+            "key.categories.thevillagefightsback");
 
     @SubscribeEvent
     public static void onRegisterKeys(RegisterKeyMappingsEvent event) {

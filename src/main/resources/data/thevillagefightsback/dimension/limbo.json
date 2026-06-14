@@ -1,0 +1,18 @@
+{
+  "type": "thevillagefightsback:limbo",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "thevillagefightsback:limbo",
+      "lakes": false,
+      "features": false,
+      "layers": [
+        {
+          "height": 1,
+          "block": "minecraft:air"
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

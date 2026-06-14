@@ -13,7 +13,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  * Limbo level's own data storage. Only cube-origin chunks are recorded, so the set stays small.
  */
 public class LimboCubeData extends SavedData {
-    private static final String NAME = "gobacktoyourworld_limbo_cubes";
+    private static final String NAME = "thevillagefightsback_limbo_cubes";
 
     private final Set<Long> built = new HashSet<>();
 

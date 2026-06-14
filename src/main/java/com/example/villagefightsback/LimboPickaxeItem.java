@@ -28,6 +28,6 @@ public class LimboPickaxeItem extends PickaxeItem {
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tip, flag);
-        tip.add(Component.translatable("item.gobacktoyourworld.limbo_pickaxe.desc").withStyle(ChatFormatting.DARK_GREEN));
+        tip.add(Component.translatable("item.thevillagefightsback.limbo_pickaxe.desc").withStyle(ChatFormatting.DARK_GREEN));
     }
 }

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "thevillagefightsback:limbo_smithing_template"
+  },
+  "base": {
+    "item": "minecraft:netherite_sword"
+  },
+  "addition": {
+    "item": "thevillagefightsback:limbo_ingot"
+  },
+  "result": {
+    "item": "thevillagefightsback:limbo_sword"
+  }
+}

@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 
 /**
  * Global loot modifier: with a small {@code chance}, drops a Limbo Potion into any VILLAGE chest
- * ({@code minecraft:chests/village/*}) or any of our mod's structure chests ({@code gobacktoyourworld:chests/*},
+ * ({@code minecraft:chests/village/*}) or any of our mod's structure chests ({@code thevillagefightsback:chests/*},
  * which is what the 7 NBT buildings fill from). One modifier covers both -- it inspects the queried loot
  * table id rather than relying on per-table conditions.
  */

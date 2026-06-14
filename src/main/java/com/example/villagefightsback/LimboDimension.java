@@ -17,7 +17,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * "Limbo": a void dimension (data-driven: {@code data/gobacktoyourworld/dimension[_type]/limbo.json}) whose
+ * "Limbo": a void dimension (data-driven: {@code data/thevillagefightsback/dimension[_type]/limbo.json}) whose
  * only feature is a hollow 22x22x22 bedrock cube centred on spawn.
  *
  * Limbo runs ALWAYS-LOADED, in parallel with the overworld: at server start the cube's chunks are
@@ -25,7 +25,7 @@ import net.minecraftforge.fml.common.Mod;
  * Force-loading uses {@link ServerLevel#setChunkForced} (the /forceload mechanism) -- it persists across
  * restarts, keeps the chunks fully ticking, and has no spawn/compass side effects.
  *
- * Enter it with e.g. {@code /execute in gobacktoyourworld:limbo run tp @s 0 61 0}.
+ * Enter it with e.g. {@code /execute in thevillagefightsback:limbo run tp @s 0 61 0}.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboDimension {

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "thevillagefightsback:block/rich_log",
+    "end": "thevillagefightsback:block/rich_log_top"
+  }
+}

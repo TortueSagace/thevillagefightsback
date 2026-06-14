@@ -1,17 +1,17 @@
 {
   "replace": false,
   "values": [
-    "gobacktoyourworld:fertile_dirt",
-    "gobacktoyourworld:rich_dirt",
-    "gobacktoyourworld:fertile_sand",
-    "gobacktoyourworld:rich_sand",
-    "gobacktoyourworld:fertile_gravel",
-    "gobacktoyourworld:rich_gravel",
-    "gobacktoyourworld:fertile_soul_sand",
-    "gobacktoyourworld:rich_soul_sand",
-    "gobacktoyourworld:fertile_soul_soil",
-    "gobacktoyourworld:rich_soul_soil",
-    "gobacktoyourworld:fertile_snow_block",
-    "gobacktoyourworld:rich_snow_block"
+    "thevillagefightsback:fertile_dirt",
+    "thevillagefightsback:rich_dirt",
+    "thevillagefightsback:fertile_sand",
+    "thevillagefightsback:rich_sand",
+    "thevillagefightsback:fertile_gravel",
+    "thevillagefightsback:rich_gravel",
+    "thevillagefightsback:fertile_soul_sand",
+    "thevillagefightsback:rich_soul_sand",
+    "thevillagefightsback:fertile_soul_soil",
+    "thevillagefightsback:rich_soul_soil",
+    "thevillagefightsback:fertile_snow_block",
+    "thevillagefightsback:rich_snow_block"
   ]
 }

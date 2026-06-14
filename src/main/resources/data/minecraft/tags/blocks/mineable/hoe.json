@@ -1,11 +1,11 @@
 {
   "replace": false,
   "values": [
-    "gobacktoyourworld:fertile_sculk",
-    "gobacktoyourworld:rich_sculk",
-    "gobacktoyourworld:fertile_leaves",
-    "gobacktoyourworld:rich_leaves",
-    "gobacktoyourworld:fertile_sculk_catalyst",
-    "gobacktoyourworld:rich_sculk_catalyst"
+    "thevillagefightsback:fertile_sculk",
+    "thevillagefightsback:rich_sculk",
+    "thevillagefightsback:fertile_leaves",
+    "thevillagefightsback:rich_leaves",
+    "thevillagefightsback:fertile_sculk_catalyst",
+    "thevillagefightsback:rich_sculk_catalyst"
   ]
 }

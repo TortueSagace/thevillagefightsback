@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:glass" },
+    { "item": "minecraft:obsidian" },
+    { "item": "minecraft:emerald" }
+  ],
+  "result": {
+    "item": "thevillagefightsback:reinforced_glass",
+    "count": 6
+  }
+}

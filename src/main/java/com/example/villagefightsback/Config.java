@@ -3,7 +3,7 @@ package com.example.villagefightsback;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
- * Mod configuration (Forge COMMON config -> {@code config/gobacktoyourworld-common.toml}).
+ * Mod configuration (Forge COMMON config -> {@code config/thevillagefightsback-common.toml}).
  */
 public final class Config {
     private Config() {}

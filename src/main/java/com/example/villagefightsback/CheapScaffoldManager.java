@@ -25,7 +25,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  * own counter, so a whole pillar of scaffolds expires together. Persisted so timers survive a save/reload.
  */
 public class CheapScaffoldManager extends SavedData {
-    private static final String NAME = "gobacktoyourworld_cheap_scaffold";
+    private static final String NAME = "thevillagefightsback_cheap_scaffold";
 
     public static final long LIFETIME = 600L;     // ~30s before a batch auto-breaks
     private static final long GROUP_WINDOW = 60L; // placements within this of a batch's start share its timer

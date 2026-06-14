@@ -1,0 +1,8 @@
+{
+  "revolver_fire": {
+    "subtitle": "subtitle.thevillagefightsback.revolver_fire",
+    "sounds": [
+      { "name": "thevillagefightsback:revolver_fire" }
+    ]
+  }
+}

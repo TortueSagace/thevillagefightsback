@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "thevillagefightsback:block/protecting_glass_down"
+    },
+    "facing=up": {
+      "model": "thevillagefightsback:block/protecting_glass_up"
+    },
+    "facing=north": {
+      "model": "thevillagefightsback:block/protecting_glass_north"
+    },
+    "facing=south": {
+      "model": "thevillagefightsback:block/protecting_glass_south"
+    },
+    "facing=east": {
+      "model": "thevillagefightsback:block/protecting_glass_east"
+    },
+    "facing=west": {
+      "model": "thevillagefightsback:block/protecting_glass_west"
+    }
+  }
+}

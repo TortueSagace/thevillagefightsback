@@ -8,7 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /** Potion registration: the Immunity potion (a creative-tab bottle that grants the {@link ModEffects#IMMUNITY}
- *  effect). The effect itself is also grantable directly via {@code /effect give @s gobacktoyourworld:immunity}. */
+ *  effect). The effect itself is also grantable directly via {@code /effect give @s thevillagefightsback:immunity}. */
 public final class ModPotions {
     private ModPotions() {}
 

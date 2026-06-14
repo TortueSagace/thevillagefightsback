@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:limbo_gravel"
+    },
+    "title": "Get Out. Now.",
+    "description": "Set foot in the Limbo.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png"
+  },
+  "criteria": {
+    "enter": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "thevillagefightsback:limbo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "enter"
+    ]
+  ]
+}

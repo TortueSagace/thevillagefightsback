@@ -49,4 +49,4 @@ Then:
 ./gradlew build
 ```
 
-The mod jar is produced at `build/libs/gobacktoyourworld-1.0.0.jar`.
+The mod jar is produced at `build/libs/thevillagefightsback-1.0.0.jar`.

@@ -1,8 +1,0 @@
-{
-  "revolver_fire": {
-    "subtitle": "subtitle.gobacktoyourworld.revolver_fire",
-    "sounds": [
-      { "name": "gobacktoyourworld:revolver_fire" }
-    ]
-  }
-}
