@@ -675,6 +675,9 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
+        // A guardian iron golem rises standing atop the new brain node (it auto-arms on join, like the
+        // sunset-reinforcement golems).
+        EntityType.IRON_GOLEM.spawn(level, spot.above(), MobSpawnType.EVENT);
         // If a player placed this bell, they founded the village -> Hero of the Village.
         java.util.UUID founder = data.takeBellPlacer(key);
         if (founder != null) {
