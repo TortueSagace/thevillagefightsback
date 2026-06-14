@@ -272,13 +272,13 @@ public final class ModBlocks {
     // connects/survives) -- they differ only in texture + drops (rich drops emeralds). randomTicks() so the
     // flower actually grows; the family suppliers wire each flower to spread its own plant.
     public static final RegistryObject<Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks(), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
     public static final RegistryObject<Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks(), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
     public static final RegistryObject<Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
             () -> new BlockItem(FERTILE_CHORUS_PLANT.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",
@@ -302,7 +302,7 @@ public final class ModBlocks {
     /** Fertile door: the infection replaces every (wooden) door with this. Oak-door shape, green-tinted. */
     public static final RegistryObject<Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
             () -> new net.minecraft.world.level.block.DoorBlock(
-                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion(),
+                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion().emissiveRendering((s, l, p) -> true),
                     net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
     public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));

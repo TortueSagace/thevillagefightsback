@@ -60,8 +60,7 @@ public final class GravemindUpgrades {
             List.of(
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ALIEN_SLASHER.get()),
                             "Advanced Weaponry",
-                            "Villagers wield the Alien Slasher and guards become emerald knights (enchanted mace + "
-                            + "crossbow + emerald armour) -- their battle power is strongly improved."),
+                            "The battle power of villagers, guards and golems is strongly improved."),
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ROCKET_LAUNCHER.get()),
                             "Gigachad Golems", "Village iron golems become Gigachad Golems: gold-plated, 200 HP, and "
                             + "armed with a rocket launcher that blasts attackers from range."),
