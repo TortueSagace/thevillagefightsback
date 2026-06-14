@@ -70,8 +70,9 @@ at the bottom.
   - **Limbo gear** — Membrane → Ingot → (+ a 1%-village-chest Smithing Template) smith netherite into **Limbo
     armour** (full knockback immunity) and the **Limbo tool set** (pickaxe that mines bedrock + reinforced
     deepslate; axe/shovel/hoe that out-mine netherite).
-  - **Full-set bonuses** — immunity (incl. fire + fall), harmful-effect clearing, phantom neutrality, and a
-    keybound (G) green **banish beam** on a 30s HUD cooldown.
+  - **Full-set bonuses** — immunity (incl. fire + fall), harmful-effect clearing, phantom neutrality,
+    bedrock phasing (walk through bedrock like the phantom), and a keybound (G) green **banish beam** on a
+    30s HUD cooldown.
   - **Volatile Limbo Potion** — a thrown, area banish. (The old Limbo Arrow was removed.)
   - An 8-node **advancement tree** for the Limbo journey.
 
