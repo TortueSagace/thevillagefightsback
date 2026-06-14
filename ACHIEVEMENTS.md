@@ -1,4 +1,4 @@
-# Go Back To Your World — Achievements & Roadmap
+# The Village Fights Back — Achievements & Roadmap
 
 A running log of what the mod does (the "achievements" — features shipped) and where it's going (the
 roadmap). Grouped by system, not by commit. Update this when a **big** update lands — see the maintenance note

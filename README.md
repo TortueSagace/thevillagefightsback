@@ -1,4 +1,4 @@
-# Go Back To Your World
+# The Village Fights Back
 
 A Minecraft **Forge 1.20.1** mod that arms villagers and iron golems with guns from
 [Just Enough Guns](https://www.curseforge.com/minecraft/mc-mods/just-enough-guns) (JEG) so they fight
