@@ -147,7 +147,10 @@ public class StageThreeGuardGoal extends Goal {
         double dy = t.getY(0.5) - arrow.getY();
         double dz = t.getZ() - guard.getZ();
         double dh = Math.sqrt(dx * dx + dz * dz);
-        arrow.shoot(dx, dy + dh * 0.18, dz, ARROW_SPEED, 1.0F);
+        // Gravity-compensation lob. Vanilla skeletons use 0.2 * horizontal-dist at bow speed 1.6; arrow drop
+        // scales with flight-time^2, so for our faster ARROW_SPEED the factor is 0.2 * (1.6/2.8)^2 ~= 0.065.
+        // (The old 0.18 was tuned for a slow bow and lobbed every shot clean over the target's head.)
+        arrow.shoot(dx, dy + dh * 0.065, dz, ARROW_SPEED, 1.0F);
         arrow.setPierceLevel((byte) 4);                       // Piercing IV
         arrow.getPersistentData().putBoolean(NBT_VIRUS_ARROW, true); // applies Emerald Virus on hit
         arrow.setBaseDamage(arrow.getBaseDamage() + 2.0);     // a bit punchier than a plain arrow
