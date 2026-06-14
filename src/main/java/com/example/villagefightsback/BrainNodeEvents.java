@@ -76,6 +76,7 @@ public final class BrainNodeEvents {
         manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
+        checkStageBells(server, data);  // ring a bell whenever a brain node reaches a new stage
         pulseHeartbeats(server, data); // calm Warden heartbeat from every loaded brain node (~2s cadence)
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
         ModProfiler.add("brain_node", _p);
@@ -238,6 +239,30 @@ public final class BrainNodeEvents {
     // so a no-plan village can't re-run the survey every 10s. Cleared once a plan forms or the brain node is gone.
     private static final int SURVEY_BACKOFF_TICKS = 1200; // ~60s before retrying a village that produced no wall
     private static final Map<GlobalPos, Integer> surveyBackoff = new HashMap<>();
+
+    // Stage bell: last level we saw per brain node, to detect a level-up from ANY source (sunset income,
+    // player feeding, miner emeralds, ...). Transient -- on (re)load a node is "first seen" and just records
+    // its level WITHOUT ringing, so a server restart never spams bells. The stage-1 bell is played at the
+    // moment the node is placed instead (see tryPlaceBrainNode).
+    private static final Map<GlobalPos, Integer> lastStageLevel = new HashMap<>();
+
+    /** Ring a bell at a brain node when it reaches a new stage (its placement, or a level-up). */
+    private static void playStageBell(ServerLevel level, BlockPos pos) {
+        level.playSound(null, pos, net.minecraft.sounds.SoundEvents.BELL_BLOCK,
+                net.minecraft.sounds.SoundSource.BLOCKS, 3.0F, 1.0F);
+    }
+
+    /** Each pass, ring a bell for any brain node whose level rose since last time (covers every income source). */
+    private static void checkStageBells(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            int lvl = data.econ(gp).getLevel();
+            Integer prev = lastStageLevel.put(gp, lvl);
+            if (prev != null && lvl > prev) { // a real level-up (first-seen just records, no bell)
+                ServerLevel level = server.getLevel(gp.dimension());
+                if (level != null && level.isLoaded(gp.pos())) playStageBell(level, gp.pos());
+            }
+        }
+    }
 
     /**
      * For each brainNode: compute its defensive wall plan once (from the surrounding village footprint),
@@ -660,6 +685,7 @@ public final class BrainNodeEvents {
                 + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
         broadcast(level.getServer(), "§eRight-click on the Village Brain Node anytime for useful information. "
                 + "§cPROTECT THE BRAIN AND ITS VILLAGERS AT ANY COST, OR FACE THE CONSEQUENCES.");
+        playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
         HouseBedFiller.fill(level, spot);

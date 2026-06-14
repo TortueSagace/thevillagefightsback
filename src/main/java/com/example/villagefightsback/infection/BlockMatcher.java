@@ -182,6 +182,7 @@ public final class BlockMatcher {
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
         if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
         if (s.is(BlockTags.WOOL)) return false;                        // keep wool (all colours)
+        if (s.is(Tags.Blocks.GLASS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
         // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
         if (b == Blocks.HAY_BLOCK
                 || b instanceof net.minecraft.world.level.block.CropBlock
