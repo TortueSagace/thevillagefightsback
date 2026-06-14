@@ -94,6 +94,17 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
+    /** "Emerald Node": a glowing raw-emerald-ore block with ancient-debris toughness. Each one within a Village
+     *  Brain Node's income radius adds +1 emerald to that village's daily sunset harvest (see EmeraldNodeBlock). */
+    public static final RegistryObject<Block> EMERALD_NODE = BLOCKS.register(
+            "emerald_node",
+            () -> new EmeraldNodeBlock(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)));
+
+    public static final RegistryObject<Item> EMERALD_NODE_ITEM = ITEMS.register(
+            "emerald_node",
+            () -> new TooltipBlockItem(EMERALD_NODE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.emerald_node.desc"));
+
     /** Obsidian stairs: the stage-3 OUTER wall's loophole stairs, so the obsidian curtain isn't broken up by
      *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
     public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
