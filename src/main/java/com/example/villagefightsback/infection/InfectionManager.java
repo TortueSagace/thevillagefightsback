@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.villagefightsback.BuilderRole;
-import com.example.villagefightsback.GravemindData;
+import com.example.villagefightsback.BrainNodeData;
 import com.example.villagefightsback.TheVillageFightsBack;
 import com.example.villagefightsback.goal.MinerGoal;
 import com.example.villagefightsback.wall.WallBlock;
@@ -31,7 +31,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Drives the gravemind block infection (level 2+). Designed to stay cheap at any zone size:
+ * Drives the brain node block infection (level 2+). Designed to stay cheap at any zone size:
  *  - Path growth (spec 1) touches only the &le;100 newest path blocks, weighted to extend in a line.
  *  - Conversion (spec 2-3) walks an ACTIVE FRONTIER under a fixed per-tick budget (round-robin), so cost is
  *    bounded by the budget regardless of total converted area; interior blocks retire out of the frontier.
@@ -45,7 +45,7 @@ public final class InfectionManager {
     private static final int PROCESS_INTERVAL = 5;   // run path+conversion every 5 ticks (slow, low-lag)
     private static final int MANAGE_INTERVAL = 20;   // seed villages (cheap guard) every 1s
     private static final int STAFF_INTERVAL = 100;   // (re)staff miners every 5s -- the only entity scan, kept sparse
-    private static final int START_LEVEL = 2;        // infection begins at gravemind level 2
+    private static final int START_LEVEL = 2;        // infection begins at brainNode level 2
 
     private static final double PATH_GROW_CHANCE = 0.60;  // per head per pass -- paths must clearly outrun conversion
     private static final double CONV_CHANCE = 0.15;       // per frontier cell per pass (well below paths so paths lead)
@@ -62,9 +62,9 @@ public final class InfectionManager {
     private static final int SEED_RADIUS = 24;       // one-time scan for dirt paths around a new lvl-2 village
     private static final int SEED_Y = 5;
 
-    // Spatial bound: nothing is infected beyond a gravemind's range (horizontal). The reach scales with stage
+    // Spatial bound: nothing is infected beyond a brain node's range (horizontal). The reach scales with stage
     // -- stage 2 = 1/3, stage 3 = 2/3, stage 4+ = the full range -- so the takeover grows as the village does.
-    private static final double INFECT_RANGE_FULL = 100.0; // full (stage-4) gravemind infection radius
+    private static final double INFECT_RANGE_FULL = 100.0; // full (stage-4) brainNode infection radius
     private static final double MINER_FRACTION = 0.40;
     private static final double MINER_AREA = 64.0;
 
@@ -89,7 +89,7 @@ public final class InfectionManager {
 
         if (tc % MANAGE_INTERVAL == 0) {
             boolean doStaff = (tc % STAFF_INTERVAL == 0); // entity scans only every 5s
-            GravemindData gdata = GravemindData.get(server);
+            BrainNodeData gdata = BrainNodeData.get(server);
             for (GlobalPos gp : new ArrayList<>(gdata.blocks())) {
                 ServerLevel level = server.getLevel(gp.dimension());
                 if (level == null || !level.isLoaded(gp.pos())) continue;
@@ -101,14 +101,14 @@ public final class InfectionManager {
         }
 
         if (tc % PROCESS_INTERVAL == 0) {
-            GravemindData gdata = GravemindData.get(server);
+            BrainNodeData gdata = BrainNodeData.get(server);
             for (ServerLevel level : server.getAllLevels()) {
                 InfectionData inf = InfectionData.get(level);
                 long now = level.getGameTime();
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
-                double[][] ranges = gravemindRanges(gdata, level); // {cx, cz, rangeSqr} per in-range gravemind
-                if (ranges.length == 0) continue;                  // no active gravemind here -> nothing to infect
+                double[][] ranges = brainNodeRanges(gdata, level); // {cx, cz, rangeSqr} per in-range brainNode
+                if (ranges.length == 0) continue;                  // no active brainNode here -> nothing to infect
                 // Constant base speed (no first-seconds buff); only a local "fighting back" boost speeds things up.
                 growPaths(level, inf, now, ranges);
                 convert(level, inf, now, ranges);
@@ -117,9 +117,9 @@ public final class InfectionManager {
         com.example.villagefightsback.ModProfiler.add("infection", _p);
     }
 
-    /** Per-gravemind infection reach in {@code level}: {centreX+0.5, centreZ+0.5, rangeSqr} for each gravemind
+    /** Per-brainNode infection reach in {@code level}: {centreX+0.5, centreZ+0.5, rangeSqr} for each brainNode
      *  at stage >= 2, with the radius scaled by stage (2 -> 1/3, 3 -> 2/3, 4+ -> full). */
-    private static double[][] gravemindRanges(GravemindData gdata, ServerLevel level) {
+    private static double[][] brainNodeRanges(BrainNodeData gdata, ServerLevel level) {
         List<double[]> out = new ArrayList<>();
         for (GlobalPos gp : gdata.blocks()) {
             if (!gp.dimension().equals(level.dimension())) continue;
@@ -132,7 +132,7 @@ public final class InfectionManager {
         return out.toArray(new double[0][]);
     }
 
-    /** True if (x,z) lies within any gravemind's (stage-scaled) infection range. */
+    /** True if (x,z) lies within any brain node's (stage-scaled) infection range. */
     private static boolean inRange(double x, double z, double[][] ranges) {
         for (double[] g : ranges) {
             double dx = x - g[0], dz = z - g[1];
@@ -199,7 +199,7 @@ public final class InfectionManager {
     }
 
     // --- seeding (one-time per village when it reaches level 2) -------------------------------------
-    private static void seedVillage(ServerLevel level, InfectionData inf, GlobalPos gp, GravemindData data) {
+    private static void seedVillage(ServerLevel level, InfectionData inf, GlobalPos gp, BrainNodeData data) {
         BlockPos center = gp.pos();
         inf.markSeeded(center.asLong());
 
@@ -209,7 +209,7 @@ public final class InfectionManager {
             BuilderRole.demote(v);
         }
 
-        // The gravemind finishes the wall itself (no builders any more), then lays a dirt-path ring along the
+        // The brainNode finishes the wall itself (no builders any more), then lays a dirt-path ring along the
         // wall footprint so the infection escapes the envelope and spreads outward.
         WallPlan plan = data.getWallPlan(gp);
         if (plan != null) {
@@ -242,9 +242,9 @@ public final class InfectionManager {
 
     /** Lay a dirt path at the surface just OUTSIDE a wall foundation column (so it can spread beyond the wall;
      *  a path can't survive directly under the solid wall block, so it sits one step out at ground level). */
-    private static void seedWallPath(ServerLevel level, InfectionData inf, BlockPos foundation, BlockPos gravemind) {
-        int dx = foundation.getX() - gravemind.getX();
-        int dz = foundation.getZ() - gravemind.getZ();
+    private static void seedWallPath(ServerLevel level, InfectionData inf, BlockPos foundation, BlockPos brainNode) {
+        int dx = foundation.getX() - brainNode.getX();
+        int dz = foundation.getZ() - brainNode.getZ();
         Direction out = Math.abs(dx) >= Math.abs(dz)
                 ? (dx >= 0 ? Direction.EAST : Direction.WEST)
                 : (dz >= 0 ? Direction.SOUTH : Direction.NORTH);
@@ -339,10 +339,10 @@ public final class InfectionManager {
     }
 
     /** The ground cell (within +/-2 in Y) the path would convert to dirt-path in direction {@code d}, or null.
-     *  Never extends beyond a gravemind's (stage-scaled) range. */
+     *  Never extends beyond a brain node's (stage-scaled) range. */
     private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d, double[][] ranges) {
         int nx = p.getX() + d.getStepX(), nz = p.getZ() + d.getStepZ();
-        if (!inRange(nx + 0.5, nz + 0.5, ranges)) return null;       // outside every gravemind's reach -> stop here
+        if (!inRange(nx + 0.5, nz + 0.5, ranges)) return null;       // outside every brain node's reach -> stop here
         for (int dy = 2; dy >= -2; dy--) {
             BlockPos g = new BlockPos(nx, p.getY() + dy, nz);
             if (!level.isLoaded(g)) continue;
@@ -441,7 +441,7 @@ public final class InfectionManager {
     }
 
     /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias) that is
-     *  also within a gravemind's range, or null. */
+     *  also within a brain node's range, or null. */
     private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges) {
         int start = rnd.nextInt(N26.length);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
@@ -449,7 +449,7 @@ public final class InfectionManager {
             int[] o = N26[(start + k) % N26.length];
             m.set(pos.getX() + o[0], pos.getY() + o[1], pos.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
-            if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the gravemind reach -> skip
+            if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the brain node reach -> skip
             BlockState ns = level.getBlockState(m);
             if (BlockMatcher.isCandidate(level, m, ns)) return m.immutable();
         }
@@ -472,8 +472,8 @@ public final class InfectionManager {
     }
 
     // --- miners (spec 4 + spec 6) -------------------------------------------------------------------
-    private static void staffMiners(ServerLevel level, BlockPos gravemind) {
-        AABB box = new AABB(gravemind).inflate(MINER_AREA);
+    private static void staffMiners(ServerLevel level, BlockPos brainNode) {
+        AABB box = new AABB(brainNode).inflate(MINER_AREA);
         List<Villager> near = level.getEntitiesOfClass(Villager.class, box, v -> v.isAlive() && !v.isBaby());
         if (near.isEmpty()) return;
         int target = (int) Math.round(MINER_FRACTION * near.size());

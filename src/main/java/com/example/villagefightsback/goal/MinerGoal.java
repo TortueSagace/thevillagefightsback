@@ -2,7 +2,7 @@ package com.example.villagefightsback.goal;
 
 import java.util.EnumSet;
 
-import com.example.villagefightsback.GravemindData;
+import com.example.villagefightsback.BrainNodeData;
 import com.example.villagefightsback.infection.BlockMatcher;
 import com.example.villagefightsback.infection.InfectionData;
 import com.example.villagefightsback.infection.MinerRole;
@@ -24,9 +24,9 @@ import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Miner villager (gravemind level 2). Roams for rich (emerald-bearing) infection blocks tracked in
+ * Miner villager (brainNode level 2). Roams for rich (emerald-bearing) infection blocks tracked in
  * {@link InfectionData}, digs the nearest with the correct IRON tool, then carries the emerald in hand and
- * runs it to the gravemind (fed within 3 blocks -> +1 emerald). Drops the emerald if it dies mid-run. Can
+ * runs it to the brain node (fed within 3 blocks -> +1 emerald). Drops the emerald if it dies mid-run. Can
  * dive underwater to mine (water path malus cleared + a swim nudge).
  */
 public class MinerGoal extends Goal {
@@ -34,7 +34,7 @@ public class MinerGoal extends Goal {
     private static final double SEARCH_RANGE = 48.0;     // look for rich blocks within this (roam across the zone)
     private static final double REACH_SQR = 3.2 * 3.2;   // close enough to dig
     private static final double FEED_RANGE_SQR = 3.0 * 3.0;
-    private static final double GRAVEMIND_RANGE = 160.0; // search this far for a gravemind to feed
+    private static final double BRAIN_NODE_RANGE = 160.0; // search this far for a brainNode to feed
     private static final double SPEED = 0.95;            // miners hustle
     private static final int REPATH = 10;
 
@@ -56,7 +56,7 @@ public class MinerGoal extends Goal {
     private BlockPos target;           // rich block being sought
     private int seekTicks;             // how long we've been trying to reach the current target
     private final java.util.HashMap<Long, Long> avoid = new java.util.HashMap<>(); // unreachable rich -> expiry
-    private BlockPos gravemind;        // delivery target
+    private BlockPos brainNode;        // delivery target
     private int repathTimer;
 
     // progressive dig (mirrors WallBuildGoal)
@@ -119,7 +119,7 @@ public class MinerGoal extends Goal {
     public void stop() {
         villager.getNavigation().stop();
         clearDig();
-        // keep the emerald if carrying; it must reach the gravemind or drop on death.
+        // keep the emerald if carrying; it must reach the brain node or drop on death.
     }
 
     @Override
@@ -176,33 +176,33 @@ public class MinerGoal extends Goal {
 
     private void tickDeliver(ServerLevel sl) {
         if (++carryTicks > CARRY_TIMEOUT) { dropEmerald(sl); return; } // can't deliver -> drop it, resume hunting
-        if (gravemind == null || !isGravemind(sl, gravemind)) gravemind = findGravemind(sl);
-        if (gravemind == null) return; // nowhere to deliver yet; keep carrying (until the timeout above)
-        Vec3 c = Vec3.atCenterOf(gravemind);
+        if (brainNode == null || !isBrainNode(sl, brainNode)) brainNode = findBrainNode(sl);
+        if (brainNode == null) return; // nowhere to deliver yet; keep carrying (until the timeout above)
+        Vec3 c = Vec3.atCenterOf(brainNode);
         villager.getLookControl().setLookAt(c.x, c.y, c.z);
         if (villager.position().distanceToSqr(c) <= FEED_RANGE_SQR) {
             // Feed: +1 emerald to this village's economy, consume the held emerald.
-            GravemindData data = GravemindData.get(sl.getServer());
-            data.econ(GlobalPos.of(sl.dimension(), gravemind.immutable())).addEmeralds(1);
+            BrainNodeData data = BrainNodeData.get(sl.getServer());
+            data.econ(GlobalPos.of(sl.dimension(), brainNode.immutable())).addEmeralds(1);
             sl.playSound(null, villager.blockPosition(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
                     net.minecraft.sounds.SoundSource.NEUTRAL, 0.6F, 1.4F);
             carrying = false;
             carryTicks = 0;
-            gravemind = null;
+            brainNode = null;
             equipTool(Items.IRON_PICKAXE);
         } else {
-            navigate(gravemind);
+            navigate(brainNode);
         }
     }
 
-    /** Couldn't reach any gravemind in time: drop the emerald in the world (not lost) and go back to mining. */
+    /** Couldn't reach any brainNode in time: drop the emerald in the world (not lost) and go back to mining. */
     private void dropEmerald(ServerLevel sl) {
         net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(
                 sl, villager.getX(), villager.getY() + 0.5, villager.getZ(), new ItemStack(Items.EMERALD));
         sl.addFreshEntity(drop);
         carrying = false;
         carryTicks = 0;
-        gravemind = null;
+        brainNode = null;
         equipTool(Items.IRON_PICKAXE);
     }
 
@@ -354,17 +354,17 @@ public class MinerGoal extends Goal {
         return Items.IRON_PICKAXE;
     }
 
-    // --- gravemind lookup ---
-    private boolean isGravemind(ServerLevel sl, BlockPos pos) {
-        return GravemindData.get(sl.getServer()).blocks()
+    // --- brainNode lookup ---
+    private boolean isBrainNode(ServerLevel sl, BlockPos pos) {
+        return BrainNodeData.get(sl.getServer()).blocks()
                 .contains(GlobalPos.of(sl.dimension(), pos.immutable()));
     }
 
-    private BlockPos findGravemind(ServerLevel sl) {
+    private BlockPos findBrainNode(ServerLevel sl) {
         BlockPos from = villager.blockPosition();
         BlockPos best = null;
-        double bestD = GRAVEMIND_RANGE * GRAVEMIND_RANGE;
-        for (GlobalPos gp : GravemindData.get(sl.getServer()).blocks()) {
+        double bestD = BRAIN_NODE_RANGE * BRAIN_NODE_RANGE;
+        for (GlobalPos gp : BrainNodeData.get(sl.getServer()).blocks()) {
             if (!gp.dimension().equals(sl.dimension())) continue;
             double d = gp.pos().distSqr(from);
             if (d <= bestD) { bestD = d; best = gp.pos(); }

@@ -45,13 +45,13 @@ public class InfectionData extends SavedData {
     // --- local attack speed-up zones ---
     private final ArrayDeque<long[]> boosts = new ArrayDeque<>(); // [centerPos, expiryGameTime]
 
-    // --- which graveminds have already been seeded (so we seed once per village) ---
+    // --- which brainNodes have already been seeded (so we seed once per village) ---
     private final Set<Long> seeded = new HashSet<>();
 
     private long fastUntil = Long.MIN_VALUE; // gametime until which infection runs at 5x (first 10s)
 
     // Running tally of "fertilized" blocks (our fertile/rich/shaped/door blocks only -- NOT dirt paths), shown
-    // in the gravemind UI. There is no longer a hard cap; the spread is bounded spatially by gravemind range.
+    // in the brain node UI. There is no longer a hard cap; the spread is bounded spatially by brainNode range.
     private int converted = 0;
 
     // transient: positions whose removal was sanctioned (player break / miner dig) -> not an "attack"
@@ -64,8 +64,8 @@ public class InfectionData extends SavedData {
     }
 
     // --- path heads ---
-    public boolean hasSeeded(long gravemind) { return seeded.contains(gravemind); }
-    public void markSeeded(long gravemind) { if (seeded.add(gravemind)) setDirty(); }
+    public boolean hasSeeded(long brainNode) { return seeded.contains(brainNode); }
+    public void markSeeded(long brainNode) { if (seeded.add(brainNode)) setDirty(); }
 
     /** Register a freshly-created path block: it becomes a growth head (evicting the oldest past the cap) and
      *  joins the conversion frontier. The evicted head stays in the world; it just stops growing new path. */

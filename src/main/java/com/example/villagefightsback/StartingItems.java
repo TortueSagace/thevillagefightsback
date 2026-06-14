@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * Gives every player a single Bell the first time they ever join a world -- the seed for founding their own
- * Village Gravemind. Tracked with a flag in the player's PERSISTED data so it is granted exactly once and
+ * Village Brain Node. Tracked with a flag in the player's PERSISTED data so it is granted exactly once and
  * survives death, dimension changes and relogs.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)

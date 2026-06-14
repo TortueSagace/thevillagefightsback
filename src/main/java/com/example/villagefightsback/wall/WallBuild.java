@@ -3,7 +3,7 @@ package com.example.villagefightsback.wall;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.example.villagefightsback.GravemindData;
+import com.example.villagefightsback.BrainNodeData;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -12,20 +12,20 @@ import net.minecraft.server.level.ServerLevel;
 /**
  * Live coordinator for wall building (analogous to {@code FlareRally}): finds the wall a builder should
  * join, and holds short-lived per-block reservations so two villagers never target the same block. The
- * authoritative plans live in {@link GravemindData}; reservations here are transient (never persisted).
+ * authoritative plans live in {@link BrainNodeData}; reservations here are transient (never persisted).
  */
 public final class WallBuild {
     private WallBuild() {}
 
     public static final long RESERVE_TTL = 100L;        // ticks a target stays reserved without refresh
 
-    // gravemind -> (target block pos as long -> reservation expiry game time)
+    // brainNode -> (target block pos as long -> reservation expiry game time)
     private static final Map<GlobalPos, Map<Long, Long>> RESERVATIONS = new HashMap<>();
-    // gravemind -> (parked block pos as long -> retry-after game time): a cell no builder could reach/finish,
+    // brainNode -> (parked block pos as long -> retry-after game time): a cell no builder could reach/finish,
     // hidden from ALL builders for a while so they don't churn on it (shared, unlike a per-builder skip).
     private static final Map<GlobalPos, Map<Long, Long>> SKIPS = new HashMap<>();
-    // gravemind -> (block pos as long -> how many times a builder has abandoned it). Cells the builders keep
-    // failing to reach are eventually sealed directly by the gravemind so the wall can't be left with holes.
+    // brainNode -> (block pos as long -> how many times a builder has abandoned it). Cells the builders keep
+    // failing to reach are eventually sealed directly by the brain node so the wall can't be left with holes.
     private static final Map<GlobalPos, Map<Long, Integer>> ABANDONS = new HashMap<>();
 
     /**
@@ -35,18 +35,18 @@ public final class WallBuild {
      * settle).
      */
     public static WallPlan planFor(ServerLevel level, BlockPos near) {
-        GravemindData data = GravemindData.get(level.getServer());
+        BrainNodeData data = BrainNodeData.get(level.getServer());
         WallPlan best = null;
         double bestD = Double.MAX_VALUE;
         // Consider BOTH the inner (cobblestone) and the stage-3 outer (obsidian) walls. The inner wall is
         // complete (and skipped) by the time an outer wall is being built, so builders flow onto the outer one.
         for (WallPlan p : data.wallPlans()) {
-            if (p.isComplete() || !p.gravemind().dimension().equals(level.dimension())) continue;
+            if (p.isComplete() || !p.brainNode().dimension().equals(level.dimension())) continue;
             double d = p.distSqrTo(near);
             if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
         }
         for (WallPlan p : data.outerWallPlans()) {
-            if (p.isComplete() || !p.gravemind().dimension().equals(level.dimension())) continue;
+            if (p.isComplete() || !p.brainNode().dimension().equals(level.dimension())) continue;
             double d = p.distSqrTo(near);
             if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
         }
@@ -107,15 +107,15 @@ public final class WallBuild {
     /** The wall plan whose footprint (horizontally) ENCLOSES {@code pos}, or null. Used to leash defenders to
      *  the walled zone (complete or not -- a half-built wall still defines the village's footprint). */
     public static WallPlan enclosingPlan(ServerLevel level, BlockPos pos) {
-        GravemindData data = GravemindData.get(level.getServer());
+        BrainNodeData data = BrainNodeData.get(level.getServer());
         for (WallPlan p : data.wallPlans()) {
-            if (!p.gravemind().dimension().equals(level.dimension())) continue;
+            if (!p.brainNode().dimension().equals(level.dimension())) continue;
             if (p.contains(pos)) return p;
         }
         return null;
     }
 
-    /** Forget a cell's abandon count + skip (e.g. the gravemind just sealed it, or it got built). */
+    /** Forget a cell's abandon count + skip (e.g. the brain node just sealed it, or it got built). */
     public static void clearAbandon(GlobalPos plan, BlockPos pos) {
         Map<Long, Integer> m = ABANDONS.get(plan);
         if (m != null) m.remove(pos.asLong());
@@ -130,7 +130,7 @@ public final class WallBuild {
         return until != null && until > now;
     }
 
-    /** Drop all reservations/skips for a plan (call when the wall completes or the gravemind is removed). */
+    /** Drop all reservations/skips for a plan (call when the wall completes or the brain node is removed). */
     public static void clearPlan(GlobalPos plan) {
         RESERVATIONS.remove(plan);
         SKIPS.remove(plan);

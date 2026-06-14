@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:fake_obsidian"
+    },
+    "title": "Expansion Phase",
+    "description": "Evolve a brain node to the Expansion Phase (stage 3).",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "stage": {
+      "trigger": "thevillagefightsback:brain_node_stage",
+      "conditions": {
+        "stage": 3
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stage"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/fertilization"
+}

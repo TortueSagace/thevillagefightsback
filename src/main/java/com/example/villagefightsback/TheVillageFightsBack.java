@@ -7,7 +7,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 /**
- * The Village Fights Back -- main mod class. A Village Gravemind evolves the village through stages and arms
+ * The Village Fights Back -- main mod class. A Village Brain Node evolves the village through stages and arms
  * its villagers, guards and iron golems (all native weapons/abilities; no third-party deps) to repel any
  * threat. Registers all content here; event handlers live in {@link VillageEvents} and friends. The registry
  * namespace (the {@code @Mod} id / {@link #MODID}) is "thevillagefightsback"; it was renamed from the original
@@ -34,7 +34,7 @@ public class TheVillageFightsBack {
         modBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent e) -> {
             if (e.getConfig().getSpec() == Config.SPEC) Config.apply(); // push drift chances into LimboDrift
         });
-        com.example.villagefightsback.network.ModNetwork.register(); // gravemind UI packet channel
+        com.example.villagefightsback.network.ModNetwork.register(); // brainNode UI packet channel
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/thevillagefightsback-common.toml
         LOGGER.info("[The Village Fights Back] loaded.");
@@ -42,7 +42,7 @@ public class TheVillageFightsBack {
 
     private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            ModTriggers.register(); // custom advancement triggers (gravemind stage)
+            ModTriggers.register(); // custom advancement triggers (brainNode stage)
             // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder makes the splash
             // version. The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe),
             // so we deliberately do NOT add the lingering step (no expensive vanilla tipped-arrow path).

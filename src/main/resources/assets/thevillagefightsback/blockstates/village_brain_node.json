@@ -1,0 +1,9 @@
+{
+  "variants": {
+    "charges=0": { "model": "thevillagefightsback:block/village_brain_node_0" },
+    "charges=1": { "model": "thevillagefightsback:block/village_brain_node_1" },
+    "charges=2": { "model": "thevillagefightsback:block/village_brain_node_2" },
+    "charges=3": { "model": "thevillagefightsback:block/village_brain_node_3" },
+    "charges=4": { "model": "thevillagefightsback:block/village_brain_node_4" }
+  }
+}

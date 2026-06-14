@@ -25,14 +25,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * STAGE-3 "EXPANSION": when a village's gravemind first reaches level 3, it dispatches a wave of settlers
+ * STAGE-3 "EXPANSION": when a village's brainNode first reaches level 3, it dispatches a wave of settlers
  * that stream out beyond the wall and found a ring of new buildings around it. The settler count N scales
  * with the wall's size (minimum 6). Each settler walks out, finds a clear spot that won't wreck the wall or
  * another in-progress build, and -- on a STAGGERED timer, so they react to each other's claims -- drops a
  * Blue TNT (60%, a 7x7 house) or a Green TNT (40%, a 15x15 tower); then it reverts to an ordinary villager.
  * If a settler dies before it places, the TNT goes down at its death location, wherever that is.
  *
- * Runs once per gravemind (guarded by {@link GravemindData#isExpanded}). The actual walk/seek/place logic
+ * Runs once per brainNode (guarded by {@link BrainNodeData#isExpanded}). The actual walk/seek/place logic
  * lives in {@link ExpansionSettlerGoal}; this class handles the trigger, spawning, build-spot claims, and
  * the death fallback.
  */
@@ -43,7 +43,7 @@ public final class ExpansionManager {
     /** Marks a villager as an unplaced expansion settler. Removed once it drops its TNT (or on the death fallback). */
     public static final String NBT_EXPANSION = "vgun_expansion";
     public static final String NBT_TNT = "vgun_exp_tnt";   // 0 = blue (house), 1 = green (tower)
-    public static final String NBT_GRAVEMIND = "vgun_exp_gm"; // packed gravemind pos, for door facing
+    public static final String NBT_BRAIN_NODE = "vgun_exp_gm"; // packed brainNode pos, for door facing
 
     private static final int MIN_BUILDINGS = 6;
     private static final int MAX_BUILDINGS = 12;            // safety cap so a huge wall can't spawn a swarm
@@ -62,14 +62,14 @@ public final class ExpansionManager {
 
     // --- trigger -------------------------------------------------------------------------------------
     /** Called once per loaded village at sunset. Fires the expansion the first time the village is level 3+. */
-    public static void maybeExpand(ServerLevel level, GlobalPos gp, GravemindData data) {
+    public static void maybeExpand(ServerLevel level, GlobalPos gp, BrainNodeData data) {
         if (data.econ(gp).getLevel() < 3) return;
         if (data.isExpanded(gp)) return;
         data.markExpanded(gp); // mark first, so a partial failure never re-triggers the wave
         expand(level, gp, data);
     }
 
-    private static void expand(ServerLevel level, GlobalPos gp, GravemindData data) {
+    private static void expand(ServerLevel level, GlobalPos gp, BrainNodeData data) {
         BlockPos gm = gp.pos();
         WallPlan plan = data.getWallPlan(gp);
         double wallRadius = wallRadius(plan, gm);
@@ -86,8 +86,6 @@ public final class ExpansionManager {
             spawnSettler(level, spot, gm, angle, wallRadius, color, delay);
             spawned++;
         }
-        broadcast(level, "§5The Village Gravemind expands: §d" + spawned
-                + "§5 settlers set out to found new buildings beyond the wall.");
     }
 
     /** Buildings the outer ring can hold, from the wall's size; minimum 6, capped for safety. */
@@ -97,7 +95,7 @@ public final class ExpansionManager {
         return Math.max(MIN_BUILDINGS, Math.min(MAX_BUILDINGS, n));
     }
 
-    /** The wall's outer radius: the farthest (horizontal) a wall block sits from the gravemind. */
+    /** The wall's outer radius: the farthest (horizontal) a wall block sits from the brain node. */
     private static double wallRadius(WallPlan plan, BlockPos gm) {
         if (plan == null) return DEFAULT_RADIUS;
         double max = 0;
@@ -119,18 +117,18 @@ public final class ExpansionManager {
         v.setBaby(false);
         v.getPersistentData().putBoolean(NBT_EXPANSION, true);
         v.getPersistentData().putInt(NBT_TNT, color);
-        v.getPersistentData().putLong(NBT_GRAVEMIND, gm.asLong());
+        v.getPersistentData().putLong(NBT_BRAIN_NODE, gm.asLong());
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant villager goals
         v.goalSelector.addGoal(1, new ExpansionSettlerGoal(v, gm, angle, wallRadius, color, delay));
     }
 
     // --- TNT placement (shared by the goal and the death fallback) -----------------------------------
-    /** Place the settler's TNT at {@code pos}: Blue (house) faces the gravemind; Green (tower) has no facing. */
-    public static void placeTnt(ServerLevel level, BlockPos pos, int color, BlockPos gravemind) {
+    /** Place the settler's TNT at {@code pos}: Blue (house) faces the brain node; Green (tower) has no facing. */
+    public static void placeTnt(ServerLevel level, BlockPos pos, int color, BlockPos brainNode) {
         BlockState tnt;
         if (color == 0) {
             Direction face = Direction.getNearest(
-                    gravemind.getX() - pos.getX(), 0, gravemind.getZ() - pos.getZ());
+                    brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
             if (face.getAxis().isVertical()) face = Direction.NORTH;
             tnt = ModBlocks.BLUE_TNT.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, face);
         } else {
@@ -175,7 +173,7 @@ public final class ExpansionManager {
         if (!v.getPersistentData().getBoolean(NBT_EXPANSION)) return; // already placed / not a settler
         if (!(v.level() instanceof ServerLevel level)) return;
         int color = v.getPersistentData().getInt(NBT_TNT);
-        BlockPos gm = BlockPos.of(v.getPersistentData().getLong(NBT_GRAVEMIND));
+        BlockPos gm = BlockPos.of(v.getPersistentData().getLong(NBT_BRAIN_NODE));
         v.getPersistentData().remove(NBT_EXPANSION); // consume so it can't fire twice
         placeTnt(level, v.blockPosition(), color, gm); // wherever it died, per spec
     }

@@ -5,7 +5,7 @@ Generates the Fertile/Rich block assets for "Go Back To Your World":
 Writes textures + blockstates + block/item models + loot tables. Java registration is done
 separately. Re-runnable (overwrites). Source textures come from the vanilla client "extra" jar.
 """
-import json, os, random, zipfile, zlib
+import json, math, os, random, zipfile, zlib
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # villager-arms-mod/
@@ -122,6 +122,52 @@ def salt_pepper(img, name, salt=6, pepper=5):
         px[x, y] = (col[0], col[1], col[2], a)
         placed += 1
     return out
+
+# Animated glow: salt specks PULSE in brightness (sculk-like, phase-offset twinkle) across N frames so
+# the green glow isn't static; pepper specks are baked static for contrast.
+SALT_DIM = (36, 110, 46)   # the salt speck at its dimmest (still green)
+FRAMES = 8
+FRAMETIME = 6              # ticks/frame; with interpolate -> a smooth ~2.4s breathe cycle
+
+def _speck_positions(img, name, salt, pepper):
+    """Deterministic, distinct (x,y) speck positions on OPAQUE pixels: first `salt`, then `pepper`."""
+    px = img.load(); w, h = img.size
+    rnd = random.Random(zlib.crc32(name.encode()))
+    chosen, used, attempts = [], set(), 0
+    while len(chosen) < salt + pepper and attempts < 4000:
+        attempts += 1
+        x, y = rnd.randrange(w), rnd.randrange(h)
+        if (x, y) in used or px[x, y][3] < 250:
+            continue
+        used.add((x, y)); chosen.append((x, y))
+    return chosen[:salt], chosen[salt:salt + pepper], rnd
+
+def animate_specks(img, name, frames=FRAMES, salt=6, pepper=5):
+    """Return a vertical animation strip of `img` where salt specks gently pulse green (phase-offset) and
+    pepper specks are static dark green. Used with an interpolating .mcmeta + emissive block rendering."""
+    base = img.convert("RGBA").copy()
+    w, h = base.size
+    salts, peppers, rnd = _speck_positions(base, name, salt, pepper)
+    bp = base.load()
+    for (x, y) in peppers:                                   # bake pepper (static)
+        bp[x, y] = (PEPPER[0], PEPPER[1], PEPPER[2], bp[x, y][3])
+    phases = [rnd.random() for _ in salts]                   # desync the twinkle per speck
+    strip = Image.new("RGBA", (w, w * frames), (0, 0, 0, 0))
+    for f in range(frames):
+        frame = base.copy(); fp = frame.load()
+        for (x, y), ph in zip(salts, phases):
+            t = 0.5 + 0.5 * math.sin(2 * math.pi * (f / frames + ph))
+            r = int(round(SALT_DIM[0] + (SALT[0] - SALT_DIM[0]) * t))
+            g = int(round(SALT_DIM[1] + (SALT[1] - SALT_DIM[1]) * t))
+            b = int(round(SALT_DIM[2] + (SALT[2] - SALT_DIM[2]) * t))
+            fp[x, y] = (r, g, b, fp[x, y][3])
+        strip.paste(frame, (0, f * w))
+    return strip
+
+def save_anim_mcmeta(name, frametime=FRAMETIME):
+    d = os.path.join(ASSETS, "textures", "block"); mkdir(d)
+    with open(os.path.join(d, name + ".png.mcmeta"), "w", encoding="utf-8") as fh:
+        json.dump({"animation": {"frametime": frametime, "interpolate": True}}, fh, indent=2)
 
 def overlay_onto(base, overlay):
     if overlay.size != base.size:
@@ -497,21 +543,23 @@ def main():
                 save_png(overlay_strip(ft, gems), rich); save_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
             elif kind == "leaves":
-                ft = salt_pepper(green_tint(load_vanilla(zf, srcs)), fertile)
-                save_png(ft, fertile)
-                save_png(overlay_onto(ft, gems), rich)
+                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fertile)
+                save_png(ft, fertile); save_anim_mcmeta(fertile)
+                save_png(overlay_strip(ft, gems), rich); save_anim_mcmeta(rich)
                 write_leaves(fertile); write_leaves(rich)
             elif kind == "all":
-                ft = salt_pepper(green_tint(load_vanilla(zf, srcs)), fertile)
-                save_png(ft, fertile)
-                save_png(overlay_onto(ft, gems), rich)
+                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fertile)
+                save_png(ft, fertile); save_anim_mcmeta(fertile)
+                save_png(overlay_strip(ft, gems), rich); save_anim_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
-            else:  # log: side + top
+            else:  # log: side + top (both animated)
                 side, top = srcs
-                fs = salt_pepper(green_tint(load_vanilla(zf, side)), fertile)
-                ftp = salt_pepper(green_tint(load_vanilla(zf, top)), fertile + "_top")
-                save_png(fs, fertile); save_png(ftp, fertile + "_top")
-                save_png(overlay_onto(fs, gems), rich); save_png(overlay_onto(ftp, gems), rich + "_top")
+                fs = animate_specks(green_tint(load_vanilla(zf, side)), fertile)
+                ftp = animate_specks(green_tint(load_vanilla(zf, top)), fertile + "_top")
+                save_png(fs, fertile); save_anim_mcmeta(fertile)
+                save_png(ftp, fertile + "_top"); save_anim_mcmeta(fertile + "_top")
+                save_png(overlay_strip(fs, gems), rich); save_anim_mcmeta(rich)
+                save_png(overlay_strip(ftp, gems), rich + "_top"); save_anim_mcmeta(rich + "_top")
                 write_log(fertile); write_log(rich)
             if base == "leaves":
                 write_loot_leaves(fertile) # fertile leaves also drop the emerald apple
@@ -545,10 +593,10 @@ def gen_fertile_wood_cobble():
     mining fertile stone). Cube textures/models/items/loot here; stairs/slabs reuse the planks texture
     (their JSON is authored separately)."""
     with zipfile.ZipFile(JAR) as zf:
-        planks = salt_pepper(green_tint(load_vanilla(zf, "oak_planks")), "fertile_planks")
-        cobble = salt_pepper(green_tint(load_vanilla(zf, "cobblestone")), "fertile_cobblestone")
-    save_png(planks, "fertile_planks")
-    save_png(cobble, "fertile_cobblestone")
+        planks = animate_specks(green_tint(load_vanilla(zf, "oak_planks")), "fertile_planks")
+        cobble = animate_specks(green_tint(load_vanilla(zf, "cobblestone")), "fertile_cobblestone")
+    save_png(planks, "fertile_planks"); save_anim_mcmeta("fertile_planks")
+    save_png(cobble, "fertile_cobblestone"); save_anim_mcmeta("fertile_cobblestone")
     for bid in ("fertile_planks", "fertile_cobblestone"):
         write_cube_all(bid)
         write_loot_self(bid)

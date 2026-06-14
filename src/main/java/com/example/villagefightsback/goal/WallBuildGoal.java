@@ -27,7 +27,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Makes a builder villager build its village's Gravemind-planned wall, block by block, layer by layer.
+ * Makes a builder villager build its village's BrainNode-planned wall, block by block, layer by layer.
  * The villager claims the nearest unbuilt block of the lowest incomplete course (reserved via
  * {@link WallBuild} so builders don't collide), walks to it, and places it. To reach high courses it relies
  * on the navigator climbing the wall's own ladders; where that fails it pillars up with temporary
@@ -47,7 +47,7 @@ public class WallBuildGoal extends Goal {
     private static final int PLACE_DELAY = 8;          // brief "working" pause before a block appears
     private static final int DESCEND_TIMEOUT = 80;     // ticks to spend climbing down before moving on
     private static final int SKIP_TICKS = 200;         // skip an unreachable cell for ~10s, then retry
-                                                       // (short, so the gravemind's fallback seal kicks in ~3x faster)
+                                                       // (short, so the brain node's fallback seal kicks in ~3x faster)
     private static final int ABANDON_LIMIT = 3;        // give up the builder role after this many fails in a row
     private static final int IDLE_LIMIT = 100;         // ~5s in WAIT with no reachable cell => step down (never idle-tagged)
     private static final float TOUGH_HARDNESS = 25.0F; // at/above this hardness a block can't be dug (obsidian=50)
@@ -127,11 +127,11 @@ public class WallBuildGoal extends Goal {
         long now = sl.getGameTime();
         // A cell is unavailable to builders if it's parked (briefly hidden), another builder owns it (live
         // reservation), OR it has been abandoned more than 3 times -- past that, builders give up on it for
-        // good and the gravemind's hole-sealer places it, so the whole crew never piles on one hard cell.
+        // good and the brain node's hole-sealer places it, so the whole crew never piles on one hard cell.
         java.util.function.Predicate<BlockPos> taken = pos ->
-                WallBuild.isSkipped(plan.gravemind(), pos, now)
-                || WallBuild.isReserved(plan.gravemind(), pos, now)
-                || WallBuild.abandonCount(plan.gravemind(), pos) > 3;
+                WallBuild.isSkipped(plan.brainNode(), pos, now)
+                || WallBuild.isReserved(plan.brainNode(), pos, now)
+                || WallBuild.abandonCount(plan.brainNode(), pos) > 3;
         // Build MY section: from my door rightward to the next door, raising each column as a full pillar.
         int[] doors = plan.doorColumns();
         int from = 0;
@@ -144,7 +144,7 @@ public class WallBuildGoal extends Goal {
         // My section is done (or there are no gates) -> help finish the rest of the wall.
         if (t == null) t = plan.nextAnyUnbuilt(sl, from, taken);
         if (t == null) return false;                                       // nothing buildable right now
-        if (!WallBuild.reserve(plan.gravemind(), t.pos(), now)) return false; // lost the race; retry next scan
+        if (!WallBuild.reserve(plan.brainNode(), t.pos(), now)) return false; // lost the race; retry next scan
         this.target = t;
         this.stand = exteriorColumn(t.pos());
         this.baseY = t.pos().getY() - t.course(); // course 0 sits on the foundation; never dig below it
@@ -171,7 +171,7 @@ public class WallBuildGoal extends Goal {
 
     @Override
     public void stop() {
-        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
+        if (plan != null && target != null) WallBuild.release(plan.brainNode(), target.pos());
         villager.getNavigation().stop();
         clearDig();
         unequipTool();
@@ -188,7 +188,7 @@ public class WallBuildGoal extends Goal {
 
         // Hold our claim on the target so no other builder grabs it mid-build.
         if (target != null && plan != null && level() instanceof ServerLevel rsl)
-            WallBuild.refresh(plan.gravemind(), target.pos(), rsl.getGameTime());
+            WallBuild.refresh(plan.brainNode(), target.pos(), rsl.getGameTime());
 
         if (phase == Phase.WAIT) { tickWait(); return; }
         if (phase == Phase.DESCEND) { tickDescend(); return; }
@@ -314,7 +314,7 @@ public class WallBuildGoal extends Goal {
 
     /**
      * Blocked by a solid block we can't scaffold past: builders no longer dig anything (it tore the village
-     * apart), so we simply give the cell up. The gravemind seals cells the builders keep failing to reach.
+     * apart), so we simply give the cell up. The brainNode seals cells the builders keep failing to reach.
      */
     private void blocked(BlockPos blocker) {
         abandon();
@@ -338,7 +338,7 @@ public class WallBuildGoal extends Goal {
         if (plan.isBuilt(level(), target)) { finishTarget(); return; } // already built (us or another builder)
         if (!placeable(tp)) {
             // A block is occupying the wall cell. Builders no longer dig, so we give it up rather than tear
-            // anything down; the gravemind seals cells the builders can't fill.
+            // anything down; the brain node seals cells the builders can't fill.
             abandon();
             return;
         }
@@ -351,7 +351,7 @@ public class WallBuildGoal extends Goal {
 
     /** Done with the current target (built or given up): then descend our scaffolds or re-seek. */
     private void finishTarget() {
-        if (plan != null && target != null) WallBuild.release(plan.gravemind(), target.pos());
+        if (plan != null && target != null) WallBuild.release(plan.brainNode(), target.pos());
         consecutiveFails = 0; // made progress -> not stuck
         descendY = groundBelow(stand);
         target = null;
@@ -500,9 +500,9 @@ public class WallBuildGoal extends Goal {
         // We couldn't reach/finish this cell. Park it at the plan level so NO builder churns on it for a
         // while, and release our claim.
         if (target != null && plan != null) {
-            WallBuild.skip(plan.gravemind(), target.pos(), level().getGameTime() + SKIP_TICKS);
-            WallBuild.recordAbandon(plan.gravemind(), target.pos()); // count failures so the gravemind can seal it
-            WallBuild.release(plan.gravemind(), target.pos());
+            WallBuild.skip(plan.brainNode(), target.pos(), level().getGameTime() + SKIP_TICKS);
+            WallBuild.recordAbandon(plan.brainNode(), target.pos()); // count failures so the brain node can seal it
+            WallBuild.release(plan.brainNode(), target.pos());
         }
         target = null;
         phase = Phase.WAIT; // re-seek a different cell while staying claimed (no wander gap)
@@ -534,18 +534,18 @@ public class WallBuildGoal extends Goal {
     }
 
     /**
-     * The block one step toward the village EXTERIOR (away from the gravemind) from a wall position. Builders
+     * The block one step toward the village EXTERIOR (away from the brain node) from a wall position. Builders
      * stand and work from OUTSIDE the wall ring, so they never path into / pillar through / dig up the
-     * protected area (e.g. a house the gravemind sits inside). All their destructive ops -- digging head room,
+     * protected area (e.g. a house the brain node sits inside). All their destructive ops -- digging head room,
      * clearing the wall cell, dirt-bridging over gaps -- then happen on the outside field, not indoors.
      */
     private BlockPos exteriorColumn(BlockPos wall) {
-        BlockPos gm = plan.gravemind().pos();
+        BlockPos gm = plan.brainNode().pos();
         int dx = gm.getX() - wall.getX();
         int dz = gm.getZ() - wall.getZ();
         Direction toward = Math.abs(dx) >= Math.abs(dz)
                 ? (dx >= 0 ? Direction.EAST : Direction.WEST)
                 : (dz >= 0 ? Direction.SOUTH : Direction.NORTH);
-        return wall.relative(toward.getOpposite()); // step OUTWARD, away from the gravemind
+        return wall.relative(toward.getOpposite()); // step OUTWARD, away from the brain node
     }
 }

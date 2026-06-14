@@ -18,7 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * A fully computed, deterministic wall plan for one village (owned by one Gravemind). The block list is
+ * A fully computed, deterministic wall plan for one village (owned by one BrainNode). The block list is
  * sorted course-first so building proceeds layer by layer; completion is judged purely by comparing the
  * world to the plan (so a destroyed wall block is automatically rebuilt). Reservations (who is building
  * what right now) live in {@link WallBuild}, not here.
@@ -30,12 +30,12 @@ public final class WallPlan {
     /** Margin (blocks) added to the wall's outer radius so a builder anywhere on/near its wall keeps the plan. */
     private static final double JOIN_MARGIN = 48.0;
 
-    private final GlobalPos gravemind;
+    private final GlobalPos brainNode;
     private final List<List<WallBlock>> columns; // perimeter-ordered columns (each a course stack); for the conga
     private final List<WallBlock> blocks;        // flat, sorted by (course, x, z, type); for completion/repair
     private final int[] courseStart;             // courseStart[c]..courseStart[c+1] = blocks of course c
     private final int[] doorColumns;             // perimeter-column index where each gate begins (one per gate)
-    private final double joinRadiusSqr;          // (max block distance from gravemind + margin)^2, for plan lookup
+    private final double joinRadiusSqr;          // (max block distance from brainNode + margin)^2, for plan lookup
     private final List<BlockPos> scaffoldTemp = new ArrayList<>();
     private boolean complete;
     private long startTick;                      // gametime the plan was laid out
@@ -43,8 +43,8 @@ public final class WallPlan {
     // Transient build cursor: the lowest course that still has unbuilt blocks. Only advances forward.
     private transient int cursorCourse;
 
-    public WallPlan(GlobalPos gravemind, List<List<WallBlock>> columns) {
-        this.gravemind = gravemind;
+    public WallPlan(GlobalPos brainNode, List<List<WallBlock>> columns) {
+        this.brainNode = brainNode;
         this.columns = columns;
         List<WallBlock> flat = new ArrayList<>();
         for (List<WallBlock> col : columns) flat.addAll(col);
@@ -55,10 +55,10 @@ public final class WallPlan {
                 .thenComparingInt(b -> b.type().ordinal()));
         this.blocks = flat;
         this.courseStart = computeCourseStarts(flat);
-        // The wall can sit far from the gravemind (village centre) on a big/elongated village; size the
+        // The wall can sit far from the brain node (village centre) on a big/elongated village; size the
         // builder join radius to the actual wall extent so far-side builders don't "lose" the plan.
         double maxR2 = 0;
-        for (WallBlock wb : flat) maxR2 = Math.max(maxR2, gravemind.pos().distSqr(wb.pos()));
+        for (WallBlock wb : flat) maxR2 = Math.max(maxR2, brainNode.pos().distSqr(wb.pos()));
         double r = Math.sqrt(maxR2) + JOIN_MARGIN;
         this.joinRadiusSqr = r * r;
         this.doorColumns = computeDoorColumns(columns);
@@ -84,7 +84,7 @@ public final class WallPlan {
         return doors.stream().mapToInt(Integer::intValue).toArray();
     }
 
-    /** Radius (squared) from the gravemind within which a builder is considered "at this wall". */
+    /** Radius (squared) from the brain node within which a builder is considered "at this wall". */
     public double joinRadiusSqr() { return joinRadiusSqr; }
 
     /** Perimeter-column indices of the gates (one per gate); a builder is assigned one and builds rightward. */
@@ -109,15 +109,15 @@ public final class WallPlan {
         return starts;
     }
 
-    public GlobalPos gravemind() { return gravemind; }
+    public GlobalPos brainNode() { return brainNode; }
     public List<WallBlock> blocks() { return blocks; }
     public List<BlockPos> scaffoldTemp() { return scaffoldTemp; }
     public boolean isComplete() { return complete; }
     public void markComplete() { this.complete = true; }
 
-    /** Distance squared from a position to the village centre (the gravemind). */
+    /** Distance squared from a position to the village centre (the brain node). */
     public double distSqrTo(BlockPos p) {
-        return gravemind.pos().distSqr(p);
+        return brainNode.pos().distSqr(p);
     }
 
     // Cached perimeter polygon (one (x,z) vertex per column, in perimeter order) for contains() tests.
@@ -293,7 +293,7 @@ public final class WallPlan {
         return true;
     }
 
-    // Lazy index (packed position -> WallBlock) for O(1) cell lookups (used by the gravemind hole-sealer).
+    // Lazy index (packed position -> WallBlock) for O(1) cell lookups (used by the brain node hole-sealer).
     private transient java.util.Map<Long, WallBlock> posBlock;
 
     /** The planned wall block at {@code pos}, or null if {@code pos} is not part of this wall. O(1) after a
@@ -347,12 +347,12 @@ public final class WallPlan {
         scaffoldTemp.add(pos.immutable());
     }
 
-    // --- persistence (stored inside GravemindData) ---
+    // --- persistence (stored inside BrainNodeData) ---
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putString("gm_dim", gravemind.dimension().location().toString());
-        tag.putLong("gm_pos", gravemind.pos().asLong());
+        tag.putString("gm_dim", brainNode.dimension().location().toString());
+        tag.putLong("gm_pos", brainNode.pos().asLong());
         tag.putBoolean("complete", complete);
         tag.putLong("startTick", startTick);
         ListTag list = new ListTag();

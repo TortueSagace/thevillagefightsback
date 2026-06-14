@@ -6,9 +6,9 @@ import net.minecraft.advancements.CriteriaTriggers;
 public final class ModTriggers {
     private ModTriggers() {}
 
-    public static final GravemindStageTrigger GRAVEMIND_STAGE = new GravemindStageTrigger();
+    public static final BrainNodeStageTrigger BRAIN_NODE_STAGE = new BrainNodeStageTrigger();
 
     public static void register() {
-        CriteriaTriggers.register(GRAVEMIND_STAGE);
+        CriteriaTriggers.register(BRAIN_NODE_STAGE);
     }
 }

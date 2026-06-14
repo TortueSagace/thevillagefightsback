@@ -44,23 +44,23 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("emeraldger"));
 
-    /** The Gravemind Warden: a green Warden with a Village Gravemind block for a head ({@link GravemindWardenEntity}). */
-    public static final RegistryObject<EntityType<GravemindWardenEntity>> GRAVEMIND_WARDEN = ENTITIES.register(
-            "gravemind_warden",
-            () -> EntityType.Builder.<GravemindWardenEntity>of(GravemindWardenEntity::new, MobCategory.MONSTER)
+    /** The Brain Node Warden: a green Warden with a Village Brain Node block for a head ({@link BrainNodeWardenEntity}). */
+    public static final RegistryObject<EntityType<BrainNodeWardenEntity>> BRAIN_NODE_WARDEN = ENTITIES.register(
+            "brain_node_warden",
+            () -> EntityType.Builder.<BrainNodeWardenEntity>of(BrainNodeWardenEntity::new, MobCategory.MONSTER)
                     .sized(0.9F, 2.9F)             // same hitbox as the vanilla Warden
                     .clientTrackingRange(16)
                     .fireImmune()
-                    .build("gravemind_warden"));
+                    .build("brain_node_warden"));
 
-    /** The Village Gravemind, Unleashed: the boss that erupts when a gravemind block is destroyed ({@link UnleashedGravemindEntity}). */
-    public static final RegistryObject<EntityType<UnleashedGravemindEntity>> UNLEASHED_GRAVEMIND = ENTITIES.register(
-            "unleashed_gravemind",
-            () -> EntityType.Builder.<UnleashedGravemindEntity>of(UnleashedGravemindEntity::new, MobCategory.MONSTER)
+    /** The Village Brain Node, Unleashed: the boss that erupts when a brainNode block is destroyed ({@link UnleashedBrainNodeEntity}). */
+    public static final RegistryObject<EntityType<UnleashedBrainNodeEntity>> UNLEASHED_BRAIN_NODE = ENTITIES.register(
+            "unleashed_brain_node",
+            () -> EntityType.Builder.<UnleashedBrainNodeEntity>of(UnleashedBrainNodeEntity::new, MobCategory.MONSTER)
                     .sized(1.35F, 4.35F)            // ~1.5x a warden (taller body)
                     .clientTrackingRange(20)
                     .fireImmune()
-                    .build("unleashed_gravemind"));
+                    .build("unleashed_brain_node"));
 
     /** A "vindictive guard": a zombie-villager-looking stage-3 guard the boss makes ({@link VindictiveGuardEntity}). */
     public static final RegistryObject<EntityType<VindictiveGuardEntity>> VINDICTIVE_GUARD = ENTITIES.register(
@@ -78,7 +78,7 @@ public final class ModEntities {
                     .clientTrackingRange(12)
                     .build("gigachad_golem"));
 
-    /** The "Vindictive Gigachad": a boss-minion gigachad golem the unleashed gravemind summons ({@link VindictiveGigachadEntity}). */
+    /** The "Vindictive Gigachad": a boss-minion gigachad golem the unleashed brainNode summons ({@link VindictiveGigachadEntity}). */
     public static final RegistryObject<EntityType<VindictiveGigachadEntity>> VINDICTIVE_GIGACHAD = ENTITIES.register(
             "vindictive_gigachad",
             () -> EntityType.Builder.<VindictiveGigachadEntity>of(VindictiveGigachadEntity::new, MobCategory.MONSTER)
@@ -162,8 +162,8 @@ public final class ModEntities {
         event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
         event.put(WALL_DEFENDER_STAGE4.get(), WallDefenderEntity.createAttributes().build());
         event.put(EMERALDGER.get(), Villager.createAttributes().build());
-        event.put(GRAVEMIND_WARDEN.get(), Warden.createAttributes().build());
-        event.put(UNLEASHED_GRAVEMIND.get(), UnleashedGravemindEntity.createAttributes().build());
+        event.put(BRAIN_NODE_WARDEN.get(), Warden.createAttributes().build());
+        event.put(UNLEASHED_BRAIN_NODE.get(), UnleashedBrainNodeEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());

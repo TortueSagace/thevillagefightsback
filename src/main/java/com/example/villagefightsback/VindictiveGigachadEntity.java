@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * The "Vindictive Gigachad": a boss minion. It is a gigachad golem (rocket launcher, iron-set armour, 200 HP)
- * that the Unleashed Gravemind summons from its jump attack. It belongs to the infected {@link Factions}, so it
+ * that the Unleashed BrainNode summons from its jump attack. It belongs to the infected {@link Factions}, so it
  * never fights the boss or other infected, and it is hostile to everything else (players, villagers, monsters).
  *
  * It shares the base gigachad kit via {@link VillageEvents#armGolemFull(IronGolem)} -- so any change to the base

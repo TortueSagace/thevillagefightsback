@@ -15,7 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * A creative spawn egg that places a defender ALREADY configured to a given Gravemind stage, with no gravemind
+ * A creative spawn egg that places a defender ALREADY configured to a given BrainNode stage, with no brainNode
  * present:
  * <ul>
  *   <li>stage 1 -> nerfed villager / vanilla guard / normal iron golem;</li>

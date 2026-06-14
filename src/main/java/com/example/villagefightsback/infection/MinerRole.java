@@ -4,9 +4,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.npc.Villager;
 
 /**
- * The "miner" role (NBT flag, mirrors {@code BuilderRole}). At gravemind level 2, 20% of nearby villagers
+ * The "miner" role (NBT flag, mirrors {@code BuilderRole}). At brainNode level 2, 20% of nearby villagers
  * become miners: they carry iron tools, hunt down rich (emerald-bearing) infection blocks, dig them, and
- * run the emerald back to the gravemind. A miner that dies frees the slot; the village refills it.
+ * run the emerald back to the brain node. A miner that dies frees the slot; the village refills it.
  */
 public final class MinerRole {
     private MinerRole() {}

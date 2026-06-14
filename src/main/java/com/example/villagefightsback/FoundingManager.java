@@ -28,14 +28,14 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * "Founding" a village from an empty gravemind. When the gravemind is about to mark out its wall but no
+ * "Founding" a village from an empty brainNode. When the brain node is about to mark out its wall but no
  * villager is nearby, this dispatches 6 SETTLERS (hexagon at radius 10, with an air-bubble spot search +
  * radius-3 fallback) and 4 guards. Each settler scatters for 2s (keeping apart) then lights a Blue TNT
  * to build a house ({@link FoundingSettlerGoal}). ~1s after the blast the wall plan is created and the
  * settlers -- now ordinary nearby villagers -- are promoted to the wall builders by the normal flow
  * (no new villagers are spawned).
  *
- * Wall-planning is GATED via {@link #gate} (called from GravemindEvents.driveWalls) so the wall isn't
+ * Wall-planning is GATED via {@link #gate} (called from BrainNodeEvents.driveWalls) so the wall isn't
  * marked out until founding completes.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -45,7 +45,7 @@ public final class FoundingManager {
     public static final String NBT_FOUNDING = "vgun_founding";
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
-    private static final double CHECK_RADIUS = 64.0;  // "no villager in the gravemind's radius"
+    private static final double CHECK_RADIUS = 64.0;  // "no villager in the brain node's radius"
     private static final int SETTLERS = 6;
     private static final int HEX_RADIUS = 10;
     private static final int FALLBACK_RADIUS = 3;
@@ -55,7 +55,7 @@ public final class FoundingManager {
     private static final int POST_EXPLODE_TICKS = 20;  // wall phase begins 1s after the blast
     private static final long FOUNDING_DURATION = SCATTER_TICKS + BlueTntBlock.FUSE_TICKS + POST_EXPLODE_TICKS;
 
-    /** gravemind -> game-time the founding started. Present == founding in progress for that gravemind. */
+    /** brainNode -> game-time the founding started. Present == founding in progress for that brainNode. */
     private static final Map<GlobalPos, Long> JOBS = new HashMap<>();
 
     /**
@@ -63,7 +63,7 @@ public final class FoundingManager {
      * false to hold it back (founding just started / in progress). When there are no villagers it kicks
      * off the founding and returns false.
      */
-    public static boolean gate(MinecraftServer server, ServerLevel level, GlobalPos gp, GravemindData data) {
+    public static boolean gate(MinecraftServer server, ServerLevel level, GlobalPos gp, BrainNodeData data) {
         if (JOBS.containsKey(gp)) return false;                 // founding underway -> not ready
         if (hasVillagersNear(level, gp.pos())) return true;     // a populated village -> normal flow
         startFounding(server, level, gp);
@@ -84,7 +84,7 @@ public final class FoundingManager {
             // founding finished -> mark out the wall now; the settlers become its builders.
             it.remove();
             try {
-                GravemindEvents.createWallPlanNow(level, e.getKey());
+                BrainNodeEvents.createWallPlanNow(level, e.getKey());
             } catch (Throwable t) {
                 TheVillageFightsBack.LOGGER.error("[The Village Fights Back] founding -> wall plan failed", t);
             }
@@ -105,29 +105,23 @@ public final class FoundingManager {
         JOBS.put(gp, level.getGameTime());
         BlockPos g = gp.pos();
 
-        int dispatched = 0;
         for (int k = 0; k < SETTLERS; k++) {
             BlockPos spot = findSettlerSpot(level, g, k);
             if (spot == null) {
-                server.getPlayerList().broadcastSystemMessage(
-                        Component.literal("§cSettler couldn't be dispatched."), false);
                 continue;
             }
             spawnSettler(level, spot, g);
-            dispatched++;
         }
         spawnGuards(level, g);
-        server.getPlayerList().broadcastSystemMessage(Component.literal(
-                "§5The Village Gravemind dispatches §d" + dispatched + "§5 settlers to found a village."), false);
     }
 
     /** Hex point at radius 10 (then radius 3 as a fallback), each searched for a nearby 1x1x2 air bubble. */
-    private static BlockPos findSettlerSpot(ServerLevel level, BlockPos gravemind, int k) {
+    private static BlockPos findSettlerSpot(ServerLevel level, BlockPos brainNode, int k) {
         int[] far = hexOffset(k, HEX_RADIUS);
-        BlockPos spot = closestStandable(level, gravemind.offset(far[0], 0, far[1]), BUBBLE_SEARCH);
+        BlockPos spot = closestStandable(level, brainNode.offset(far[0], 0, far[1]), BUBBLE_SEARCH);
         if (spot != null) return spot;
         int[] near = hexOffset(k, FALLBACK_RADIUS);
-        return closestStandable(level, gravemind.offset(near[0], 0, near[1]), BUBBLE_SEARCH);
+        return closestStandable(level, brainNode.offset(near[0], 0, near[1]), BUBBLE_SEARCH);
     }
 
     private static int[] hexOffset(int k, double radius) {
@@ -158,7 +152,7 @@ public final class FoundingManager {
         return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
     }
 
-    private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos gravemind) {
+    private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos brainNode) {
         Villager v = EntityType.VILLAGER.create(level);
         if (v == null) return;
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
@@ -166,10 +160,10 @@ public final class FoundingManager {
         v.setBaby(false);
         v.getPersistentData().putBoolean(NBT_FOUNDING, true);
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant goals
-        v.goalSelector.addGoal(1, new FoundingSettlerGoal(v, gravemind)); // founding takes priority while it runs
+        v.goalSelector.addGoal(1, new FoundingSettlerGoal(v, brainNode)); // founding takes priority while it runs
 
         // Drop a jack o'lantern right under its feet (a lit, solid footing) -- unless that block is too
-        // tough to break (>= 1200 blast resistance: the gravemind / reinforced glass).
+        // tough to break (>= 1200 blast resistance: the brain node / reinforced glass).
         BlockPos floor = spot.below();
         BlockState floorState = level.getBlockState(floor);
         if (floorState.isAir() || floorState.getBlock().getExplosionResistance() < 1200.0F) {
@@ -177,12 +171,12 @@ public final class FoundingManager {
         }
     }
 
-    private static void spawnGuards(ServerLevel level, BlockPos gravemind) {
+    private static void spawnGuards(ServerLevel level, BlockPos brainNode) {
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
         if (guardType == null) return; // Guard Villagers not installed
         int[][] dirs = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}};
         for (int i = 0; i < GUARDS; i++) {
-            BlockPos spot = closestStandable(level, gravemind.offset(dirs[i][0], 0, dirs[i][1]), 3);
+            BlockPos spot = closestStandable(level, brainNode.offset(dirs[i][0], 0, dirs[i][1]), 3);
             if (spot == null) continue;
             Entity g = guardType.create(level);
             if (!(g instanceof Mob mob)) continue;

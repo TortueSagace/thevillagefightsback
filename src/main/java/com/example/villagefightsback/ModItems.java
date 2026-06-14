@@ -138,8 +138,8 @@ public final class ModItems {
             ITEMS.register("rich_sheep_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.RICH_SHEEP, 0x2BBF4E, 0x17DD62, new Item.Properties()));
 
-    // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a Gravemind stage,
-    //     even with no gravemind present (see StagedDefenderEggItem). ---
+    // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a BrainNode stage,
+    //     even with no brainNode present (see StagedDefenderEggItem). ---
     private static RegistryObject<Item> egg(String name, StagedDefenderEggItem.Kind kind, int stage, int primary, int secondary) {
         return ITEMS.register(name, () -> new StagedDefenderEggItem(kind, stage, primary, secondary, new Item.Properties()));
     }

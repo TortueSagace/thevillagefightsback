@@ -6,7 +6,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * The "Gigachad Golem": an upgraded village iron golem -- its own creature type (not a renamed vanilla golem).
- * A village iron golem near a level-3 gravemind is converted into one ({@link VillageEvents#convertToGigachad}).
+ * A village iron golem near a level-3 brainNode is converted into one ({@link VillageEvents#convertToGigachad}).
  * It is a normal village defender that has been given the full gigachad kit (rocket launcher, iron-set armour,
  * 200 HP, rocket goal) via the shared {@link VillageEvents#armGolemFull(IronGolem)}.
  *

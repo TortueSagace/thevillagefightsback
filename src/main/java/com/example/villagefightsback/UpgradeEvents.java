@@ -15,9 +15,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Drives the permanent upgrade: once the (global) Village Gravemind reaches level {@value #REQUIRED_LEVEL},
- * any defender within {@value #RADIUS} blocks of a gravemind is upgraded to the full gun loadout, instantly
- * and forever (the flag never clears). Cheap: gated by the level check, throttled, only loaded graveminds,
+ * Drives the permanent upgrade: once the (global) Village Brain Node reaches level {@value #REQUIRED_LEVEL},
+ * any defender within {@value #RADIUS} blocks of a brainNode is upgraded to the full gun loadout, instantly
+ * and forever (the flag never clears). Cheap: gated by the level check, throttled, only loaded brainNodes,
  * and already-upgraded defenders are filtered out of the query.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -36,7 +36,7 @@ public final class UpgradeEvents {
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         long _p = ModProfiler.now();
 
-        GravemindData data = GravemindData.get(server);
+        BrainNodeData data = BrainNodeData.get(server);
 
         for (GlobalPos gp : data.blocks()) {
             ServerLevel level = server.getLevel(gp.dimension());

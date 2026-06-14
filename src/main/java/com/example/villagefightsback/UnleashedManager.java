@@ -33,9 +33,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Lifecycle + faction rules for the unleashed gravemind boss ({@link UnleashedGravemindEntity}) and its
+ * Lifecycle + faction rules for the unleashed brainNode boss ({@link UnleashedBrainNodeEntity}) and its
  * vindictive guards ({@link VindictiveGuardEntity}):
- *  - detects a village's villager count FALLING to 0 (it was &gt;0 before) and kills the gravemind block,
+ *  - detects a village's villager count FALLING to 0 (it was &gt;0 before) and kills the brain node block,
  *    which (being a non-silk removal) summons the boss;
  *  - {@link #summonBoss} emerges the boss with a screen shake + purple "Prepare..." title;
  *  - infected faction never harm/target each other; they absorb 90% of explosion damage;
@@ -48,7 +48,7 @@ public final class UnleashedManager {
     private static final double VILLAGER_RADIUS = 64.0;
     private static final double SHAKE_RADIUS = 48.0;
 
-    /** gravemind -> last villager count seen (transient: edge detection only). */
+    /** brainNode -> last villager count seen (transient: edge detection only). */
     private static final Map<GlobalPos, Integer> LAST_COUNT = new HashMap<>();
 
     // --- trigger: villager count falls from >0 to 0 ---------------------------------------------
@@ -58,7 +58,7 @@ public final class UnleashedManager {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % 40 != 0) return;
         long _p = ModProfiler.now();
-        GravemindData data = GravemindData.get(server);
+        BrainNodeData data = BrainNodeData.get(server);
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue; // only when loaded (else a false 0)
@@ -66,8 +66,8 @@ public final class UnleashedManager {
                     v -> v.isAlive() && !(v instanceof EmeraldgerEntity)).size();
             Integer prev = LAST_COUNT.get(gp);
             if (prev != null && prev > 0 && count == 0) {
-                // The last villager is gone -> the gravemind dies. Removing the block (a non-silk removal)
-                // makes VillageGravemindBlock#onRemove summon the boss.
+                // The last villager is gone -> the brain node dies. Removing the block (a non-silk removal)
+                // makes VillageBrainNodeBlock#onRemove summon the boss.
                 level.removeBlock(gp.pos(), false);
             }
             LAST_COUNT.put(gp, count);
@@ -76,9 +76,9 @@ public final class UnleashedManager {
     }
 
     // --- the summon -----------------------------------------------------------------------------
-    /** Emerge the boss at {@code pos} with the dramatic intro. Called from VillageGravemindBlock#onRemove. */
+    /** Emerge the boss at {@code pos} with the dramatic intro. Called from VillageBrainNodeBlock#onRemove. */
     public static void summonBoss(ServerLevel sl, BlockPos pos) {
-        UnleashedGravemindEntity boss = ModEntities.UNLEASHED_GRAVEMIND.get().create(sl);
+        UnleashedBrainNodeEntity boss = ModEntities.UNLEASHED_BRAIN_NODE.get().create(sl);
         if (boss == null) return;
         boss.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, sl.random.nextFloat() * 360.0F, 0.0F);
         boss.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null); // triggers emerge
@@ -92,7 +92,7 @@ public final class UnleashedManager {
             p.connection.send(new ClientboundSetTitleTextPacket(title));
         }
         sl.players().forEach(pl -> pl.displayClientMessage(Component.literal(
-                "§5The Village Gravemind has been UNLEASHED — you failed to protect the village."), false));
+                "§5The Village Brain Node has been UNLEASHED — you failed to protect the village."), false));
     }
 
     /** Send a camera shake to every player near {@code center}. Used by the boss's slam attack, etc. */
@@ -131,7 +131,7 @@ public final class UnleashedManager {
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
-        if (!(event.getSource().getEntity() instanceof UnleashedGravemindEntity boss)) return;
+        if (!(event.getSource().getEntity() instanceof UnleashedBrainNodeEntity boss)) return;
         if (victim instanceof Player) return;        // players die normally (the boss doesn't recruit players)
         if (Factions.isInfected(victim)) return;     // never convert faction-mates
         if (!boss.canMakeGuard()) { boss.registerKill(); return; } // 20-guard cap full: victim dies, still counts

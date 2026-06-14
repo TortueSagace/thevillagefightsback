@@ -90,7 +90,7 @@ public final class VillageEvents {
         // combat loadout below (they spawn pre-upgraded).
         boolean emeraldger = mob instanceof EmeraldgerEntity;
 
-        // A villager far from every gravemind can found a new home with a Blue TNT (independent of the
+        // A villager far from every brainNode can found a new home with a Blue TNT (independent of the
         // combat upgrade). Idempotent: goals are re-added on every load; the goal settles at most once.
         if (!emeraldger && mob instanceof Villager settler
                 && !hasGoal(settler, com.example.villagefightsback.goal.SettlerGoal.class)) {
@@ -105,20 +105,20 @@ public final class VillageEvents {
             defender.goalSelector.addGoal(2, new com.example.villagefightsback.goal.BuilderDefenseGoal(defender));
         }
 
-        // Every villager carries the (dormant) miner goal; it only runs once the gravemind tags it a miner
+        // Every villager carries the (dormant) miner goal; it only runs once the brain node tags it a miner
         // (level-2 infection). Idempotent. (Emeraldgers can't be miners, so they don't need it.)
         if (!emeraldger && mob instanceof Villager v) {
             com.example.villagefightsback.infection.InfectionManager.ensureMinerGoal(v);
         }
 
         // Defenders start NERFED and permanently upgrade to the full gun loadout once they have been near a
-        // level-3 Village Gravemind (UpgradeEvents flips the flag). Until then: villagers fight only with a
+        // level-3 Village Brain Node (UpgradeEvents flips the flag). Until then: villagers fight only with a
         // stone axe (and only when badly hurt), guards and golems are vanilla.
         boolean upgraded = UpgradeState.isUpgraded(mob);
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
-            // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 gravemind.
+            // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 brainNode.
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
         } else if (mob instanceof Villager villager) {
             if (upgraded) armVillagerFull(villager);
@@ -129,7 +129,7 @@ public final class VillageEvents {
     }
 
     /** Replace a plain village iron golem with a {@link GigachadGolemEntity} at the same spot; the new type
-     *  arms itself in finalizeSpawn. Used when a village golem first reaches a level-3 gravemind. */
+     *  arms itself in finalizeSpawn. Used when a village golem first reaches a level-3 brainNode. */
     public static void convertToGigachad(IronGolem old) {
         if (old instanceof GigachadGolemEntity) return;
         if (!(old.level() instanceof ServerLevel sl)) return;
@@ -145,7 +145,7 @@ public final class VillageEvents {
         old.discard();
     }
 
-    /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 gravemind). */
+    /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 brainNode). */
     public static void applyUpgrade(LivingEntity e) {
         if (e instanceof Villager villager) {
             removeGoal(villager, StoneAxeDefenseGoal.class);
@@ -165,7 +165,7 @@ public final class VillageEvents {
             villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
         villager.goalSelector.addGoal(2, new StoneAxeDefenseGoal(villager));
-        // (WallBuildGoal is added separately by GravemindEvents.ensureWallBuildGoal when a gravemind is near.)
+        // (WallBuildGoal is added separately by BrainNodeEvents.ensureWallBuildGoal when a brainNode is near.)
     }
 
     private static void armVillagerFull(Villager villager) {
@@ -188,7 +188,7 @@ public final class VillageEvents {
         // Priority 0 (above combat): drop TNT and flee when standing on From Another World infection.
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new AxeCombatGoal(villager)); // hunt and slash hostiles with the axe
-        villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the gravemind's wall when idle
+        villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the brain node's wall when idle
     }
 
     // Fixed UUID so re-applying the armour buff on world reload is idempotent.
@@ -351,16 +351,16 @@ public final class VillageEvents {
         return wall != null && !wall.contains(target.blockPosition());
     }
 
-    private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // gravemind must be within this of the kill
+    private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // brainNode must be within this of the kill
 
-    /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Gravemind. */
+    /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */
     @SubscribeEvent
     public static void onMobKilledByGuard(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Enemy)) return;                 // only hostile mobs count
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         Entity killer = event.getSource().getEntity();
         if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard
-        GravemindData data = GravemindData.get(sl.getServer());
+        BrainNodeData data = BrainNodeData.get(sl.getServer());
         BlockPos at = event.getEntity().blockPosition();
         GlobalPos best = null;
         double bestD = GUARD_KILL_EMERALD_RANGE * GUARD_KILL_EMERALD_RANGE;
@@ -427,7 +427,7 @@ public final class VillageEvents {
     /**
      * Make every defender (villager / guard / iron golem) within {@code radius} of {@code center} turn on
      * {@code attacker} for {@code ticks}. Villagers/guards use the aggro NBT (their combat goal then shoots
-     * the player); golems get the target set directly (their melee goal punches it). Used when the gravemind
+     * the player); golems get the target set directly (their melee goal punches it). Used when the brain node
      * is mined. One bounded entity query -- only runs on the (throttled) attack, never per tick.
      */
     public static void aggroDefendersAgainst(ServerLevel level, BlockPos center, double radius,

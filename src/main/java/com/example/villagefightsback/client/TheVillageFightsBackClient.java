@@ -64,9 +64,9 @@ public final class TheVillageFightsBackClient {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER_STAGE4.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);
-        event.registerEntityRenderer(ModEntities.GRAVEMIND_WARDEN.get(), GravemindWardenRenderer::new);
-        // The boss reuses the green-warden + gravemind-head renderer (it extends GravemindWardenEntity).
-        event.registerEntityRenderer(ModEntities.UNLEASHED_GRAVEMIND.get(), GravemindWardenRenderer::new);
+        event.registerEntityRenderer(ModEntities.BRAIN_NODE_WARDEN.get(), BrainNodeWardenRenderer::new);
+        // The boss reuses the green-warden + brainNode-head renderer (it extends BrainNodeWardenEntity).
+        event.registerEntityRenderer(ModEntities.UNLEASHED_BRAIN_NODE.get(), BrainNodeWardenRenderer::new);
         // Vindictive guards render as plain zombie villagers (vanilla renderer).
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
                 net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);

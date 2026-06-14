@@ -17,15 +17,15 @@ at the bottom.
 - Desperation AI: swarmed defenders lob a grenade and flee; reinforcement flares rally idle allies.
 - Balance: villager guns nerfed to 1 shot/sec, flat 8 damage.
 
-### 2. The Village Gravemind (evolution system)
-- A Village Gravemind block under the bell drives a **per-village** evolution level (independent economy).
+### 2. The Village Brain Node (evolution system)
+- A Village Brain Node block under the bell drives a **per-village** evolution level (independent economy).
 - Right-click upgrade screen (GUI) shows villager/guard/golem counts and level.
 - **Staged defenders** (stages 1→4) for villagers, guards, golems — with creative spawn eggs.
 - Daily sunset reinforcements scale with the village's stage.
 - **Emerald gear**: armour + full tool set (tier between iron and diamond), in our creative tab.
 - **Emerald knights** (stage-3 guards): mace / crossbow / Alien Slasher; death explosion.
 - **Gigachad golems**: gold re-skin, 200 HP, rockets.
-- **Immunity** effect/potion + a gravemind immunity aura covering villagers, guards, and golems.
+- **Immunity** effect/potion + a brain node immunity aura covering villagers, guards, and golems.
 
 ### 3. Walls & defensive structures
 - Deterministic wall planner that follows the village footprint (concave), with builders, gates, loopholes,
@@ -42,7 +42,7 @@ at the bottom.
 - **Emerald Apple**, **Emerald Virus potion + arrows**.
 - **Emeraldger**: the stage-4 virus warrior (scales with the host's HP, total immunity, glowing green eyes).
 
-### 5. The Unleashed Gravemind (boss)
+### 5. The Unleashed BrainNode (boss)
 - Erupts when a village's last villager dies. Green sonic-boom **banish waves**, slam attack, screen shake.
 - **Infected faction** (boss + vindictive guards + vindictive gigachads): never fight each other, absorb 90%
   explosion damage; creatures slain by a direct boss hit become vindictive minions (capped).

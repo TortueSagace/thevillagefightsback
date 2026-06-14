@@ -27,7 +27,7 @@ public class ExpansionSettlerGoal extends Goal {
     private static final int SURFACE_SEARCH = 4;
 
     private final Villager villager;
-    private final BlockPos gravemind;
+    private final BlockPos brainNode;
     private final double angle;
     private final double wallRadius;
     private final int tntColor;
@@ -38,10 +38,10 @@ public class ExpansionSettlerGoal extends Goal {
     private int repathTimer;
     private boolean done;
 
-    public ExpansionSettlerGoal(Villager villager, BlockPos gravemind,
+    public ExpansionSettlerGoal(Villager villager, BlockPos brainNode,
                                 double angle, double wallRadius, int tntColor, int placeDelay) {
         this.villager = villager;
-        this.gravemind = gravemind;
+        this.brainNode = brainNode;
         this.angle = angle;
         this.wallRadius = wallRadius;
         this.tntColor = tntColor;
@@ -87,7 +87,7 @@ public class ExpansionSettlerGoal extends Goal {
 
         BlockPos spot = ExpansionManager.surfaceStandable(level, target, SURFACE_SEARCH);
         if (spot != null && isValid(level, spot)) {
-            ExpansionManager.placeTnt(level, spot, tntColor, gravemind);
+            ExpansionManager.placeTnt(level, spot, tntColor, brainNode);
             ExpansionManager.claim(level, spot);
             finish();
             return;
@@ -99,8 +99,8 @@ public class ExpansionSettlerGoal extends Goal {
 
     /** A spot is good if its footprint clears the wall and it's far enough from every claimed build. */
     private boolean isValid(ServerLevel level, BlockPos spot) {
-        double dx = spot.getX() - gravemind.getX();
-        double dz = spot.getZ() - gravemind.getZ();
+        double dx = spot.getX() - brainNode.getX();
+        double dz = spot.getZ() - brainNode.getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
         return dist >= wallRadius + WALL_CLEAR && ExpansionManager.isClear(level, spot, MIN_SPACING);
     }
@@ -113,9 +113,9 @@ public class ExpansionSettlerGoal extends Goal {
 
     private BlockPos columnAt(double radius) {
         return new BlockPos(
-                gravemind.getX() + (int) Math.round(Math.cos(angle) * radius),
-                gravemind.getY(),
-                gravemind.getZ() + (int) Math.round(Math.sin(angle) * radius));
+                brainNode.getX() + (int) Math.round(Math.cos(angle) * radius),
+                brainNode.getY(),
+                brainNode.getZ() + (int) Math.round(Math.sin(angle) * radius));
     }
 
     private static double horizSqr(BlockPos a, BlockPos b) {

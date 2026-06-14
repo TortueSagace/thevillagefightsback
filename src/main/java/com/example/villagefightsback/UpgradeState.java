@@ -4,7 +4,7 @@ import net.minecraft.world.entity.Entity;
 
 /**
  * Per-entity "upgraded" flag (persistent, one-way). Defenders start nerfed and permanently upgrade to
- * the full gun loadout the first time they are near a level-3 Village Gravemind (see {@link UpgradeEvents}).
+ * the full gun loadout the first time they are near a level-3 Village Brain Node (see {@link UpgradeEvents}).
  * Stored in {@link Entity#getPersistentData()} so it survives saves; once set it is never cleared.
  */
 public final class UpgradeState {

@@ -115,11 +115,11 @@ public class WallDefenderEntity extends Mob {
         }
     }
 
-    /** True when this defender fires rockets: forced (stage-4 spawn egg) or its nearest gravemind is stage 4. */
+    /** True when this defender fires rockets: forced (stage-4 spawn egg) or its nearest brainNode is stage 4. */
     private boolean isStage4() {
         if (forcedStage4) return true;
         if (!(level() instanceof ServerLevel sl)) return false;
-        GravemindData data = GravemindData.get(sl.getServer());
+        BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos nearest = null;
         double best = Double.MAX_VALUE;
         for (GlobalPos gp : data.blocks()) {
@@ -138,7 +138,7 @@ public class WallDefenderEntity extends Mob {
     private LivingEntity acquireTarget() {
         Vec3 eye = getEyePosition();
         // A player who attacked the village (or this defender) is the priority target -- same as the
-        // villagers/guards (the gravemind's anti-grief aggro reaches us now that we're an "ally").
+        // villagers/guards (the brain node's anti-grief aggro reaches us now that we're an "ally").
         net.minecraft.world.entity.player.Player aggro = VillageEvents.getAggroPlayer(this);
         if (aggro != null && aggro.isAlive() && distanceToSqr(aggro) <= RANGE * RANGE
                 && canShootThroughShell(eye, aggro)) {

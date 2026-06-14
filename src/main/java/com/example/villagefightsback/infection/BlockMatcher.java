@@ -193,7 +193,7 @@ public final class BlockMatcher {
         if (b.getExplosionResistance() >= 1200.0F) return false;       // toughness must be < 1200
         ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
         if (id != null) {
-            // Never eat our own special blocks (gravemind / walls' fake cobblestone / glass / scaffolds / ...).
+            // Never eat our own special blocks (brainNode / walls' fake cobblestone / glass / scaffolds / ...).
             if (id.getNamespace().equals(TheVillageFightsBack.MODID)) return false;
             String path = id.getPath();
             // cobblestone (incl. mossy/stairs/slabs/walls -> protects the village wall) and any brick block.

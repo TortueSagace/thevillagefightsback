@@ -17,11 +17,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Builds the village's protective reinforced-glass dome (gravemind level 4). Geometry:
+ * Builds the village's protective reinforced-glass dome (brainNode level 4). Geometry:
  *  1. Find the highest wall tip H, then raise every wall column with a vertical glass pillar up to H, so the
  *     whole rim sits on one horizontal plane.
  *  2. Flood-fill the (x,z) interior enclosed by the wall (gates block the fill, so it can't leak out).
- *  3. Cap the interior with a gentle paraboloid roof: y = H + rise*(1 - (d/R)^2), peaking over the gravemind
+ *  3. Cap the interior with a gentle paraboloid roof: y = H + rise*(1 - (d/R)^2), peaking over the brain node
  *     (d=0) and meeting the rim at H (d=R). Each column is filled DOWN to just above its lowest neighbour, so
  *     vertical steps are walled off -> a watertight (hole-free) shell that stops aerial attacks.
  * The whole thing is handed to {@link HouseBuildManager} so it rises block-by-block like the TNT structures.
@@ -38,7 +38,7 @@ public final class DomeBuilder {
     private static int kz(long k) { return (int) (k >> 32); }
 
     /** Compute the dome and submit it to the block-by-block builder. No-op if there's no usable wall. */
-    public static void build(ServerLevel level, WallPlan plan, BlockPos gravemind) {
+    public static void build(ServerLevel level, WallPlan plan, BlockPos brainNode) {
         BlockState glass = ModBlocks.REINFORCED_GLASS.get().defaultBlockState();
 
         // 1. Wall column tops + bounding box + highest tip H.
@@ -64,7 +64,7 @@ public final class DomeBuilder {
         }
 
         // 3. Flood-fill the interior (gates are wall columns, so they seal the fill).
-        int cx = gravemind.getX(), cz = gravemind.getZ();
+        int cx = brainNode.getX(), cz = brainNode.getZ();
         Set<Long> interior = floodInterior(cx, cz, wallTop.keySet(), minX, maxX, minZ, maxZ);
 
         if (!interior.isEmpty()) {
@@ -82,7 +82,7 @@ public final class DomeBuilder {
                 double d = Math.hypot(x - cx, z - cz);
                 double f = Math.max(0.0, 1.0 - (d * d) / (R * R));
                 // A pure gentle paraboloid: it MEETS the rim at H (so the roof hugs the wall with no floating
-                // gap) and peaks `rise` blocks over the gravemind. (No building-drape -- reading the world
+                // gap) and peaks `rise` blocks over the brain node. (No building-drape -- reading the world
                 // heightmap was lifting the whole roof a dozen+ blocks off the rim.)
                 top.put(k, H + (int) Math.round(rise * f));
             }
@@ -133,11 +133,11 @@ public final class DomeBuilder {
         return new HouseBuildManager.Placement(new BlockPos(x, y, z), glass, null, false);
     }
 
-    /** 4-connected (x,z) flood from the gravemind, blocked by wall columns and the wall's bounding box. */
+    /** 4-connected (x,z) flood from the brain node, blocked by wall columns and the wall's bounding box. */
     private static Set<Long> floodInterior(int cx, int cz, Set<Long> wall, int minX, int maxX, int minZ, int maxZ) {
         Set<Long> seen = new HashSet<>();
         long start = key(cx, cz);
-        if (wall.contains(start)) return seen; // gravemind sits on the wall (shouldn't happen) -> bail
+        if (wall.contains(start)) return seen; // brainNode sits on the wall (shouldn't happen) -> bail
         ArrayDeque<Long> q = new ArrayDeque<>();
         q.add(start); seen.add(start);
         while (!q.isEmpty() && seen.size() < MAX_INTERIOR) {

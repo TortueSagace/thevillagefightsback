@@ -88,10 +88,10 @@ public final class EmeraldVirus {
         return e instanceof LivingEntity le && progress(le) > 0.0F;
     }
 
-    /** Highest level reached by any placed Village Gravemind (the global virus "stage"); 0 if none. */
-    public static int maxGravemindStage(MinecraftServer server) {
+    /** Highest level reached by any placed Village Brain Node (the global virus "stage"); 0 if none. */
+    public static int maxBrainNodeStage(MinecraftServer server) {
         if (server == null) return 0;
-        GravemindData data = GravemindData.get(server);
+        BrainNodeData data = BrainNodeData.get(server);
         int max = 0;
         for (GlobalPos gp : data.blocks()) {
             max = Math.max(max, data.econ(gp).getLevel());
@@ -99,8 +99,8 @@ public final class EmeraldVirus {
         return max;
     }
 
-    /** The virus has evolved (Wither II, spawns Emeraldgers) once any gravemind hits level 4. */
+    /** The virus has evolved (Wither II, spawns Emeraldgers) once any brainNode hits level 4. */
     public static boolean isEvolved(MinecraftServer server) {
-        return maxGravemindStage(server) >= 4;
+        return maxBrainNodeStage(server) >= 4;
     }
 }

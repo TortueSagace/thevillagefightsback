@@ -17,7 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * A "vindictive guard": a creature the unleashed gravemind makes out of those it strikes down. It LOOKS and
+ * A "vindictive guard": a creature the unleashed brainNode makes out of those it strikes down. It LOOKS and
  * SOUNDS like a zombie villager (vanilla {@code ZombieVillagerRenderer}) but FIGHTS exactly like a stage-3
  * Guard Villager ({@link StageThreeGuardGoal}: enchanted mace / crossbow / Alien Slasher), wears no armour,
  * never burns in daylight, and is spontaneously hostile to everything that isn't part of the infected

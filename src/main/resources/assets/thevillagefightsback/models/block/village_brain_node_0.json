@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "thevillagefightsback:block/village_brain_node_bottom",
+    "side": "thevillagefightsback:block/village_brain_node_side0",
+    "top": "thevillagefightsback:block/village_brain_node_top_off"
+  }
+}

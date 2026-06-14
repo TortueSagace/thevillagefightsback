@@ -21,10 +21,10 @@ public final class ModNetwork {
 
     public static void register() {
         int id = 0;
-        CHANNEL.messageBuilder(OpenGravemindScreenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(OpenGravemindScreenPacket::encode)
-                .decoder(OpenGravemindScreenPacket::decode)
-                .consumerMainThread(OpenGravemindScreenPacket::handle)
+        CHANNEL.messageBuilder(OpenBrainNodeScreenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenBrainNodeScreenPacket::encode)
+                .decoder(OpenBrainNodeScreenPacket::decode)
+                .consumerMainThread(OpenBrainNodeScreenPacket::handle)
                 .add();
         CHANNEL.messageBuilder(EmeraldTintPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(EmeraldTintPacket::encode)

@@ -2,7 +2,7 @@ package com.example.villagefightsback.goal;
 
 import java.util.EnumSet;
 
-import com.example.villagefightsback.GravemindData;
+import com.example.villagefightsback.BrainNodeData;
 import com.example.villagefightsback.ModBlocks;
 
 import net.minecraft.core.BlockPos;
@@ -16,17 +16,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * The "settler" behaviour: a villager far from every Village Gravemind founds a new home. It drops a
+ * The "settler" behaviour: a villager far from every Village Brain Node founds a new home. It drops a
  * Blue TNT on flat ground, lights it, and flees; the TNT then builds a random house with the door
  * facing the fled villager (see {@link BlueTntBlock}/{@link com.example.villagefightsback.HousePlacer}).
  *
  * A villager settles at most once (a persistent NBT flag), so wanderers seed new houses without spamming
  * the world. Cheap to evaluate: the distance/flatness checks only run on a throttle, and a villager near
- * a gravemind (the common case) early-outs immediately.
+ * a brainNode (the common case) early-outs immediately.
  */
 public class SettlerGoal extends Goal {
     private static final String NBT_SETTLED = "vgun_settled";
-    private static final double MIN_DIST_FROM_GRAVEMIND = 100.0;
+    private static final double MIN_DIST_FROM_BRAIN_NODE = 100.0;
     private static final int RETRY_TICKS = 200;     // re-evaluate at most every 10s
     private static final int FLAT_TOLERANCE = 2;     // max ground-height spread under the footprint
 
@@ -49,7 +49,7 @@ public class SettlerGoal extends Goal {
         if (villager.tickCount < nextTryTick) return false;
         nextTryTick = villager.tickCount + RETRY_TICKS;
 
-        if (!farFromGraveminds(level)) return false;
+        if (!farFromBrainNodes(level)) return false;
         BlockPos center = villager.blockPosition();
         if (!isFlat(level, center)) return false;
 
@@ -77,8 +77,8 @@ public class SettlerGoal extends Goal {
         tntPos = null;
     }
 
-    private boolean farFromGraveminds(ServerLevel level) {
-        GravemindData data = GravemindData.get(level.getServer());
+    private boolean farFromBrainNodes(ServerLevel level) {
+        BrainNodeData data = BrainNodeData.get(level.getServer());
         BlockPos p = villager.blockPosition();
         double minSqr = Double.MAX_VALUE;
         for (GlobalPos gp : data.blocks()) {
@@ -86,7 +86,7 @@ public class SettlerGoal extends Goal {
                 minSqr = Math.min(minSqr, gp.pos().distSqr(p));
             }
         }
-        return minSqr > MIN_DIST_FROM_GRAVEMIND * MIN_DIST_FROM_GRAVEMIND;
+        return minSqr > MIN_DIST_FROM_BRAIN_NODE * MIN_DIST_FROM_BRAIN_NODE;
     }
 
     /** The 7x7 footprint must rest on roughly level ground at the villager's feet. */

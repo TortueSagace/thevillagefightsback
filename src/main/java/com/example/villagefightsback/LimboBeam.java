@@ -10,7 +10,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Limbo-gear banish beam: a player-fired clone of the Unleashed Gravemind's green sonic-boom wave. It
+ * The Limbo-gear banish beam: a player-fired clone of the Unleashed BrainNode's green sonic-boom wave. It
  * sweeps a 100-block line from the wearer's eyes and banishes every hostile (non-Limbo) creature it touches to
  * Limbo. Granted by wearing the full Limbo armour set ({@link LimboAbility}).
  */

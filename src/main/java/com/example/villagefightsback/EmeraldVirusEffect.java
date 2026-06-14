@@ -12,7 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
  * permanently green, spreads to nearby creatures, turns ground into dirt paths, and makes the host explode
  * shortly after death. The colour ({@code 0x2BBF4E}) is only used for the inventory-icon tint.
  *
- * The virus EVOLVES once any Village Gravemind reaches level 4 ({@link EmeraldVirus#isEvolved}): the host then
+ * The virus EVOLVES once any Village Brain Node reaches level 4 ({@link EmeraldVirus#isEvolved}): the host then
  * suffers Wither II instead of the base Wither I + Slowness I.
  */
 public class EmeraldVirusEffect extends MobEffect {
@@ -24,7 +24,7 @@ public class EmeraldVirusEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (entity.level().isClientSide()) return;
-        // Evolved (Wither II) if this is Emerald Virus II (a stage-4 attacker's hit) OR any gravemind has hit level 4.
+        // Evolved (Wither II) if this is Emerald Virus II (a stage-4 attacker's hit) OR any brainNode has hit level 4.
         if (amplifier >= 1 || EmeraldVirus.isEvolved(entity.getServer())) {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 1, false, false, false)); // Wither II
         } else {

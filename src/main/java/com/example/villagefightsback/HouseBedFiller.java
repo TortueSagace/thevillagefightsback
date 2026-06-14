@@ -19,8 +19,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 
 /**
- * One-shot "furnish the village" pass run when a Village Gravemind spawns. It finds village house
- * interiors near the gravemind and drops up to two beds in each bedless one:
+ * One-shot "furnish the village" pass run when a Village Brain Node spawns. It finds village house
+ * interiors near the brain node and drops up to two beds in each bedless one:
  *   1. Scan the radius for INTERIOR FLOOR cells: air to stand in, a solid floor below, and a roof
  *      above (so it's indoors, not open sky).
  *   2. Flood-fill connected interior cells into rooms, then keep only rooms whose footprint is a
@@ -34,8 +34,8 @@ import net.minecraft.world.level.block.state.properties.BedPart;
 public final class HouseBedFiller {
     private HouseBedFiller() {}
 
-    private static final int RADIUS = 32;     // horizontal scan radius around the gravemind
-    private static final int Y_BAND = 8;      // vertical scan band (+/-) around the gravemind
+    private static final int RADIUS = 32;     // horizontal scan radius around the brain node
+    private static final int Y_BAND = 8;      // vertical scan band (+/-) around the brain node
     private static final int ROOF_MAX = 6;    // a roof must be within this many blocks above
     private static final int MIN_ROOM = 4;    // ignore tiny gaps
     private static final int MAX_ROOM = 400;  // ignore huge open spaces (caves, etc.)

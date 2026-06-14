@@ -14,7 +14,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Pure, deterministic geometry for the village wall. Turns a set of bed positions into the full ordered
- * list of {@link WallBlock}s the Gravemind hands to the builders. Strategy:
+ * list of {@link WallBlock}s the BrainNode hands to the builders. Strategy:
  * beds -> distinct (x,z) -> a footprint grid marked within CLEARANCE of every bed AND of a minimum spanning
  * tree linking the beds (so the wall hugs the ACTUAL village shape -- an L stays an L instead of being
  * wrapped by a convex hull, which would enclose the L's notch as a big dark interior) -> the orthogonal
@@ -35,12 +35,12 @@ public final class WallPlanner {
     private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
 
     /** Compute the inner (cobblestone) wall plan, or null if there aren't enough beds / the village is too large. */
-    public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds) {
-        return plan(level, gravemind, beds, false);
+    public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds) {
+        return plan(level, brainNode, beds, false);
     }
 
     /** Compute the wall plan. {@code obsidian} = the stage-3 OUTER wall (obsidian + fake-obsidian gates). */
-    public static WallPlan plan(ServerLevel level, GlobalPos gravemind, List<BlockPos> beds, boolean obsidian) {
+    public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds, boolean obsidian) {
         List<int[]> pts = distinctXz(beds);
         if (pts.size() < MIN_BEDS) return null;
 
@@ -107,7 +107,7 @@ public final class WallPlanner {
             if (total > MAX_BLOCKS) return null;
         }
         if (columns.isEmpty()) return null;
-        return new WallPlan(gravemind, columns);
+        return new WallPlan(brainNode, columns);
     }
 
     // --- column -> course stack ---

@@ -37,20 +37,20 @@ public final class ModBlocks {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
 
     /**
-     * The Village Gravemind: a recolored respawn-anchor look-alike that drives the village's global
+     * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
      * evolution level. It glows brighter as the level rises (charges visual). Tough but breakable.
      */
-    public static final RegistryObject<Block> VILLAGE_GRAVEMIND = BLOCKS.register(
-            "village_gravemind",
-            () -> new VillageGravemindBlock(BlockBehaviour.Properties.of()
+    public static final RegistryObject<Block> VILLAGE_BRAIN_NODE = BLOCKS.register(
+            "village_brain_node",
+            () -> new VillageBrainNodeBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(5.0F, 1200.0F)
                     .sound(SoundType.STONE)
-                    .lightLevel(s -> s.getValue(VillageGravemindBlock.CHARGES) * 3)));
+                    .lightLevel(s -> s.getValue(VillageBrainNodeBlock.CHARGES) * 3)));
 
-    public static final RegistryObject<Item> VILLAGE_GRAVEMIND_ITEM = ITEMS.register(
-            "village_gravemind",
-            () -> new BlockItem(VILLAGE_GRAVEMIND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> VILLAGE_BRAIN_NODE_ITEM = ITEMS.register(
+            "village_brain_node",
+            () -> new BlockItem(VILLAGE_BRAIN_NODE.get(), new Item.Properties()));
 
     /** A throwaway scaffold villagers pillar with -- auto-breaks after ~1 minute (see {@link CheapScaffoldBlock}). */
     public static final RegistryObject<Block> CHEAP_SCAFFOLD = BLOCKS.register(
@@ -158,7 +158,7 @@ public final class ModBlocks {
 
     /**
      * Wall defender spawn egg: places the {@link WallDefenderEntity} conduit-turret creature (100 HP, fires a
-     * real JEG bullet/second at the nearest hostile). The Gravemind also spawns one above each gate at level 2.
+     * real JEG bullet/second at the nearest hostile). The BrainNode also spawns one above each gate at level 2.
      */
     public static final RegistryObject<Item> WALL_DEFENDER_SPAWN = ITEMS.register(
             "wall_defender",
@@ -171,10 +171,10 @@ public final class ModBlocks {
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
                     0x6e3a10, 0xffb020, new Item.Properties()));
 
-    /** Spawn egg for the {@link GravemindWardenEntity} (a green Warden with a gravemind-block head). */
-    public static final RegistryObject<Item> GRAVEMIND_WARDEN_SPAWN = ITEMS.register(
-            "gravemind_warden",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.UNLEASHED_GRAVEMIND,
+    /** Spawn egg for the {@link BrainNodeWardenEntity} (a green Warden with a brainNode-block head). */
+    public static final RegistryObject<Item> BRAIN_NODE_WARDEN_SPAWN = ITEMS.register(
+            "brain_node_warden",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.UNLEASHED_BRAIN_NODE,
                     0x16331a, 0x55e07a, new Item.Properties()));
 
     // --- Fertile / Rich block family --------------------------------------------------------------
@@ -379,9 +379,9 @@ public final class ModBlocks {
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
-            .icon(() -> new ItemStack(VILLAGE_GRAVEMIND_ITEM.get()))
+            .icon(() -> new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get()))
             .displayItems((params, output) -> {
-                output.accept(VILLAGE_GRAVEMIND_ITEM.get());
+                output.accept(VILLAGE_BRAIN_NODE_ITEM.get());
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
@@ -391,7 +391,7 @@ public final class ModBlocks {
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
                 output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
-                output.accept(GRAVEMIND_WARDEN_SPAWN.get());
+                output.accept(BRAIN_NODE_WARDEN_SPAWN.get());
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
                 output.accept(ModItems.RICH_SHEEP_SPAWN.get());

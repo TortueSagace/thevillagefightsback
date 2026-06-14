@@ -17,7 +17,7 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_VIRUS =
             EFFECTS.register("emerald_virus", EmeraldVirusEffect::new);
 
-    /** "Immunity": holder takes no damage while active (see {@link ImmunityEffect}). Gravemind aura + potion. */
+    /** "Immunity": holder takes no damage while active (see {@link ImmunityEffect}). BrainNode aura + potion. */
     public static final RegistryObject<MobEffect> IMMUNITY =
             EFFECTS.register("immunity", ImmunityEffect::new);
 
