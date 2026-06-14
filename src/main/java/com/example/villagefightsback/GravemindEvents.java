@@ -700,7 +700,7 @@ public final class GravemindEvents {
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
 
-            reinforceVillage(level, gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
+            reinforceVillage(level, data.getWallPlan(gp), gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
 
             int income = countDefendersNear(level, gp.pos());
@@ -727,10 +727,15 @@ public final class GravemindEvents {
      * worker population can't endlessly overpopulate). Guards and iron golems are military -- they don't use
      * beds, so they always arrive. The spawned mobs auto-arm through the normal entity-join handler.
      */
-    private static void reinforceVillage(ServerLevel level, BlockPos pos, int stage) {
+    private static void reinforceVillage(ServerLevel level, WallPlan innerWall, BlockPos pos, int stage) {
         int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
         int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
         int golemsToSpawn = Math.max(0, stage - 2);  // 0 / 0 / 1 / 2
+
+        // From stage 4 the village is capped by a glass dome, so the centre's heightmap surface is the DOME
+        // ROOF -- spawning there would drop reinforcements on top of the dome. Instead, once a stage-4 village
+        // has an inner wall, spawn the new mobs on open ground just OUTSIDE that inner wall (near its gates).
+        WallPlan outside = (stage >= 4 && innerWall != null) ? innerWall : null;
 
         AABB box = new AABB(pos).inflate(INCOME_RADIUS);
         int villagers = level.getEntitiesOfClass(Villager.class, box, Villager::isAlive).size();
@@ -738,19 +743,21 @@ public final class GravemindEvents {
                 h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
-            for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER);
+            for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
         }
 
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
         if (guardType != null) {
-            for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType);
+            for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType, outside);
         }
-        for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM);
+        for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM, outside);
     }
 
-    /** Spawn one entity of {@code type} on the surface near {@code center} (it auto-arms on join). */
-    private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type) {
-        BlockPos spot = findSpawnSpot(level, center);
+    /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
+     *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
+    private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
+        BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall) : null;
+        if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
     }
@@ -759,13 +766,39 @@ public final class GravemindEvents {
         for (int i = 0; i < 12; i++) {
             BlockPos col = center.offset(level.getRandom().nextInt(9) - 4, 0, level.getRandom().nextInt(9) - 4);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, col);
-            if (level.getBlockState(surface).getCollisionShape(level, surface).isEmpty()
-                    && level.getBlockState(surface.above()).getCollisionShape(level, surface.above()).isEmpty()
-                    && level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) {
-                return surface;
-            }
+            if (spawnableSurface(level, surface)) return surface;
         }
         return center.above();
+    }
+
+    /** Pick a ground spot a few blocks OUTSIDE the inner wall, fanning out past a (random) gate so stage-4
+     *  reinforcements muster between the inner and outer walls instead of on top of the dome. Null if none found. */
+    private static BlockPos findSpawnSpotOutsideWall(ServerLevel level, WallPlan plan) {
+        List<BlockPos> gates = plan.gates();
+        if (gates.isEmpty()) return null;
+        BlockPos centre = plan.gravemind().pos();
+        for (int i = 0; i < 16; i++) {
+            BlockPos gate = gates.get(level.getRandom().nextInt(gates.size()));
+            double dx = gate.getX() + 0.5 - centre.getX();
+            double dz = gate.getZ() + 0.5 - centre.getZ();
+            double len = Math.sqrt(dx * dx + dz * dz);
+            double ox = len > 0.01 ? dx / len : 1.0, oz = len > 0.01 ? dz / len : 0.0;
+            int dist = 3 + level.getRandom().nextInt(3);                 // 3..5 blocks beyond the gate
+            double jitter = level.getRandom().nextInt(5) - 2;           // -2..2 along the wall so they don't stack
+            int tx = (int) Math.floor(gate.getX() + 0.5 + ox * dist - oz * jitter);
+            int tz = (int) Math.floor(gate.getZ() + 0.5 + oz * dist + ox * jitter);
+            BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(tx, gate.getY(), tz));
+            if (plan.contains(surface)) continue;                       // still inside the ring -> push further next try
+            if (spawnableSurface(level, surface)) return surface;
+        }
+        return null;
+    }
+
+    /** A standable open surface: feet + head clear, solid floor below. */
+    private static boolean spawnableSurface(ServerLevel level, BlockPos surface) {
+        return level.getBlockState(surface).getCollisionShape(level, surface).isEmpty()
+                && level.getBlockState(surface.above()).getCollisionShape(level, surface.above()).isEmpty()
+                && level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP);
     }
 
     /** Alive villagers/guards within {@value #INCOME_RADIUS} blocks of one gravemind. */

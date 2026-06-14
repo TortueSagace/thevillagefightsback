@@ -213,17 +213,16 @@ public final class ModBlocks {
         // if/else, not switch-over-enum, to avoid generating a synthetic switch-map class.
         RegistryObject<Block> block = BLOCKS.register(name, () -> {
             BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
+            // Every fertile/rich block renders FULLBRIGHT so the green salt/pepper specks glow in the dark
+            // and a fertile zone is visible from afar at night. (Emissive RENDERING only -- no light is cast
+            // into the world, so it doesn't change mob spawning / terrain lighting: not invasive.)
+            p.emissiveRendering((s, l, pos) -> true);
             if (kind == FertileKind.FALLING) return new FallingBlock(p);
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
             if (kind == FertileKind.LEAVES) {
                 // A plain (non-LeavesBlock) block so infected leaves NEVER decay; copy() carries leaves'
                 // non-occlusion. The model is cutout_mipped so the leaf gaps show.
                 return new Block(p.noOcclusion());
-            }
-            if (kind == FertileKind.SCULK) {
-                // Render fullbright like vanilla sculk so the texture glows in the dark (copy() doesn't
-                // carry emissiveRendering over). The block still emits no light into the world.
-                p.emissiveRendering((s, l, pos) -> true);
             }
             return new Block(p);
         });
@@ -250,13 +249,13 @@ public final class ModBlocks {
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
     // materials) -- no tint on the crafted output.
     public static final RegistryObject<Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
     public static final RegistryObject<Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
-            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
     public static final RegistryObject<Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
     public static final RegistryObject<Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE).emissiveRendering((s, l, p) -> true)));
     public static final RegistryObject<Item> FERTILE_PLANKS_ITEM = ITEMS.register("fertile_planks",
             () -> new BlockItem(FERTILE_PLANKS.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_PLANKS_STAIRS_ITEM = ITEMS.register("fertile_planks_stairs",

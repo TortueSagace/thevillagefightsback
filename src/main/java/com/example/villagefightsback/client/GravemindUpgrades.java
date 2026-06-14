@@ -60,7 +60,11 @@ public final class GravemindUpgrades {
             List.of(
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ALIEN_SLASHER.get()),
                             "Advanced Weaponry",
-                            "The battle power of villagers, guards and golems is strongly improved."),
+                            "Villagers wield the Alien Slasher and guards become emerald knights (enchanted mace + "
+                            + "crossbow + emerald armour) -- their battle power is strongly improved."),
+                    new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ROCKET_LAUNCHER.get()),
+                            "Gigachad Golems", "Village iron golems become Gigachad Golems: gold-plated, 200 HP, and "
+                            + "armed with a rocket launcher that blasts attackers from range."),
                     new Upgrade(new ItemStack(ModBlocks.GREEN_TNT_ITEM.get()),
                             "Expansion", "The village outgrows its wall: a wave of settlers streams out and "
                             + "founds a ring of new houses and towers beyond it.")
@@ -70,6 +74,9 @@ public final class GravemindUpgrades {
                     new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
                             "Glass Dome", "A reinforced-glass dome rises over the whole village, sealing it from "
                             + "aerial attacks."),
+                    new Upgrade(new ItemStack(ModBlocks.WALL_DEFENDER_STAGE4_SPAWN.get()),
+                            "Rocket Defenders", "Wall defenders are upgraded to launch rockets like the Gigachad "
+                            + "Golems -- one every two seconds, with a revolver fallback at point-blank range."),
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
                             "Emeraldgers", "The Emerald Virus evolves: it inflicts Wither II, and every host that "
                             + "dies and explodes rises again as an Emeraldger -- a green-eyed warrior that grows "

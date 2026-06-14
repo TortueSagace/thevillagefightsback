@@ -5,7 +5,7 @@ Generates the Fertile/Rich block assets for "Go Back To Your World":
 Writes textures + blockstates + block/item models + loot tables. Java registration is done
 separately. Re-runnable (overwrites). Source textures come from the vanilla client "extra" jar.
 """
-import json, os, zipfile
+import json, os, random, zipfile, zlib
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # villager-arms-mod/
@@ -98,6 +98,30 @@ def gem_overlay(zf):
             if a > 0 and g - r >= 12 and g - b >= 6 and g >= 50:
                 od[x, y] = (r, g, b, 255)
     return overlay
+
+# Salt/pepper "glow" specks scattered on fertile blocks so a fertile zone twinkles green at night
+# (the blocks render emissive/fullbright, so these read as a soft green glow visible from afar).
+# Bright green = salt (the glow), dark green = pepper (contrast). Kept sparse so it isn't invasive.
+SALT = (130, 255, 120)
+PEPPER = (14, 74, 30)
+
+def salt_pepper(img, name, salt=6, pepper=5):
+    """Scatter a few bright/dark green specks onto the OPAQUE pixels of img (deterministic per name)."""
+    out = img.convert("RGBA").copy()
+    px = out.load()
+    w, h = out.size
+    rnd = random.Random(zlib.crc32(name.encode()))
+    placed, attempts = 0, 0
+    while placed < salt + pepper and attempts < 1000:
+        attempts += 1
+        x, y = rnd.randrange(w), rnd.randrange(h)
+        r, g, b, a = px[x, y]
+        if a < 250:                      # skip transparent/translucent pixels (e.g. leaf gaps)
+            continue
+        col = SALT if placed < salt else PEPPER
+        px[x, y] = (col[0], col[1], col[2], a)
+        placed += 1
+    return out
 
 def overlay_onto(base, overlay):
     if overlay.size != base.size:
@@ -473,18 +497,19 @@ def main():
                 save_png(overlay_strip(ft, gems), rich); save_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
             elif kind == "leaves":
-                ft = green_tint(load_vanilla(zf, srcs))
+                ft = salt_pepper(green_tint(load_vanilla(zf, srcs)), fertile)
                 save_png(ft, fertile)
                 save_png(overlay_onto(ft, gems), rich)
                 write_leaves(fertile); write_leaves(rich)
             elif kind == "all":
-                ft = green_tint(load_vanilla(zf, srcs))
+                ft = salt_pepper(green_tint(load_vanilla(zf, srcs)), fertile)
                 save_png(ft, fertile)
                 save_png(overlay_onto(ft, gems), rich)
                 write_cube_all(fertile); write_cube_all(rich)
             else:  # log: side + top
                 side, top = srcs
-                fs, ftp = green_tint(load_vanilla(zf, side)), green_tint(load_vanilla(zf, top))
+                fs = salt_pepper(green_tint(load_vanilla(zf, side)), fertile)
+                ftp = salt_pepper(green_tint(load_vanilla(zf, top)), fertile + "_top")
                 save_png(fs, fertile); save_png(ftp, fertile + "_top")
                 save_png(overlay_onto(fs, gems), rich); save_png(overlay_onto(ftp, gems), rich + "_top")
                 write_log(fertile); write_log(rich)
@@ -520,8 +545,8 @@ def gen_fertile_wood_cobble():
     mining fertile stone). Cube textures/models/items/loot here; stairs/slabs reuse the planks texture
     (their JSON is authored separately)."""
     with zipfile.ZipFile(JAR) as zf:
-        planks = green_tint(load_vanilla(zf, "oak_planks"))
-        cobble = green_tint(load_vanilla(zf, "cobblestone"))
+        planks = salt_pepper(green_tint(load_vanilla(zf, "oak_planks")), "fertile_planks")
+        cobble = salt_pepper(green_tint(load_vanilla(zf, "cobblestone")), "fertile_cobblestone")
     save_png(planks, "fertile_planks")
     save_png(cobble, "fertile_cobblestone")
     for bid in ("fertile_planks", "fertile_cobblestone"):
