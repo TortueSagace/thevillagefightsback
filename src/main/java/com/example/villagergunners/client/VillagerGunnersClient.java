@@ -32,6 +32,13 @@ public final class VillagerGunnersClient {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
     }
 
+    /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
+    @SubscribeEvent
+    public static void onRegisterDimensionEffects(
+            net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent event) {
+        event.register(new ResourceLocation(VillagerGunners.MODID, "limbo"), new LimboDimensionEffects());
+    }
+
     /** Two-tone tint for the staged-defender spawn eggs (template_spawn_egg model, layers 0=base, 1=spots). */
     @SubscribeEvent
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {

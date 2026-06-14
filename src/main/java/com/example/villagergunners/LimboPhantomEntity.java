@@ -62,7 +62,9 @@ public class LimboPhantomEntity extends Phantom {
 
     @Override
     public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(SCALE); // 3x hitbox (super already factors phantom-size = 1)
+        // A generous box that covers the wide 3x phantom MODEL (wings included), so it's actually hittable --
+        // the plain 3x of the tiny vanilla body box (0.9x0.5) sat inside the visual and felt un-hittable.
+        return EntityDimensions.scalable(3.4F, 2.0F);
     }
 
     @Override

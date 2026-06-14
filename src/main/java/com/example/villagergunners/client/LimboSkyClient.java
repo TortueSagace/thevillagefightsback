@@ -1,0 +1,31 @@
+package com.example.villagergunners.client;
+
+import com.example.villagergunners.LimboDimension;
+import com.example.villagergunners.VillagerGunners;
+
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ViewportEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * Greens the Limbo's fog/horizon on the CLIENT, regardless of the dimension's baked effects. This is the
+ * belt-and-braces that tints an EXISTING save's Limbo green (the dimension_type's sky effect only applies to
+ * worlds created after the change). New worlds also get the full green void sky from
+ * {@link LimboDimensionEffects}.
+ */
+@Mod.EventBusSubscriber(modid = VillagerGunners.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+public final class LimboSkyClient {
+    private LimboSkyClient() {}
+
+    @SubscribeEvent
+    public static void onFogColor(ViewportEvent.ComputeFogColor event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && LimboDimension.LIMBO.equals(mc.player.level().dimension())) {
+            event.setRed(0.06F);
+            event.setGreen(0.28F);
+            event.setBlue(0.13F);
+        }
+    }
+}
