@@ -220,14 +220,16 @@ public final class ModBlocks {
         registerFertileBlock("rich_" + base, vanilla, kind);
     }
 
+    /** Weak light every fertile/rich block emits, so a fertile zone faintly glows green into its surroundings. */
+    public static final int FERTILE_LIGHT = 5;
+
     private static void registerFertileBlock(String name, Block vanilla, FertileKind kind) {
         // if/else, not switch-over-enum, to avoid generating a synthetic switch-map class.
         RegistryObject<Block> block = BLOCKS.register(name, () -> {
             BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
-            // Every fertile/rich block renders FULLBRIGHT so the green salt/pepper specks glow in the dark
-            // and a fertile zone is visible from afar at night. (Emissive RENDERING only -- no light is cast
-            // into the world, so it doesn't change mob spawning / terrain lighting: not invasive.)
-            p.emissiveRendering((s, l, pos) -> true);
+            // Every fertile/rich block renders FULLBRIGHT (so the green specks glow) AND emits a weak light,
+            // so a fertile zone glows green and softly lights its surroundings at night.
+            p.emissiveRendering((s, l, pos) -> true).lightLevel(s -> FERTILE_LIGHT);
             if (kind == FertileKind.FALLING) return new FallingBlock(p);
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
             if (kind == FertileKind.LEAVES) {
@@ -260,13 +262,13 @@ public final class ModBlocks {
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
     // materials) -- no tint on the crafted output.
     public static final RegistryObject<Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
-            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
+            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true)));
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE).emissiveRendering((s, l, p) -> true)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Item> FERTILE_PLANKS_ITEM = ITEMS.register("fertile_planks",
             () -> new BlockItem(FERTILE_PLANKS.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_PLANKS_STAIRS_ITEM = ITEMS.register("fertile_planks_stairs",
@@ -283,13 +285,13 @@ public final class ModBlocks {
     // connects/survives) -- they differ only in texture + drops (rich drops emeralds). randomTicks() so the
     // flower actually grows; the family suppliers wire each flower to spread its own plant.
     public static final RegistryObject<Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
     public static final RegistryObject<Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
     public static final RegistryObject<Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
             () -> new BlockItem(FERTILE_CHORUS_PLANT.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",
@@ -302,9 +304,9 @@ public final class ModBlocks {
     // Fertile / Rich sculk catalyst: on a nearby mob death it spreads fertile / rich sculk like vanilla
     // sculk spreads from a catalyst (see SculkCatalystEvents). Glows like the sculk family.
     public static final RegistryObject<Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> RICH_SCULK_CATALYST = BLOCKS.register("rich_sculk_catalyst",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Item> FERTILE_SCULK_CATALYST_ITEM = ITEMS.register("fertile_sculk_catalyst",
             () -> new BlockItem(FERTILE_SCULK_CATALYST.get(), new Item.Properties()));
     public static final RegistryObject<Item> RICH_SCULK_CATALYST_ITEM = ITEMS.register("rich_sculk_catalyst",
@@ -313,7 +315,7 @@ public final class ModBlocks {
     /** Fertile door: the infection replaces every (wooden) door with this. Oak-door shape, green-tinted. */
     public static final RegistryObject<Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
             () -> new net.minecraft.world.level.block.DoorBlock(
-                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion().emissiveRendering((s, l, p) -> true),
+                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT),
                     net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
     public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));

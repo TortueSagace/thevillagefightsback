@@ -46,6 +46,10 @@ public final class HousePlacer {
             new ResourceLocation(TheVillageFightsBack.MODID, "basic_house2"),
             new ResourceLocation(TheVillageFightsBack.MODID, "basic_house3"),
             new ResourceLocation(TheVillageFightsBack.MODID, "basic_house4"),
+            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house5"),
+            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house6"),
+            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house7"),
+            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house8"),
     };
 
     /** House path (Blue TNT): rotate so the door faces {@code doorFacing}; uses the house loot table. */
