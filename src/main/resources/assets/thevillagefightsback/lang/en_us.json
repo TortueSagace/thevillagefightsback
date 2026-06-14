@@ -5,6 +5,8 @@
   "block.thevillagefightsback.fake_cobblestone.desc": "Villagers, golems and players can go through. Perfect to build a hidden door.",
   "block.thevillagefightsback.fake_obsidian": "Fake Obsidian",
   "block.thevillagefightsback.fake_obsidian.desc": "Villagers, golems and players can go through. Obsidian-tough -- the stage-3 outer wall's gate.",
+  "block.thevillagefightsback.emerald_node": "Emerald Node",
+  "block.thevillagefightsback.emerald_node.desc": "Glows and ripples. Each one within a Village Brain Node's range adds one emerald to that village's daily harvest.",
   "block.thevillagefightsback.obsidian_stairs": "Obsidian Stairs",
   "block.thevillagefightsback.iron_golem_head": "Iron Golem Head",
   "block.thevillagefightsback.iron_golem_head.desc": "A decorative iron golem bust. Faces the way you place it.",

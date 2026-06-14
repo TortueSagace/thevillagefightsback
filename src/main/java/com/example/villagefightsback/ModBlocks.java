@@ -426,6 +426,7 @@ public final class ModBlocks {
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
+                output.accept(EMERALD_NODE_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
