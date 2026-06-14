@@ -394,16 +394,6 @@ public final class InfectionManager {
                     placeFertileDoor(level, cand, src);
                     inf.addFrontier(cand.asLong());
                     inf.incConverted();
-                } else if (BlockMatcher.isFertileUpgradable(src)) {
-                    // Ripen an already-fertile block into its rich form. It's already counted as converted,
-                    // so do NOT incConverted again -- just swap the block and register it as rich.
-                    BlockState conv = BlockMatcher.convertedState(src, true);
-                    if (conv != null && conv.getBlock() != src.getBlock()) {
-                        conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
-                        level.setBlock(cand, conv, 3);
-                        inf.addFrontier(cand.asLong());
-                        inf.addRich(cand.asLong());
-                    }
                 } else {
                     boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
                     BlockState conv = BlockMatcher.convertedState(src, richVariant);
@@ -461,8 +451,9 @@ public final class InfectionManager {
             if (!level.isLoaded(m)) continue;
             if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the brain node reach -> skip
             BlockState ns = level.getBlockState(m);
-            // Normal convertible ground (-> fertile), OR an already-fertile block (-> ripen into rich).
-            if (BlockMatcher.isCandidate(level, m, ns) || BlockMatcher.isFertileUpgradable(ns)) return m.immutable();
+            // Only RAW convertible ground (-> fertile). Already-fertile blocks are NOT re-targeted: rich occurs
+            // only via the RICH_CHANCE roll at first conversion, so fertile zones never "ripen" wholesale to rich.
+            if (BlockMatcher.isCandidate(level, m, ns)) return m.immutable();
         }
         return null;
     }
