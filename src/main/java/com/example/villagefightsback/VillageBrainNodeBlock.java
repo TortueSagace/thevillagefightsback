@@ -189,6 +189,9 @@ public class VillageBrainNodeBlock extends Block {
             // Any removal that is NOT a clean silk-touch / creative pickup unleashes the brain node boss here.
             boolean cleanBreak = cleanBreakPos == pos.asLong() && level.getGameTime() - cleanBreakTick <= 1;
             if (!cleanBreak) {
+                // Start the respawn grace BEFORE summoning, so the auto-placer can't race a duplicate node in
+                // while the boss emerges (it only summons on a non-clean removal, so the grace only gates those).
+                BrainNodeEvents.recordRemoval(key);
                 UnleashedManager.summonBoss(sl, pos.immutable());
             }
         }
