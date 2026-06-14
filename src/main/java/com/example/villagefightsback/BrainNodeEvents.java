@@ -738,8 +738,10 @@ public final class BrainNodeEvents {
             reinforceVillage(level, data.getWallPlan(gp), gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
 
-            // Daily harvest = one emerald per nearby defender, plus one per Emerald Node in the income radius.
-            int income = countDefendersNear(level, gp.pos()) + countEmeraldNodesNear(data, gp);
+            // Daily harvest = one emerald per nearby defender, increased by 10% for EACH Emerald Node in the
+            // income radius (e.g. base 10 with 3 nodes -> 10 * 1.30 = 13).
+            int base = countDefendersNear(level, gp.pos());
+            int income = (int) Math.round(base * (1.0 + 0.10 * countEmeraldNodesNear(data, gp)));
             if (income <= 0) continue;
             int gained = econ.addEmeralds(income);
             if (gained > 0) {
@@ -842,8 +844,8 @@ public final class BrainNodeEvents {
         return level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive() && isDefender(x)).size();
     }
 
-    /** Emerald Nodes within {@value #INCOME_RADIUS} of a brainNode -- each adds +1 to the daily harvest. Counted
-     *  from the tracked block set (cheap), not a world scan. */
+    /** Emerald Nodes within {@value #INCOME_RADIUS} of a brainNode -- each raises the daily harvest by 10%.
+     *  Counted from the tracked block set (cheap), not a world scan. */
     private static int countEmeraldNodesNear(BrainNodeData data, GlobalPos brainNode) {
         double r2 = (double) INCOME_RADIUS * INCOME_RADIUS;
         int n = 0;

@@ -95,7 +95,7 @@ public final class ModBlocks {
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
     /** "Emerald Node": a glowing raw-emerald-ore block with ancient-debris toughness. Each one within a Village
-     *  Brain Node's income radius adds +1 emerald to that village's daily sunset harvest (see EmeraldNodeBlock). */
+     *  Brain Node's income radius raises that village's daily sunset harvest by 10% (see EmeraldNodeBlock). */
     public static final RegistryObject<Block> EMERALD_NODE = BLOCKS.register(
             "emerald_node",
             () -> new EmeraldNodeBlock(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)));
@@ -439,6 +439,8 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
                 output.accept(ModItems.RICH_SHEEP_SPAWN.get());
+                output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
+                output.accept(ModItems.VINDICTIVE_GIGACHAD_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());

@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * The Emerald Node: a glowing "raw emerald ore" block (a raw-iron-block / emerald-block hybrid) with
  * ancient-debris toughness and an expanding-ripple animation. Every Emerald Node within a Village Brain
- * Node's income radius adds +1 emerald to that village's daily sunset harvest -- see
+ * Node's income radius raises that village's daily sunset harvest by 10% -- see
  * {@link BrainNodeEvents#handleSunsetIncome}. Placed positions are tracked globally in {@link BrainNodeData}
  * so the harvest bonus is a cheap set lookup rather than a per-sunset block scan.
  */

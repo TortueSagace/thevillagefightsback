@@ -138,6 +138,14 @@ public final class ModItems {
             ITEMS.register("rich_sheep_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.RICH_SHEEP, 0x2BBF4E, 0x17DD62, new Item.Properties()));
 
+    /** Creative spawn eggs for the unleashed boss's vindictive minions. */
+    public static final RegistryObject<Item> VINDICTIVE_GUARD_SPAWN =
+            ITEMS.register("vindictive_guard_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.VINDICTIVE_GUARD, 0x3A5F3A, 0x2BBF4E, new Item.Properties()));
+    public static final RegistryObject<Item> VINDICTIVE_GIGACHAD_SPAWN =
+            ITEMS.register("vindictive_gigachad_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.VINDICTIVE_GIGACHAD, 0xB8860B, 0x2BBF4E, new Item.Properties()));
+
     // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a BrainNode stage,
     //     even with no brainNode present (see StagedDefenderEggItem). ---
     private static RegistryObject<Item> egg(String name, StagedDefenderEggItem.Kind kind, int stage, int primary, int secondary) {
