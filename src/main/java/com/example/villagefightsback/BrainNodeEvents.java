@@ -125,7 +125,6 @@ public final class BrainNodeEvents {
     /** Grant a brain node's founder Hero of the Village for an hour. */
     public static void rewardHero(ServerPlayer player) {
         player.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, HERO_TICKS, 0, false, false, true));
-        player.displayClientMessage(Component.literal("§dYou are the Hero of the Village!"), true);
     }
 
     /** Remember which player placed a village bell, so the brain node that later rises there rewards them. */
@@ -659,6 +658,8 @@ public final class BrainNodeEvents {
         }
         broadcast(level.getServer(), "§5A Village Brain Node has risen at the heart of a village §8(near "
                 + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
+        broadcast(level.getServer(), "§eRight-click on the Village Brain Node anytime for useful information. "
+                + "§cPROTECT THE BRAIN AND ITS VILLAGERS AT ANY COST, OR FACE THE CONSEQUENCES.");
 
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
         HouseBedFiller.fill(level, spot);
