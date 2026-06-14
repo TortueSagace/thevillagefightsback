@@ -1,8 +1,8 @@
 {
   "__comment": "Iron golem head + nose, UVs mapped to the 128x128 iron_golem entity sprite (pixel/8).",
   "textures": {
-    "golem": "minecraft:entity/iron_golem/iron_golem",
-    "particle": "minecraft:entity/iron_golem/iron_golem"
+    "golem": "thevillagefightsback:block/iron_golem",
+    "particle": "thevillagefightsback:block/iron_golem"
   },
   "elements": [
     {
