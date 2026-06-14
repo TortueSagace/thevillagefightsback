@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
-      "model": "gobacktoyourworld:block/rich_chorus_flower"
-    }
+    "age=0": { "model": "gobacktoyourworld:block/rich_chorus_flower" },
+    "age=1": { "model": "gobacktoyourworld:block/rich_chorus_flower" },
+    "age=2": { "model": "gobacktoyourworld:block/rich_chorus_flower" },
+    "age=3": { "model": "gobacktoyourworld:block/rich_chorus_flower" },
+    "age=4": { "model": "gobacktoyourworld:block/rich_chorus_flower" },
+    "age=5": { "model": "gobacktoyourworld:block/rich_chorus_flower_dead" }
   }
 }

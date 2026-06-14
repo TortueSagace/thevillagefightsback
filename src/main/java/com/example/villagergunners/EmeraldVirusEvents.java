@@ -118,11 +118,14 @@ public final class EmeraldVirusEvents {
         Level level = e.level();
         if (level.isClientSide()) return;
 
-        long _p = ModProfiler.now(); // fires for EVERY living entity each tick -> profile the aggregate cost
-        try {
-            boolean active = EmeraldVirus.isActive(e);
-            if (!active && EmeraldVirus.progress(e) <= 0.0F) return; // not, and never, infected
+        // Reject the no-op path (uninfected entities -- nearly all of them) BEFORE touching the profiler:
+        // this event fires for every living entity every tick, so instrumenting the bail path just measures
+        // the profiler's own nanoTime+computeIfAbsent overhead. Gate first, then profile only real work.
+        boolean active = EmeraldVirus.isActive(e);
+        if (!active && EmeraldVirus.progress(e) <= 0.0F) return; // not, and never, infected
 
+        long _p = ModProfiler.now();
+        try {
             if (active) {
                 EmeraldVirus.setProgress(e, EmeraldVirus.progress(e) + 1.0F / EmeraldVirus.DURATION_TICKS);
             }

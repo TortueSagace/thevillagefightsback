@@ -33,17 +33,22 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
     public static final int DEAD_AGE = 5;
     public static final IntegerProperty AGE = BlockStateProperties.AGE_5;
 
-    /** Constructed with the fertile chorus PLANT it spreads, and properties copied from CHORUS_FLOWER. */
-    public FertileChorusFlowerBlock(BlockBehaviour.Properties properties) {
+    /** The chorus PLANT this flower spreads (fertile flower -> fertile plant, rich flower -> rich plant). */
+    private final java.util.function.Supplier<? extends Block> plantSupplier;
+
+    /** Constructed with the chorus PLANT it spreads, and properties copied from CHORUS_FLOWER. */
+    public FertileChorusFlowerBlock(BlockBehaviour.Properties properties,
+            java.util.function.Supplier<? extends Block> plant) {
         // The super needs SOME ChorusPlantBlock; we never use the vanilla one (every method that touches
-        // it is overridden below to use our fertile plant), so pass vanilla CHORUS_PLANT to satisfy it.
+        // it is overridden below to use our plant), so pass vanilla CHORUS_PLANT to satisfy it.
         super((ChorusPlantBlock) Blocks.CHORUS_PLANT, properties);
+        this.plantSupplier = plant;
         this.registerDefaultState(this.stateDefinition.any().setValue(AGE, Integer.valueOf(0)));
     }
 
-    /** Our fertile chorus PLANT block (the body the flower leaves behind / grows on). */
-    private static ChorusPlantBlock plant() {
-        return (ChorusPlantBlock) ModBlocks.FERTILE_CHORUS_PLANT.get();
+    /** Our chorus PLANT block (the body the flower leaves behind / grows on). */
+    private ChorusPlantBlock plant() {
+        return (ChorusPlantBlock) plantSupplier.get();
     }
 
     // Resolved lazily (after registration); our "fertile_end_stone" has no static accessor in ModBlocks.

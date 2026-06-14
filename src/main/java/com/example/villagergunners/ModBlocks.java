@@ -269,16 +269,17 @@ public final class ModBlocks {
     // Fertile / Rich chorus: the fertile chorus FLOWER grows like a vanilla chorus flower but spreads OUR
     // fertile chorus (plant + flower). The RICH variants are decorative / harvest-only -- they never grow and
     // drop an emerald. The plant blocks are ChorusPlantBlock subclasses so they keep the chorus model/shape.
+    // Both fertile and rich chorus are full chorus implementations (flower grows + spreads its plant, plant
+    // connects/survives) -- they differ only in texture + drops (rich drops emeralds). randomTicks() so the
+    // flower actually grows; the family suppliers wire each flower to spread its own plant.
     public static final RegistryObject<Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT)));
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER)));
-    // Rich plant: a ChorusPlantBlock so it has the chorus geometry, but it never spreads (no flower drives it).
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks(), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
     public static final RegistryObject<Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
-            () -> new net.minecraft.world.level.block.ChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT)));
-    // Rich flower: a plain decorative block using the chorus_flower model (no growth at all).
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
     public static final RegistryObject<Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER)));
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks(), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
     public static final RegistryObject<Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
             () -> new BlockItem(FERTILE_CHORUS_PLANT.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",

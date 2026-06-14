@@ -26,8 +26,13 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
     // Resolved lazily after registration -- our fertile_end_stone has no static accessor in ModBlocks.
     private static Block fertileEndStone;
 
-    public FertileChorusPlantBlock(BlockBehaviour.Properties properties) {
+    /** The chorus FLOWER this plant tops out with (fertile plant -> fertile flower, rich -> rich flower). */
+    private final java.util.function.Supplier<? extends Block> flowerSupplier;
+
+    public FertileChorusPlantBlock(BlockBehaviour.Properties properties,
+            java.util.function.Supplier<? extends Block> flower) {
         super(properties);
+        this.flowerSupplier = flower;
     }
 
     private static Block fertileEndStone() {
@@ -38,15 +43,22 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
         return fertileEndStone;
     }
 
-    private static boolean isEndStone(BlockState s) {
+    /**
+     * Ground a chorus plant may STAND on: vanilla end stone, our fertile end stone, or -- so it can establish
+     * on the fertile land the flower grows on -- any solid (motion-blocking, non-air) block. MUST match
+     * {@link FertileChorusFlowerBlock}'s ground check, else the plant the flower places fails canSurvive and
+     * the chorus can never grow off end stone (the "never grows" bug).
+     */
+    private static boolean isGround(BlockState s) {
         if (s.is(Blocks.END_STONE)) return true;
         Block fes = fertileEndStone();
-        return fes != null && s.is(fes);
+        if (fes != null && s.is(fes)) return true;
+        return !s.isAir() && s.blocksMotion();
     }
 
-    /** Our fertile chorus FLOWER (the top this plant connects up to). */
+    /** Our chorus FLOWER (the top this plant connects up to). */
     private Block fertileFlower() {
-        return ModBlocks.FERTILE_CHORUS_FLOWER.get();
+        return flowerSupplier.get();
     }
 
     /** A neighbour the plant connects to horizontally / upward: our fertile chorus plant or flower. */
@@ -73,7 +85,7 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
         BlockState south = level.getBlockState(pos.south());
         BlockState west = level.getBlockState(pos.west());
         return this.defaultBlockState()
-                .setValue(DOWN, Boolean.valueOf(connectsTo(down) || isEndStone(down)))
+                .setValue(DOWN, Boolean.valueOf(connectsTo(down) || isGround(down)))
                 .setValue(UP, Boolean.valueOf(connectsTo(up)))
                 .setValue(NORTH, Boolean.valueOf(connectsTo(north)))
                 .setValue(EAST, Boolean.valueOf(connectsTo(east)))
@@ -89,7 +101,7 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
             return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
         } else {
             boolean connect = connectsTo(neighborState)
-                    || (direction == Direction.DOWN && isEndStone(neighborState));
+                    || (direction == Direction.DOWN && isGround(neighborState));
             return state.setValue(PROPERTY_BY_DIRECTION.get(direction), Boolean.valueOf(connect));
         }
     }
@@ -120,12 +132,12 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
                 }
 
                 BlockState sideBelow = level.getBlockState(sidePos.below());
-                if (sideBelow.is(this) || isEndStone(sideBelow)) {
+                if (sideBelow.is(this) || isGround(sideBelow)) {
                     return true;
                 }
             }
         }
 
-        return below.is(this) || isEndStone(below);
+        return below.is(this) || isGround(below);
     }
 }
