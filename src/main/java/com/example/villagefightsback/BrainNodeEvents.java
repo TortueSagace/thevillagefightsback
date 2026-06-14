@@ -82,9 +82,12 @@ public final class BrainNodeEvents {
         ModProfiler.add("brain_node", _p);
     }
 
-    /** Every loaded Village Brain Node emits the Warden's resting heartbeat. The 40-tick driver cadence (~2s)
-     *  is the same slow pulse a calm Warden uses; the UNLEASHED boss pulses it fast itself (see that entity). */
+    private static final int HEARTBEAT_TICKS = 120; // ~6s between brain-node heartbeats (slow, ominous)
+
+    /** Every loaded Village Brain Node emits the Warden's resting heartbeat -- a slow, ominous pulse every
+     *  {@value #HEARTBEAT_TICKS} ticks. The UNLEASHED boss pulses it fast itself (see that entity). */
     private static void pulseHeartbeats(MinecraftServer server, BrainNodeData data) {
+        if (server.getTickCount() % HEARTBEAT_TICKS != 0) return; // throttle below the 40-tick driver cadence
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;

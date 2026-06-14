@@ -315,12 +315,13 @@ public final class BlockMatcher {
         return (rich ? richByBase : fertileByBase).get("sculk");
     }
 
-    /** Ground a dirt-path may spread across (dirt-family / grass / our fertile dirt). Excludes existing paths. */
+    /** Ground a dirt-path may spread across: vanilla dirt-family / grass only. NOT our fertile blocks (paths
+     *  must never overwrite fertilized ground) and not existing paths. */
     public static boolean isPathGround(BlockState s) {
         init();
         Block b = s.getBlock();
         if (b == Blocks.DIRT || b == Blocks.GRASS_BLOCK || b == Blocks.COARSE_DIRT || b == Blocks.PODZOL
                 || b == Blocks.MYCELIUM || b == Blocks.ROOTED_DIRT || b == Blocks.MUD) return true;
-        return b == fertileByBase.get("dirt");
+        return false; // paths spread only over vanilla dirt-like ground -- they never overwrite our fertile blocks
     }
 }
