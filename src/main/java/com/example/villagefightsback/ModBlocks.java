@@ -38,13 +38,14 @@ public final class ModBlocks {
 
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
-     * evolution level. It glows brighter as the level rises (charges visual). Tough but breakable.
+     * evolution level. It glows brighter as the level rises (charges visual). As tough as obsidian
+     * (hardness 50, blast resistance 1200) so explosions can't destroy it.
      */
     public static final RegistryObject<Block> VILLAGE_BRAIN_NODE = BLOCKS.register(
             "village_brain_node",
             () -> new VillageBrainNodeBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
-                    .strength(5.0F, 1200.0F)
+                    .strength(50.0F, 1200.0F)              // obsidian toughness
                     .sound(SoundType.STONE)
                     .lightLevel(s -> s.getValue(VillageBrainNodeBlock.CHARGES) * 3)));
 
