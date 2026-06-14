@@ -169,6 +169,26 @@ def save_anim_mcmeta(name, frametime=FRAMETIME):
     with open(os.path.join(d, name + ".png.mcmeta"), "w", encoding="utf-8") as fh:
         json.dump({"animation": {"frametime": frametime, "interpolate": True}}, fh, indent=2)
 
+# Emerald flecks for the rich sheep wool: small gems scattered at the texture's NATIVE resolution (instead
+# of stretching the 16x16 ore overlay, which made blobby smears). Three shades give a faceted gem look.
+EMERALD_HI = (130, 255, 160)
+EMERALD_BRIGHT = (44, 224, 120)
+EMERALD_MED = (22, 150, 86)
+
+def emerald_fleck(img, name, density=0.10):
+    """Sprinkle small emerald gems onto the OPAQUE pixels of img (deterministic per name)."""
+    out = img.convert("RGBA").copy()
+    px = out.load(); w, h = out.size
+    rnd = random.Random(zlib.crc32(name.encode()))
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] < 250 or rnd.random() >= density:
+                continue
+            t = rnd.random()
+            col = EMERALD_HI if t < 0.15 else (EMERALD_BRIGHT if t < 0.6 else EMERALD_MED)
+            px[x, y] = (col[0], col[1], col[2], px[x, y][3])
+    return out
+
 def overlay_onto(base, overlay):
     if overlay.size != base.size:
         overlay = overlay.resize(base.size, Image.NEAREST)
@@ -582,7 +602,10 @@ def gen_rich_sheep(gems):
     The body uses entity/sheep/sheep.png; the fur uses entity/sheep/sheep_fur.png with the gem overlay."""
     with zipfile.ZipFile(JAR) as zf:
         body = green_tint(load_vanilla(zf, "sheep/sheep", folder="entity"))
-        fur = overlay_onto(green_tint(load_vanilla(zf, "sheep/sheep_fur", folder="entity")), gems)
+        fur = green_tint(load_vanilla(zf, "sheep/sheep_fur", folder="entity"))
+    # Emerald flecks at the texture's native resolution -> crisp gem-studded wool (no stretched smears).
+    body = emerald_fleck(body, "rich_sheep_body", density=0.04)   # a sprinkle on the face/legs
+    fur = emerald_fleck(fur, "rich_sheep_fur", density=0.11)      # gem-studded wool
     d = os.path.join(ASSETS, "textures", "entity"); mkdir(d)
     body.save(os.path.join(d, "rich_sheep.png"))
     fur.save(os.path.join(d, "rich_sheep_fur.png"))
