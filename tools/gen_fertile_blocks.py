@@ -82,19 +82,20 @@ def green_tint(img):
     return out
 
 def gem_overlay(zf):
-    """The emerald crystals of emerald ore as a transparent overlay: emerald_ore where it differs
-    from plain stone, transparent elsewhere. Scaled to 16x16 (vanilla native size)."""
+    """ONLY the green emerald crystals of emerald ore, as a transparent overlay. We keep a pixel only if
+    it is clearly GREEN (g dominates r and b) -- this drops the gray stone background AND the gray gem
+    outline / shading, so rich = fertile + emerald gems (no leftover stone). 16x16 (vanilla native size)."""
     ore = load_vanilla(zf, "emerald_ore")
-    stone = load_vanilla(zf, "stone").resize(ore.size)
-    op, sp = ore.load(), stone.load()
+    op = ore.load()
     w, h = ore.size
     overlay = Image.new("RGBA", ore.size, (0, 0, 0, 0))
     od = overlay.load()
     for y in range(h):
         for x in range(w):
             r, g, b, a = op[x, y]
-            sr, sg, sb, _ = sp[x, y]
-            if abs(r - sr) + abs(g - sg) + abs(b - sb) > 24:  # a crystal pixel
+            # Emerald gems are green: green channel meaningfully above red & blue. Gray stone / outline
+            # (r ~= g ~= b) fails this and stays transparent.
+            if a > 0 and g - r >= 12 and g - b >= 6 and g >= 50:
                 od[x, y] = (r, g, b, 255)
     return overlay
 

@@ -11,7 +11,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public class LimboDimensionEffects extends DimensionSpecialEffects {
     public LimboDimensionEffects() {
-        super(Float.NaN, false, SkyType.NONE, false, false); // no clouds, no ground horizon, plain sky, dim
+        // no clouds, no ground horizon, plain (green) sky; forceBrightLightmap=true so the void isn't pitch
+        // black (the same trick the End uses to stay visible without sky light).
+        super(Float.NaN, false, SkyType.NONE, true, false);
     }
 
     @Override
