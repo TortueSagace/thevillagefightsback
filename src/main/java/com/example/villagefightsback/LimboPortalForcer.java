@@ -25,42 +25,54 @@ import net.minecraftforge.common.util.ITeleporter;
 public final class LimboPortalForcer {
     private LimboPortalForcer() {}
 
-    private static final int SEARCH_RADIUS = 12;     // reuse a nearby existing portal instead of stacking new
+    private static final int SEARCH_RADIUS = 24;     // reuse a nearby existing portal instead of stacking new
     private static final int FLOAT_Y = 128;          // default altitude for a fresh Limbo portal in open void
     private static final int CUBE_MIN = -11, CUBE_MAX = 10; // the original cube spans x/z -11..10
     private static final int ABOVE_CUBE_Y = 83;      // cube top is 81 -> sit just above it
 
-    /** Send {@code entity} through the portal it is standing in. */
+    /**
+     * Send {@code entity} through the portal it is standing in. A DRIFT chunk mirrors a real twin chunk, so a
+     * portal there links 1:1 to that exact twin spot (overworld-drift -> overworld at the same x,z; nether-drift
+     * -> the nether twin). A non-drift Limbo location uses the 16x compression overworld<->Limbo.
+     */
     public static void teleport(Entity entity, ServerLevel from) {
         MinecraftServer server = from.getServer();
         if (server == null) return;
+        long seed = from.getSeed(); // shared across dimensions; the Limbo drift roll uses it
         boolean inLimbo = LimboDimension.LIMBO.equals(from.dimension());
         boolean destIsLimbo = !inLimbo;
+        int ex = entity.blockPosition().getX(), ez = entity.blockPosition().getZ();
 
         ServerLevel dest;
         int tx, tz;
+        boolean driftDest = false; // destination is a drift chunk in the Limbo (has terrain, not void)
+
         if (!inLimbo) {
-            // Entering Limbo: compress 16x.
+            // Entering Limbo.
             dest = server.getLevel(LimboDimension.LIMBO);
-            tx = (int) Math.floor(entity.getX() / 16.0);
-            tz = (int) Math.floor(entity.getZ() / 16.0);
+            int cx = ex >> 4, cz = ez >> 4;
+            if (Level.OVERWORLD.equals(from.dimension()) && LimboDrift.type(seed, cx, cz) == LimboDrift.Type.OVERWORLD) {
+                tx = ex; tz = ez; driftDest = true;              // this spot mirrors a drift chunk 1:1
+            } else {
+                tx = Math.floorDiv(ex, 16); tz = Math.floorDiv(ez, 16); // compress 16x
+            }
         } else {
-            // Leaving Limbo: a portal in a nether-drift chunk returns to the nether (at the twin spot);
-            // otherwise back to the overworld (de-compressed 16x).
-            int cx = entity.blockPosition().getX() >> 4, cz = entity.blockPosition().getZ() >> 4;
-            if (LimboDrift.type(from.getSeed(), cx, cz) == LimboDrift.Type.NETHER) {
+            // Leaving Limbo.
+            int cx = ex >> 4, cz = ez >> 4;
+            LimboDrift.Type dt = LimboDrift.type(seed, cx, cz);
+            if (dt == LimboDrift.Type.OVERWORLD) {
+                dest = server.getLevel(Level.OVERWORLD); tx = ex; tz = ez;          // 1:1 to the overworld twin
+            } else if (dt == LimboDrift.Type.NETHER) {
                 dest = server.getLevel(Level.NETHER);
-                tx = ((cx >> 3) << 4) + (entity.blockPosition().getX() & 15);
-                tz = ((cz >> 3) << 4) + (entity.blockPosition().getZ() & 15);
+                tx = ((cx >> 3) << 4) + (ex & 15); tz = ((cz >> 3) << 4) + (ez & 15); // the nether twin spot
             } else {
                 dest = server.getLevel(Level.OVERWORLD);
-                tx = (int) Math.floor(entity.getX() * 16.0);
-                tz = (int) Math.floor(entity.getZ() * 16.0);
+                tx = ex * 16; tz = ez * 16;                                          // de-compress 16x
             }
         }
         if (dest == null) return;
 
-        BlockPos stand = findOrBuildPortal(dest, tx, tz, destIsLimbo);
+        BlockPos stand = findOrBuildPortal(dest, tx, tz, destIsLimbo, driftDest);
         double x = stand.getX() + 0.5, y = stand.getY(), z = stand.getZ() + 0.5;
 
         if (entity instanceof ServerPlayer player) {
@@ -80,9 +92,9 @@ public final class LimboPortalForcer {
         }
     }
 
-    /** Find an existing Limbo portal near the (scaled) target, else build one; return the spot to stand on. */
-    private static BlockPos findOrBuildPortal(ServerLevel dest, int tx, int tz, boolean inLimbo) {
-        int baseY = chooseBaseY(dest, tx, tz, inLimbo);
+    /** Find an existing Limbo portal near the target, else build one; return the spot to stand on. */
+    private static BlockPos findOrBuildPortal(ServerLevel dest, int tx, int tz, boolean inLimbo, boolean driftDest) {
+        int baseY = chooseBaseY(dest, tx, tz, inLimbo, driftDest);
 
         // 1. Reuse a nearby existing portal (avoid stacking duplicates on repeated trips).
         BlockPos existing = findNearbyPortal(dest, tx, baseY, tz);
@@ -92,13 +104,14 @@ public final class LimboPortalForcer {
         return buildPortal(dest, new BlockPos(tx, baseY, tz));
     }
 
-    /** Where the portal's interior-bottom sits. Avoids the original Limbo cube (raises above it). */
-    private static int chooseBaseY(ServerLevel dest, int tx, int tz, boolean inLimbo) {
-        if (inLimbo) {
+    /** Where the portal's interior-bottom sits. The void Limbo gets a floating platform (raised above the
+     *  original cube); a drift chunk and any natural world land on the actual surface. */
+    private static int chooseBaseY(ServerLevel dest, int tx, int tz, boolean inLimbo, boolean driftDest) {
+        if (inLimbo && !driftDest) {
             boolean onCube = tx >= CUBE_MIN && tx <= CUBE_MAX && tz >= CUBE_MIN && tz <= CUBE_MAX;
             return onCube ? ABOVE_CUBE_Y : FLOAT_Y;
         }
-        // Overworld (or other natural world): land on the surface.
+        // A drift chunk (has copied terrain) or a natural world: land on the surface.
         int surface = dest.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, tx, tz);
         return Math.max(dest.getMinBuildHeight() + 2, surface + 1);
     }
