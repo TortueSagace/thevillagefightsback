@@ -2,11 +2,9 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -51,20 +49,33 @@ public class LimboPhantomEntity extends Phantom {
                 .add(Attributes.MOVEMENT_SPEED, 0.25);
     }
 
+    /** The phantom "size" we run at: scales BOTH the vanilla model (renderer) and the vanilla hitbox
+     *  (getDimensions) together, the same proven mechanism vanilla phantoms use, so it stays hittable. ~3x. */
+    public static final int LIMBO_SIZE = 13;
+
     @Override
     protected void registerGoals() {
         super.registerGoals(); // phantom flight, circling, sweep attack, sweep damage
-        // Target ANY non-limbo creature (mobs + players), not just players.
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, true, false,
+        // Target ANY non-limbo creature (mobs + players), not just players. mustSee=false so it engages
+        // reliably in the dark/structured Limbo (it can also see through bedrock anyway).
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false,
                 e -> e != this && e.isAlive() && !Factions.isLimbo(e) && (e instanceof Player || e instanceof Mob)
                         && !(e instanceof Player p && LimboGear.hasFullSet(p)))); // neutral to a full-set wearer
     }
 
     @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        // A generous box that covers the wide 3x phantom MODEL (wings included), so it's actually hittable --
-        // the plain 3x of the tiny vanilla body box (0.9x0.5) sat inside the visual and felt un-hittable.
-        return EntityDimensions.scalable(3.4F, 2.0F);
+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(
+            net.minecraft.world.level.ServerLevelAccessor level, net.minecraft.world.DifficultyInstance difficulty,
+            net.minecraft.world.entity.MobSpawnType reason, net.minecraft.world.entity.SpawnGroupData data,
+            net.minecraft.nbt.CompoundTag tag) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(level, difficulty, reason, data, tag);
+        // setPhantomSize is private in vanilla -> set it through the Size NBT round-trip (readAdditionalSaveData
+        // calls setPhantomSize, which refreshes the dimensions). Scales model + hitbox to ~3x consistently.
+        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+        this.addAdditionalSaveData(t);
+        t.putInt("Size", LIMBO_SIZE);
+        this.readAdditionalSaveData(t);
+        return r;
     }
 
     @Override

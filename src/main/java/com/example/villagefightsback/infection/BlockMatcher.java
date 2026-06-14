@@ -68,6 +68,7 @@ public final class BlockMatcher {
     private static Map<String, Block> richByBase;    // base -> our rich block
     private static Set<Block> infectionBlocks;       // all fertile + rich + dirt_path
     private static Set<Block> richBlockSet;          // all rich blocks
+    private static Set<Block> upgradableFertile;     // fertile blocks that have a rich counterpart (fertile -> rich)
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
 
     private static Block byId(String name) {
@@ -84,10 +85,12 @@ public final class BlockMatcher {
         richByBase = new HashMap<>();
         infectionBlocks = new HashSet<>();
         richBlockSet = new HashSet<>();
+        upgradableFertile = new HashSet<>();
         for (String b : BASES) {
             Block f = byId("fertile_" + b), r = byId("rich_" + b);
             if (f != null) { fertileByBase.put(b, f); infectionBlocks.add(f); }
             if (r != null) { richByBase.put(b, r); infectionBlocks.add(r); richBlockSet.add(r); }
+            if (f != null && r != null) upgradableFertile.add(f); // this fertile block can ripen into its rich form
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
 
@@ -160,6 +163,12 @@ public final class BlockMatcher {
     public static boolean isRich(BlockState s) {
         init();
         return richBlockSet.contains(s.getBlock());
+    }
+
+    /** A fertile block that has a rich counterpart -- the spread may "ripen" it from fertile into rich. */
+    public static boolean isFertileUpgradable(BlockState s) {
+        init();
+        return upgradableFertile.contains(s.getBlock());
     }
 
     /**

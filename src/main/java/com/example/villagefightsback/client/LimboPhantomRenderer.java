@@ -17,21 +17,30 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 
-/** Renders the Limbo Phantom: a 3x black-and-white phantom with white vines and glowing white eyes. */
+/** Renders the Limbo Phantom: a 3x black-and-white phantom with white vines and glowing white eyes. Mirrors
+ *  the VANILLA phantom renderer (scale + pitch driven by phantom-size) so the model lines up with the
+ *  size-scaled hitbox -- the model and hitbox grow together, keeping it hittable. */
 public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_phantom.png");
-    private static final float SCALE = 3.0F;
 
     public LimboPhantomRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new PhantomModel<>(ctx.bakeLayer(ModelLayers.PHANTOM)), 1.5F);
+        super(ctx, new PhantomModel<>(ctx.bakeLayer(ModelLayers.PHANTOM)), 0.75F);
         addLayer(new WhiteEyesLayer(this));
         addLayer(new WhiteVinesLayer(this));
     }
 
     @Override
     protected void scale(LimboPhantomEntity entity, PoseStack pose, float partialTick) {
-        pose.scale(SCALE, SCALE, SCALE);
+        float f = 1.0F + 0.15F * entity.getPhantomSize(); // same as vanilla PhantomRenderer
+        pose.scale(f, f, f);
+    }
+
+    @Override
+    protected void setupRotations(LimboPhantomEntity entity, PoseStack pose, float ageInTicks, float yBodyRot,
+                                  float partialTicks) {
+        super.setupRotations(entity, pose, ageInTicks, yBodyRot, partialTicks);
+        pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(entity.getXRot())); // pitch like a diving phantom
     }
 
     @Override
