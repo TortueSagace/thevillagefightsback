@@ -12,8 +12,9 @@ import net.minecraft.world.entity.LivingEntity;
  * permanently green, spreads to nearby creatures, turns ground into dirt paths, and makes the host explode
  * shortly after death. The colour ({@code 0x2BBF4E}) is only used for the inventory-icon tint.
  *
- * The virus EVOLVES once any Village Brain Node reaches level 4 ({@link EmeraldVirus#isEvolved}): the host then
- * suffers Wither II instead of the base Wither I + Slowness I.
+ * Severity is set at INFECTION time by the amplifier (Virus II = Wither II, Virus I = Wither I + Slowness I).
+ * Only a stage-4 village guard/villager imparts Virus II; everything else (vindictive boss minions,
+ * contagion, the brain-node beam, ...) imparts Virus I -- regardless of how evolved the village is.
  */
 public class EmeraldVirusEffect extends MobEffect {
     public EmeraldVirusEffect() {
@@ -24,8 +25,9 @@ public class EmeraldVirusEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         if (entity.level().isClientSide()) return;
-        // Evolved (Wither II) if this is Emerald Virus II (a stage-4 attacker's hit) OR any brainNode has hit level 4.
-        if (amplifier >= 1 || EmeraldVirus.isEvolved(entity.getServer())) {
+        // Wither II only for Emerald Virus II (amplifier >= 1, i.e. a stage-4 guard/villager hit). The global
+        // stage no longer auto-upgrades severity, so vindictive/contagion infections stay Virus I.
+        if (amplifier >= 1) {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 1, false, false, false)); // Wither II
         } else {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, false, false));          // Wither I

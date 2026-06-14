@@ -88,9 +88,12 @@ public final class EmeraldVirusEvents {
         applyHugeKnockback(attacker, target);
     }
 
-    /** Emerald Virus amplifier an attacker imparts: 1 (Virus II) for a stage-4 defender, else 0 (Virus I). */
+    /** Emerald Virus amplifier an attacker imparts: 1 (Virus II) ONLY for a stage-4 village guard/villager.
+     *  Vindictive creatures (the unleashed boss's minions) never impart Virus II -- always Virus I. */
     private static int virusLevel(Entity attacker) {
-        return attacker != null && UpgradeState.isStage4(attacker) ? 1 : 0;
+        if (attacker == null) return 0;
+        if (attacker instanceof VindictiveGuardEntity || attacker instanceof VindictiveGigachadEntity) return 0;
+        return UpgradeState.isStage4(attacker) ? 1 : 0;
     }
 
     /** Launch the target ~20 blocks away from the attacker, bypassing knockback resistance (direct velocity set). */

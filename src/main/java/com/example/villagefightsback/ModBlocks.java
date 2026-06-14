@@ -105,6 +105,22 @@ public final class ModBlocks {
             "obsidian_stairs",
             () -> new BlockItem(OBSIDIAN_STAIRS.get(), new Item.Properties()));
 
+    /** A purely decorative Iron Golem Head: an iron-block-tough bust shaped like the golem's head (rendered
+     *  from the vanilla iron golem texture). Faces the placer; no behaviour. See {@link IronGolemHeadBlock}. */
+    public static final RegistryObject<Block> IRON_GOLEM_HEAD = BLOCKS.register(
+            "iron_golem_head",
+            () -> new IronGolemHeadBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final RegistryObject<Item> IRON_GOLEM_HEAD_ITEM = ITEMS.register(
+            "iron_golem_head",
+            () -> new TooltipBlockItem(IRON_GOLEM_HEAD.get(), new Item.Properties(),
+                    "block.thevillagefightsback.iron_golem_head.desc"));
+
     /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
     public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
             "blue_tnt",
@@ -400,6 +416,7 @@ public final class ModBlocks {
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
+                output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());

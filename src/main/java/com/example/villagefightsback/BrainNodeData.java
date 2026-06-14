@@ -40,6 +40,7 @@ public class BrainNodeData extends SavedData {
 
     private final Map<GlobalPos, Econ> econs = new HashMap<>();   // one economy per village cluster
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed brainNode blocks
+    private final Set<GlobalPos> emeraldNodes = new HashSet<>();  // placed Emerald Node blocks (+1 sunset emerald each, in radius)
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a brainNode
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per brainNode
     private final Map<GlobalPos, WallPlan> outerWallPlans = new HashMap<>(); // stage-3 OUTER obsidian wall per brainNode
@@ -131,6 +132,10 @@ public class BrainNodeData extends SavedData {
     public void addBlock(GlobalPos pos) { if (blocks.add(pos)) setDirty(); }
     public void removeBlock(GlobalPos pos) { if (blocks.remove(pos)) setDirty(); }
 
+    public Set<GlobalPos> emeraldNodes() { return emeraldNodes; }
+    public void addEmeraldNode(GlobalPos pos) { if (emeraldNodes.add(pos)) setDirty(); }
+    public void removeEmeraldNode(GlobalPos pos) { if (emeraldNodes.remove(pos)) setDirty(); }
+
     public boolean isServiced(GlobalPos center) { return servicedCenters.contains(center); }
     public void addServiced(GlobalPos center) { if (servicedCenters.add(center)) setDirty(); }
 
@@ -182,6 +187,7 @@ public class BrainNodeData extends SavedData {
     public static BrainNodeData load(CompoundTag tag) {
         BrainNodeData d = new BrainNodeData();
         readPositions(tag, "blocks", d.blocks);
+        readPositions(tag, "emeraldNodes", d.emeraldNodes);
         readPositions(tag, "serviced", d.servicedCenters);
         readPositions(tag, "defenders", d.defendersBuilt);
         readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
@@ -228,6 +234,7 @@ public class BrainNodeData extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag) {
         writePositions(tag, "blocks", blocks);
+        writePositions(tag, "emeraldNodes", emeraldNodes);
         writePositions(tag, "serviced", servicedCenters);
         writePositions(tag, "defenders", defendersBuilt);
         writePositions(tag, "outerDefenders", outerDefendersBuilt);
