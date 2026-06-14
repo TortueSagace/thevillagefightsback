@@ -192,6 +192,8 @@ public final class BlockMatcher {
         if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
         if (s.is(BlockTags.WOOL)) return false;                        // keep wool (all colours)
         if (s.is(Tags.Blocks.GLASS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
+        if (s.is(BlockTags.STONE_BRICKS)) return false;                // keep stone bricks (+ chiseled/mossy/cracked)
+        if (b instanceof net.minecraft.world.level.block.CampfireBlock) return false; // keep campfires (lit OR unlit)
         // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
         if (b == Blocks.HAY_BLOCK
                 || b instanceof net.minecraft.world.level.block.CropBlock
