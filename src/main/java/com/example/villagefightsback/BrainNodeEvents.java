@@ -76,8 +76,20 @@ public final class BrainNodeEvents {
         manageDome(server, data);      // level-4 protective glass dome
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
+        pulseHeartbeats(server, data); // calm Warden heartbeat from every loaded brain node (~2s cadence)
         CheapScaffoldManager.tick(server); // expire timed-out cheap scaffolds
         ModProfiler.add("brain_node", _p);
+    }
+
+    /** Every loaded Village Brain Node emits the Warden's resting heartbeat. The 40-tick driver cadence (~2s)
+     *  is the same slow pulse a calm Warden uses; the UNLEASHED boss pulses it fast itself (see that entity). */
+    private static void pulseHeartbeats(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            level.playSound(null, gp.pos(), net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+                    net.minecraft.sounds.SoundSource.BLOCKS, 2.0F, 1.0F);
+        }
     }
 
     private static final int IMMUNITY_RADIUS = 10; // shield allies this close to a brainNode
