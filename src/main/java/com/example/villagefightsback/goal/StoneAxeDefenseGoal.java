@@ -46,7 +46,8 @@ public class StoneAxeDefenseGoal extends Goal {
     private LivingEntity findTarget() {
         AABB box = villager.getBoundingBox().inflate(SEE_RANGE);
         List<LivingEntity> candidates = villager.level().getEntitiesOfClass(LivingEntity.class, box,
-                e -> e instanceof Enemy && !(e instanceof Creeper) && e.isAlive() && e != villager
+                e -> (e instanceof Enemy || com.example.villagefightsback.Factions.isInfected(e))
+                        && !(e instanceof Creeper) && e.isAlive() && e != villager
                         && villager.distanceToSqr(e) <= SEE_RANGE * SEE_RANGE
                         && villager.getSensing().hasLineOfSight(e));
         LivingEntity nearest = null;

@@ -356,7 +356,7 @@ public final class VillageEvents {
     /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */
     @SubscribeEvent
     public static void onMobKilledByGuard(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof Enemy)) return;                 // only hostile mobs count
+        if (!(event.getEntity() instanceof Enemy) && !Factions.isInfected(event.getEntity())) return; // hostile / boss-minion kills count
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         Entity killer = event.getSource().getEntity();
         if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard

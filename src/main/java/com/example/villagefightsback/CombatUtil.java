@@ -87,8 +87,13 @@ public final class CombatUtil {
     public static LivingEntity findNearestHostile(Mob mob, double range) {
         double rangeSqr = range * range;
         AABB box = mob.getBoundingBox().inflate(range);
+        // Faction-aware: a boss-minion (vindictive) mob hunts anyone not in its own faction; a village mob
+        // hunts vanilla hostiles AND the boss faction (so the village fights back against the vindictive).
+        boolean mobInfected = Factions.isInfected(mob);
         List<LivingEntity> candidates = mob.level().getEntitiesOfClass(LivingEntity.class, box,
-                e -> e instanceof Enemy && e.isAlive() && e != mob
+                e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
+                                  : (e instanceof Enemy || Factions.isInfected(e)))
+                        && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr
                         && mob.getSensing().hasLineOfSight(e));
         LivingEntity nearest = null;
@@ -107,8 +112,11 @@ public final class CombatUtil {
     public static int countHostilesWithin(Mob mob, double range) {
         double rangeSqr = range * range;
         AABB box = mob.getBoundingBox().inflate(range);
+        boolean mobInfected = Factions.isInfected(mob);
         return mob.level().getEntitiesOfClass(LivingEntity.class, box,
-                e -> e instanceof Enemy && e.isAlive() && e != mob
+                e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
+                                  : (e instanceof Enemy || Factions.isInfected(e)))
+                        && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr).size();
     }
 

@@ -148,7 +148,8 @@ public class WallDefenderEntity extends Mob {
         LivingEntity best = null;
         double bestD = Double.MAX_VALUE;
         for (LivingEntity e : level().getEntitiesOfClass(LivingEntity.class, box,
-                x -> x instanceof Enemy && x.isAlive() && x != this)) {
+                x -> (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                        && x.isAlive() && x != this)) {
             double d = distanceToSqr(e);
             if (d > RANGE * RANGE || d >= bestD) continue;
             if (!canShootThroughShell(eye, e)) continue;

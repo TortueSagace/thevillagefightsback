@@ -137,6 +137,7 @@ public class TntFleeGoal extends Goal {
     /** A villager is "fighting" if it currently has a live hostile target. */
     private static boolean isFighting(Villager v) {
         LivingEntity tgt = v.getTarget();
-        return tgt != null && tgt.isAlive() && tgt instanceof Enemy;
+        return tgt != null && tgt.isAlive()
+                && (tgt instanceof Enemy || com.example.villagefightsback.Factions.isInfected(tgt));
     }
 }

@@ -64,12 +64,15 @@ public class GolemRocketGoal extends Goal {
         RocketEntity.fire(golem, target);
     }
 
-    /** A hostile we care about: alive Enemy within detection range -- or, for a vindictive (boss-minion)
-     *  gigachad, any non-infected creature in range (it rockets players/villagers too). */
+    /** A hostile we care about, faction-aware. A vindictive (boss-minion) gigachad rockets any non-infected
+     *  creature in range (players/villagers too). A village golem rockets vanilla hostiles AND the boss
+     *  faction (vindictive guards/gigachads, the unleashed brain node) -- so the village fights back. */
     private boolean isValidHostile(LivingEntity t) {
         if (t == null || !t.isAlive() || golem.distanceToSqr(t) > SEE_RANGE * SEE_RANGE) return false;
-        if (t instanceof Enemy) return true;
-        return com.example.villagefightsback.Factions.isInfected(golem) && !com.example.villagefightsback.Factions.isInfected(t);
+        if (com.example.villagefightsback.Factions.isInfected(golem)) {
+            return !com.example.villagefightsback.Factions.isInfected(t);   // boss golem: anyone not boss
+        }
+        return t instanceof Enemy || com.example.villagefightsback.Factions.isInfected(t); // village golem
     }
 
     /** Can we rocket this target right now (in range band, LOS, no ally near it)? */

@@ -324,7 +324,9 @@ public class StageThreeGuardGoal extends Goal {
         LivingEntity best = null;
         double bestD = radius * radius;
         for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
-                x -> x != guard && x != exclude && x instanceof Enemy && !isFactionMate(x)
+                x -> x != guard && x != exclude
+                        && (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                        && !isFactionMate(x)
                         && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {
             double d = guard.distanceToSqr(e);
             if (d <= bestD) { bestD = d; best = e; }
