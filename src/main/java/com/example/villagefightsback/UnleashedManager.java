@@ -52,7 +52,10 @@ public final class UnleashedManager {
     private static final Map<GlobalPos, Integer> LAST_COUNT = new HashMap<>();
 
     // --- trigger: villager count falls from >0 to 0 ---------------------------------------------
-    @SubscribeEvent
+    // HIGH priority so this runs BEFORE BrainNodeEvents.onServerTick (NORMAL) on the same END tick: a village
+    // losing its last villager removes the brain node and summons the boss FIRST, so the brain-node auto-placer
+    // (which scans the same tick) already sees the boss and won't race a duplicate brain node into existence.
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();

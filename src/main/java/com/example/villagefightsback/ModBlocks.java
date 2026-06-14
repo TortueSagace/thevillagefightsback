@@ -105,6 +105,17 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(EMERALD_NODE.get(), new Item.Properties(),
                     "block.thevillagefightsback.emerald_node.desc"));
 
+    /** Modern Debris: a colour-inverted ("negative") ancient debris with the same toughness. Smelting it yields
+     *  an emerald. Limbo nests are built ~90% from this and ~10% ancient debris (see {@link LimboNest}). */
+    public static final RegistryObject<Block> MODERN_DEBRIS = BLOCKS.register(
+            "modern_debris",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS)));
+
+    public static final RegistryObject<Item> MODERN_DEBRIS_ITEM = ITEMS.register(
+            "modern_debris",
+            () -> new TooltipBlockItem(MODERN_DEBRIS.get(), new Item.Properties(),
+                    "block.thevillagefightsback.modern_debris.desc"));
+
     /** Obsidian stairs: the stage-3 OUTER wall's loophole stairs, so the obsidian curtain isn't broken up by
      *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
     public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
@@ -427,6 +438,7 @@ public final class ModBlocks {
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
                 output.accept(EMERALD_NODE_ITEM.get());
+                output.accept(MODERN_DEBRIS_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());

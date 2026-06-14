@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "thevillagefightsback:modern_debris" },
+  "result": "minecraft:iron_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

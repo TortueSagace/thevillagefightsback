@@ -249,6 +249,15 @@ public final class BrainNodeEvents {
     // moment the node is placed instead (see tryPlaceBrainNode).
     private static final Map<GlobalPos, Integer> lastStageLevel = new HashMap<>();
 
+    // Respawn grace: when a brain node is destroyed by something that summons the boss, give the boss a few
+    // seconds to emerge before the auto-placer is allowed to raise a NEW brain node anywhere nearby. Without
+    // this, a removal that happens to land between scan passes (or while the boss has briefly roamed out of the
+    // 128-block guard's reach) lets a duplicate brain node rise instead of leaving the field to the boss.
+    // Transient (like the maps above): a server restart simply clears the grace, and the boss guard takes over.
+    private static final int REMOVAL_COOLDOWN_TICKS = 100;       // ~5s grace after a boss-summoning removal
+    private static final double REMOVAL_COOLDOWN_RADIUS = 128.0; // matches the boss-nearby guard radius below
+    private static final Map<GlobalPos, Long> recentRemovals = new HashMap<>(); // removed node pos -> server tick
+
     /** Ring a bell at a brain node when it reaches a new stage (its placement, or a level-up). */
     private static void playStageBell(ServerLevel level, BlockPos pos) {
         level.playSound(null, pos, net.minecraft.sounds.SoundEvents.BELL_BLOCK,
@@ -585,6 +594,14 @@ public final class BrainNodeEvents {
         surveyBackoff.remove(brainNode);
     }
 
+    /** Start the {@value #REMOVAL_COOLDOWN_TICKS}-tick respawn grace at {@code brainNode}: no NEW brain node may
+     *  rise within {@value #REMOVAL_COOLDOWN_RADIUS} blocks until it elapses, giving the boss time to emerge.
+     *  Called from {@link VillageBrainNodeBlock#onRemove} for boss-summoning (non-silk) removals. */
+    public static void recordRemoval(GlobalPos brainNode) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) recentRemovals.put(brainNode, (long) server.getTickCount());
+    }
+
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the brain node. */
     private static List<BlockPos> collectBeds(ServerLevel level, BlockPos center) {
         List<BlockPos> beds = new ArrayList<>();
@@ -666,6 +683,16 @@ public final class BrainNodeEvents {
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
         if (spot == null) return; // no good spot yet; retry next scan
+
+        // Respawn grace: if a brain node was destroyed near here within the last ~5s (and so summoned the boss),
+        // wait. Once the grace elapses, the boss-nearby guard below decides -- a new node rises ONLY if the boss
+        // never appeared / has since died. This is the "wait, then check the boss appeared before respawning".
+        long nowTick = level.getServer().getTickCount();
+        recentRemovals.values().removeIf(t -> nowTick - t > REMOVAL_COOLDOWN_TICKS); // self-pruning
+        double cd2 = REMOVAL_COOLDOWN_RADIUS * REMOVAL_COOLDOWN_RADIUS;
+        for (Map.Entry<GlobalPos, Long> e : recentRemovals.entrySet()) {
+            if (e.getKey().dimension().equals(level.dimension()) && e.getKey().pos().distSqr(spot) <= cd2) return;
+        }
 
         // One brainNode per area: skip if another already exists within 100 blocks (overlapping
         // villages / extra bells). Not marked serviced, so it self-heals if that brainNode is removed.
