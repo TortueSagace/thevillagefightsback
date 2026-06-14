@@ -34,6 +34,33 @@ public class RichSheepEntity extends Sheep {
     }
 
     @Override
+    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
+            net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
+            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+        this.setColor(DyeColor.LIME); // vanilla finalizeSpawn randomises colour -> force it back to lime
+        return r;
+    }
+
+    /**
+     * Forge routes shears-on-mob through IForgeShearable.onSheared (NOT shear()), so we override it here to
+     * yield light-green (lime) wool + an emerald.
+     */
+    @Override
+    public java.util.List<net.minecraft.world.item.ItemStack> onSheared(
+            net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack item,
+            Level level, BlockPos pos, int fortune) {
+        this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR,
+                player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS, 1.0F, 1.0F);
+        this.setSheared(true);
+        int count = 1 + this.random.nextInt(3);
+        java.util.List<net.minecraft.world.item.ItemStack> drops = new java.util.ArrayList<>();
+        for (int i = 0; i < count; i++) drops.add(new net.minecraft.world.item.ItemStack(Items.LIME_WOOL));
+        drops.add(new net.minecraft.world.item.ItemStack(Items.EMERALD));
+        return drops;
+    }
+
+    @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
         super.dropCustomDeathLoot(source, looting, recentlyHit);
         this.spawnAtLocation(Items.EMERALD);

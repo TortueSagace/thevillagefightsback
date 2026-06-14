@@ -206,8 +206,10 @@ public class UnleashedGravemindEntity extends GravemindWardenEntity {
         Vec3 end = origin.add(dir.scale(range));
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, new AABB(origin, end).inflate(radius), this::isHostileTarget)) {
             // Test the mob's WHOLE hitbox against the beam (not just its centre point) so big/tall mobs --
-            // iron golems, ravagers, the boss-sized -- are caught instead of slipping through.
-            if (e.getBoundingBox().inflate(radius).clip(origin, end).isPresent()) {
+            // iron golems, ravagers, the boss-sized -- are caught instead of slipping through. contains(origin)
+            // catches point-blank targets (clip() returns empty when the origin is already inside the box).
+            net.minecraft.world.phys.AABB box = e.getBoundingBox().inflate(radius);
+            if (box.contains(origin) || box.clip(origin, end).isPresent()) {
                 LimboDimension.sendToLimbo(e); // no damage -- banished
                 registerKill();               // a banished creature counts toward the 64-kill win
             }

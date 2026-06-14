@@ -67,15 +67,27 @@ public final class LimboBanishFx {
                 double x = fx.cx + r * Math.cos(ang);
                 double z = fx.cz + r * Math.sin(ang);
                 // count 0 -> one particle at exactly (x,y,z) with this velocity (gentle inward + upward swirl).
-                sl.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 0,
+                force(sl, ParticleTypes.LARGE_SMOKE, x, y, z, 0,
                         -Math.cos(ang) * 0.02, 0.05, -Math.sin(ang) * 0.02, 1.0);
             }
         }
         // 2. Soul particles rising through the hitbox volume.
-        sl.sendParticles(ParticleTypes.SOUL, fx.cx, fx.bottom + fx.height * 0.4, fx.cz,
+        force(sl, ParticleTypes.SOUL, fx.cx, fx.bottom + fx.height * 0.4, fx.cz,
                 4, fx.radius * 0.5, fx.height * 0.4, fx.radius * 0.5, 0.02);
         // 3. Enderman-style teleport swirl (portal particles) around the column.
-        sl.sendParticles(ParticleTypes.PORTAL, fx.cx, fx.bottom + fx.height * 0.5, fx.cz,
+        force(sl, ParticleTypes.PORTAL, fx.cx, fx.bottom + fx.height * 0.5, fx.cz,
                 8, fx.radius, fx.height * 0.5, fx.radius, 0.0);
+    }
+
+    /** Send a particle with long-distance ("force") visibility to every nearby player, so a banishment is
+     *  visible even when it happens far away (e.g. a beam banishing something 50-100 blocks off). */
+    private static <T extends net.minecraft.core.particles.ParticleOptions> void force(
+            ServerLevel sl, T type, double x, double y, double z,
+            int count, double dx, double dy, double dz, double speed) {
+        for (net.minecraft.server.level.ServerPlayer p : sl.players()) {
+            if (p.distanceToSqr(x, y, z) <= 160.0 * 160.0) {
+                sl.sendParticles(p, type, true, x, y, z, count, dx, dy, dz, speed);
+            }
+        }
     }
 }

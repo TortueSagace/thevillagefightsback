@@ -37,8 +37,10 @@ public final class LimboBeam {
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 new AABB(origin, end).inflate(RADIUS),
                 x -> x != player && x.isAlive() && x instanceof Enemy && !Factions.isLimbo(x))) {
-            // whole-hitbox test so big creatures (boss, golems) are caught, not just centre points
-            if (e.getBoundingBox().inflate(RADIUS).clip(origin, end).isPresent()) {
+            // whole-hitbox test so big creatures (boss, golems) are caught, not just centre points;
+            // contains(origin) also catches point-blank targets (clip() is empty when origin is inside the box).
+            AABB box = e.getBoundingBox().inflate(RADIUS);
+            if (box.contains(origin) || box.clip(origin, end).isPresent()) {
                 LimboDimension.sendToLimbo(e);
             }
         }
