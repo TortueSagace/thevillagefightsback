@@ -43,4 +43,17 @@ public final class LimboGear {
         return stack.getItem() instanceof ArmorItem ai && ai.getMaterial() == LimboArmorMaterial.INSTANCE
                 && ai.getEquipmentSlot() == slot;
     }
+
+    /** Does the entity's bounding box currently overlap any bedrock block? Used to let a full-set wearer (and
+     *  the Limbo Phantom) phase through bedrock: BlockPos.containing includes the boundary block, so this is
+     *  true when flush against a bedrock wall but false when merely standing on a bedrock floor. */
+    public static boolean touchesBedrock(net.minecraft.world.entity.Entity e) {
+        net.minecraft.world.phys.AABB box = e.getBoundingBox();
+        net.minecraft.core.BlockPos min = net.minecraft.core.BlockPos.containing(box.minX, box.minY, box.minZ);
+        net.minecraft.core.BlockPos max = net.minecraft.core.BlockPos.containing(box.maxX, box.maxY, box.maxZ);
+        for (net.minecraft.core.BlockPos p : net.minecraft.core.BlockPos.betweenClosed(min, max)) {
+            if (e.level().getBlockState(p).is(net.minecraft.world.level.block.Blocks.BEDROCK)) return true;
+        }
+        return false;
+    }
 }

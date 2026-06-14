@@ -1,6 +1,21 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "minecraft:block/block",
   "textures": {
-    "layer0": "thevillagefightsback:block/fertile_chorus_plant"
-  }
+    "all": "thevillagefightsback:block/fertile_chorus_plant",
+    "particle": "thevillagefightsback:block/fertile_chorus_plant"
+  },
+  "elements": [
+    {
+      "from": [5, 0, 5],
+      "to": [11, 16, 11],
+      "faces": {
+        "down":  { "texture": "#all" },
+        "up":    { "texture": "#all" },
+        "north": { "texture": "#all" },
+        "south": { "texture": "#all" },
+        "west":  { "texture": "#all" },
+        "east":  { "texture": "#all" }
+      }
+    }
+  ]
 }

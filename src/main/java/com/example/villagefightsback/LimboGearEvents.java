@@ -53,6 +53,12 @@ public final class LimboGearEvents {
             LimboAbility.tick(sp);
             if ((sp.tickCount & 7) == 0) clearHarmfulEffects(sp);
         }
+
+        // Bedrock phasing (server side): a full-set wearer passes through bedrock like the Limbo Phantom. Must
+        // be mirrored on the client (LimboBedrockPhaseClient) or the move rubber-bands. Not for spectators.
+        if (!sp.isSpectator()) {
+            sp.noPhysics = full && LimboGear.touchesBedrock(sp);
+        }
     }
 
     private static void clearHarmfulEffects(LivingEntity e) {
