@@ -291,8 +291,10 @@ public final class GravemindEvents {
     }
 
     private static final long OUTER_SETTLE_GRACE = 200L; // require this many ticks of expansion-quiet before fixing the plan
+    private static final long OUTER_MAX_WAIT = 6000L;   // ...but never wait longer than this (a stuck settler/build can't block it)
     private static final int OUTER_SCAN_RADIUS = 140;   // larger survey so the obsidian ring encloses the expansion
     private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: earliest gametime to survey
+    private static final Map<GlobalPos, Long> outerWallSince = new HashMap<>();   // transient: gametime we first became eligible
 
     /**
      * Stage-3 OUTER obsidian wall. After the settler expansion has launched its buildings (and a short delay so
@@ -311,12 +313,16 @@ public final class GravemindEvents {
             WallPlan plan = data.getOuterWallPlan(gp);
             if (plan == null) {
                 long now = level.getGameTime();
+                Long since = outerWallSince.get(gp);
+                if (since == null) { outerWallSince.put(gp, now); since = now; }
                 // Don't fix the plan until the expansion has fully materialized: every settler has dropped its
-                // TNT AND the structure builder has finished. While still busy, keep pushing the survey time
-                // out, so we only plan after OUTER_SETTLE_GRACE ticks of continuous quiet -> the obsidian ring
-                // is guaranteed to go around the finished buildings.
-                boolean busy = ExpansionManager.hasActiveSettlersNear(level, gp.pos(), OUTER_SCAN_RADIUS)
-                        || HouseBuildManager.hasPendingNear(level, gp.pos(), OUTER_SCAN_RADIUS);
+                // TNT AND the structure builder has finished. While still busy, keep pushing the survey time out,
+                // so we only plan after OUTER_SETTLE_GRACE ticks of continuous quiet. BUT cap the total wait at
+                // OUTER_MAX_WAIT so a settler that gets stuck (and never drops its flag) can't block the wall
+                // forever -- past the cap we plan regardless.
+                boolean forced = now - since >= OUTER_MAX_WAIT;
+                boolean busy = !forced && (ExpansionManager.hasActiveSettlersNear(level, gp.pos(), OUTER_SCAN_RADIUS)
+                        || HouseBuildManager.hasPendingNear(level, gp.pos(), OUTER_SCAN_RADIUS));
                 if (busy) { outerWallReadyAt.put(gp, now + OUTER_SETTLE_GRACE); continue; }
                 Long readyAt = outerWallReadyAt.get(gp);
                 if (readyAt == null) { outerWallReadyAt.put(gp, now + OUTER_SETTLE_GRACE); continue; } // begin the grace
@@ -327,6 +333,7 @@ public final class GravemindEvents {
                     computed.setStartTick(now);
                     data.putOuterWallPlan(computed);
                     outerWallReadyAt.remove(gp);
+                    outerWallSince.remove(gp);
                     broadcast(server, "§5The Village Gravemind raises an OUTER obsidian wall §8("
                             + computed.blocks().size() + " blocks)§5 — builders, to work.");
                 }
