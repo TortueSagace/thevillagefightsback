@@ -24,7 +24,7 @@ import net.minecraft.world.level.block.state.properties.StairsShape;
 public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean topHalf, int course) {
 
     // New types appended at the END so existing saved plans' ordinals stay stable.
-    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE, STANDING_TORCH, OBSIDIAN, FAKE_OBSIDIAN }
+    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE, STANDING_TORCH, OBSIDIAN, FAKE_OBSIDIAN, OBSIDIAN_STAIR }
 
     /** The concrete block state this placement should produce. */
     public BlockState toState() {
@@ -32,6 +32,10 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
             case COBBLE -> Blocks.COBBLESTONE.defaultBlockState();
             case FAKE_COBBLE -> com.example.villagefightsback.ModBlocks.FAKE_COBBLESTONE.get().defaultBlockState();
             case STAIR -> Blocks.COBBLESTONE_STAIRS.defaultBlockState()
+                    .setValue(StairBlock.FACING, facing)
+                    .setValue(StairBlock.HALF, topHalf ? Half.TOP : Half.BOTTOM)
+                    .setValue(StairBlock.SHAPE, StairsShape.STRAIGHT);
+            case OBSIDIAN_STAIR -> com.example.villagefightsback.ModBlocks.OBSIDIAN_STAIRS.get().defaultBlockState()
                     .setValue(StairBlock.FACING, facing)
                     .setValue(StairBlock.HALF, topHalf ? Half.TOP : Half.BOTTOM)
                     .setValue(StairBlock.SHAPE, StairsShape.STRAIGHT);
@@ -54,6 +58,9 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
             case COBBLE -> world.is(Blocks.COBBLESTONE);
             case FAKE_COBBLE -> world.is(com.example.villagefightsback.ModBlocks.FAKE_COBBLESTONE.get());
             case STAIR -> world.is(Blocks.COBBLESTONE_STAIRS)
+                    && world.getValue(StairBlock.FACING) == facing
+                    && world.getValue(StairBlock.HALF) == (topHalf ? Half.TOP : Half.BOTTOM);
+            case OBSIDIAN_STAIR -> world.is(com.example.villagefightsback.ModBlocks.OBSIDIAN_STAIRS.get())
                     && world.getValue(StairBlock.FACING) == facing
                     && world.getValue(StairBlock.HALF) == (topHalf ? Half.TOP : Half.BOTTOM);
             case LADDER -> world.is(Blocks.LADDER)

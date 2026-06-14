@@ -151,9 +151,9 @@ public final class WallPlanner {
         Direction stairFacing = o.getClockWise();
 
         out.add(solid(col.x, base, col.z, 0, obsidian));
-        out.add(loophole ? stair(col.x, base + 1, col.z, 1, stairFacing, false)
+        out.add(loophole ? stair(col.x, base + 1, col.z, 1, stairFacing, false, obsidian)
                          : solid(col.x, base + 1, col.z, 1, obsidian));
-        out.add(loophole ? stair(col.x, base + 2, col.z, 2, stairFacing, true)
+        out.add(loophole ? stair(col.x, base + 2, col.z, 2, stairFacing, true, obsidian)
                          : solid(col.x, base + 2, col.z, 2, obsidian));
         out.add(solid(col.x, base + 3, col.z, 3, obsidian));
 
@@ -186,8 +186,10 @@ public final class WallPlanner {
                 obsidian ? WallBlock.BlockType.FAKE_OBSIDIAN : WallBlock.BlockType.FAKE_COBBLE, null, false, course);
     }
 
-    private static WallBlock stair(int x, int y, int z, int course, Direction facing, boolean topHalf) {
-        return new WallBlock(new BlockPos(x, y, z), WallBlock.BlockType.STAIR, facing, topHalf, course);
+    /** A loophole stair: obsidian stairs on the stage-3 outer wall, cobblestone stairs otherwise. */
+    private static WallBlock stair(int x, int y, int z, int course, Direction facing, boolean topHalf, boolean obsidian) {
+        return new WallBlock(new BlockPos(x, y, z),
+                obsidian ? WallBlock.BlockType.OBSIDIAN_STAIR : WallBlock.BlockType.STAIR, facing, topHalf, course);
     }
 
     // --- terrain height with the floating-island rule ---

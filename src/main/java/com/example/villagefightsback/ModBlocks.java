@@ -93,6 +93,17 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
+    /** Obsidian stairs: the stage-3 OUTER wall's loophole stairs, so the obsidian curtain isn't broken up by
+     *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
+    public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
+            "obsidian_stairs",
+            () -> new StairBlock(() -> Blocks.OBSIDIAN.defaultBlockState(),
+                    BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)));
+
+    public static final RegistryObject<Item> OBSIDIAN_STAIRS_ITEM = ITEMS.register(
+            "obsidian_stairs",
+            () -> new BlockItem(OBSIDIAN_STAIRS.get(), new Item.Properties()));
+
     /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
     public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
             "blue_tnt",
@@ -385,6 +396,7 @@ public final class ModBlocks {
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
+                output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
