@@ -58,6 +58,7 @@ public class WallBuildGoal extends Goal {
 
     private final Villager villager;
     private int consecutiveFails; // abandons in a row; at ABANDON_LIMIT the villager steps down
+    private boolean jumpRandom;   // set on abandon: next target is picked from a RANDOM wall location
 
     private WallPlan plan;
     private WallBlock target;
@@ -136,7 +137,14 @@ public class WallBuildGoal extends Goal {
         int[] doors = plan.doorColumns();
         int from = 0;
         WallBlock t = null;
-        if (doors.length > 0) {
+        // Just abandoned a cell we couldn't place? Jump to a RANDOM remaining wall location and continue
+        // there, instead of grinding along the next sequential (often equally blocked) cells.
+        if (jumpRandom && plan.columnCount() > 0) {
+            int randCol = villager.getRandom().nextInt(plan.columnCount());
+            t = plan.nextInSection(sl, randCol, randCol, taken); // whole-ring scan from a random column
+        }
+        jumpRandom = false;
+        if (t == null && doors.length > 0) {
             int d = Math.floorMod(BuilderRole.door(villager), doors.length);
             from = doors[d];
             t = plan.nextInSection(sl, from, doors[(d + 1) % doors.length], taken);
@@ -492,6 +500,7 @@ public class WallBuildGoal extends Goal {
         return s.canBeReplaced()                          // air / water / short grass / ferns / snow layer / ...
                 || s.getBlock() instanceof net.minecraft.world.level.block.BushBlock // flowers, saplings, crops, mushrooms, ...
                 || s.is(net.minecraft.tags.BlockTags.LEAVES)   // build straight through overgrowth
+                || s.is(net.minecraft.tags.BlockTags.LOGS)     // build straight through tree trunks
                 || s.is(ModBlocks.CHEAP_SCAFFOLD.get());  // our own disposable scaffold -> overwrite it
         // (still never bulldozes houses, terrain, bedrock -- those aren't replaceable/plants/leaves/scaffold)
     }
@@ -506,6 +515,7 @@ public class WallBuildGoal extends Goal {
         }
         target = null;
         phase = Phase.WAIT; // re-seek a different cell while staying claimed (no wander gap)
+        jumpRandom = true;  // continue at a random other wall location, not the next sequential cell
         idleTicks = 0;
         scanTimer = 0;
         // Persistent failure (can't finish several cells in a row) -> drop the builder role so a villager

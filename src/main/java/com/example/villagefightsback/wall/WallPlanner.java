@@ -228,6 +228,9 @@ public final class WallPlanner {
      */
     private static boolean isSurface(LevelReader level, int x, int y, int z) {
         BlockState s = level.getBlockState(new BlockPos(x, y, z));
+        // Trees are NOT ground: a wall column ignores logs and leaves and sits on the real ground below
+        // them, then rises straight through the trunk/canopy (builders replace those blocks).
+        if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES)) return false;
         return s.blocksMotion() || !s.getFluidState().isEmpty();
     }
 
