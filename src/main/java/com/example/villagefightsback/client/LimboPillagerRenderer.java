@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.entity.PillagerRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Pillager;
 
-/** Limbo Pillager: the vanilla pillager renderer (keeps the crossbow layer) re-skinned, scaled 3x, glowing. */
+/** Limbo Pillager: the vanilla pillager renderer (keeps the crossbow layer), re-skinned black-and-white,
+ *  scaled 2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboPillagerRenderer extends PillagerRenderer {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_pillager.png");
@@ -29,6 +30,6 @@ public class LimboPillagerRenderer extends PillagerRenderer {
     @Override
     protected void scale(Pillager entity, PoseStack pose, float partialTick) {
         super.scale(entity, pose, partialTick); // keep the illager's 0.9375 baseline...
-        pose.scale(3.0F, 3.0F, 3.0F);           // ...then 3x on top, so model matches the 3x hitbox
+        pose.scale(2.0F, 2.0F, 2.0F);           // ...then 2x on top, matching the baked 2x hitbox
     }
 }

@@ -17,9 +17,9 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 
-/** Renders the Limbo Phantom: a 3x black-and-white phantom with white vines and glowing white eyes. Mirrors
- *  the VANILLA phantom renderer (scale + pitch driven by phantom-size) so the model lines up with the
- *  size-scaled hitbox -- the model and hitbox grow together, keeping it hittable. */
+/** Renders the Limbo Phantom: a 3x black-and-white phantom with white vines and glowing white eyes. The model
+ *  is scaled a fixed 3x to match the baked 2.7x1.5 hitbox (3x the vanilla phantom box), so the body fills its
+ *  hitbox and stays easy to hit. */
 public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_phantom.png");
@@ -32,8 +32,7 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
 
     @Override
     protected void scale(LimboPhantomEntity entity, PoseStack pose, float partialTick) {
-        float f = 1.0F + 0.15F * entity.getPhantomSize(); // same as vanilla PhantomRenderer
-        pose.scale(f, f, f);
+        pose.scale(3.0F, 3.0F, 3.0F); // fixed 3x, matching the baked 2.7x1.5 hitbox (3x the vanilla phantom box)
     }
 
     @Override

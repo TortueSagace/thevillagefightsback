@@ -86,6 +86,14 @@ public class BrainNodeData extends SavedData {
             setDirty();
             return gained;
         }
+
+        /** Spend {@code n} accumulated gems on a reflex; returns false (and spends nothing) if there aren't enough. */
+        public boolean spendEmeralds(int n) {
+            if (n <= 0 || emeralds < n) return false;
+            emeralds -= n;
+            setDirty();
+            return true;
+        }
     }
 
     /** The economy for the village this brainNode belongs to (brainNodes within {@value #CLUSTER} share one). */

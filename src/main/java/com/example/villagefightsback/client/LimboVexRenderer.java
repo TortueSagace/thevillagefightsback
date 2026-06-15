@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.entity.VexRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Vex;
 
-/** Limbo Vex: the vanilla vex renderer re-skinned, scaled 3x, glowing green in the dark. */
+/** Limbo Vex: the vanilla vex renderer, re-skinned black-and-white, scaled 2x to match the baked hitbox,
+ *  with glowing white eyes/markings in the dark. */
 public class LimboVexRenderer extends VexRenderer {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_vex.png");
@@ -29,6 +30,6 @@ public class LimboVexRenderer extends VexRenderer {
     @Override
     protected void scale(Vex entity, PoseStack pose, float partialTick) {
         super.scale(entity, pose, partialTick); // vanilla VexRenderer applies no model scale (no-op)...
-        pose.scale(3.0F, 3.0F, 3.0F);           // ...so x3 alone gives a 3x vex matching the 3x hitbox
+        pose.scale(2.0F, 2.0F, 2.0F);           // ...so x2 alone gives a 2x vex matching the baked 2x hitbox
     }
 }

@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.entity.RavagerRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Ravager;
 
-/** Limbo Ravager: the vanilla ravager renderer re-skinned, scaled 3x (enormous), glowing green in the dark. */
+/** Limbo Ravager: the vanilla ravager renderer, re-skinned black-and-white, scaled 2x (huge) to match the
+ *  baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboRavagerRenderer extends RavagerRenderer {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_ravager.png");
@@ -29,6 +30,6 @@ public class LimboRavagerRenderer extends RavagerRenderer {
     @Override
     protected void scale(Ravager entity, PoseStack pose, float partialTick) {
         super.scale(entity, pose, partialTick);
-        pose.scale(3.0F, 3.0F, 3.0F);
+        pose.scale(2.0F, 2.0F, 2.0F); // 2x, matching the baked 2x hitbox
     }
 }

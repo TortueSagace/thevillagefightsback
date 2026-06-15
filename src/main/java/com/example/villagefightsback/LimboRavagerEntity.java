@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
@@ -23,10 +21,5 @@ public class LimboRavagerEntity extends Ravager implements LimboRaider {
                 .add(Attributes.ATTACK_DAMAGE, 12.0)     // 3x applied via LimboRaidEvents#onHurt
                 .add(Attributes.ATTACK_KNOCKBACK, 1.5)
                 .add(Attributes.FOLLOW_RANGE, 32.0);
-    }
-
-    @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(LimboRaider.SCALE);
     }
 }

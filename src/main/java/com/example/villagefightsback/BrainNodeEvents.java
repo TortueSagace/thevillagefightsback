@@ -81,6 +81,7 @@ public final class BrainNodeEvents {
         driveOuterWalls(server, data); // level-3 OUTER obsidian wall around the expansion buildings
         manageDome(server, data);      // level-4 protective glass dome
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
+        BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         checkStageBells(server, data);  // ring a bell whenever a brain node reaches a new stage
@@ -806,9 +807,6 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
-        // A guardian iron golem rises standing atop the new brain node (it auto-arms on join, like the
-        // sunset-reinforcement golems).
-        EntityType.IRON_GOLEM.spawn(level, spot.above(), MobSpawnType.EVENT);
         // If a player placed this bell, they founded the village -> Hero of the Village.
         java.util.UUID founder = data.takeBellPlacer(key);
         if (founder != null) {
@@ -892,7 +890,7 @@ public final class BrainNodeEvents {
     private static void reinforceVillage(ServerLevel level, WallPlan innerWall, BlockPos pos, int stage) {
         int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
         int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
-        int golemsToSpawn = Math.max(0, stage - 2);  // 0 / 0 / 1 / 2
+        int golemsToSpawn = stage >= 3 ? 1 : 0;      // 0 / 0 / 1 / 1  (stage-4 daily golem is 1, not 2)
 
         // From stage 4 the village is capped by a glass dome, so the centre's heightmap surface is the DOME
         // ROOF -- spawning there would drop reinforcements on top of the dome. Instead, once a stage-4 village
@@ -981,7 +979,7 @@ public final class BrainNodeEvents {
     }
 
     /** Find the nearest brain node to {@code pos} (same dimension) within {@code radius}; null if none. */
-    private static GlobalPos nearestBrainNode(BrainNodeData data, ServerLevel level, BlockPos pos, double radius) {
+    static GlobalPos nearestBrainNode(BrainNodeData data, ServerLevel level, BlockPos pos, double radius) {
         double best = radius * radius;
         GlobalPos nearest = null;
         for (GlobalPos gp : data.blocks()) {

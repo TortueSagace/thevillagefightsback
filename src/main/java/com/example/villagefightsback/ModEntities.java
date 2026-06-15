@@ -131,40 +131,41 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<LimboPhantomEntity>> LIMBO_PHANTOM = ENTITIES.register(
             "limbo_phantom",
             () -> EntityType.Builder.<LimboPhantomEntity>of(LimboPhantomEntity::new, MobCategory.MONSTER)
-                    .sized(0.9F, 0.5F)                  // base phantom box; getDimensions() applies the 3x
+                    .sized(2.7F, 1.5F)                  // 3x the vanilla phantom box (0.9 x 0.5), baked to match the model
                     .clientTrackingRange(16)            // glows from far -> track from far
                     .fireImmune()
                     .build("limbo_phantom"));
 
-    // --- Limbo raiders: ghostly 3x versions of the vanilla raid roster (see LimboRaider) ----------
+    // --- Limbo raiders: ghostly 2x versions of the vanilla raid roster (see LimboRaider). Boxes are baked at
+    //     2x the vanilla mob's box so the hitbox always matches the 2x-scaled model (no getDimensions reliance).
     public static final RegistryObject<EntityType<LimboPillagerEntity>> LIMBO_PILLAGER = ENTITIES.register(
             "limbo_pillager",
             () -> EntityType.Builder.<LimboPillagerEntity>of(LimboPillagerEntity::new, MobCategory.MONSTER)
-                    .sized(0.6F, 1.95F)                 // vanilla pillager box; getDimensions() applies the 3x
+                    .sized(1.2F, 3.9F)                  // 2x vanilla pillager (0.6 x 1.95)
                     .clientTrackingRange(16)
                     .build("limbo_pillager"));
     public static final RegistryObject<EntityType<LimboVindicatorEntity>> LIMBO_VINDICATOR = ENTITIES.register(
             "limbo_vindicator",
             () -> EntityType.Builder.<LimboVindicatorEntity>of(LimboVindicatorEntity::new, MobCategory.MONSTER)
-                    .sized(0.6F, 1.95F)
+                    .sized(1.2F, 3.9F)                  // 2x vanilla vindicator
                     .clientTrackingRange(16)
                     .build("limbo_vindicator"));
     public static final RegistryObject<EntityType<LimboEvokerEntity>> LIMBO_EVOKER = ENTITIES.register(
             "limbo_evoker",
             () -> EntityType.Builder.<LimboEvokerEntity>of(LimboEvokerEntity::new, MobCategory.MONSTER)
-                    .sized(0.6F, 1.95F)
+                    .sized(1.2F, 3.9F)                  // 2x vanilla evoker
                     .clientTrackingRange(16)
                     .build("limbo_evoker"));
     public static final RegistryObject<EntityType<LimboRavagerEntity>> LIMBO_RAVAGER = ENTITIES.register(
             "limbo_ravager",
             () -> EntityType.Builder.<LimboRavagerEntity>of(LimboRavagerEntity::new, MobCategory.MONSTER)
-                    .sized(1.95F, 2.2F)                 // vanilla ravager box; getDimensions() applies the 3x
+                    .sized(3.9F, 4.4F)                  // 2x vanilla ravager (1.95 x 2.2)
                     .clientTrackingRange(20)
                     .build("limbo_ravager"));
     public static final RegistryObject<EntityType<LimboVexEntity>> LIMBO_VEX = ENTITIES.register(
             "limbo_vex",
             () -> EntityType.Builder.<LimboVexEntity>of(LimboVexEntity::new, MobCategory.MONSTER)
-                    .sized(0.4F, 0.8F)                  // vanilla vex box; getDimensions() applies the 3x
+                    .sized(0.8F, 1.6F)                  // 2x vanilla vex (0.4 x 0.8)
                     .clientTrackingRange(8)
                     .fireImmune()
                     .build("limbo_vex"));

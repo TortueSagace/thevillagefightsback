@@ -88,10 +88,12 @@ public class VillageBrainNodeBlock extends Block {
         if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
             int[] defenders = BrainNodeEvents.countDefenderTypes(sl, pos); // [villagers, guards, golems] in radius
             int fertilized = com.example.villagefightsback.infection.InfectionData.get(sl).convertedCount();
+            java.util.List<String> reflexLog = BrainReflexes.logFor(
+                    net.minecraft.core.GlobalPos.of(sl.dimension(), pos.immutable()));
             com.example.villagefightsback.network.ModNetwork.sendTo(sp,
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
-                            defenders[0], defenders[1], defenders[2], fertilized));
+                            defenders[0], defenders[1], defenders[2], fertilized, reflexLog));
         }
         return InteractionResult.CONSUME;
     }

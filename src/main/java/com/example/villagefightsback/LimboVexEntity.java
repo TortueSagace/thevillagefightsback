@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
@@ -19,10 +17,5 @@ public class LimboVexEntity extends Vex implements LimboRaider {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 42.0)        // 3x a vex's 14
                 .add(Attributes.ATTACK_DAMAGE, 4.0);     // 3x applied via LimboRaidEvents#onHurt
-    }
-
-    @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(LimboRaider.SCALE);
     }
 }

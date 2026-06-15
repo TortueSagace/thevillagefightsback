@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.entity.VindicatorRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Vindicator;
 
-/** Limbo Vindicator: the vanilla vindicator renderer (keeps the axe layer) re-skinned, scaled 3x, glowing. */
+/** Limbo Vindicator: the vanilla vindicator renderer (keeps the axe layer), re-skinned black-and-white,
+ *  scaled 2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboVindicatorRenderer extends VindicatorRenderer {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_vindicator.png");
@@ -29,6 +30,6 @@ public class LimboVindicatorRenderer extends VindicatorRenderer {
     @Override
     protected void scale(Vindicator entity, PoseStack pose, float partialTick) {
         super.scale(entity, pose, partialTick);
-        pose.scale(3.0F, 3.0F, 3.0F);
+        pose.scale(2.0F, 2.0F, 2.0F); // 2x, matching the baked 2x hitbox
     }
 }

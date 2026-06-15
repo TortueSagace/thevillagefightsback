@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
-import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Evoker;
@@ -24,10 +22,5 @@ public class LimboEvokerEntity extends Evoker implements LimboRaider {
                 .add(Attributes.MOVEMENT_SPEED, 0.5)
                 .add(Attributes.FOLLOW_RANGE, 32.0)      // reach village targets from the raid spawn distance
                 .add(Attributes.MAX_HEALTH, 72.0);       // 3x an evoker's 24
-    }
-
-    @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(LimboRaider.SCALE);
     }
 }

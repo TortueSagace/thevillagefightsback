@@ -1,5 +1,6 @@
 package com.example.villagefightsback.network;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -20,9 +21,10 @@ public class OpenBrainNodeScreenPacket {
     public final int guards;
     public final int golems;
     public final int fertilized; // count of fertilized (fertile/rich) blocks in this dimension
+    public final List<String> reflexLog; // the brain's last (up to 10) reflex log lines, oldest first
 
     public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
-                                     int villagers, int guards, int golems, int fertilized) {
+                                     int villagers, int guards, int golems, int fertilized, List<String> reflexLog) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -31,6 +33,7 @@ public class OpenBrainNodeScreenPacket {
         this.guards = guards;
         this.golems = golems;
         this.fertilized = fertilized;
+        this.reflexLog = reflexLog;
     }
 
     public static void encode(OpenBrainNodeScreenPacket msg, FriendlyByteBuf buf) {
@@ -42,11 +45,13 @@ public class OpenBrainNodeScreenPacket {
         buf.writeVarInt(msg.guards);
         buf.writeVarInt(msg.golems);
         buf.writeVarInt(msg.fertilized);
+        buf.writeCollection(msg.reflexLog, FriendlyByteBuf::writeUtf);
     }
 
     public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
         return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                buf.readList(FriendlyByteBuf::readUtf));
     }
 
     public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {

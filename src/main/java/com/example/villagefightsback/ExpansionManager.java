@@ -123,18 +123,38 @@ public final class ExpansionManager {
     }
 
     // --- TNT placement (shared by the goal and the death fallback) -----------------------------------
-    /** Place the settler's TNT at {@code pos}: Blue (house) faces the brain node; Green (tower) has no facing. */
+    // Settler TNT colours: 0 blue (house), 1 green (tower), 2 yellow (golem factory), 3 orange (barracks),
+    // 4 purple (lure tower). 2-4 are the node-structure TNTs the brain's reflexes dispatch.
+    public static final int TNT_BLUE = 0, TNT_GREEN = 1, TNT_YELLOW = 2, TNT_ORANGE = 3, TNT_PURPLE = 4;
+
+    /** Place the settler's TNT at {@code pos}: Blue (house) faces the brain node; the rest have no facing. */
     public static void placeTnt(ServerLevel level, BlockPos pos, int color, BlockPos brainNode) {
-        BlockState tnt;
-        if (color == 0) {
-            Direction face = Direction.getNearest(
-                    brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
-            if (face.getAxis().isVertical()) face = Direction.NORTH;
-            tnt = ModBlocks.BLUE_TNT.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, face);
-        } else {
-            tnt = ModBlocks.GREEN_TNT.get().defaultBlockState();
-        }
+        BlockState tnt = switch (color) {
+            case TNT_GREEN  -> ModBlocks.GREEN_TNT.get().defaultBlockState();
+            case TNT_YELLOW -> ModBlocks.YELLOW_TNT.get().defaultBlockState();
+            case TNT_ORANGE -> ModBlocks.ORANGE_TNT.get().defaultBlockState();
+            case TNT_PURPLE -> ModBlocks.PURPLE_TNT.get().defaultBlockState();
+            default -> {
+                Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
+                if (face.getAxis().isVertical()) face = Direction.NORTH;
+                yield ModBlocks.BLUE_TNT.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, face);
+            }
+        };
         level.setBlock(pos, tnt, 3); // detonates on placement -> builds the structure
+    }
+
+    /** A brain-node reflex dispatches ONE settler that walks out past the wall and founds the structure for
+     *  {@code tntColor} (golem factory / barracks / lure tower / house). Reuses the full expansion machinery
+     *  (clear-spot seeking, no bulldozing, death fallback). No-op if no spot just outside the wall is found. */
+    public static void summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor) {
+        BlockPos gm = brainNode.pos();
+        double wallRadius = wallRadius(plan, gm);
+        double angle = level.random.nextDouble() * 2.0 * Math.PI;
+        BlockPos aim = columnAt(gm, angle, wallRadius + SPAWN_OFFSET);
+        BlockPos spot = surfaceStandable(level, aim, SPAWN_SEARCH);
+        if (spot == null) return;
+        int delay = STAGGER_BASE + level.random.nextInt(STAGGER_RAND);
+        spawnSettler(level, spot, gm, angle, wallRadius, tntColor, delay);
     }
 
     // --- build-spot claims (so settlers don't drop overlapping buildings) ----------------------------

@@ -7,6 +7,7 @@ import com.example.villagefightsback.client.BrainNodeUpgrades.Upgrade;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -32,13 +33,15 @@ public class BrainNodeScreen extends Screen {
     private final int guards;
     private final int golems;
     private final int fertilized;
+    private final List<String> reflexLog;
 
     private int leftPos;
     private int topPos;
     private int panelH;
+    private boolean showLogs; // false = upgrade tree, true = reflex log
 
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
-                           int villagers, int guards, int golems, int fertilized) {
+                           int villagers, int guards, int golems, int fertilized, List<String> reflexLog) {
         super(Component.literal("Village Brain Node"));
         this.level = level;
         this.maxLevel = maxLevel;
@@ -48,6 +51,7 @@ public class BrainNodeScreen extends Screen {
         this.guards = guards;
         this.golems = golems;
         this.fertilized = fertilized;
+        this.reflexLog = reflexLog;
     }
 
     @Override
@@ -55,6 +59,11 @@ public class BrainNodeScreen extends Screen {
         this.panelH = HEADER_H + maxLevel * ROW_H + FOOTER_H;
         this.leftPos = (this.width - PANEL_W) / 2;
         this.topPos = (this.height - panelH) / 2;
+        // A "Logs" / "Upgrades" toggle in the header that flips between the upgrade tree and the reflex log.
+        addRenderableWidget(Button.builder(Component.literal("Logs"), b -> {
+            showLogs = !showLogs;
+            b.setMessage(Component.literal(showLogs ? "Upgrades" : "Logs"));
+        }).bounds(leftPos + PANEL_W - 62, topPos + 4, 56, 16).build());
     }
 
     @Override
@@ -71,6 +80,12 @@ public class BrainNodeScreen extends Screen {
         g.drawString(font, title, leftPos + 8, topPos + 8, 0xFFFFFFFF, false);
 
         Upgrade hovered = null;
+
+        if (showLogs) {
+            renderLog(g);
+            super.render(g, mouseX, mouseY, partial);
+            return;
+        }
 
         // One row per level.
         for (int lvl = 1; lvl <= maxLevel; lvl++) {
@@ -143,6 +158,24 @@ public class BrainNodeScreen extends Screen {
             lines.add(hovered.name());
             lines.add(hovered.desc());
             g.renderComponentTooltip(font, lines, mouseX, mouseY);
+        }
+    }
+
+    /** The "Logs" tab: the brain's last (up to 10) reflex actions, newest at the top, with the day number. */
+    private void renderLog(GuiGraphics g) {
+        Component heading = Component.literal("Reflex log (last 10)").withStyle(ChatFormatting.AQUA);
+        g.drawString(font, heading, leftPos + 8, topPos + HEADER_H, 0xFFFFFFFF, false);
+        int y = topPos + HEADER_H + 14;
+        if (reflexLog == null || reflexLog.isEmpty()) {
+            g.drawString(font, Component.literal("No reflexes yet.").withStyle(ChatFormatting.DARK_GRAY),
+                    leftPos + 8, y, 0xFF555555, false);
+            return;
+        }
+        // Newest first.
+        for (int i = reflexLog.size() - 1; i >= 0; i--) {
+            g.drawString(font, Component.literal(reflexLog.get(i)).withStyle(ChatFormatting.GRAY),
+                    leftPos + 8, y, 0xFFFFFFFF, false);
+            y += 11;
         }
     }
 

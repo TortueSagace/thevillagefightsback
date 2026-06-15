@@ -49,33 +49,16 @@ public class LimboPhantomEntity extends Phantom {
                 .add(Attributes.MOVEMENT_SPEED, 0.25);
     }
 
-    /** The phantom "size" we run at: scales BOTH the vanilla model (renderer) and the vanilla hitbox
-     *  (getDimensions) together, the same proven mechanism vanilla phantoms use, so it stays hittable. ~3x. */
-    public static final int LIMBO_SIZE = 13;
-
     @Override
     protected void registerGoals() {
         super.registerGoals(); // phantom flight, circling, sweep attack, sweep damage
-        // Target ANY non-limbo creature (mobs + players), not just players. mustSee=false so it engages
+        // Replace the vanilla "target nearest PLAYER" goal so the phantom hunts the whole village: any non-limbo
+        // living creature -- players, villagers, guards, iron golems, other mobs. mustSee=false so it engages
         // reliably in the dark/structured Limbo (it can also see through bedrock anyway).
+        this.targetSelector.removeAllGoals(g -> true);
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false,
                 e -> e != this && e.isAlive() && !Factions.isLimbo(e) && (e instanceof Player || e instanceof Mob)
                         && !(e instanceof Player p && LimboGear.hasFullSet(p)))); // neutral to a full-set wearer
-    }
-
-    @Override
-    public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(
-            net.minecraft.world.level.ServerLevelAccessor level, net.minecraft.world.DifficultyInstance difficulty,
-            net.minecraft.world.entity.MobSpawnType reason, net.minecraft.world.entity.SpawnGroupData data,
-            net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(level, difficulty, reason, data, tag);
-        // setPhantomSize is private in vanilla -> set it through the Size NBT round-trip (readAdditionalSaveData
-        // calls setPhantomSize, which refreshes the dimensions). Scales model + hitbox to ~3x consistently.
-        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
-        this.addAdditionalSaveData(t);
-        t.putInt("Size", LIMBO_SIZE);
-        this.readAdditionalSaveData(t);
-        return r;
     }
 
     @Override

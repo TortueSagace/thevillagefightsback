@@ -8,7 +8,8 @@ import net.minecraft.client.renderer.entity.EvokerRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Evoker;
 
-/** Limbo Evoker: the vanilla evoker renderer (keeps the spell-cast pose) re-skinned, scaled 3x, glowing. */
+/** Limbo Evoker: the vanilla evoker renderer (keeps the spell-cast pose), re-skinned black-and-white,
+ *  scaled 2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboEvokerRenderer extends EvokerRenderer<Evoker> {
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_evoker.png");
@@ -29,6 +30,6 @@ public class LimboEvokerRenderer extends EvokerRenderer<Evoker> {
     @Override
     protected void scale(Evoker entity, PoseStack pose, float partialTick) {
         super.scale(entity, pose, partialTick);
-        pose.scale(3.0F, 3.0F, 3.0F);
+        pose.scale(2.0F, 2.0F, 2.0F); // 2x, matching the baked 2x hitbox
     }
 }
