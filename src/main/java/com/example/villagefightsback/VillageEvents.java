@@ -471,6 +471,8 @@ public final class VillageEvents {
         // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD.
         player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                 ModEffects.ENEMY_OF_THE_VILLAGE.get(), ENEMY_STATUS_TICKS, 0, false, false, true));
+        // You can't be a hero of the village and its enemy at once -- the enemy status revokes Hero of the Village.
+        player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
 
         long now = level.getGameTime();
         Long last = lastEnemyTrigger.get(player.getUUID());
