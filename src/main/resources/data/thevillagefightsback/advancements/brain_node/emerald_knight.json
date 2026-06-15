@@ -17,7 +17,10 @@
         "items": [
           {
             "items": [
-              "thevillagefightsback:emerald_chestplate"
+              "thevillagefightsback:emerald_helmet",
+              "thevillagefightsback:emerald_chestplate",
+              "thevillagefightsback:emerald_leggings",
+              "thevillagefightsback:emerald_boots"
             ]
           }
         ]
