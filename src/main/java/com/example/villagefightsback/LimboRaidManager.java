@@ -147,9 +147,10 @@ public final class LimboRaidManager {
         }
     }
 
-    /** Apply the omen silently: visible=false -> NO particles, and NO chat message (the user wants no message). */
+    /** Apply the omen (visible=false -> NO particles) and warn the just-marked player in red: "Incoming...". */
     private static void applyOmen(ServerPlayer p) {
         p.addEffect(new MobEffectInstance(ModEffects.VERY_BAD_OMEN.get(), OMEN_DURATION, 0, false, false, true));
+        p.sendSystemMessage(Component.literal("§4Incoming..."));
     }
 
     /** Convert the Very Bad Omen into a REAL vanilla raid at the village, then mark it so its raiders are swapped. */
@@ -160,9 +161,9 @@ public final class LimboRaidManager {
         Raid raid = level.getRaids().createOrExtendRaid(player);
         if (raid == null) { player.removeEffect(MobEffects.BAD_OMEN); return; } // no raid possible -> don't leak omen
         limboRaids.put(raid, level);
-        // The dramatic warning, just as the raid begins (before the bar fills), shown to everyone nearby.
+        // The payoff line as the raid actually begins, shown to everyone nearby (the "Incoming..." warning was
+        // shown earlier, when the player was marked in the Limbo).
         announce(level, center, "§4You should have left when I told you to.");
-        announce(level, center, "§4Incoming...");
     }
 
     private static void announce(ServerLevel level, BlockPos center, String msg) {
@@ -172,12 +173,13 @@ public final class LimboRaidManager {
         }
     }
 
-    /** Vanilla -> Limbo entity-type mapping for the raid roster (no Limbo witch -> a Limbo Pillager fills in). */
+    /** Vanilla -> Limbo entity-type mapping for the full raid roster. */
     private static EntityType<? extends Mob> limboType(Raider r) {
         if (r instanceof Ravager) return ModEntities.LIMBO_RAVAGER.get();
         if (r instanceof Evoker) return ModEntities.LIMBO_EVOKER.get();
         if (r instanceof Vindicator) return ModEntities.LIMBO_VINDICATOR.get();
-        if (r instanceof Pillager || r instanceof Witch) return ModEntities.LIMBO_PILLAGER.get();
+        if (r instanceof Witch) return ModEntities.LIMBO_WITCH.get();
+        if (r instanceof Pillager) return ModEntities.LIMBO_PILLAGER.get();
         return null;
     }
 

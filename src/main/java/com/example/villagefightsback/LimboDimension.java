@@ -48,6 +48,9 @@ public final class LimboDimension {
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
+        // The Vindictive Village Spirit cannot be banished -- it IS of the Limbo. Tell nearby players it shrugged
+        // off the attempt (e.g. a Volatile Limbo Potion), then leave it where it stands.
+        if (e instanceof UnleashedBrainNodeEntity) { notifyBanishImmune(e); return e; }
         // Multipart bosses can't change dimensions; banishing one leaves a ghost marker (and duplicates). Skip.
         if (e instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
                 || e instanceof net.minecraft.world.entity.boss.EnderDragonPart
@@ -73,6 +76,21 @@ public final class LimboDimension {
                 return moved;
             }
         });
+    }
+
+    private static long lastBanishImmuneMsg = Long.MIN_VALUE;
+
+    /** Briefly tell nearby players the boss is immune to banishment (throttled so repeats don't spam the chat). */
+    private static void notifyBanishImmune(Entity boss) {
+        if (!(boss.level() instanceof ServerLevel sl)) return;
+        long now = sl.getGameTime();
+        if (now - lastBanishImmuneMsg < 40L) return; // at most once per ~2s
+        lastBanishImmuneMsg = now;
+        net.minecraft.network.chat.Component msg = net.minecraft.network.chat.Component.literal(
+                "§5The Vindictive Village Spirit is immune to banishment.");
+        for (ServerPlayer p : sl.players()) {
+            if (p.distanceToSqr(boss.getX(), boss.getY(), boss.getZ()) <= 64.0 * 64.0) p.sendSystemMessage(msg);
+        }
     }
 
     /** Keep Limbo loaded in parallel with the overworld: force-load the cube chunks and build the room. */

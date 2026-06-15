@@ -169,6 +169,12 @@ public final class ModEntities {
                     .clientTrackingRange(8)
                     .fireImmune()
                     .build("limbo_vex"));
+    public static final RegistryObject<EntityType<LimboWitchEntity>> LIMBO_WITCH = ENTITIES.register(
+            "limbo_witch",
+            () -> EntityType.Builder.<LimboWitchEntity>of(LimboWitchEntity::new, MobCategory.MONSTER)
+                    .sized(1.2F, 3.9F)                  // 2x vanilla witch (0.6 x 1.95)
+                    .clientTrackingRange(16)
+                    .build("limbo_witch"));
 
     /** Emerald Virus arrow projectile -- infects whatever it hits. See {@link EmeraldVirusArrowEntity}. */
     public static final RegistryObject<EntityType<EmeraldVirusArrowEntity>> EMERALD_VIRUS_ARROW = ENTITIES.register(
@@ -207,6 +213,7 @@ public final class ModEntities {
         event.put(LIMBO_EVOKER.get(), LimboEvokerEntity.createAttributes().build());
         event.put(LIMBO_RAVAGER.get(), LimboRavagerEntity.createAttributes().build());
         event.put(LIMBO_VEX.get(), LimboVexEntity.createAttributes().build());
+        event.put(LIMBO_WITCH.get(), LimboWitchEntity.createAttributes().build());
         event.put(RICH_SHEEP.get(), net.minecraft.world.entity.animal.Sheep.createAttributes().build());
     }
 }

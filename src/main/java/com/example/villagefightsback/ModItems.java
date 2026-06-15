@@ -170,10 +170,13 @@ public final class ModItems {
             limboEgg("limbo_ravager_spawn", ModEntities.LIMBO_RAVAGER, 0x1C221E, 0x78C88C);
     public static final RegistryObject<Item> LIMBO_VEX_SPAWN =
             limboEgg("limbo_vex_spawn", ModEntities.LIMBO_VEX, 0x2E3E48, 0xB9F5DE);
+    public static final RegistryObject<Item> LIMBO_WITCH_SPAWN =
+            limboEgg("limbo_witch_spawn", ModEntities.LIMBO_WITCH, 0x241E2E, 0xC9BCE6);
 
     /** The Limbo raider spawn eggs, in tab order. */
     public static final java.util.List<RegistryObject<Item>> LIMBO_RAID_EGGS = java.util.List.of(
-            LIMBO_PILLAGER_SPAWN, LIMBO_VINDICATOR_SPAWN, LIMBO_EVOKER_SPAWN, LIMBO_RAVAGER_SPAWN, LIMBO_VEX_SPAWN);
+            LIMBO_PILLAGER_SPAWN, LIMBO_VINDICATOR_SPAWN, LIMBO_EVOKER_SPAWN, LIMBO_RAVAGER_SPAWN, LIMBO_VEX_SPAWN,
+            LIMBO_WITCH_SPAWN);
 
     // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a BrainNode stage,
     //     even with no brainNode present (see StagedDefenderEggItem). ---

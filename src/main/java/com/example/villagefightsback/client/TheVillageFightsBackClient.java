@@ -81,12 +81,13 @@ public final class TheVillageFightsBackClient {
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
         event.registerEntityRenderer(ModEntities.EMERALD_VIRUS_ARROW.get(), EmeraldVirusArrowRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_PHANTOM.get(), LimboPhantomRenderer::new);
-        // Limbo raiders: vanilla illager/ravager/vex renderers, re-skinned + scaled 3x + emissive glow.
+        // Limbo raiders: vanilla illager/ravager/vex/witch renderers, re-skinned + scaled 2x + emissive glow.
         event.registerEntityRenderer(ModEntities.LIMBO_PILLAGER.get(), LimboPillagerRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_VINDICATOR.get(), LimboVindicatorRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_EVOKER.get(), LimboEvokerRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_RAVAGER.get(), LimboRavagerRenderer::new);
         event.registerEntityRenderer(ModEntities.LIMBO_VEX.get(), LimboVexRenderer::new);
+        event.registerEntityRenderer(ModEntities.LIMBO_WITCH.get(), LimboWitchRenderer::new);
         // Rich Sheep: vanilla sheep model/geometry + our green rich skin and (un-tinted) rich fur layer.
         event.registerEntityRenderer(ModEntities.RICH_SHEEP.get(), RichSheepRenderer::new);
         // The bullet is invisible; its yellow particle tracer is the visual.
