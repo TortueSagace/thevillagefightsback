@@ -327,9 +327,10 @@ public final class VillageEvents {
     public static void onChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity self = event.getEntity();
         LivingEntity newTarget = event.getNewTarget();
-        if (isAlly(self) && newTarget != null && isAlly(newTarget)) {
-            event.setCanceled(true);            // allies never fight each other
-            return;
+        if (isAlly(self) && newTarget != null && isAlly(newTarget)
+                && Factions.isInfected(self) == Factions.isInfected(newTarget)) {
+            event.setCanceled(true);            // SAME-side allies never fight each other (a vindictive
+            return;                             // gigachad is an IronGolem but a boss-faction ENEMY of the village)
         }
         // Villagers/guards must not leave the walled zone to chase a mob: if WE stand inside our village wall
         // but the would-be target is on the far side of it, refuse the target (we engage it only once it
@@ -398,9 +399,12 @@ public final class VillageEvents {
     public static void onLivingHurt(LivingHurtEvent event) {
         if (event.getEntity().level().isClientSide()) return;
 
-        // No friendly fire among defenders (e.g. rocket splash hitting an allied golem/villager).
+        // No friendly fire among SAME-side defenders (e.g. rocket splash hitting an allied golem/villager).
+        // A vindictive gigachad is an IronGolem (so isAlly), but it's a boss-faction enemy -- the faction
+        // check lets the village and the vindictive actually damage each other.
         if (isAlly(event.getEntity()) && event.getSource().getEntity() != null
-                && isAlly(event.getSource().getEntity())) {
+                && isAlly(event.getSource().getEntity())
+                && Factions.isInfected(event.getEntity()) == Factions.isInfected(event.getSource().getEntity())) {
             event.setCanceled(true);
             return;
         }
