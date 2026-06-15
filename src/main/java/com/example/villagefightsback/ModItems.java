@@ -90,6 +90,9 @@ public final class ModItems {
             () -> new net.minecraft.world.item.ShovelItem(EmeraldTier.INSTANCE, 1.5F, -3.0F, new Item.Properties()));
     public static final RegistryObject<Item> EMERALD_HOE = ITEMS.register("emerald_hoe",
             () -> new net.minecraft.world.item.HoeItem(EmeraldTier.INSTANCE, -2, -1.0F, new Item.Properties()));
+    /** Emerald Hammer: an emerald pickaxe that mines a 3x3 area (surrounding blocks capped at iron-mineable). */
+    public static final RegistryObject<Item> EMERALD_HAMMER = ITEMS.register("emerald_hammer",
+            () -> new EmeraldHammerItem(EmeraldTier.INSTANCE, 1, -3.2F, new Item.Properties()));
 
     /** Limbo Pickaxe: a netherite-grade pick (smithed) that also smashes bedrock + reinforced deepslate
      *  ({@link LimboPickaxeItem} / {@link LimboPickaxeEvents}). */
@@ -124,7 +127,7 @@ public final class ModItems {
 
     /** The emerald tools, in tab order. */
     public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(
-            EMERALD_SWORD, EMERALD_PICKAXE, EMERALD_AXE, EMERALD_SHOVEL, EMERALD_HOE);
+            EMERALD_SWORD, EMERALD_PICKAXE, EMERALD_AXE, EMERALD_SHOVEL, EMERALD_HOE, EMERALD_HAMMER);
 
     /** Creative spawn egg for the Limbo Phantom. */
     public static final RegistryObject<Item> LIMBO_PHANTOM_SPAWN =

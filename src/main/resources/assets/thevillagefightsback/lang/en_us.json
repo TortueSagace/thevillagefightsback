@@ -85,6 +85,8 @@
   "item.thevillagefightsback.emerald_axe": "Emerald Axe",
   "item.thevillagefightsback.emerald_shovel": "Emerald Shovel",
   "item.thevillagefightsback.emerald_hoe": "Emerald Hoe",
+  "item.thevillagefightsback.emerald_hammer": "Emerald Hammer",
+  "item.thevillagefightsback.emerald_hammer.desc": "Mines a 3x3 area. Surrounding blocks tougher than an iron pickaxe can mine are left intact.",
   "item.thevillagefightsback.rocket_launcher": "Rocket Launcher",
   "item.thevillagefightsback.rocket": "Rocket",
   "item.thevillagefightsback.fire_grenade": "Fire Grenade",
