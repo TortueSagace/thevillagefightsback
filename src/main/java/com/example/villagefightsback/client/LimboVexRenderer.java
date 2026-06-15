@@ -28,7 +28,7 @@ public class LimboVexRenderer extends VexRenderer {
 
     @Override
     protected void scale(Vex entity, PoseStack pose, float partialTick) {
-        super.scale(entity, pose, partialTick); // vanilla vex 0.4 baseline...
-        pose.scale(3.0F, 3.0F, 3.0F);           // ...x3 -> 3x a vanilla vex
+        super.scale(entity, pose, partialTick); // vanilla VexRenderer applies no model scale (no-op)...
+        pose.scale(3.0F, 3.0F, 3.0F);           // ...so x3 alone gives a 3x vex matching the 3x hitbox
     }
 }

@@ -137,6 +137,7 @@ public final class UnleashedManager {
         if (!(event.getSource().getEntity() instanceof UnleashedBrainNodeEntity boss)) return;
         if (victim instanceof Player) return;        // players die normally (the boss doesn't recruit players)
         if (Factions.isInfected(victim)) return;     // never convert faction-mates
+        if (Factions.isLimbo(victim)) return;        // Limbo raiders/phantoms die normally (not recruited)
         if (!boss.canMakeGuard()) { boss.registerKill(); return; } // 20-guard cap full: victim dies, still counts
         event.setCanceled(true);                      // do not actually die -- transform instead
         boss.onDirectKill(victim);

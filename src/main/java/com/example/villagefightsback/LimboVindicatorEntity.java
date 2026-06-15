@@ -18,7 +18,7 @@ public class LimboVindicatorEntity extends Vindicator implements LimboRaider {
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MOVEMENT_SPEED, 0.35)
-                .add(Attributes.FOLLOW_RANGE, 12.0)
+                .add(Attributes.FOLLOW_RANGE, 32.0)      // reach village targets from the raid spawn distance
                 .add(Attributes.MAX_HEALTH, 72.0)        // 3x a vindicator's 24
                 .add(Attributes.ATTACK_DAMAGE, 5.0);     // 3x applied via LimboRaidEvents#onHurt
     }

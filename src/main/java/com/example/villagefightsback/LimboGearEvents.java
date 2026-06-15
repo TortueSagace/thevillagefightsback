@@ -80,7 +80,8 @@ public final class LimboGearEvents {
         event.setCanceled(true);
     }
 
-    /** Limbo Phantoms turn neutral toward a full-set wearer (they never pick them as a target). */
+    /** Every Limbo creature (phantoms AND raiders) turns neutral toward a full-set wearer -- so a raid goes for
+     *  the village rather than the (already damage-immune) geared player. */
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
         if (Factions.isLimbo(event.getEntity())

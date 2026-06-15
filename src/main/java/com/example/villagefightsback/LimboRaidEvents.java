@@ -17,9 +17,16 @@ import net.minecraftforge.fml.common.Mod;
 public final class LimboRaidEvents {
     private LimboRaidEvents() {}
 
-    /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells). */
+    /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells).
+     *  Also spare the giant raiders from suffocation/cramming, since a 3x ravager's box can clip the village. */
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
+        if (event.getEntity() instanceof LimboRaider
+                && (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)
+                    || event.getSource().is(net.minecraft.world.damagesource.DamageTypes.CRAMMING))) {
+            event.setCanceled(true);
+            return;
+        }
         if (event.getSource().getEntity() instanceof LimboRaider) {
             event.setAmount(event.getAmount() * LimboRaider.DAMAGE_MULT);
         }
@@ -40,7 +47,7 @@ public final class LimboRaidEvents {
         lv.setBoundOrigin(vex.blockPosition());
         lv.finalizeSpawn(level, level.getCurrentDifficultyAt(vex.blockPosition()),
                 MobSpawnType.MOB_SUMMONED, null, null);
-        lv.setLimitedLife(20 * (3 + level.getRandom().nextInt(3)));
+        lv.setLimitedLife(20 * (30 + level.getRandom().nextInt(90))); // 30-120s, like a vanilla summoned vex
         level.addFreshEntity(lv);
     }
 }

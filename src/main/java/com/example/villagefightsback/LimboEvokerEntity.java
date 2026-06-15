@@ -22,7 +22,7 @@ public class LimboEvokerEntity extends Evoker implements LimboRaider {
     public static AttributeSupplier.Builder createAttributes() {
         return Monster.createMonsterAttributes()
                 .add(Attributes.MOVEMENT_SPEED, 0.5)
-                .add(Attributes.FOLLOW_RANGE, 12.0)
+                .add(Attributes.FOLLOW_RANGE, 32.0)      // reach village targets from the raid spawn distance
                 .add(Attributes.MAX_HEALTH, 72.0);       // 3x an evoker's 24
     }
 
