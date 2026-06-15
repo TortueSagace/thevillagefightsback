@@ -281,6 +281,7 @@ public final class ModBlocks {
 
     static {
         registerFertileRich("dirt", Blocks.DIRT, FertileKind.CUBE);
+        registerFertileRich("grass", Blocks.GRASS_BLOCK, FertileKind.CUBE); // grass converts to a green grassy fertile block
         registerFertileRich("stone", Blocks.STONE, FertileKind.CUBE);
         registerFertileRich("netherrack", Blocks.NETHERRACK, FertileKind.CUBE);
         registerFertileRich("end_stone", Blocks.END_STONE, FertileKind.CUBE);

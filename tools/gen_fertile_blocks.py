@@ -23,6 +23,7 @@ GREEN_GAMMA = 0.80         # <1 brightens mid-tones (more punch)
 # base id -> (kind, vanilla source texture(s)). kind: "all" = cube_all, "log" = cube_column.
 BASES = {
     "dirt":       ("all", "dirt"),
+    "grass":      ("all", "grass_block_top"),  # grayscale grass-blade top, green-tinted -> a distinct grassy block
     "sand":       ("all", "sand"),
     "stone":      ("all", "stone"),
     "log":        ("log", ("oak_log", "oak_log_top")),
@@ -534,8 +535,8 @@ def gen_chorus(gems):
         # ---- plant: connection models, multipart blockstate, item model (item/generated) ----
         _chorus_plant_models(pl, pl)
         _chorus_plant_blockstate(pl)
-        write_json(os.path.join(ASSETS, "models", "item", pl + ".json"),
-                   {"parent": "minecraft:item/generated", "textures": {"layer0": tex(pl)}})
+        # Item icon: use the 3D block model so the creative menu shows a green chorus plant, not a flat square.
+        write_json(os.path.join(ASSETS, "models", "item", pl + ".json"), {"parent": tex(pl)})
 
     # ---- loot ----
     # fertile flower drops itself; fertile plant drops the (later-batch) fertile_chorus item.

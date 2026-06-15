@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thevillagefightsback:block/rich_chorus_plant"
-  }
+  "parent": "thevillagefightsback:block/rich_chorus_plant"
 }
