@@ -72,9 +72,10 @@ public class BrainNodeData extends SavedData {
         public long getLastIncomeDay() { return lastIncomeDay; }
         public void setLastIncomeDay(long day) { lastIncomeDay = day; setDirty(); }
 
-        /** Add emeralds toward evolution; returns how many levels were gained. */
+        /** Add emeralds toward evolution; returns how many levels were gained. At max level there is no next
+         *  level, so the emeralds simply keep accumulating as a stored treasury count. */
         public int addEmeralds(int n) {
-            if (n <= 0 || isMaxLevel()) return 0;
+            if (n <= 0) return 0;
             emeralds += n;
             int gained = 0;
             while (!isMaxLevel() && emeralds >= COST_TO_ADVANCE[level]) {
@@ -82,7 +83,6 @@ public class BrainNodeData extends SavedData {
                 level++;
                 gained++;
             }
-            if (isMaxLevel()) emeralds = 0;
             setDirty();
             return gained;
         }

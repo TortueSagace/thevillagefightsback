@@ -113,7 +113,8 @@ public class BrainNodeScreen extends Screen {
         int footerY = topPos + HEADER_H + maxLevel * ROW_H + 8;
         Component progress;
         if (costNext < 0) {
-            progress = Component.literal("Max level reached").withStyle(ChatFormatting.AQUA);
+            progress = Component.literal("Max level reached  -  " + emeralds + " emeralds stored")
+                    .withStyle(ChatFormatting.AQUA);
         } else {
             progress = Component.literal(emeralds + " / " + costNext + " emeralds to level " + (level + 1))
                     .withStyle(ChatFormatting.GREEN);

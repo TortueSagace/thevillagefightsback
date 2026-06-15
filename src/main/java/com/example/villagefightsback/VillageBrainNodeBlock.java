@@ -64,7 +64,7 @@ public class VillageBrainNodeBlock extends Block {
             return InteractionResult.CONSUME;
         }
 
-        if (held.is(Items.EMERALD) && !econ.isMaxLevel()) {
+        if (held.is(Items.EMERALD)) {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
             if (!player.getAbilities().instabuild) held.shrink(donated);
@@ -76,7 +76,7 @@ public class VillageBrainNodeBlock extends Block {
             sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (gained > 0) {
                 player.displayClientMessage(Component.literal(
-                        "§6The Village Brain Node evolves — this village is now level §e" + econ.getLevel()
+                        "§6The Village Brain Node evolves. This village is now level §e" + econ.getLevel()
                         + (econ.isMaxLevel() ? " §6(max)!" : "§6!")), false);
             } else {
                 player.displayClientMessage(info(econ), false);
@@ -98,10 +98,11 @@ public class VillageBrainNodeBlock extends Block {
 
     private static Component info(BrainNodeData.Econ econ) {
         if (econ.isMaxLevel()) {
-            return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel() + " §7(max)");
+            return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
+                    + " §7(max) §7| §a" + econ.getEmeralds() + " §7emeralds stored");
         }
         return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
-                + " §7— §a" + econ.getEmeralds() + "§7/§a" + econ.costForNext()
+                + " §7| §a" + econ.getEmeralds() + "§7/§a" + econ.costForNext()
                 + " §7emeralds to level §e" + (econ.getLevel() + 1));
     }
 
