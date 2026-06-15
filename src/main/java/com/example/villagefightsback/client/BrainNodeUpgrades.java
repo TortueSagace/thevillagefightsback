@@ -79,7 +79,10 @@ public final class BrainNodeUpgrades {
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
                             "Emeraldgers", "The Emerald Virus evolves: it inflicts Wither II, and every host that "
                             + "dies and explodes rises again as an Emeraldger -- a green-eyed warrior that grows "
-                            + "with the strength of what it killed.")
+                            + "with the strength of what it killed."),
+                    new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/air_strike.png"),
+                            "Air Strikes", "When the village is attacked, every 10 minutes the brain node calls "
+                            + "down a rain of 27 rockets from the sky onto the strongest enemy in range.")
             )
     );
 

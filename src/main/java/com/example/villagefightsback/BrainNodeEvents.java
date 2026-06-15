@@ -59,6 +59,12 @@ public final class BrainNodeEvents {
     private static final long SUNSET_TIME = 12000L;     // day-time at dusk
     private static final double VILLAGER_BED_RATIO_CAP = 1.5; // skip reinforcement above this villagers:beds
 
+    // --- stage-4 air strikes ---
+    private static final long STRIKE_INTERVAL = 12000L; // consider an air strike every 10 minutes
+    private static final long ATTACK_WINDOW   = 12000L; // ...only if an ally was attacked within the past 10 minutes
+    private static final Map<GlobalPos, Long> lastAllyHurt   = new HashMap<>(); // node -> gameTime an ally was last hit near it
+    private static final Map<GlobalPos, Long> nextStrikeCheck = new HashMap<>(); // node -> next gameTime to consider a strike
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -74,6 +80,7 @@ public final class BrainNodeEvents {
         manageExpansion(server, data); // level-3 settler wave (fires spontaneously on reaching level 3)
         driveOuterWalls(server, data); // level-3 OUTER obsidian wall around the expansion buildings
         manageDome(server, data);      // level-4 protective glass dome
+        manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
         handleSunsetIncome(server, data);
         syncVisuals(server, data);
         checkStageBells(server, data);  // ring a bell whenever a brain node reaches a new stage
@@ -191,6 +198,100 @@ public final class BrainNodeEvents {
             DomeBuilder.build(level, plan, gp.pos());
             data.markDomeBuilt(gp);
         }
+    }
+
+    /** Cheap monitor: stamp the game-time an ally (villager/guard/golem) was last attacked, per nearby brain
+     *  node, so a stage-4 air strike fires only when the village was actually under attack recently. */
+    @SubscribeEvent
+    public static void onAllyAttacked(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (!isVillageAlly(victim) || !(victim.level() instanceof ServerLevel sl)) return;
+        BrainNodeData data = BrainNodeData.get(sl.getServer());
+        long now = sl.getGameTime();
+        BlockPos vp = victim.blockPosition();
+        double r2 = (double) INCOME_RADIUS * INCOME_RADIUS;
+        for (GlobalPos gp : data.blocks()) {
+            if (gp.dimension().equals(sl.dimension()) && gp.pos().distSqr(vp) <= r2) {
+                lastAllyHurt.merge(gp, now, Math::max);
+            }
+        }
+    }
+
+    /** Stage-4 air strikes: every {@value #STRIKE_INTERVAL} ticks, if a village ally was attacked within the
+     *  past {@value #ATTACK_WINDOW} ticks, bomb the strongest valid enemy near the brain node. See
+     *  {@link AirStrikeManager}. */
+    private static void manageAirStrikes(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.econ(gp).getLevel() < 4) continue;                 // stage 4 only
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            long now = level.getGameTime();
+            if (!nextStrikeCheck.containsKey(gp)) { nextStrikeCheck.put(gp, now + STRIKE_INTERVAL); continue; }
+            if (now < nextStrikeCheck.get(gp)) continue;
+            nextStrikeCheck.put(gp, now + STRIKE_INTERVAL);
+            Long hurt = lastAllyHurt.get(gp);
+            if (hurt == null || now - hurt > ATTACK_WINDOW) continue;    // village not attacked in the window
+            LivingEntity target = pickAirStrikeTarget(level, data, gp.pos());
+            if (target != null) AirStrikeManager.launch(level, target);
+        }
+    }
+
+    /** The strongest (most-HP) hostile near the brain node whose strike column is clear; null if none qualify. */
+    private static LivingEntity pickAirStrikeTarget(ServerLevel level, BrainNodeData data, BlockPos node) {
+        AABB box = new AABB(node).inflate(INCOME_RADIUS);
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box, e -> isAirStrikeEnemy(e, data));
+        candidates.sort((a, b) -> Float.compare(b.getHealth(), a.getHealth())); // most HP first
+        for (LivingEntity c : candidates) {
+            if (isStrikeColumnClear(level, c)) return c;
+        }
+        return null;
+    }
+
+    /** Air-strike target: a hostile mob, or a player flagged as a village enemy. Never an ally or the boss. */
+    private static boolean isAirStrikeEnemy(LivingEntity e, BrainNodeData data) {
+        if (!e.isAlive()) return false;
+        if (e instanceof net.minecraft.world.entity.player.Player p) {
+            return !p.isCreative() && !p.isSpectator() && data.isEnemy(p.getUUID());
+        }
+        if (e instanceof UnleashedBrainNodeEntity) return false;        // the boss has its own arc
+        if (isVillageAlly(e) || e instanceof EmeraldgerEntity || e instanceof WallDefenderEntity) return false;
+        return e instanceof net.minecraft.world.entity.monster.Enemy;
+    }
+
+    /** True if the vertical column above the target (radius {@link AirStrikeManager#CLEAR_RADIUS}, from the
+     *  target up to the sky) is free of village allies and of cobblestone/brick (village structures). Rockets
+     *  fall top-to-bottom, so we check the whole column UP, not a sphere. */
+    private static boolean isStrikeColumnClear(ServerLevel level, LivingEntity target) {
+        int cx = (int) Math.floor(target.getX());
+        int cz = (int) Math.floor(target.getZ());
+        int baseY = (int) Math.floor(target.getY());
+        int topY = level.getMaxBuildHeight() - 1;
+        int r = AirStrikeManager.CLEAR_RADIUS;
+        double r2 = (double) r * r;
+        double ccx = cx + 0.5, ccz = cz + 0.5;
+        AABB cyl = new AABB(cx - r, baseY, cz - r, cx + r + 1, topY, cz + r + 1);
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, cyl, BrainNodeEvents::isVillageAlly)) {
+            double dx = e.getX() - ccx, dz = e.getZ() - ccz;
+            if (dx * dx + dz * dz <= r2) return false;
+        }
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int dx = -r; dx <= r; dx++) {
+            for (int dz = -r; dz <= r; dz++) {
+                if (dx * dx + dz * dz > r2) continue;
+                for (int y = baseY; y <= topY; y++) {
+                    BlockState s = level.getBlockState(m.set(cx + dx, y, cz + dz));
+                    if (s.is(Blocks.COBBLESTONE) || s.is(Blocks.BRICKS)) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Villager, guard, or iron golem -- the village allies the air strike protects (and never bombs). */
+    private static boolean isVillageAlly(LivingEntity e) {
+        return e instanceof Villager
+                || e instanceof net.minecraft.world.entity.animal.IronGolem
+                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /** Build the 3x3 protecting-glass cube (panes facing outward, bulldozing whatever is there) with a wall
