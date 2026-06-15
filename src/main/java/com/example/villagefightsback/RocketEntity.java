@@ -56,6 +56,23 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
                 net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.PLAYERS, 1.4F, 0.8F);
     }
 
+    /**
+     * Air-strike drop: a rocket that spawns high above ({@code x},{@code z}) and falls dead-straight DOWN, with
+     * the exact same heavy hit + blast as the gigachad golem's rocket. No owner -- the air-strike code
+     * pre-clears the impact zone of village allies, so ally-immunity attribution isn't needed.
+     */
+    public static void dropFromSky(net.minecraft.server.level.ServerLevel level, double x, double y, double z) {
+        RocketEntity rocket = new RocketEntity(ModEntities.ROCKET.get(), level);
+        rocket.setPos(x, y, z);
+        rocket.xOld = x; rocket.yOld = y; rocket.zOld = z;
+        rocket.setXRot(90.0F); // nose-down
+        rocket.setYRot(0.0F);
+        rocket.setDeltaMovement(0.0, -SPEED, 0.0);
+        level.addFreshEntity(rocket);
+        level.playSound(null, x, y, z, net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH,
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.4F, 0.7F);
+    }
+
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);
     }
