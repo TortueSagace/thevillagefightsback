@@ -7,7 +7,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Ravager;
 import net.minecraft.world.level.Level;
 
-/** The Limbo Ravager: a 3x, 3x-HP, ghostly beast (see {@link LimboRaider}). At 3x a ravager is enormous. */
+/** The Limbo Ravager: a 2x, 3x-HP, ghostly beast (see {@link LimboRaider}). At 2x a ravager is enormous. */
 public class LimboRavagerEntity extends Ravager implements LimboRaider {
     public LimboRavagerEntity(EntityType<? extends Ravager> type, Level level) {
         super(type, level);

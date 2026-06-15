@@ -89,7 +89,7 @@ public final class ModProfiler {
         final long tot = Math.max(1L, total);
 
         src.sendSuccess(() -> Component.literal(
-                "§6=== The Village Fights Back profiler — " + ticks + " ticks "
+                "§6=== The Village Fights Back profiler -- " + ticks + " ticks "
                         + (enabled ? "" : "§c(OFF) ") + "§6==="), false);
         if (list.isEmpty()) {
             src.sendSuccess(() -> Component.literal("§7(no samples yet. Play a bit, then run /gbtyw profile)"), false);

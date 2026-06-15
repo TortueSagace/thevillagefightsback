@@ -165,7 +165,7 @@ public final class BrainReflexes {
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_YELLOW);
             s.firstHurtArmed = false;
             s.firstHurtFiredStage = stage;
-            log(s, level, "Under attack — dispatched a settler to raise a Golem Factory (-10)");
+            log(s, level, "Under attack -- dispatched a settler to raise a Golem Factory (-10)");
         }
 
         // A4 (stage 1+): an inner-wall door broke in the past 5s -> regenerate all inner doors. 1 gem.
@@ -187,7 +187,7 @@ public final class BrainReflexes {
             if (now >= s.cdGuard && econ.spendEmeralds(3)) {
                 spawnInside(level, brain, guardType());
                 s.cdGuard = now + CD_10M;
-                log(s, level, "A villager fell — raised a guard (-3)");
+                log(s, level, "A villager fell -- raised a guard (-3)");
             }
         }
 
@@ -195,7 +195,7 @@ public final class BrainReflexes {
         if (stage >= 1 && s.villagerKills.size() >= 5 && now >= s.cdGolem && econ.spendEmeralds(9)) {
             spawnInside(level, brain, EntityType.IRON_GOLEM);
             s.cdGolem = now + CD_5M;
-            log(s, level, "Massacre — forged an iron golem (-9)");
+            log(s, level, "Massacre -- forged an iron golem (-9)");
         }
 
         // A6 (stage 3+): a golem was killed -> a settler builds a Lure Tower (purple TNT). 12 gems, 30-min cd, off at 100+ beds.
@@ -204,7 +204,7 @@ public final class BrainReflexes {
             if (now >= s.cdLure && beds < BED_CAP && econ.spendEmeralds(12)) {
                 ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_PURPLE);
                 s.cdLure = now + CD_30M;
-                log(s, level, "A golem fell — dispatched a settler to build a Lure Tower (-12)");
+                log(s, level, "A golem fell -- dispatched a settler to build a Lure Tower (-12)");
             }
         }
 
@@ -212,7 +212,7 @@ public final class BrainReflexes {
         if (stage >= 2 && s.guardKills.size() >= 3 && now >= s.cdBarracks && beds < BED_CAP && econ.spendEmeralds(12)) {
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_ORANGE);
             s.cdBarracks = now + CD_30M; // rolling-window + 30-min cooldown (kills age out of the 10-min window)
-            log(s, level, "Guards overwhelmed — dispatched a settler to build a Barracks (-12)");
+            log(s, level, "Guards overwhelmed -- dispatched a settler to build a Barracks (-12)");
         }
 
         // A1 (stage 1+): peace (no villager killed in 10 min) -> +1 villager inside + a settler founds a house
@@ -222,7 +222,7 @@ public final class BrainReflexes {
             spawnInside(level, brain, EntityType.VILLAGER);
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_BLUE);
             s.cdPeacetime = now + CD_10M;
-            log(s, level, "Peace — a villager joins and a settler founds a house (-5)");
+            log(s, level, "Peace -- a villager joins and a settler founds a house (-5)");
         }
     }
 

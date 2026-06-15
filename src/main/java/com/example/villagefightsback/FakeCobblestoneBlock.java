@@ -20,7 +20,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * "Fake cobblestone" — looks/breaks like mossy cobblestone (and emits light), but is a smart door:
+ * "Fake cobblestone" -- looks/breaks like mossy cobblestone (and emits light), but is a smart door:
  * players, villagers, iron golems, and Guard Villagers guards walk THROUGH it as if it were air (and
  * their AI paths through it), while every other entity treats it as solid cobblestone.
  *

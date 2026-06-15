@@ -7,7 +7,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Vindicator;
 import net.minecraft.world.level.Level;
 
-/** The Limbo Vindicator: a 3x, 3x-HP, ghostly axe illager (see {@link LimboRaider}). */
+/** The Limbo Vindicator: a 2x, 3x-HP, ghostly axe illager (see {@link LimboRaider}). */
 public class LimboVindicatorEntity extends Vindicator implements LimboRaider {
     public LimboVindicatorEntity(EntityType<? extends Vindicator> type, Level level) {
         super(type, level);

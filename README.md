@@ -2,7 +2,7 @@
 
 A Minecraft **Forge 1.20.1** mod that arms villagers and iron golems with guns from
 [Just Enough Guns](https://www.curseforge.com/minecraft/mc-mods/just-enough-guns) (JEG) so they fight
-back against any hostile mob — including infection-style invaders such as *From Another World* — and
+back against any hostile mob -- including infection-style invaders such as *From Another World* -- and
 tell them to *go back to their world*.
 
 > The name is a deliberate counter to the **From Another World** infection mod.
@@ -15,7 +15,7 @@ tell them to *go back to their world*.
 - **Village iron golems** carry a **rocket launcher**. They hold at range and fire only when **no
   villager or other iron golem is within 5 blocks of the target** (so the splash never hits allies),
   backing away to keep a safe standoff. Player-built golems are left alone.
-- **"Hostile" is mod-agnostic** — anything implementing Minecraft's `Enemy` interface is a target, so
+- **"Hostile" is mod-agnostic** -- anything implementing Minecraft's `Enemy` interface is a target, so
   modded monsters are covered automatically with no per-mod code.
 - **Retaliation:** hit a villager and it turns hostile toward you for a few seconds, then reverts.
 - Mobs aim with perfect precision and fire via JEG's own projectile API; the guns shown in their

@@ -1,21 +1,51 @@
 package com.example.villagefightsback;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Vex;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
  * Combat glue for the Limbo raiders: every attack a {@link LimboRaider} causes deals 3x damage (uniformly --
- * melee, crossbow bolts, evoker fangs, vex charges), and a Limbo Evoker's summoned vexes are swapped for
- * {@link LimboVexEntity Limbo Vexes}.
+ * melee, crossbow bolts, evoker fangs, vex charges), a Limbo Evoker's summoned vexes are swapped for
+ * {@link LimboVexEntity Limbo Vexes}, and the raiders smash through weak blocks that wall them off from prey.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboRaidEvents {
     private LimboRaidEvents() {}
+
+    private static final float TOUGH_RESISTANCE = 1200.0F; // obsidian-tough or harder is spared (and bedrock)
+
+    /** Limbo raiders break blocks: when one is pressed against a wall on the way to a target, it smashes the
+     *  weak blocks at body height (never the floor under its feet, and never bedrock / obsidian-tough blocks),
+     *  so a walled village is no defence against the Limbo. */
+    @SubscribeEvent
+    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
+        if (!(event.getEntity() instanceof LimboRaider) || !(event.getEntity() instanceof Mob mob)) return;
+        if (mob.level().isClientSide() || (mob.tickCount & 3) != 0) return;          // throttle: every 4 ticks
+        if (mob.getTarget() == null || !mob.horizontalCollision) return;             // only dig when blocked en route
+        ServerLevel level = (ServerLevel) mob.level();
+        AABB box = mob.getBoundingBox().inflate(0.2);
+        int feetY = Mth.floor(mob.getY());                                            // keep the floor it stands on
+        BlockPos min = BlockPos.containing(box.minX, box.minY, box.minZ);
+        BlockPos max = BlockPos.containing(box.maxX, box.maxY, box.maxZ);
+        for (BlockPos p : BlockPos.betweenClosed(min, max)) {
+            if (p.getY() < feetY) continue;                                           // never dig out the floor
+            BlockState s = level.getBlockState(p);
+            if (s.isAir() || s.getDestroySpeed(level, p) < 0) continue;               // skip air + unbreakable (bedrock)
+            if (s.getBlock().getExplosionResistance() >= TOUGH_RESISTANCE) continue;  // obsidian-tough / reinforced: spared
+            level.destroyBlock(p, true);
+        }
+    }
 
     /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells).
      *  Also spare the giant raiders from suffocation/cramming, since a 3x ravager's box can clip the village. */

@@ -7,7 +7,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.level.Level;
 
-/** The Limbo Vex: a 3x, 3x-HP, ghostly vex summoned by the Limbo Evoker (see {@link LimboRaider}). */
+/** The Limbo Vex: a 2x, 3x-HP, ghostly vex summoned by the Limbo Evoker (see {@link LimboRaider}). */
 public class LimboVexEntity extends Vex implements LimboRaider {
     public LimboVexEntity(EntityType<? extends Vex> type, Level level) {
         super(type, level);

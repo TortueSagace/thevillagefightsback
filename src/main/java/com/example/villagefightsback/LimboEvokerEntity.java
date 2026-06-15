@@ -8,7 +8,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 
 /**
- * The Limbo Evoker: a 3x, 3x-HP, ghostly spellcaster (see {@link LimboRaider}). It keeps the vanilla evoker
+ * The Limbo Evoker: a 2x, 3x-HP, ghostly spellcaster (see {@link LimboRaider}). It keeps the vanilla evoker
  * spells (fangs + summon), but its summoned vexes are swapped for Limbo Vexes by {@link LimboRaidEvents}.
  * Drops 3 Totems of Undying (its loot table).
  */

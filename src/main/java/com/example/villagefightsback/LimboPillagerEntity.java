@@ -7,7 +7,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.Pillager;
 import net.minecraft.world.level.Level;
 
-/** The Limbo Pillager: a 3x, 3x-HP, ghostly crossbow illager (see {@link LimboRaider}). */
+/** The Limbo Pillager: a 2x, 3x-HP, ghostly crossbow illager (see {@link LimboRaider}). */
 public class LimboPillagerEntity extends Pillager implements LimboRaider {
     public LimboPillagerEntity(EntityType<? extends Pillager> type, Level level) {
         super(type, level);

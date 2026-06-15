@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,20 +12,24 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.BossEvent;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
-import net.minecraft.world.entity.ai.village.poi.PoiTypes;
+import net.minecraft.world.entity.monster.Evoker;
+import net.minecraft.world.entity.monster.Pillager;
+import net.minecraft.world.entity.monster.Ravager;
+import net.minecraft.world.entity.monster.Vindicator;
+import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
@@ -35,9 +40,11 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * The Limbo raid: spend more than 30s straight in the Limbo and you earn the {@link VeryBadOmenEffect Very Bad
- * Omen}; carry it back into a village and a Limbo raid erupts -- a vanilla-style wave raid where every illager
- * is its ghostly 3x {@link LimboRaider} version and Limbo Phantoms swoop in alongside them.
+ * The Limbo raid. Spend more than 30s straight in the Limbo and you earn the {@link VeryBadOmenEffect Very Bad
+ * Omen}; carry it back into a village and a raid erupts. This is a REAL vanilla raid (triggered through the
+ * vanilla {@link net.minecraft.world.entity.raid.Raids} system, so it has the exact vanilla waves, raid bar,
+ * horn, village AI and victory/loss) -- the only change is that every illager vanilla spawns is immediately
+ * swapped for its ghostly Limbo counterpart, and each wave is reinforced with a few Limbo Phantoms.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboRaidManager {
@@ -45,14 +52,17 @@ public final class LimboRaidManager {
 
     private static final int OMEN_TICKS = 600;        // 30s straight in the Limbo earns the omen
     private static final int OMEN_DURATION = 12000;   // the omen lasts 10 min (time to get home)
-    private static final int VILLAGE_SCAN = 64;       // a village center this close counts as "in a village"
-    private static final double NEAR = 80.0;          // raid bar / messages reach players this close to center
-    /** Tag stamped on every raid mob so a leftover from a previous session can be swept on reload. */
-    static final String TAG = "tvfb_limbo_raider";
+    private static final int VILLAGE_SCAN = 64;       // a village this close counts as "in a village"
+    private static final double NEAR = 64.0;          // the red warning reaches players this close to the raid
 
     /** UUID -> consecutive ticks the player has been in the Limbo (transient). */
     private static final Map<UUID, Integer> limboTime = new HashMap<>();
-    private static final List<LimboRaid> raids = new ArrayList<>();
+    /** Raids we have marked as "Limbo" (their raiders get swapped) -> the level they run in. */
+    private static final Map<Raid, ServerLevel> limboRaids = new IdentityHashMap<>();
+    /** Per Limbo raid: how many spawned wave-groups we have already reinforced with phantoms. */
+    private static final Map<Raid, Integer> phantomGroups = new IdentityHashMap<>();
+    /** Vanilla raiders that spawned into a Limbo raid, awaiting swap (processed next tick to avoid mid-spawn CME). */
+    private static final List<Raider> pendingSwaps = new ArrayList<>();
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -60,17 +70,12 @@ public final class LimboRaidManager {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         long _p = ModProfiler.now();
-        raids.removeIf(r -> { r.tick(); return r.finished; }); // raids tick every tick (smooth bar + timing)
-        if (server.getTickCount() % 20 == 0) scanPlayers(server); // omen + return check once a second
+        processSwaps();
+        reinforceWaves();
+        if (server.getTickCount() % 20 == 0) scanPlayers(server); // omen + village-return once a second
+        limboRaids.keySet().removeIf(r -> !r.isActive()); // forget finished raids
+        phantomGroups.keySet().removeIf(r -> !r.isActive());
         ModProfiler.add("limbo.raid", _p);
-    }
-
-    /** A raid mob rejoining the world without an active raid tracking it (a previous-session leftover) is swept. */
-    @SubscribeEvent
-    public static void onEntityJoin(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide()) return;
-        Entity e = event.getEntity();
-        if (e.getTags().contains(TAG) && !isTracked(e.getUUID())) e.discard();
     }
 
     /** Drop the in-Limbo timer on logout (no map leak; the 30s window restarts on relog). */
@@ -79,12 +84,52 @@ public final class LimboRaidManager {
         limboTime.remove(event.getEntity().getUUID());
     }
 
-    private static boolean isTracked(UUID id) {
-        for (LimboRaid r : raids) if (r.alive.contains(id)) return true;
-        return false;
+    /** A vanilla raider that spawned into a Limbo raid is queued for replacement (done next tick, not during the
+     *  vanilla wave-spawn loop, so we never mutate the raid's roster while it is being iterated). */
+    @SubscribeEvent
+    public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide()) return;
+        if (event.getEntity() instanceof Raider raider && !(raider instanceof LimboRaider)) {
+            Raid raid = raider.getCurrentRaid();
+            if (raid != null && limboRaids.containsKey(raid)) pendingSwaps.add(raider);
+        }
     }
 
-    /** Track time-in-Limbo (-> omen) and watch for omen-carriers returning to a village (-> raid). */
+    private static void processSwaps() {
+        if (pendingSwaps.isEmpty()) return;
+        List<Raider> batch = new ArrayList<>(pendingSwaps);
+        pendingSwaps.clear();
+        for (Raider vanilla : batch) {
+            if (!vanilla.isAlive()) continue;
+            Raid raid = vanilla.getCurrentRaid();
+            if (raid == null || !limboRaids.containsKey(raid)) continue;
+            if (!(vanilla.level() instanceof ServerLevel level)) continue;
+            EntityType<? extends Mob> type = limboType(vanilla);
+            if (type == null) continue;
+            Mob created = type.create(level);
+            if (!(created instanceof Raider limbo)) { if (created != null) created.discard(); continue; }
+            // joinRaid with pos + recruited=false makes the limbo raider a real member of the SAME wave and
+            // (vanilla code) positions it, finalizes it, applies the wave's raid buffs, and adds it to the level.
+            raid.joinRaid(vanilla.getWave(), limbo, vanilla.blockPosition(), false);
+            vanilla.setCurrentRaid(null); // detach first so discarding the vanilla one doesn't dent the raid count
+            vanilla.discard();
+        }
+    }
+
+    /** Each time the vanilla raid spawns a new wave-group, drop in a few Limbo Phantoms alongside it. */
+    private static void reinforceWaves() {
+        for (Map.Entry<Raid, ServerLevel> e : limboRaids.entrySet()) {
+            Raid raid = e.getKey();
+            if (!raid.isActive()) continue;
+            int groups = raid.getGroupsSpawned();
+            if (groups > phantomGroups.getOrDefault(raid, 0)) {
+                phantomGroups.put(raid, groups);
+                spawnPhantoms(e.getValue(), raid.getCenter(), 2 + e.getValue().getRandom().nextInt(2));
+            }
+        }
+    }
+
+    /** Track time-in-Limbo (-> the omen) and watch for omen-carriers returning to a village (-> a Limbo raid). */
     private static void scanPlayers(MinecraftServer server) {
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             ServerLevel level = p.serverLevel();
@@ -96,191 +141,79 @@ public final class LimboRaidManager {
                 limboTime.remove(id);
                 if (p.hasEffect(ModEffects.VERY_BAD_OMEN.get())) {
                     BlockPos center = findVillageCenter(level, p.blockPosition());
-                    if (center != null && !raidActiveNear(level, center)) {
-                        p.removeEffect(ModEffects.VERY_BAD_OMEN.get());
-                        raids.add(new LimboRaid(level, center));
-                    }
+                    if (center != null && !raidActiveNear(center)) triggerLimboRaid(p, level, center);
                 }
             }
         }
     }
 
-    /** Apply the omen as a silent flag (visible=false -> NO particles; icon shown) + a red warning. */
+    /** Apply the omen silently: visible=false -> NO particles, and NO chat message (the user wants no message). */
     private static void applyOmen(ServerPlayer p) {
-        p.addEffect(new MobEffectInstance(ModEffects.VERY_BAD_OMEN.get(), OMEN_DURATION, 0,
-                false, false, true)); // not ambient, NO particles, show icon
-        p.sendSystemMessage(Component.literal(
-                "§4Something in the Limbo has marked you. You should leave -- now."));
+        p.addEffect(new MobEffectInstance(ModEffects.VERY_BAD_OMEN.get(), OMEN_DURATION, 0, false, false, true));
     }
 
-    /** The nearest village center (a MEETING point, else the nearest villager) within {@link #VILLAGE_SCAN}. */
+    /** Convert the Very Bad Omen into a REAL vanilla raid at the village, then mark it so its raiders are swapped. */
+    private static void triggerLimboRaid(ServerPlayer player, ServerLevel level, BlockPos center) {
+        player.removeEffect(ModEffects.VERY_BAD_OMEN.get());
+        // Hand the vanilla raid system a Bad Omen and let it build the raid; createOrExtendRaid absorbs it.
+        player.addEffect(new MobEffectInstance(MobEffects.BAD_OMEN, 100, 0, false, false, false));
+        Raid raid = level.getRaids().createOrExtendRaid(player);
+        if (raid == null) { player.removeEffect(MobEffects.BAD_OMEN); return; } // no raid possible -> don't leak omen
+        limboRaids.put(raid, level);
+        // The dramatic warning, just as the raid begins (before the bar fills), shown to everyone nearby.
+        announce(level, center, "§4You should have left when I told you to.");
+        announce(level, center, "§4Incoming...");
+    }
+
+    private static void announce(ServerLevel level, BlockPos center, String msg) {
+        Component c = Component.literal(msg);
+        for (ServerPlayer p : level.players()) {
+            if (p.blockPosition().closerThan(center, NEAR)) p.sendSystemMessage(c);
+        }
+    }
+
+    /** Vanilla -> Limbo entity-type mapping for the raid roster (no Limbo witch -> a Limbo Pillager fills in). */
+    private static EntityType<? extends Mob> limboType(Raider r) {
+        if (r instanceof Ravager) return ModEntities.LIMBO_RAVAGER.get();
+        if (r instanceof Evoker) return ModEntities.LIMBO_EVOKER.get();
+        if (r instanceof Vindicator) return ModEntities.LIMBO_VINDICATOR.get();
+        if (r instanceof Pillager || r instanceof Witch) return ModEntities.LIMBO_PILLAGER.get();
+        return null;
+    }
+
+    private static void spawnPhantoms(ServerLevel level, BlockPos center, int n) {
+        for (int i = 0; i < n; i++) {
+            LimboPhantomEntity ph = ModEntities.LIMBO_PHANTOM.get().create(level);
+            if (ph == null) continue;
+            double a = level.getRandom().nextDouble() * Math.PI * 2.0;
+            int r = 10 + level.getRandom().nextInt(12);
+            int x = center.getX() + (int) Math.round(Math.cos(a) * r);
+            int z = center.getZ() + (int) Math.round(Math.sin(a) * r);
+            BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, center.getY(), z));
+            ph.moveTo(x + 0.5, surf.getY() + 8 + level.getRandom().nextInt(8), z + 0.5,
+                    level.getRandom().nextFloat() * 360.0F, 0.0F);
+            ph.finalizeSpawn(level, level.getCurrentDifficultyAt(ph.blockPosition()), MobSpawnType.EVENT, null, null);
+            level.addFreshEntity(ph);
+        }
+    }
+
+    /** The nearest village center (a VILLAGE POI, else the nearest villager) within {@link #VILLAGE_SCAN}. */
     private static BlockPos findVillageCenter(ServerLevel level, BlockPos pos) {
-        Optional<BlockPos> meeting = level.getPoiManager()
-                .getInRange(h -> h.is(PoiTypes.MEETING), pos, VILLAGE_SCAN, PoiManager.Occupancy.ANY)
+        Optional<BlockPos> poi = level.getPoiManager()
+                .getInRange(h -> h.is(PoiTypeTags.VILLAGE), pos, VILLAGE_SCAN, PoiManager.Occupancy.ANY)
                 .map(r -> r.getPos().immutable())
                 .min(Comparator.comparingDouble(b -> b.distSqr(pos)));
-        if (meeting.isPresent()) return meeting.get();
-        return level.getEntitiesOfClass(Villager.class, new AABB(pos).inflate(48.0), x -> x.isAlive()).stream()
+        if (poi.isPresent()) return poi.get();
+        return level.getEntitiesOfClass(Villager.class, new AABB(pos).inflate(48.0), Villager::isAlive).stream()
                 .min(Comparator.comparingDouble(v -> v.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)))
                 .map(Entity::blockPosition)
                 .orElse(null);
     }
 
-    private static boolean raidActiveNear(ServerLevel level, BlockPos center) {
-        for (LimboRaid r : raids) {
-            if (r.level == level && r.center.distSqr(center) <= 100.0 * 100.0) return true;
+    private static boolean raidActiveNear(BlockPos center) {
+        for (Map.Entry<Raid, ServerLevel> e : limboRaids.entrySet()) {
+            if (e.getKey().isActive() && e.getKey().getCenter().distSqr(center) <= 96.0 * 96.0) return true;
         }
         return false;
-    }
-
-    // ------------------------------------------------------------------------------------------------
-    /** One active Limbo raid: a few waves of 3x raiders + phantoms around a village, with a boss bar. */
-    private static final class LimboRaid {
-        private static final int TOTAL_WAVES = 3;
-        private static final int PRE = 50;          // ticks of warning before wave 1 (the two red messages first)
-        private static final int WAVE_GAP = 80;     // pause between cleared waves
-        private static final int MAX_AGE = 9600;    // 8 min hard safety timeout
-        private static final int IDLE_TIMEOUT = 1200; // abandon if no player is near for 1 min
-
-        private final ServerLevel level;
-        private final BlockPos center;
-        private final ServerBossEvent bar;
-        private final List<UUID> alive = new ArrayList<>();
-        private final Map<UUID, BlockPos> lastPos = new HashMap<>(); // to tell "unloaded" from "dead"
-        private int age, wave = -1, waveCount, nextWaveDelay, idle;
-        private boolean started, finished;
-
-        LimboRaid(ServerLevel level, BlockPos center) {
-            this.level = level;
-            this.center = center;
-            this.bar = new ServerBossEvent(Component.literal("§4Limbo Raid"),
-                    BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
-            this.bar.setProgress(0.0F);
-        }
-
-        void tick() {
-            age++;
-            if (age == 1) announce("§4You should have left when I told you to.");
-            if (age == 25) announce("§4Incoming...");
-            if (!started) {
-                if (age >= PRE) { started = true; spawnWave(); }
-                return;
-            }
-            refreshBarPlayers();
-            if (!anyPlayerNear()) { // nobody home: pause progression (and abandon if it stays empty too long)
-                if (++idle > IDLE_TIMEOUT) finish(false);
-                return;
-            }
-            idle = 0;
-            pruneDead();
-            if (alive.isEmpty()) {
-                bar.setProgress(0.0F);
-                if (wave >= TOTAL_WAVES - 1) { finish(true); return; }
-                if (nextWaveDelay > 0) nextWaveDelay--; else spawnWave();
-            } else {
-                bar.setProgress(waveCount == 0 ? 0.0F : (float) alive.size() / waveCount);
-            }
-            if (age > MAX_AGE) finish(false);
-        }
-
-        /** Remove dead raiders -- but NOT ones merely sitting in an unloaded chunk (else a wave "completes" the
-         *  moment players walk off, leaving orphaned 3x raiders and a false victory). */
-        private void pruneDead() {
-            alive.removeIf(uuid -> {
-                Entity e = level.getEntity(uuid);
-                if (e != null && e.isAlive()) { lastPos.put(uuid, e.blockPosition()); return false; }
-                BlockPos lp = lastPos.get(uuid);
-                if (lp != null && !level.hasChunkAt(lp)) return false; // unloaded, not dead -> keep
-                lastPos.remove(uuid);
-                return true;
-            });
-        }
-
-        private void spawnWave() {
-            wave++;
-            bar.setName(Component.literal("§4Limbo Raid §7-- Wave " + (wave + 1) + "/" + TOTAL_WAVES));
-            alive.clear();
-            lastPos.clear();
-            switch (wave) {
-                case 0 -> { ground(ModEntities.LIMBO_PILLAGER.get(), 2); ground(ModEntities.LIMBO_VINDICATOR.get(), 1); phantoms(2); }
-                case 1 -> { ground(ModEntities.LIMBO_PILLAGER.get(), 2); ground(ModEntities.LIMBO_VINDICATOR.get(), 2);
-                            ground(ModEntities.LIMBO_EVOKER.get(), 1); phantoms(2); }
-                default -> { ground(ModEntities.LIMBO_RAVAGER.get(), 1); ground(ModEntities.LIMBO_VINDICATOR.get(), 2);
-                             ground(ModEntities.LIMBO_EVOKER.get(), 1); phantoms(3); }
-            }
-            waveCount = alive.size();
-            nextWaveDelay = WAVE_GAP;
-            bar.setProgress(waveCount == 0 ? 0.0F : 1.0F);
-        }
-
-        private void ground(EntityType<? extends Mob> type, int n) {
-            for (int i = 0; i < n; i++) spawn(type, false);
-        }
-
-        private void phantoms(int n) {
-            for (int i = 0; i < n; i++) spawn(ModEntities.LIMBO_PHANTOM.get(), true);
-        }
-
-        private void spawn(EntityType<? extends Mob> type, boolean flying) {
-            Mob m = type.create(level);
-            if (m == null) return;
-            if (m instanceof Raider r) r.setCanJoinRaid(false); // keep out of the vanilla raid system (before finalize)
-            m.setPersistenceRequired();                          // don't despawn mid-fight when a player steps away
-            // Find a spot whose (3x) box is clear, so the giant raiders don't suffocate among the buildings.
-            BlockPos pos = groundSpot(flying);
-            for (int a = 0; a < 8; a++) {
-                m.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
-                if (level.noCollision(m)) break;
-                pos = groundSpot(flying);
-            }
-            m.finalizeSpawn(level, level.getCurrentDifficultyAt(m.blockPosition()), MobSpawnType.MOB_SUMMONED, null, null);
-            for (EquipmentSlot s : EquipmentSlot.values()) m.setDropChance(s, 0.0F); // no vanilla gear drops
-            level.addFreshEntity(m);     // join fires here -- tag not yet set, so the sweeper leaves it
-            alive.add(m.getUUID());
-            lastPos.put(m.getUUID(), m.blockPosition());
-            m.addTag(TAG);               // now tagged, so a reload without this raid sweeps it
-        }
-
-        /** A surface spot 14-28 blocks from the center (out past the buildings); flying mobs are lifted above it. */
-        private BlockPos groundSpot(boolean flying) {
-            double a = level.getRandom().nextDouble() * Math.PI * 2.0;
-            int r = 14 + level.getRandom().nextInt(15);
-            int x = center.getX() + (int) Math.round(Math.cos(a) * r);
-            int z = center.getZ() + (int) Math.round(Math.sin(a) * r);
-            BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, center.getY(), z));
-            return flying ? surf.above(10 + level.getRandom().nextInt(10)) : surf;
-        }
-
-        private boolean anyPlayerNear() {
-            for (ServerPlayer p : level.players()) if (p.blockPosition().closerThan(center, NEAR)) return true;
-            return false;
-        }
-
-        private void refreshBarPlayers() {
-            for (ServerPlayer p : level.players()) {
-                if (p.blockPosition().closerThan(center, NEAR)) bar.addPlayer(p); else bar.removePlayer(p);
-            }
-        }
-
-        private void announce(String msg) {
-            Component c = Component.literal(msg);
-            for (ServerPlayer p : level.players()) {
-                if (p.blockPosition().closerThan(center, NEAR)) p.sendSystemMessage(c);
-            }
-        }
-
-        private void finish(boolean victory) {
-            if (victory) {
-                announce("§aThe Limbo raid is over. The village holds.");
-            } else {
-                announce("§7The Limbo presence recedes...");
-                for (UUID id : alive) { // clean up any still-loaded raiders so a timed-out/abandoned raid leaves nothing
-                    Entity e = level.getEntity(id);
-                    if (e != null) e.discard();
-                }
-            }
-            bar.removeAllPlayers();
-            finished = true;
-        }
     }
 }
