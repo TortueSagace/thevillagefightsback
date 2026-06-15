@@ -448,7 +448,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             sl.addFreshEntity(v);
         }
         sl.players().forEach(pl -> pl.displayClientMessage(
-                Component.literal("§5The Village Brain Node is reborn — the village rises again."), false));
+                Component.literal("§5The Village Brain Node is reborn. The village rises again."), false));
         bossBar.removeAllPlayers();
         discard();
     }
