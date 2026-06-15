@@ -3,7 +3,7 @@
   "pattern": [
     "EEE",
     "ESE",
-    "  S"
+    " S "
   ],
   "key": {
     "E": { "item": "minecraft:emerald" },
