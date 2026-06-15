@@ -8,8 +8,7 @@
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
-    "hidden": false,
-    "background": "minecraft:textures/gui/advancements/backgrounds/end.png"
+    "hidden": false
   },
   "criteria": {
     "enter": {
@@ -23,5 +22,6 @@
     [
       "enter"
     ]
-  ]
+  ],
+  "parent": "thevillagefightsback:brain_node/expansion"
 }
