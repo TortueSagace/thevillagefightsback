@@ -184,6 +184,7 @@ public final class BlockMatcher {
         // Wooden doors convert to the fertile door even when open (no solid collision then) -> handle first.
         if (b instanceof net.minecraft.world.level.block.DoorBlock) return hasAirContact(level, pos);
         if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) return false; // must be solid
+        if (b == Blocks.POWDER_SNOW) return false;                     // powder snow is immune to conversion
         if (b == Blocks.FARMLAND) return false;
         if (jobSites.contains(b)) return false;                        // keep village jobs (workstations + bell)
         if (b instanceof net.minecraft.world.level.block.ChestBlock

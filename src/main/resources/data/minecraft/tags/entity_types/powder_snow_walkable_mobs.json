@@ -1,0 +1,9 @@
+{
+  "values": [
+    "minecraft:villager",
+    "minecraft:iron_golem",
+    "thevillagefightsback:emeraldger",
+    "thevillagefightsback:gigachad_golem",
+    { "id": "guardvillagers:guard", "required": false }
+  ]
+}
