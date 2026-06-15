@@ -42,10 +42,26 @@ public final class NodeSpawnScheduler {
         while (it.hasNext()) {
             Batch b = it.next();
             if (b.level.getGameTime() < b.nextTick) continue;
-            NodeSpawns.spawnGuard(b.level, b.node, b.stage);
+            if (b.level.isLoaded(b.node)) {
+                if (b.level.getBlockState(b.node).getBlock() instanceof AbstractNodeBlock) {
+                    try { NodeSpawns.spawnGuard(b.level, b.node, b.stage); }
+                    catch (Throwable t) { TheVillageFightsBack.LOGGER.error("barracks guard spawn failed at {}", b.node, t); }
+                } else {
+                    it.remove();   // the barracks node was mined/replaced mid-batch -> stop the in-flight guards
+                    continue;
+                }
+            }
+            // Whether we spawned (loaded + present) or skipped (chunk unloaded), advance so the batch always
+            // terminates -- an unloaded barracks just loses its remaining guards rather than queueing forever.
             b.remaining--;
             b.nextTick = b.level.getGameTime() + SPACING;
             if (b.remaining <= 0) it.remove();
         }
+    }
+
+    /** Clear the queue on world unload so no stale Batch/ServerLevel survives into the next (integrated) world. */
+    @SubscribeEvent
+    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        BATCHES.clear();
     }
 }

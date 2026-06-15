@@ -35,15 +35,18 @@ public abstract class AbstractNodeBlock extends Block {
         super.onPlace(state, level, pos, oldState, moved);
         if (level.isClientSide || oldState.is(this)) return;
         ServerLevel sl = (ServerLevel) level;
-        BrainNodeData.get(sl.getServer()).addNode(GlobalPos.of(level.dimension(), pos.immutable()));
-        BrainNodeEvents.triggerNodeSpawn(sl, pos.immutable()); // spawn on creation, if a brain node is in range
+        GlobalPos gp = GlobalPos.of(level.dimension(), pos.immutable());
+        BrainNodeData.get(sl.getServer()).addNode(gp);
+        // Spawn on genuine creation only -- NOT on a piston relocation (moved), which would be a free spawn.
+        if (!moved) BrainNodeEvents.triggerNodeSpawn(sl, pos.immutable());
     }
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moved) {
         if (!level.isClientSide && !newState.is(this)) {
-            BrainNodeData.get(((ServerLevel) level).getServer())
-                    .removeNode(GlobalPos.of(level.dimension(), pos.immutable()));
+            GlobalPos gp = GlobalPos.of(level.dimension(), pos.immutable());
+            BrainNodeData.get(((ServerLevel) level).getServer()).removeNode(gp);
+            BrainNodeEvents.forgetNode(gp); // drop its once-per-day spawn stamp so the map stays bounded
         }
         super.onRemove(state, level, pos, newState, moved);
     }

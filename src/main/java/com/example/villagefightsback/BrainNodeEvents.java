@@ -1008,6 +1008,9 @@ public final class BrainNodeEvents {
     // village radii). Transient: a restart at the exact sunset of the same day could spawn once more -- harmless.
     private static final Map<GlobalPos, Long> nodeSpawnDay = new HashMap<>();
 
+    /** Drop a removed node's day-stamp so the transient map stays bounded (called from AbstractNodeBlock.onRemove). */
+    static void forgetNode(GlobalPos node) { nodeSpawnDay.remove(node); }
+
     /** Once per day at sunset, spawn the payload of every node within {@code brain}'s radius (loaded only). */
     private static void spawnFromNodes(ServerLevel level, BrainNodeData data, GlobalPos brain, int stage, long day) {
         double r2 = (double) INCOME_RADIUS * INCOME_RADIUS;
@@ -1022,6 +1025,7 @@ public final class BrainNodeEvents {
                 nb.spawnPayload(level, node.pos(), stage);
             } else {
                 data.removeNode(node);                                 // the block is gone -> stop tracking it
+                nodeSpawnDay.remove(node);                             // ...and forget its day-stamp
             }
         }
     }

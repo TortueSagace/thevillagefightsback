@@ -97,7 +97,9 @@ public final class ModBlocks {
     // --- "Nodes": glowing ancient-debris-tough ore blocks. All add +10% to the village's daily sunset harvest
     //     (within a brain node's range); each also spawns its own reinforcement every sunset + on creation. ---
     private static BlockBehaviour.Properties nodeProps() {
-        return BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13);
+        // pushReaction(BLOCK): pistons can't shove a node around (which would otherwise re-fire its spawn).
+        return BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)
+                .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK);
     }
 
     /** Golem Factory Node (formerly the Emerald Node): green, growing circle; spawns an iron/gigachad golem. */
@@ -121,9 +123,8 @@ public final class ModBlocks {
             "lure_tower_node", () -> new TooltipBlockItem(LURE_TOWER_NODE.get(), new Item.Properties(),
                     "block.thevillagefightsback.lure_tower_node.desc"));
 
-    /** Debris: a colour-inverted ("negative") ancient debris with the same toughness. It is what an Emerald
-     *  Node drops when mined without Silk Touch (see {@link EmeraldNodeBlock}); smelting/blasting it yields an
-     *  iron ingot. */
+    /** Debris: a colour-inverted ("negative") ancient debris with the same toughness; smelting/blasting it
+     *  yields an iron ingot. */
     public static final RegistryObject<Block> DEBRIS = BLOCKS.register(
             "debris",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS)));
