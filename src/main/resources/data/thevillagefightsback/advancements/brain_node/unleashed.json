@@ -3,8 +3,8 @@
     "icon": {
       "item": "thevillagefightsback:brain_node_warden"
     },
-    "title": "The Brain Node Unleashed",
-    "description": "Defeat the Unleashed Village Brain Node.",
+    "title": "The Vindictive Village Spirit",
+    "description": "Defeat the Vindictive Village Spirit.",
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,

@@ -95,7 +95,7 @@ public final class UnleashedManager {
             p.connection.send(new ClientboundSetTitleTextPacket(title));
         }
         sl.players().forEach(pl -> pl.displayClientMessage(Component.literal(
-                "§5The Village Brain Node has been UNLEASHED — you failed to protect the village."), false));
+                "§5A Vindictive Village Spirit has risen. You failed to protect the village."), false));
     }
 
     /** Send a camera shake to every player near {@code center}. Used by the boss's slam attack, etc. */

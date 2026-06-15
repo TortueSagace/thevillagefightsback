@@ -70,7 +70,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     private static final int CIRCULAR_STEPS = 24;       // 360 / 15 degrees
 
     private final ServerBossEvent bossBar = new ServerBossEvent(
-            Component.literal("Village Brain Node, Unleashed"),
+            Component.literal("Vindictive Village Spirit"),
             BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
 
     private static final int BOSS_HEARTBEAT_INTERVAL = 16; // fast Warden pulse (calm warden is ~40t; this is "angry")
@@ -393,7 +393,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     public void registerKill() {
         if (reverted) return;
         killCount++;
-        bossBar.setName(Component.literal("Village Brain Node, Unleashed  (" + killCount + "/" + KILLS_TO_WIN + ")"));
+        bossBar.setName(Component.literal("Vindictive Village Spirit  (" + killCount + "/" + KILLS_TO_WIN + ")"));
         if (killCount >= KILLS_TO_WIN && level() instanceof ServerLevel sl) { reverted = true; winAndRevert(sl); }
     }
 
@@ -484,6 +484,6 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         super.readAdditionalSaveData(tag);
         killCount = tag.getInt(NBT_KILLS);
         if (tag.contains(NBT_EMERGE)) emergeTicks = tag.getInt(NBT_EMERGE);
-        bossBar.setName(Component.literal("Village Brain Node, Unleashed  (" + killCount + "/" + KILLS_TO_WIN + ")"));
+        bossBar.setName(Component.literal("Vindictive Village Spirit  (" + killCount + "/" + KILLS_TO_WIN + ")"));
     }
 }
