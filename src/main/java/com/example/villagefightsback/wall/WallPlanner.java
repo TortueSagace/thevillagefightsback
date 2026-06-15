@@ -64,6 +64,11 @@ public final class WallPlanner {
             rasterizeTube(interior, W, H, a[0] - ox, a[1] - oz, b[0] - ox, b[1] - oz); // enclose as ONE ring
         }
 
+        // The OUTER (obsidian) wall is deliberately CONVEX -- the opposite of the inner wall's concave hug.
+        // Replace the concave footprint with its filled convex hull (which still clears every bed, since the
+        // hull is taken of the already-CLEARANCE-expanded cells).
+        if (obsidian) convexify(interior, W, H);
+
         // --- Boundary cells: an interior cell with a non-interior orthogonal neighbour. outward = the
         // outside side (a cell with >=2 outside sides is a corner -> 6-tall pillar). This naturally follows
         // concavities and inserts pillars at diagonal steps, so the wall is 4-connected (sealed).
@@ -268,6 +273,57 @@ public final class WallPlanner {
             int z = steps == 0 ? z0 : Math.round(z0 + (float) (z1 - z0) * i / steps);
             markDisc(grid, W, H, x, z);
         }
+    }
+
+    /** Overwrite {@code grid} with the FILLED CONVEX HULL of its currently-marked cells -- turning the concave
+     *  footprint into a convex one for the outer wall. No-op (leaves the grid as-is) if the marked cells are
+     *  degenerate (fewer than 3, or all collinear). */
+    private static void convexify(boolean[] grid, int W, int H) {
+        List<int[]> pts = new ArrayList<>();
+        for (int gz = 0; gz < H; gz++)
+            for (int gx = 0; gx < W; gx++)
+                if (grid[gz * W + gx]) pts.add(new int[]{gx, gz});
+        if (pts.size() < 3) return;
+        int[][] hull = convexHull(pts);
+        if (hull.length < 3) return;                  // all marked cells collinear -> leave the footprint be
+        for (int gz = 0; gz < H; gz++)
+            for (int gx = 0; gx < W; gx++)
+                grid[gz * W + gx] = inConvex(hull, gx, gz);
+    }
+
+    /** Convex hull (CCW, no repeated endpoint) of a set of grid cells -- Andrew's monotone chain. */
+    private static int[][] convexHull(List<int[]> pts) {
+        int n = pts.size();
+        List<int[]> p = new ArrayList<>(pts);
+        p.sort((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[1], b[1]));
+        int[][] hull = new int[2 * n][];
+        int k = 0;
+        for (int i = 0; i < n; i++) {                 // lower hull
+            int[] pi = p.get(i);
+            while (k >= 2 && cross(hull[k - 2], hull[k - 1], pi) <= 0) k--;
+            hull[k++] = pi;
+        }
+        int lower = k + 1;
+        for (int i = n - 2; i >= 0; i--) {            // upper hull
+            int[] pi = p.get(i);
+            while (k >= lower && cross(hull[k - 2], hull[k - 1], pi) <= 0) k--;
+            hull[k++] = pi;
+        }
+        return java.util.Arrays.copyOf(hull, k - 1);  // drop the duplicated start point
+    }
+
+    /** (a-o) x (b-o): &gt;0 left turn (CCW), &lt;0 right turn, 0 collinear. */
+    private static long cross(int[] o, int[] a, int[] b) {
+        return (long) (a[0] - o[0]) * (b[1] - o[1]) - (long) (a[1] - o[1]) * (b[0] - o[0]);
+    }
+
+    /** True if cell (x,z) is inside or on the CCW convex polygon {@code hull}. */
+    private static boolean inConvex(int[][] hull, int x, int z) {
+        int[] p = {x, z};
+        for (int i = 0, m = hull.length; i < m; i++) {
+            if (cross(hull[i], hull[(i + 1) % m], p) < 0) return false; // strictly outside one edge
+        }
+        return true;
     }
 
     /** Minimum spanning tree over the beds (Prim, O(n^2)); returns index pairs. Guarantees one connected ring. */
