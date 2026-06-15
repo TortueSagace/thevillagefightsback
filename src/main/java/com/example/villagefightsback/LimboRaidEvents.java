@@ -42,9 +42,37 @@ public final class LimboRaidEvents {
             if (p.getY() < feetY) continue;                                           // never dig out the floor
             BlockState s = level.getBlockState(p);
             if (s.isAir() || s.getDestroySpeed(level, p) < 0) continue;               // skip air + unbreakable (bedrock)
-            if (s.getBlock().getExplosionResistance() >= TOUGH_RESISTANCE) continue;  // obsidian-tough / reinforced: spared
+            // Obsidian-tough / reinforced blocks are spared -- EXCEPT protecting glass, which the raiders smash
+            // through to get at the wall defenders sealed inside their shells.
+            if (s.getBlock().getExplosionResistance() >= TOUGH_RESISTANCE
+                    && !s.is(ModBlocks.PROTECTING_GLASS.get())) continue;
             level.destroyBlock(p, true);
         }
+
+        // Reach an elevated target (a defender on the wall, a villager up high) by pillaring with cheap scaffolds.
+        pillarTowardTarget(mob, level);
+    }
+
+    /** When a ground raider is walled off from a target ABOVE it, place a cheap scaffold under its feet and step
+     *  up -- the same trick the village builders/guards use -- so the wall's height is no defence either. */
+    private static void pillarTowardTarget(Mob mob, ServerLevel level) {
+        if (mob instanceof LimboVexEntity || mob instanceof LimboRavagerEntity) return; // flyers / too big to pillar
+        var target = mob.getTarget();
+        if (target == null || target.getY() - mob.getY() <= 2.0) return;             // only climb to a clearly higher target
+        BlockPos feet = mob.blockPosition();
+        if (isSolid(level, feet.above()) || isSolid(level, feet.above(2))) return;   // no headroom to rise
+        BlockState at = level.getBlockState(feet);
+        if (at.canBeReplaced()) {
+            level.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3); // auto-expires (~30s)
+        } else if (!at.is(ModBlocks.CHEAP_SCAFFOLD.get())) {
+            return;                                                                   // feet space blocked by something solid
+        }
+        mob.setPos(feet.getX() + 0.5, feet.getY() + 1, feet.getZ() + 0.5);           // step up onto the scaffold
+        mob.fallDistance = 0.0F;
+    }
+
+    private static boolean isSolid(ServerLevel level, BlockPos p) {
+        return level.getBlockState(p).blocksMotion();
     }
 
     /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells).
