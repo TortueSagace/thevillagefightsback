@@ -5,6 +5,8 @@
   "block.thevillagefightsback.fake_cobblestone.desc": "Villagers, golems and players can go through. Perfect to build a hidden door.",
   "block.thevillagefightsback.fake_obsidian": "Fake Obsidian",
   "block.thevillagefightsback.fake_obsidian.desc": "Villagers, golems and players can go through. Obsidian-tough gate for the outer wall.",
+  "block.thevillagefightsback.fake_bedrock": "Fake Bedrock",
+  "block.thevillagefightsback.fake_bedrock.desc": "Looks and is as tough as bedrock, but any creature walks straight through it. The Limbo is built from it.",
   "block.thevillagefightsback.golem_factory_node": "Golem Factory Node",
   "block.thevillagefightsback.golem_factory_node.desc": "In a Village Brain Node's range: +10% daily emerald harvest, and every sunset spawns an iron golem below it (a gigachad golem at stage 3+).",
   "block.thevillagefightsback.barracks_node": "Barracks Node",

@@ -135,12 +135,15 @@ public final class LimboDimension {
         }
     }
 
-    /** Build the hollow bedrock cube around spawn if it isn't there yet. Returns true if it was built now. */
+    /** Build the hollow cube around spawn if it isn't there yet. Returns true if it was built now. The shell is
+     *  fake bedrock (looks like bedrock, anything walks through); existing real-bedrock cubes are converted in
+     *  place by the chunk-load migration in {@link LimboWorldgenEvents}, so we treat either as "already built". */
     private static boolean ensureCube(ServerLevel level) {
         BlockPos corner = new BlockPos(MIN_X, MIN_Y, MIN_Z);
-        if (level.getBlockState(corner).is(Blocks.BEDROCK)) return false; // already built
+        BlockState atCorner = level.getBlockState(corner);
+        if (atCorner.is(Blocks.BEDROCK) || atCorner.is(ModBlocks.FAKE_BEDROCK.get())) return false; // already built
 
-        BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
+        BlockState bedrock = ModBlocks.FAKE_BEDROCK.get().defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int x = MIN_X; x <= MAX_X; x++) {

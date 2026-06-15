@@ -458,6 +458,17 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties(),
                     "block.thevillagefightsback.forgotten_glowstone.desc"));
 
+    /** "Fake bedrock": looks/breaks exactly like bedrock (unbreakable except by the Limbo Pickaxe) but every
+     *  creature passes through it -- the whole Limbo is built from it (see {@link FakeBedrockBlock}). The
+     *  isSuffocating/isViewBlocking predicates are false so a creature inside it is unharmed + unobscured. */
+    public static final RegistryObject<Block> FAKE_BEDROCK = BLOCKS.register("fake_bedrock",
+            () -> new FakeBedrockBlock(BlockBehaviour.Properties.copy(Blocks.BEDROCK)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+    public static final RegistryObject<Item> FAKE_BEDROCK_ITEM = ITEMS.register("fake_bedrock",
+            () -> new TooltipBlockItem(FAKE_BEDROCK.get(), new Item.Properties(),
+                    "block.thevillagefightsback.fake_bedrock.desc"));
+
     /**
      * The Limbo Portal: a green nether-portal that forms inside a lit {@link #FAKE_OBSIDIAN} frame and
      * teleports between the overworld and Limbo at 16x compression ({@link LimboPortalBlock} /
@@ -539,6 +550,7 @@ public final class ModBlocks {
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(LIMBO_EGG_ITEM.get());
                 output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
+                output.accept(FAKE_BEDROCK_ITEM.get());
                 output.accept(ModItems.FORGOTTEN_POWDER.get());
                 output.accept(ModItems.LIMBO_POTION.get());
                 output.accept(ModItems.VOLATILE_LIMBO_POTION.get());

@@ -54,7 +54,7 @@ public final class LimboCubes {
     /** Build a hollow all-bedrock cube, encrust its OUTER surface with Forgotten Glowstone clumps, + a nest if
      *  it is big enough. */
     public static void build(ServerLevel level, Cube c) {
-        BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
+        BlockState bedrock = ModBlocks.FAKE_BEDROCK.get().defaultBlockState(); // looks like bedrock; anything passes through
         BlockState air = Blocks.AIR.defaultBlockState();
         RandomSource r = RandomSource.create((long) c.x0 * 132871 ^ (long) c.y0 * 7919 ^ (long) c.z0 * 40503);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();

@@ -23,7 +23,8 @@ public final class LimboPickaxeEvents {
     private LimboPickaxeEvents() {}
 
     private static boolean isUnmineableTarget(BlockState state) {
-        return state.is(Blocks.BEDROCK) || state.is(Blocks.REINFORCED_DEEPSLATE);
+        return state.is(Blocks.BEDROCK) || state.is(Blocks.REINFORCED_DEEPSLATE)
+                || state.is(ModBlocks.FAKE_BEDROCK.get()); // the Limbo's fake bedrock breaks like real bedrock
     }
 
     @SubscribeEvent
