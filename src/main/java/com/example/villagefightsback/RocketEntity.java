@@ -106,12 +106,16 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
             int steps = Math.max(1, (int) Math.ceil(dist / 0.15)); // ~6-7 emit points per block -> solid line
             for (int i = 1; i <= steps; i++) {
                 net.minecraft.world.phys.Vec3 p = prev.lerp(now, (double) i / steps);
-                // FLAME core: a few per point with a touch of spread gives the beam visible thickness.
-                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, p.x, p.y, p.z, 2, 0.05, 0.05, 0.05, 0.0);
+                // FLAME core: a few per point for thickness, FORCED so the glowing beam reads from far away.
+                for (net.minecraft.server.level.ServerPlayer pl : sl.players()) {
+                    sl.sendParticles(pl, net.minecraft.core.particles.ParticleTypes.FLAME, true, p.x, p.y, p.z, 2, 0.05, 0.05, 0.05, 0.0);
+                }
                 sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE, p.x, p.y, p.z, 1, 0.02, 0.02, 0.02, 0.0);
             }
-            // Occasional firework sparks for sparkle, sampled sparsely so they don't drown the beam.
-            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK, now.x, now.y, now.z, 2, 0.05, 0.05, 0.05, 0.02);
+            // Firework sparks at the rocket head, forced so the projectile itself is visible from far.
+            for (net.minecraft.server.level.ServerPlayer pl : sl.players()) {
+                sl.sendParticles(pl, net.minecraft.core.particles.ParticleTypes.FIREWORK, true, now.x, now.y, now.z, 2, 0.05, 0.05, 0.05, 0.02);
+            }
         }
         if (!level().isClientSide() && tickCount > MAX_LIFETIME) {
             discard();

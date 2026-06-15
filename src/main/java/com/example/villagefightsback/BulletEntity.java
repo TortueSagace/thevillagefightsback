@@ -30,8 +30,10 @@ public class BulletEntity extends ThrowableProjectile {
     public static final double SPEED = 10.0;           // jeg:revolver projectile.speed (blocks/tick)
     private static final int LIFE = 40;                // jeg:revolver projectile.life
     private static final float GRAVITY = 0.04F;        // jeg modifiedProjectileGravity
+    // A fat yellow dust core for colour + an END_ROD for the fullbright glow (dust is dimmed by darkness; the
+    // END_ROD glows in the dark). Both are sent force=true so the tracer is visible from far away, not just 32m.
     private static final DustParticleOptions TRAIL =
-            new DustParticleOptions(new Vector3f(1.0F, 1.0F, 0.0F), 0.6F); // trailColor -256 = yellow
+            new DustParticleOptions(new Vector3f(1.0F, 1.0F, 0.2F), 1.6F); // big bright yellow
 
     private float damage = DEFAULT_DAMAGE; // base damage (before headshot/falloff); set by the shooter
 
@@ -56,15 +58,25 @@ public class BulletEntity extends ThrowableProjectile {
         Vec3 before = position();
         super.tick();
         if (level() instanceof ServerLevel sl && isAlive()) {
-            // bright yellow tracer along the path travelled this tick (the bullet itself is invisible)
+            // A glowing tracer along the path travelled this tick (the bullet itself is invisible): a fat yellow
+            // dust core + an END_ROD that stays bright in the dark, both forced so it reads from far away.
             Vec3 seg = position().subtract(before);
-            int steps = Math.max(1, (int) (seg.length() / 0.5));
+            int steps = Math.max(1, (int) (seg.length() / 0.4));
             for (int i = 0; i < steps; i++) {
                 Vec3 p = before.add(seg.scale((i + 0.5) / steps));
-                sl.sendParticles(TRAIL, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+                forced(sl, TRAIL, p);
+                forced(sl, net.minecraft.core.particles.ParticleTypes.END_ROD, p);
             }
         }
         if (!level().isClientSide() && tickCount > LIFE) discard();
+    }
+
+    /** Send one particle to every player in the level with force=true, so the tracer shows past the normal
+     *  ~32-block particle cutoff (force = 512-block range) and is visible from far away. */
+    private static void forced(ServerLevel sl, net.minecraft.core.particles.ParticleOptions type, Vec3 p) {
+        for (net.minecraft.server.level.ServerPlayer pl : sl.players()) {
+            sl.sendParticles(pl, type, true, p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
+        }
     }
 
     @Override
