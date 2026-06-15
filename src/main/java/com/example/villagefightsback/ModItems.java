@@ -115,9 +115,12 @@ public final class ModItems {
                 @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
             });
 
-    /** Forgotten Powder: dropped by Forgotten Glowstone (like glowstone dust). Four craft the block back. */
+    /** Forgotten Powder: dropped by Forgotten Glowstone AND by the Limbo raiders (the Forgotten Dust used to
+     *  craft the block back). Foil + an animated icon, matching the Limbo gear's shimmer. */
     public static final RegistryObject<Item> FORGOTTEN_POWDER =
-            ITEMS.register("forgotten_powder", () -> new Item(new Item.Properties()));
+            ITEMS.register("forgotten_powder", () -> new Item(new Item.Properties()) {
+                @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+            });
 
     /** The emerald tools, in tab order. */
     public static final java.util.List<RegistryObject<Item>> EMERALD_TOOLS = java.util.List.of(
@@ -145,6 +148,32 @@ public final class ModItems {
     public static final RegistryObject<Item> VINDICTIVE_GIGACHAD_SPAWN =
             ITEMS.register("vindictive_gigachad_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.VINDICTIVE_GIGACHAD, 0xB8860B, 0x2BBF4E, new Item.Properties()));
+
+    // --- Limbo raider spawn eggs: a custom animated/foil icon (item/generated, not the egg template) so they
+    //     shimmer exactly like the Limbo gear. ---
+    private static RegistryObject<Item> limboEgg(String name,
+            java.util.function.Supplier<? extends net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob>> type,
+            int primary, int secondary) {
+        return ITEMS.register(name, () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                type, primary, secondary, new Item.Properties()) {
+            @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
+        });
+    }
+
+    public static final RegistryObject<Item> LIMBO_PILLAGER_SPAWN =
+            limboEgg("limbo_pillager_spawn", ModEntities.LIMBO_PILLAGER, 0x283830, 0x96E1AF);
+    public static final RegistryObject<Item> LIMBO_VINDICATOR_SPAWN =
+            limboEgg("limbo_vindicator_spawn", ModEntities.LIMBO_VINDICATOR, 0x323E32, 0xAAEB96);
+    public static final RegistryObject<Item> LIMBO_EVOKER_SPAWN =
+            limboEgg("limbo_evoker_spawn", ModEntities.LIMBO_EVOKER, 0x222E38, 0x8CEBCD);
+    public static final RegistryObject<Item> LIMBO_RAVAGER_SPAWN =
+            limboEgg("limbo_ravager_spawn", ModEntities.LIMBO_RAVAGER, 0x1C221E, 0x78C88C);
+    public static final RegistryObject<Item> LIMBO_VEX_SPAWN =
+            limboEgg("limbo_vex_spawn", ModEntities.LIMBO_VEX, 0x2E3E48, 0xB9F5DE);
+
+    /** The Limbo raider spawn eggs, in tab order. */
+    public static final java.util.List<RegistryObject<Item>> LIMBO_RAID_EGGS = java.util.List.of(
+            LIMBO_PILLAGER_SPAWN, LIMBO_VINDICATOR_SPAWN, LIMBO_EVOKER_SPAWN, LIMBO_RAVAGER_SPAWN, LIMBO_VEX_SPAWN);
 
     // --- Staged-defender spawn eggs: place a villager/guard/golem already configured to a BrainNode stage,
     //     even with no brainNode present (see StagedDefenderEggItem). ---

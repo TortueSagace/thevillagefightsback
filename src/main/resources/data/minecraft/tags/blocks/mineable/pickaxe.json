@@ -19,7 +19,9 @@
     "thevillagefightsback:rich_basalt",
     "thevillagefightsback:fertile_cobblestone",
     "thevillagefightsback:forgotten_glowstone",
-    "thevillagefightsback:emerald_node",
+    "thevillagefightsback:golem_factory_node",
+    "thevillagefightsback:barracks_node",
+    "thevillagefightsback:lure_tower_node",
     "thevillagefightsback:iron_golem_head",
     "thevillagefightsback:debris"
   ]

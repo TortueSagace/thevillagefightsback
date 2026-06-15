@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "thevillagefightsback:block/emerald_node"
+    "all": "thevillagefightsback:block/golem_factory_node"
   }
 }

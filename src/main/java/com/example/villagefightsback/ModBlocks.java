@@ -94,16 +94,32 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
-    /** "Emerald Node": a glowing raw-emerald-ore block with ancient-debris toughness. Each one within a Village
-     *  Brain Node's income radius raises that village's daily sunset harvest by 10% (see EmeraldNodeBlock). */
-    public static final RegistryObject<Block> EMERALD_NODE = BLOCKS.register(
-            "emerald_node",
-            () -> new EmeraldNodeBlock(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)));
+    // --- "Nodes": glowing ancient-debris-tough ore blocks. All add +10% to the village's daily sunset harvest
+    //     (within a brain node's range); each also spawns its own reinforcement every sunset + on creation. ---
+    private static BlockBehaviour.Properties nodeProps() {
+        return BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13);
+    }
 
-    public static final RegistryObject<Item> EMERALD_NODE_ITEM = ITEMS.register(
-            "emerald_node",
-            () -> new TooltipBlockItem(EMERALD_NODE.get(), new Item.Properties(),
-                    "block.thevillagefightsback.emerald_node.desc"));
+    /** Golem Factory Node (formerly the Emerald Node): green, growing circle; spawns an iron/gigachad golem. */
+    public static final RegistryObject<Block> GOLEM_FACTORY_NODE = BLOCKS.register(
+            "golem_factory_node", () -> new GolemFactoryNodeBlock(nodeProps()));
+    public static final RegistryObject<Item> GOLEM_FACTORY_NODE_ITEM = ITEMS.register(
+            "golem_factory_node", () -> new TooltipBlockItem(GOLEM_FACTORY_NODE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.golem_factory_node.desc"));
+
+    /** Barracks Node: orange, growing square; spawns 4 stage-appropriate guards (1/sec). */
+    public static final RegistryObject<Block> BARRACKS_NODE = BLOCKS.register(
+            "barracks_node", () -> new BarracksNodeBlock(nodeProps()));
+    public static final RegistryObject<Item> BARRACKS_NODE_ITEM = ITEMS.register(
+            "barracks_node", () -> new TooltipBlockItem(BARRACKS_NODE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.barracks_node.desc"));
+
+    /** Lure Tower Node: purple, growing triangle; spawns a wall defender ABOVE it (no stacking). */
+    public static final RegistryObject<Block> LURE_TOWER_NODE = BLOCKS.register(
+            "lure_tower_node", () -> new LureTowerNodeBlock(nodeProps()));
+    public static final RegistryObject<Item> LURE_TOWER_NODE_ITEM = ITEMS.register(
+            "lure_tower_node", () -> new TooltipBlockItem(LURE_TOWER_NODE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.lure_tower_node.desc"));
 
     /** Debris: a colour-inverted ("negative") ancient debris with the same toughness. It is what an Emerald
      *  Node drops when mined without Silk Touch (see {@link EmeraldNodeBlock}); smelting/blasting it yields an
@@ -161,6 +177,30 @@ public final class ModBlocks {
     public static final RegistryObject<Item> GREEN_TNT_ITEM = ITEMS.register(
             "green_tnt",
             () -> new BlockItem(GREEN_TNT.get(), new Item.Properties()));
+
+    // --- Node-spawning TNTs: each detonates into one node structure (.nbt templates supplied separately).
+    //     Colour -> node: yellow = golem factory, orange = barracks, purple = lure tower. ---
+    private static net.minecraft.resources.ResourceLocation struct(String name) {
+        return new net.minecraft.resources.ResourceLocation(TheVillageFightsBack.MODID, name);
+    }
+
+    public static final RegistryObject<Block> YELLOW_TNT = BLOCKS.register(
+            "yellow_tnt",
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("golem_factory_node")));
+    public static final RegistryObject<Item> YELLOW_TNT_ITEM = ITEMS.register(
+            "yellow_tnt", () -> new BlockItem(YELLOW_TNT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Block> ORANGE_TNT = BLOCKS.register(
+            "orange_tnt",
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks_node")));
+    public static final RegistryObject<Item> ORANGE_TNT_ITEM = ITEMS.register(
+            "orange_tnt", () -> new BlockItem(ORANGE_TNT.get(), new Item.Properties()));
+
+    public static final RegistryObject<Block> PURPLE_TNT = BLOCKS.register(
+            "purple_tnt",
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("lure_tower_node")));
+    public static final RegistryObject<Item> PURPLE_TNT_ITEM = ITEMS.register(
+            "purple_tnt", () -> new BlockItem(PURPLE_TNT.get(), new Item.Properties()));
 
     /**
      * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
@@ -438,12 +478,17 @@ public final class ModBlocks {
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
-                output.accept(EMERALD_NODE_ITEM.get());
+                output.accept(GOLEM_FACTORY_NODE_ITEM.get());
+                output.accept(BARRACKS_NODE_ITEM.get());
+                output.accept(LURE_TOWER_NODE_ITEM.get());
                 output.accept(DEBRIS_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
+                output.accept(YELLOW_TNT_ITEM.get());
+                output.accept(ORANGE_TNT_ITEM.get());
+                output.accept(PURPLE_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
@@ -454,6 +499,7 @@ public final class ModBlocks {
                 output.accept(ModItems.RICH_SHEEP_SPAWN.get());
                 output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
                 output.accept(ModItems.VINDICTIVE_GIGACHAD_SPAWN.get());
+                for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());

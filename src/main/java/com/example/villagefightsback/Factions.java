@@ -17,8 +17,10 @@ public final class Factions {
                 || e instanceof VindictiveGigachadEntity;
     }
 
-    /** The "limbo" faction: creatures native to Limbo (the Limbo Phantom). They never attack one another. */
+    /** The "limbo" faction: creatures native to Limbo -- the Limbo Phantom and the Limbo raiders (pillager /
+     *  vindicator / evoker / ravager / vex). They never attack one another, so phantoms and raiders fight the
+     *  village side by side instead of each other. */
     public static boolean isLimbo(Entity e) {
-        return e instanceof LimboPhantomEntity;
+        return e instanceof LimboPhantomEntity || e instanceof LimboRaider;
     }
 }

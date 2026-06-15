@@ -136,6 +136,39 @@ public final class ModEntities {
                     .fireImmune()
                     .build("limbo_phantom"));
 
+    // --- Limbo raiders: ghostly 3x versions of the vanilla raid roster (see LimboRaider) ----------
+    public static final RegistryObject<EntityType<LimboPillagerEntity>> LIMBO_PILLAGER = ENTITIES.register(
+            "limbo_pillager",
+            () -> EntityType.Builder.<LimboPillagerEntity>of(LimboPillagerEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)                 // vanilla pillager box; getDimensions() applies the 3x
+                    .clientTrackingRange(16)
+                    .build("limbo_pillager"));
+    public static final RegistryObject<EntityType<LimboVindicatorEntity>> LIMBO_VINDICATOR = ENTITIES.register(
+            "limbo_vindicator",
+            () -> EntityType.Builder.<LimboVindicatorEntity>of(LimboVindicatorEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)
+                    .clientTrackingRange(16)
+                    .build("limbo_vindicator"));
+    public static final RegistryObject<EntityType<LimboEvokerEntity>> LIMBO_EVOKER = ENTITIES.register(
+            "limbo_evoker",
+            () -> EntityType.Builder.<LimboEvokerEntity>of(LimboEvokerEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)
+                    .clientTrackingRange(16)
+                    .build("limbo_evoker"));
+    public static final RegistryObject<EntityType<LimboRavagerEntity>> LIMBO_RAVAGER = ENTITIES.register(
+            "limbo_ravager",
+            () -> EntityType.Builder.<LimboRavagerEntity>of(LimboRavagerEntity::new, MobCategory.MONSTER)
+                    .sized(1.95F, 2.2F)                 // vanilla ravager box; getDimensions() applies the 3x
+                    .clientTrackingRange(20)
+                    .build("limbo_ravager"));
+    public static final RegistryObject<EntityType<LimboVexEntity>> LIMBO_VEX = ENTITIES.register(
+            "limbo_vex",
+            () -> EntityType.Builder.<LimboVexEntity>of(LimboVexEntity::new, MobCategory.MONSTER)
+                    .sized(0.4F, 0.8F)                  // vanilla vex box; getDimensions() applies the 3x
+                    .clientTrackingRange(8)
+                    .fireImmune()
+                    .build("limbo_vex"));
+
     /** Emerald Virus arrow projectile -- infects whatever it hits. See {@link EmeraldVirusArrowEntity}. */
     public static final RegistryObject<EntityType<EmeraldVirusArrowEntity>> EMERALD_VIRUS_ARROW = ENTITIES.register(
             "emerald_virus_arrow",
@@ -168,6 +201,11 @@ public final class ModEntities {
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(LIMBO_PHANTOM.get(), LimboPhantomEntity.createAttributes().build());
+        event.put(LIMBO_PILLAGER.get(), LimboPillagerEntity.createAttributes().build());
+        event.put(LIMBO_VINDICATOR.get(), LimboVindicatorEntity.createAttributes().build());
+        event.put(LIMBO_EVOKER.get(), LimboEvokerEntity.createAttributes().build());
+        event.put(LIMBO_RAVAGER.get(), LimboRavagerEntity.createAttributes().build());
+        event.put(LIMBO_VEX.get(), LimboVexEntity.createAttributes().build());
         event.put(RICH_SHEEP.get(), net.minecraft.world.entity.animal.Sheep.createAttributes().build());
     }
 }
