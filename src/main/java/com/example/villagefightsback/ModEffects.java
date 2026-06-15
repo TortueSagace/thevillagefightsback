@@ -25,6 +25,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_DIARRHEA =
             EFFECTS.register("emerald_diarrhea", EmeraldDiarrheaEffect::new);
 
+    /** "Enemy of the Village": marks a player who attacked the village so defenders hunt them; 20 min, cleared
+     *  on death, refreshed by re-offending (see {@link EnemyOfVillageEffect} / {@link VillageEvents}). */
+    public static final RegistryObject<MobEffect> ENEMY_OF_THE_VILLAGE =
+            EFFECTS.register("enemy_of_the_village", EnemyOfVillageEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }

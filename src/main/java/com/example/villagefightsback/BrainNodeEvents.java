@@ -251,7 +251,7 @@ public final class BrainNodeEvents {
     private static boolean isAirStrikeEnemy(LivingEntity e, BrainNodeData data) {
         if (!e.isAlive()) return false;
         if (e instanceof net.minecraft.world.entity.player.Player p) {
-            return !p.isCreative() && !p.isSpectator() && data.isEnemy(p.getUUID());
+            return !p.isCreative() && !p.isSpectator() && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
         if (e instanceof UnleashedBrainNodeEntity) return false;        // the boss has its own arc
         if (isVillageAlly(e) || e instanceof EmeraldgerEntity || e instanceof WallDefenderEntity) return false;

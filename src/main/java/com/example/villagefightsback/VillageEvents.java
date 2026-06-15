@@ -394,7 +394,8 @@ public final class VillageEvents {
         }
     }
 
-    /** Player hits a villager -> the villager turns hostile toward that player for a few moments. */
+    /** Player hits a village defender -> the defender retaliates AND the player is branded an Enemy of the
+     *  Village (status + nearby rally + warning), same as mining a node. */
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         if (event.getEntity().level().isClientSide()) return;
@@ -409,62 +410,75 @@ public final class VillageEvents {
             return;
         }
 
-        // A player hurting a villager OR a wall defender makes that defender retaliate against them.
-        if (!(event.getEntity() instanceof Villager) && !(event.getEntity() instanceof WallDefenderEntity)) return;
+        // A player hurting a real (non-infected) village defender -- villager / guard / iron golem / wall
+        // defender -- brands them an Enemy of the Village. (Boss-faction golems like the vindictive gigachad
+        // are isAlly but infected, so hitting THEM doesn't make you a village enemy.)
         DamageSource src = event.getSource();
-        if (src.getEntity() instanceof Player player) {
-            CompoundTag data = event.getEntity().getPersistentData();
-            data.putUUID(NBT_AGGRO_UUID, player.getUUID());
-            data.putLong(NBT_AGGRO_UNTIL, event.getEntity().level().getGameTime() + AGGRO_TICKS);
+        if (src.getEntity() instanceof Player player
+                && isAlly(event.getEntity()) && !Factions.isInfected(event.getEntity())
+                && event.getEntity().level() instanceof ServerLevel sl) {
+            markVillageEnemy(sl, event.getEntity().blockPosition(), player);
+            // Immediate personal retaliation for the hurt villager / wall defender (snappier than the rally throttle).
+            if (event.getEntity() instanceof Villager || event.getEntity() instanceof WallDefenderEntity) {
+                CompoundTag data = event.getEntity().getPersistentData();
+                data.putUUID(NBT_AGGRO_UUID, player.getUUID());
+                data.putLong(NBT_AGGRO_UNTIL, sl.getGameTime() + AGGRO_TICKS);
+            }
         }
     }
 
     /** The current valid attack target for a mob: its recent retaliation target, or -- failing that -- the
-     *  nearest village ENEMY (a player who mined a node) within {@link #NODE_DEFEND_RADIUS}. Null if none. */
+     *  nearest "Enemy of the Village" player within {@link #NODE_DEFEND_RADIUS}. Null if none. */
     public static Player getAggroPlayer(Mob mob) {
         CompoundTag data = mob.getPersistentData();
         if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
             Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
             if (p != null && p.isAlive()) return p;
         }
-        // Village enemy list: a flagged player nearby is hunted on sight, even after the aggro window expires.
+        // Any nearby player carrying the Enemy of the Village status is hunted on sight (the status itself
+        // expires after 20 min or on death, so no separate bookkeeping is needed here).
         if (mob.level() instanceof ServerLevel sl) {
-            BrainNodeData bnd = BrainNodeData.get(sl.getServer());
-            if (bnd.hasEnemies()) {
-                Player best = null;
-                double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
-                for (Player p : sl.players()) {
-                    if (!p.isAlive() || p.isCreative() || p.isSpectator()) continue;
-                    if (!bnd.isEnemy(p.getUUID())) continue;
-                    double dsq = p.distanceToSqr(mob);
-                    if (dsq < bestSq) { bestSq = dsq; best = p; }
-                }
-                if (best != null) return best;
+            Player best = null;
+            double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
+            for (Player p : sl.players()) {
+                if (!p.isAlive() || p.isCreative() || p.isSpectator()) continue;
+                if (!p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get())) continue;
+                double dsq = p.distanceToSqr(mob);
+                if (dsq < bestSq) { bestSq = dsq; best = p; }
             }
+            if (best != null) return best;
         }
         return null;
     }
 
-    /** Allies within this radius of an attacked node rush the attacker. */
+    /** Allies within this radius of an attack rush the attacker. */
     public static final double NODE_DEFEND_RADIUS = 30.0;
     private static final int NODE_AGGRO_TICKS = 200;          // ...for ~10s per trigger
-    // Per-player throttle so sustained mining doesn't re-broadcast / re-rally every tick.
-    private static final java.util.Map<java.util.UUID, Long> lastNodeAttack = new java.util.HashMap<>();
+    public static final int ENEMY_STATUS_TICKS = 24000;      // Enemy of the Village lasts 20 minutes
+    // Per-player throttle so a sustained attack doesn't re-broadcast / re-rally every tick.
+    private static final java.util.Map<java.util.UUID, Long> lastEnemyTrigger = new java.util.HashMap<>();
 
     /**
-     * A player started mining a Village Brain Node or an Emerald Node: flag them as a village enemy (the
-     * defenders then hunt them on sight -- see {@link #getAggroPlayer}), rally every defender within
-     * {@link #NODE_DEFEND_RADIUS} blocks to attack them now, and warn the server. Throttled per player (~2s).
+     * A player attacked the village -- by mining a Village Brain Node / Emerald Node, or by harming a
+     * villager / guard / iron golem. Brand them an {@link ModEffects#ENEMY_OF_THE_VILLAGE} for 20 min (always
+     * refreshed, so re-offending resets the timer; it clears on death), rally every defender within
+     * {@link #NODE_DEFEND_RADIUS} of {@code center}, and -- the first time they become an enemy -- warn the
+     * server. The rally + broadcast are throttled per player (~2s); the status refresh is not.
      */
-    public static void onNodeAttacked(ServerLevel level, BlockPos pos, Player player) {
-        long now = level.getGameTime();
-        Long last = lastNodeAttack.get(player.getUUID());
-        if (last != null && now - last < 40L) return;        // at most once per ~2s per player
-        lastNodeAttack.put(player.getUUID(), now);
+    public static void markVillageEnemy(ServerLevel level, BlockPos center, Player player) {
+        if (player.isCreative() || player.isSpectator()) return; // admins/testers aren't village enemies
+        boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD.
+        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                ModEffects.ENEMY_OF_THE_VILLAGE.get(), ENEMY_STATUS_TICKS, 0, false, false, true));
 
-        boolean newEnemy = BrainNodeData.get(level.getServer()).addEnemy(player.getUUID());
-        aggroDefendersAgainst(level, pos, NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
-        if (newEnemy) {
+        long now = level.getGameTime();
+        Long last = lastEnemyTrigger.get(player.getUUID());
+        if (last != null && now - last < 40L) return;        // rally + broadcast at most once per ~2s per player
+        lastEnemyTrigger.put(player.getUUID(), now);
+
+        aggroDefendersAgainst(level, center, NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
+        if (!wasEnemy) {
             level.getServer().getPlayerList().broadcastSystemMessage(
                     net.minecraft.network.chat.Component.literal(
                             "§c" + player.getName().getString() + " attacks the village!"), false);

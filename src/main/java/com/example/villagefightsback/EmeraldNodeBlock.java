@@ -25,7 +25,7 @@ public class EmeraldNodeBlock extends Block {
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.onNodeAttacked((ServerLevel) level, pos, player);
+        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
     }
 
     @Override

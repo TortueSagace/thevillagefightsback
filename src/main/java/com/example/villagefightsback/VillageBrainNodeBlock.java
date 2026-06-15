@@ -108,13 +108,13 @@ public class VillageBrainNodeBlock extends Block {
     /**
      * Anti-grief: the instant any player starts mining the brain node, the whole village turns on them (and the
      * miner is added to the village enemy list + a warning shown). This stops players from mining + replacing
-     * the brain node to farm bonuses. See {@link VillageEvents#onNodeAttacked} (throttled per player).
+     * the brain node to farm bonuses. See {@link VillageEvents#markVillageEnemy} (throttled per player).
      */
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.onNodeAttacked((ServerLevel) level, pos, player);
+        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
     }
 
     @Override
