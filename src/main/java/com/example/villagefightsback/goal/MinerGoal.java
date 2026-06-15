@@ -58,6 +58,7 @@ public class MinerGoal extends Goal {
     private final java.util.HashMap<Long, Long> avoid = new java.util.HashMap<>(); // unreachable rich -> expiry
     private BlockPos brainNode;        // delivery target
     private int repathTimer;
+    private BlockPos navTarget;        // block the navigation last got a path to (avoids redundant A* recompute)
 
     // progressive dig (mirrors WallBuildGoal)
     private BlockPos digPos;
@@ -118,6 +119,7 @@ public class MinerGoal extends Goal {
     @Override
     public void stop() {
         villager.getNavigation().stop();
+        navTarget = null; // force a fresh path next time we start pursuing
         clearDig();
         // keep the emerald if carrying; it must reach the brain node or drop on death.
     }
@@ -231,7 +233,17 @@ public class MinerGoal extends Goal {
 
     // --- navigation (with an underwater swim nudge) ---
     private void navigate(BlockPos to) {
-        if (--repathTimer <= 0) {
+        // Only (re)compute a path when we don't already have a live one heading to this target. Recomputing a
+        // full A* every REPATH ticks for a STATIC target is what made a crowd of miners spike the server tick
+        // (and stutter every mob). The navigation walks the existing path on its own; we just refresh it when
+        // the target changes, or -- throttled -- when it finishes / fails (so an unreachable block can't pathfind
+        // every tick before digTowards takes over).
+        boolean sameTarget = to.equals(navTarget);
+        if (!sameTarget) {
+            villager.getNavigation().moveTo(to.getX() + 0.5, to.getY() + 0.5, to.getZ() + 0.5, SPEED);
+            navTarget = to.immutable();
+            repathTimer = REPATH;
+        } else if (villager.getNavigation().isDone() && --repathTimer <= 0) {
             villager.getNavigation().moveTo(to.getX() + 0.5, to.getY() + 0.5, to.getZ() + 0.5, SPEED);
             repathTimer = REPATH;
         }
