@@ -441,6 +441,7 @@ public final class BrainNodeEvents {
     private static final long OUTER_SETTLE_GRACE = 200L; // require this many ticks of expansion-quiet before fixing the plan
     private static final long OUTER_MAX_WAIT = 6000L;   // ...but never wait longer than this (a stuck settler/build can't block it)
     private static final int OUTER_SCAN_RADIUS = 140;   // larger survey so the obsidian ring encloses the expansion
+    private static final int OUTER_RAISE_BATCH = 256;   // cells the brain node lays per pass (every TICK_INTERVAL) raising the outer wall
     private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: earliest gametime to survey
     private static final Map<GlobalPos, Long> outerWallSince = new HashMap<>();   // transient: gametime we first became eligible
 
@@ -486,18 +487,12 @@ public final class BrainNodeEvents {
                 continue;
             }
             if (!plan.isComplete()) {
-                double radius = Math.max(ENSURE_GOAL_RADIUS, Math.sqrt(plan.joinRadiusSqr()));
-                List<Villager> nearby = level.getEntitiesOfClass(Villager.class,
-                        new AABB(gp.pos()).inflate(radius), v -> v.isAlive());
-                for (Villager v : nearby) {
-                    VillageEvents.ensureWallBuildGoal(v);
-                    if (BuilderRole.isBuilder(v) && v.isSleeping()) v.stopSleeping();
-                }
-                manageBuilders(level, gp.pos(), nearby, plan, true); // outer wall: dispatch builders to their gate
-                sealStuckHoles(level, plan);
+                // The stage-3 outer obsidian ring is convex and sits far out in wilderness, where villager
+                // builders can't reach it and don't dig (they'd just stack a gate and give up). So the brain
+                // node raises it ITSELF: a batch of cells per pass, lowest course first, clearing soft terrain
+                // in the way. This always completes, regardless of the terrain the convex ring crosses.
+                plan.raiseDirectly(level, OUTER_RAISE_BATCH);
                 if (plan.recheckCompletion(level)) {
-                    cleanupScaffolds(level, plan);
-                    for (Villager v : nearby) BuilderRole.demote(v);
                     com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
                     if (!data.areOuterDefendersBuilt(gp)) {     // instantly summon the outer gate turrets
                         for (BlockPos gate : plan.gates()) buildDefenderShell(level, gate);

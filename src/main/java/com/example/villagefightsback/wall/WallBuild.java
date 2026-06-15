@@ -38,14 +38,10 @@ public final class WallBuild {
         BrainNodeData data = BrainNodeData.get(level.getServer());
         WallPlan best = null;
         double bestD = Double.MAX_VALUE;
-        // Consider BOTH the inner (cobblestone) and the stage-3 outer (obsidian) walls. The inner wall is
-        // complete (and skipped) by the time an outer wall is being built, so builders flow onto the outer one.
+        // Villagers build ONLY the inner (cobblestone) wall. The stage-3 outer obsidian ring is raised by the
+        // brain node itself (WallPlan.raiseDirectly) -- it sits far out in wilderness, convex, where villagers
+        // can't reach and don't dig, so they'd just stack a gate and give up. So the outer plans are NOT offered.
         for (WallPlan p : data.wallPlans()) {
-            if (p.isComplete() || !p.brainNode().dimension().equals(level.dimension())) continue;
-            double d = p.distSqrTo(near);
-            if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }
-        }
-        for (WallPlan p : data.outerWallPlans()) {
             if (p.isComplete() || !p.brainNode().dimension().equals(level.dimension())) continue;
             double d = p.distSqrTo(near);
             if (d < bestD && d <= p.joinRadiusSqr()) { bestD = d; best = p; }

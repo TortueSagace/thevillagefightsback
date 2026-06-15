@@ -235,6 +235,34 @@ public final class WallPlan {
     }
 
     /**
+     * The brain node raises this wall ITSELF (no villager builders): directly place up to {@code max} unbuilt
+     * cells, lowest course first, clearing any soft block in the way (anything that isn't already a satisfied
+     * gap, i.e. hardness &lt; 25). Used for the stage-3 outer obsidian ring, which sits far out in wilderness
+     * where villagers can't reach a convex obsidian wall (and no longer dig), so soft-terrain cells would
+     * otherwise leave it forever incomplete. Returns the number of cells placed.
+     */
+    public int raiseDirectly(ServerLevel level, int max) {
+        int placed = 0;
+        int c = lowestIncompleteCourse(level);
+        while (c < COURSES && placed < max) {
+            for (int i = courseStart[c]; i < courseStart[c + 1] && placed < max; i++) {
+                WallBlock wb = blocks.get(i);
+                BlockPos pos = wb.pos();
+                if (!level.isLoaded(pos) || satisfied(level, wb)) continue;
+                // A standing torch needs the cap below it (placed earlier this same pass) -- skip till it's there.
+                if (wb.type() == WallBlock.BlockType.STANDING_TORCH
+                        && level.getBlockState(pos.below()).canBeReplaced()) continue;
+                if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
+                level.setBlock(pos,
+                        net.minecraft.world.level.block.Block.updateFromNeighbourShapes(wb.toState(), level, pos), 3);
+                placed++;
+            }
+            c++; // advance to the next course (its supports are now in place)
+        }
+        return placed;
+    }
+
+    /**
      * A course block is buildable only once there is something to stand/build on directly below it (the
      * course beneath already built, or the ground for course 0). This makes each layer follow the one under
      * it -- the "reuse the previous layer" conga -- and stops upper-course builders from trying to pillar up
