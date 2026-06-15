@@ -3,7 +3,7 @@
     "icon": {
       "item": "thevillagefightsback:fake_obsidian"
     },
-    "title": "Expansion Phase",
+    "title": "Do NOT build a fake obsidian portal",
     "description": "Evolve a brain node to the Expansion Phase (stage 3).",
     "frame": "goal",
     "show_toast": true,

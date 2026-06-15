@@ -815,10 +815,7 @@ public final class BrainNodeEvents {
             ServerPlayer p = level.getServer().getPlayerList().getPlayer(founder);
             if (p != null) rewardHero(p);
         }
-        broadcast(level.getServer(), "§5A Village Brain Node has risen at the heart of a village §8(near "
-                + spot.getX() + ", " + spot.getY() + ", " + spot.getZ() + ")§5.");
-        broadcast(level.getServer(), "§eRight-click on the Village Brain Node anytime for useful information. "
-                + "§cPROTECT THE BRAIN AND ITS VILLAGERS AT ANY COST, OR FACE THE CONSEQUENCES.");
+        broadcast(level.getServer(), phaseBanner(1)); // "SETTLEMENT PHASE"
         playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
@@ -874,8 +871,7 @@ public final class BrainNodeEvents {
             if (income <= 0) continue;
             int gained = econ.addEmeralds(income);
             if (gained > 0) {
-                broadcast(server, "§6A village evolved to level §e" + econ.getLevel()
-                        + (econ.isMaxLevel() ? " §6(max)!" : "§6!"));
+                broadcast(server, phaseBanner(econ.getLevel())); // FERTILIZATION / EXPANSION / CULMINATION PHASE
             }
         }
     }
@@ -1069,5 +1065,16 @@ public final class BrainNodeEvents {
 
     private static void broadcast(MinecraftServer server, String message) {
         server.getPlayerList().broadcastSystemMessage(Component.literal(message), false);
+    }
+
+    /** The short stage-transition banner shown when a brain node reaches {@code level}. Stage 1 keeps the
+     *  purple of the old "has risen" line; stages 2-4 keep the gold of the old "evolved" line. */
+    private static String phaseBanner(int level) {
+        return switch (level) {
+            case 1 -> "§5SETTLEMENT PHASE";
+            case 2 -> "§6FERTILIZATION PHASE";
+            case 3 -> "§6EXPANSION PHASE";
+            default -> "§6CULMINATION PHASE"; // level 4 (max)
+        };
     }
 }

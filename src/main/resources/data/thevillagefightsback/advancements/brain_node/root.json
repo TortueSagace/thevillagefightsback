@@ -3,7 +3,7 @@
     "icon": {
       "item": "thevillagefightsback:village_brain_node"
     },
-    "title": "Settlement Phase",
+    "title": "The birth of a brain",
     "description": "Awaken a Village Brain Node.",
     "frame": "task",
     "show_toast": true,

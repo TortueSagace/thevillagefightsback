@@ -3,7 +3,7 @@
     "icon": {
       "item": "thevillagefightsback:rich_dirt"
     },
-    "title": "Fertilization Phase",
+    "title": "Why so green?",
     "description": "Evolve a brain node to the Fertilization Phase (stage 2).",
     "frame": "task",
     "show_toast": true,
