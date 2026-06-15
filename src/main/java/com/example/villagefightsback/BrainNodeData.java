@@ -49,6 +49,7 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> domeBuilt = new HashSet<>();       // brainNodes whose level-4 glass dome is placed
     private final Set<GlobalPos> expanded = new HashSet<>();        // brainNodes that have run their stage-3 expansion
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
+    private final Set<java.util.UUID> enemies = new HashSet<>();    // players who attacked a node -> defenders hunt them
 
     public BrainNodeData() {}
 
@@ -182,6 +183,21 @@ public class BrainNodeData extends SavedData {
         return u;
     }
 
+    // --- village enemies: players who started mining a Village Brain Node or Emerald Node ---
+
+    /** Flag {@code id} as a village enemy; returns true if they weren't already on the list. */
+    public boolean addEnemy(java.util.UUID id) {
+        if (enemies.add(id)) { setDirty(); return true; }
+        return false;
+    }
+    public boolean isEnemy(java.util.UUID id) { return enemies.contains(id); }
+    public boolean hasEnemies() { return !enemies.isEmpty(); }
+    /** Forgive a player (removes them from the enemy list); returns true if they were on it. */
+    public boolean removeEnemy(java.util.UUID id) {
+        if (enemies.remove(id)) { setDirty(); return true; }
+        return false;
+    }
+
     // --- persistence ---
 
     public static BrainNodeData load(CompoundTag tag) {
@@ -228,6 +244,10 @@ public class BrainNodeData extends SavedData {
             ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
             d.bellPlacers.put(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))), c.getUUID("player"));
         }
+        ListTag enemyList = tag.getList("enemies", Tag.TAG_COMPOUND);
+        for (int i = 0; i < enemyList.size(); i++) {
+            d.enemies.add(enemyList.getCompound(i).getUUID("id"));
+        }
         return d;
     }
 
@@ -266,6 +286,13 @@ public class BrainNodeData extends SavedData {
             bells.add(c);
         }
         tag.put("bellPlacers", bells);
+        ListTag enemyList = new ListTag();
+        for (java.util.UUID id : enemies) {
+            CompoundTag c = new CompoundTag();
+            c.putUUID("id", id);
+            enemyList.add(c);
+        }
+        tag.put("enemies", enemyList);
         return tag;
     }
 

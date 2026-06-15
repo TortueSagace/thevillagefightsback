@@ -13,9 +13,6 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class LimboNest {
     private LimboNest() {}
 
-    /** Per-bowl-block chance to be ancient (rather than modern) debris. */
-    private static final float ANCIENT_CHANCE = 0.10F;
-
     /** Build a nest centred (on the floor) inside a Limbo cube. */
     public static void placeInCubeCenter(ServerLevel level, LimboCubes.Cube c) {
         int cx = c.center(c.x0());
@@ -31,33 +28,25 @@ public final class LimboNest {
         populate(level, cx, topY + 1, cz, seedFor(cx, topY, cz));
     }
 
-    /** A 5x5 debris bowl (90% modern / 10% ancient debris): flat floor with a raised rim (corners highest) so
-     *  eggs nestle in the middle. The modern/ancient mix is deterministic per position (stable on regen). */
+    /** A 5x5 bowl built entirely of ancient debris: flat floor with a raised rim (corners highest) so eggs
+     *  nestle in the middle. */
     private static void buildBowl(ServerLevel level, int cx, int baseY, int cz) {
-        BlockState ancient = Blocks.ANCIENT_DEBRIS.defaultBlockState();
-        BlockState modern = ModBlocks.MODERN_DEBRIS.get().defaultBlockState();
-        net.minecraft.util.RandomSource r =
-                net.minecraft.util.RandomSource.create(seedFor(cx, baseY, cz) ^ 0x4D0DE15L);
+        BlockState debris = Blocks.ANCIENT_DEBRIS.defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 int x = cx + dx, z = cz + dz;
-                level.setBlock(m.set(x, baseY, z), debris(r, ancient, modern), 2); // floor
+                level.setBlock(m.set(x, baseY, z), debris, 2); // floor
                 int ring = Math.max(Math.abs(dx), Math.abs(dz));          // 0 centre .. 2 edge
                 int rim = ring == 2 ? 2 : ring == 1 ? 1 : 0;               // raised lip -> concave bowl
                 for (int h = 1; h <= rim; h++) {
                     // only the outer ring gets walls (keep the inner 3x3 open for eggs)
                     if (ring == 2 || (ring == 1 && h == 1 && (Math.abs(dx) == 1 && Math.abs(dz) == 1))) {
-                        level.setBlock(m.set(x, baseY + h, z), debris(r, ancient, modern), 2);
+                        level.setBlock(m.set(x, baseY + h, z), debris, 2);
                     }
                 }
             }
         }
-    }
-
-    /** 90% modern debris, 10% ancient debris. */
-    private static BlockState debris(net.minecraft.util.RandomSource r, BlockState ancient, BlockState modern) {
-        return r.nextFloat() < ANCIENT_CHANCE ? ancient : modern;
     }
 
     /** Drop up to 3 Limbo Eggs into the 3x3 hollow of the bowl, at deterministic interior cells. */

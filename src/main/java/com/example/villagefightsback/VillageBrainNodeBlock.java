@@ -105,24 +105,16 @@ public class VillageBrainNodeBlock extends Block {
                 + " §7emeralds to level §e" + (econ.getLevel() + 1));
     }
 
-    // Global throttle so sustained mining doesn't re-aggro/spam the message every tick.
-    private static long lastAttackResponse = Long.MIN_VALUE;
-
     /**
-     * Anti-grief: the instant any player starts mining the brain node, the whole village turns on them and a
-     * warning is shown. This stops players from mining + replacing the brain node to farm bonuses. Throttled.
+     * Anti-grief: the instant any player starts mining the brain node, the whole village turns on them (and the
+     * miner is added to the village enemy list + a warning shown). This stops players from mining + replacing
+     * the brain node to farm bonuses. See {@link VillageEvents#onNodeAttacked} (throttled per player).
      */
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        ServerLevel sl = (ServerLevel) level;
-        long now = sl.getGameTime();
-        if (now - lastAttackResponse < 40L) return; // at most once per ~2s
-        lastAttackResponse = now;
-        VillageEvents.aggroDefendersAgainst(sl, pos, 100.0, player, 200); // village attacks the griefer ~10s
-        sl.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal("§cThe brain node is attacked!"), false);
+        VillageEvents.onNodeAttacked((ServerLevel) level, pos, player);
     }
 
     @Override

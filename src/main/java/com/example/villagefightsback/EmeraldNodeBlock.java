@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,6 +18,14 @@ import net.minecraft.world.level.block.state.BlockState;
 public class EmeraldNodeBlock extends Block {
     public EmeraldNodeBlock(Properties properties) {
         super(properties);
+    }
+
+    /** Mining an Emerald Node turns the village on the miner too -- same anti-grief response as the brain node. */
+    @Override
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
+        super.attack(state, level, pos, player);
+        if (level.isClientSide) return;
+        VillageEvents.onNodeAttacked((ServerLevel) level, pos, player);
     }
 
     @Override

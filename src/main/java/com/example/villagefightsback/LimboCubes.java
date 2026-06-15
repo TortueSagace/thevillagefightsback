@@ -9,7 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * The floating empty bedrock cubes that dot the Limbo. Placement is deterministic from the world seed + chunk
  * coords, so a given chunk always yields the same cube (or none). Cubes are hollow bedrock shells of varying
- * size, sparsely encrusted with Forgotten Glowstone (like moss on stone). The big ones get a nest
+ * size whose OUTER surface is encrusted with Forgotten Glowstone clumps (like moss/vines creeping over stone --
+ * the bedrock shell itself is never touched). The big ones get a nest
  * ({@link LimboNest}); the central cube ({@link LimboDimension}) is built separately and excluded here.
  */
 public final class LimboCubes {
@@ -19,8 +20,8 @@ public final class LimboCubes {
     private static final int RARITY = 9;
     private static final int MIN_SIZE = 5, MAX_SIZE = 15; // <=16 so a cube fits inside its origin chunk
     private static final int MIN_Y = 24, MAX_Y = 232;
-    /** Fraction of shell blocks swapped for Forgotten Glowstone. */
-    private static final float GLOWSTONE_CHANCE = 0.12F;
+    /** Per exterior-face cell, the chance to stick a Forgotten Glowstone clump onto the outside surface. */
+    private static final float GLOWSTONE_CHANCE = 0.15F;
 
     /** A cube: its minimum corner + edge length (blocks). */
     public record Cube(int x0, int y0, int z0, int size) {
@@ -50,29 +51,59 @@ public final class LimboCubes {
         return new Cube(x0, y0, z0, size);
     }
 
-    /** Build a hollow bedrock cube with sparse Forgotten Glowstone, + a nest if it is big enough. */
+    /** Build a hollow all-bedrock cube, encrust its OUTER surface with Forgotten Glowstone clumps, + a nest if
+     *  it is big enough. */
     public static void build(ServerLevel level, Cube c) {
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
-        BlockState glow = ModBlocks.FORGOTTEN_GLOWSTONE.get().defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
         RandomSource r = RandomSource.create((long) c.x0 * 132871 ^ (long) c.y0 * 7919 ^ (long) c.z0 * 40503);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         int x1 = c.x0 + c.size - 1, y1 = c.y0 + c.size - 1, z1 = c.z0 + c.size - 1;
+        // 1. Solid bedrock shell, hollow interior -- the shell is pure bedrock, never carved.
         for (int x = c.x0; x <= x1; x++) {
             for (int y = c.y0; y <= y1; y++) {
                 for (int z = c.z0; z <= z1; z++) {
                     boolean shell = x == c.x0 || x == x1 || y == c.y0 || y == y1 || z == c.z0 || z == z1;
-                    m.set(x, y, z);
-                    if (shell) {
-                        level.setBlock(m, r.nextFloat() < GLOWSTONE_CHANCE ? glow : bedrock, 2);
-                    } else {
-                        level.setBlock(m, air, 2);
-                    }
+                    level.setBlock(m.set(x, y, z), shell ? bedrock : air, 2);
                 }
             }
         }
+        // 2. Encrust the OUTSIDE: sparse Forgotten Glowstone clumps stuck to the exterior faces, like moss/vines
+        //    covering the surface -- placed only into the empty void air, never replacing bedrock or structures.
+        encrustExterior(level, c, x1, y1, z1, r, m);
         if (c.hasNest()) {
             LimboNest.placeInCubeCenter(level, c); // ancient-debris bowl + limbo eggs (cubes >= 7)
         }
+    }
+
+    /** Roll every cell of all six exterior faces and stick a glowstone clump into the air just outside it. */
+    private static void encrustExterior(ServerLevel level, Cube c, int x1, int y1, int z1,
+                                        RandomSource r, BlockPos.MutableBlockPos m) {
+        BlockState glow = ModBlocks.FORGOTTEN_GLOWSTONE.get().defaultBlockState();
+        for (int x = c.x0(); x <= x1; x++) {
+            for (int y = c.y0(); y <= y1; y++) {
+                tryGlow(level, m, x, y, c.z0() - 1, glow, r); // -Z face
+                tryGlow(level, m, x, y, z1 + 1, glow, r);     // +Z face
+            }
+        }
+        for (int x = c.x0(); x <= x1; x++) {
+            for (int z = c.z0(); z <= z1; z++) {
+                tryGlow(level, m, x, c.y0() - 1, z, glow, r); // bottom (-Y) face
+                tryGlow(level, m, x, y1 + 1, z, glow, r);     // top (+Y) face
+            }
+        }
+        for (int y = c.y0(); y <= y1; y++) {
+            for (int z = c.z0(); z <= z1; z++) {
+                tryGlow(level, m, c.x0() - 1, y, z, glow, r); // -X face
+                tryGlow(level, m, x1 + 1, y, z, glow, r);     // +X face
+            }
+        }
+    }
+
+    /** With {@link #GLOWSTONE_CHANCE}, stick a glowstone clump at (x,y,z) -- but only into empty void air. */
+    private static void tryGlow(ServerLevel level, BlockPos.MutableBlockPos m, int x, int y, int z,
+                                BlockState glow, RandomSource r) {
+        if (r.nextFloat() >= GLOWSTONE_CHANCE) return;
+        if (level.getBlockState(m.set(x, y, z)).isAir()) level.setBlock(m, glow, 2);
     }
 }

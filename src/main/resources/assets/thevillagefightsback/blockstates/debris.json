@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "": [
+      { "model": "thevillagefightsback:block/debris" },
+      { "model": "thevillagefightsback:block/debris", "y": 90 },
+      { "model": "thevillagefightsback:block/debris", "y": 180 },
+      { "model": "thevillagefightsback:block/debris", "y": 270 }
+    ]
+  }
+}

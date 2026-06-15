@@ -415,13 +415,56 @@ public final class VillageEvents {
         }
     }
 
-    /** The current valid retaliation target for a mob, or null if none / expired / gone. */
+    /** The current valid attack target for a mob: its recent retaliation target, or -- failing that -- the
+     *  nearest village ENEMY (a player who mined a node) within {@link #NODE_DEFEND_RADIUS}. Null if none. */
     public static Player getAggroPlayer(Mob mob) {
         CompoundTag data = mob.getPersistentData();
-        if (!data.hasUUID(NBT_AGGRO_UUID)) return null;
-        if (mob.level().getGameTime() > data.getLong(NBT_AGGRO_UNTIL)) return null;
-        Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
-        return (p != null && p.isAlive()) ? p : null;
+        if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
+            Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
+            if (p != null && p.isAlive()) return p;
+        }
+        // Village enemy list: a flagged player nearby is hunted on sight, even after the aggro window expires.
+        if (mob.level() instanceof ServerLevel sl) {
+            BrainNodeData bnd = BrainNodeData.get(sl.getServer());
+            if (bnd.hasEnemies()) {
+                Player best = null;
+                double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
+                for (Player p : sl.players()) {
+                    if (!p.isAlive() || p.isCreative() || p.isSpectator()) continue;
+                    if (!bnd.isEnemy(p.getUUID())) continue;
+                    double dsq = p.distanceToSqr(mob);
+                    if (dsq < bestSq) { bestSq = dsq; best = p; }
+                }
+                if (best != null) return best;
+            }
+        }
+        return null;
+    }
+
+    /** Allies within this radius of an attacked node rush the attacker. */
+    public static final double NODE_DEFEND_RADIUS = 30.0;
+    private static final int NODE_AGGRO_TICKS = 200;          // ...for ~10s per trigger
+    // Per-player throttle so sustained mining doesn't re-broadcast / re-rally every tick.
+    private static final java.util.Map<java.util.UUID, Long> lastNodeAttack = new java.util.HashMap<>();
+
+    /**
+     * A player started mining a Village Brain Node or an Emerald Node: flag them as a village enemy (the
+     * defenders then hunt them on sight -- see {@link #getAggroPlayer}), rally every defender within
+     * {@link #NODE_DEFEND_RADIUS} blocks to attack them now, and warn the server. Throttled per player (~2s).
+     */
+    public static void onNodeAttacked(ServerLevel level, BlockPos pos, Player player) {
+        long now = level.getGameTime();
+        Long last = lastNodeAttack.get(player.getUUID());
+        if (last != null && now - last < 40L) return;        // at most once per ~2s per player
+        lastNodeAttack.put(player.getUUID(), now);
+
+        boolean newEnemy = BrainNodeData.get(level.getServer()).addEnemy(player.getUUID());
+        aggroDefendersAgainst(level, pos, NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
+        if (newEnemy) {
+            level.getServer().getPlayerList().broadcastSystemMessage(
+                    net.minecraft.network.chat.Component.literal(
+                            "§c" + player.getName().getString() + " attacks the village!"), false);
+        }
     }
 
     /**

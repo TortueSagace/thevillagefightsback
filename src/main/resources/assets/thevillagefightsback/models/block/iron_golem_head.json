@@ -20,8 +20,8 @@
     },
     {
       "__comment": "nose (2x4x2, texOffs 24,0) on the north (face) side",
-      "from": [7, 2, 2],
-      "to": [9, 6, 4],
+      "from": [7, 1, 2],
+      "to": [9, 5, 4],
       "faces": {
         "north": { "uv": [3.25, 0.25, 3.5, 0.75], "texture": "#golem" },
         "south": { "uv": [3.75, 0.25, 4, 0.75], "texture": "#golem" },

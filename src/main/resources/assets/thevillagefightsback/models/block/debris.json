@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "thevillagefightsback:block/debris_top",
+    "side": "thevillagefightsback:block/debris_side"
+  }
+}
