@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:limbo_membrane"
+    },
+    "title": "Flesh of the Phantom",
+    "description": "Collect a Limbo Membrane.",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:limbo_membrane"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/root"
+}

@@ -61,6 +61,9 @@ public final class LimboRaidManager {
     private static final Map<Raid, ServerLevel> limboRaids = new IdentityHashMap<>();
     /** Per Limbo raid: how many spawned wave-groups we have already reinforced with phantoms. */
     private static final Map<Raid, Integer> phantomGroups = new IdentityHashMap<>();
+    /** Limbo raids whose guaranteed final-wave Limbo Evoker has already been spawned. */
+    private static final java.util.Set<Raid> finalEvokerDone =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     /** Vanilla raiders that spawned into a Limbo raid, awaiting swap (processed next tick to avoid mid-spawn CME). */
     private static final List<Raider> pendingSwaps = new ArrayList<>();
 
@@ -75,6 +78,7 @@ public final class LimboRaidManager {
         if (server.getTickCount() % 20 == 0) scanPlayers(server); // omen + village-return once a second
         limboRaids.keySet().removeIf(r -> !r.isActive()); // forget finished raids
         phantomGroups.keySet().removeIf(r -> !r.isActive());
+        finalEvokerDone.removeIf(r -> !r.isActive());
         ModProfiler.add("limbo.raid", _p);
     }
 
@@ -116,15 +120,21 @@ public final class LimboRaidManager {
         }
     }
 
-    /** Each time the vanilla raid spawns a new wave-group, drop in a few Limbo Phantoms alongside it. */
+    /** Each time the vanilla raid spawns a new wave-group, drop in a few Limbo Phantoms alongside it, and on the
+     *  FINAL wave always add a Limbo Evoker (joined to the raid, so it must be beaten to win). */
     private static void reinforceWaves() {
         for (Map.Entry<Raid, ServerLevel> e : limboRaids.entrySet()) {
             Raid raid = e.getKey();
+            ServerLevel level = e.getValue();
             if (!raid.isActive()) continue;
             int groups = raid.getGroupsSpawned();
             if (groups > phantomGroups.getOrDefault(raid, 0)) {
                 phantomGroups.put(raid, groups);
-                spawnPhantoms(e.getValue(), raid.getCenter(), 2 + e.getValue().getRandom().nextInt(2));
+                BlockPos center = raid.getCenter();
+                spawnPhantoms(level, center, 2 + level.getRandom().nextInt(2));
+                if (groups >= raid.getNumGroups(level.getDifficulty()) && finalEvokerDone.add(raid)) {
+                    spawnFinalEvoker(level, raid, center, groups);
+                }
             }
         }
     }
@@ -197,6 +207,19 @@ public final class LimboRaidManager {
             ph.finalizeSpawn(level, level.getCurrentDifficultyAt(ph.blockPosition()), MobSpawnType.EVENT, null, null);
             level.addFreshEntity(ph);
         }
+    }
+
+    /** The final wave always brings a Limbo Evoker, joined to the raid (so it counts toward the bar and must be
+     *  beaten to win). Spawned on the surface just outside the village centre. */
+    private static void spawnFinalEvoker(ServerLevel level, Raid raid, BlockPos center, int wave) {
+        LimboEvokerEntity ev = ModEntities.LIMBO_EVOKER.get().create(level);
+        if (ev == null) return;
+        double a = level.getRandom().nextDouble() * Math.PI * 2.0;
+        int r = 8 + level.getRandom().nextInt(8);
+        int x = center.getX() + (int) Math.round(Math.cos(a) * r);
+        int z = center.getZ() + (int) Math.round(Math.sin(a) * r);
+        BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, center.getY(), z));
+        raid.joinRaid(wave, ev, surf, false); // positions + finalizes + buffs + adds it to the level as a member
     }
 
     /** The nearest village center (a VILLAGE POI, else the nearest villager) within {@link #VILLAGE_SCAN}. */
