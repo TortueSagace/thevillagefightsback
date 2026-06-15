@@ -47,7 +47,8 @@ public final class ModBlocks {
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(50.0F, 1200.0F)              // obsidian toughness
                     .sound(SoundType.STONE)
-                    .lightLevel(s -> s.getValue(VillageBrainNodeBlock.CHARGES) * 3)));
+                    // Glows at least as bright as a fertile block (FERTILE_LIGHT = 5), brighter as it levels up.
+                    .lightLevel(s -> Math.max(5, s.getValue(VillageBrainNodeBlock.CHARGES) * 3))));
 
     public static final RegistryObject<Item> VILLAGE_BRAIN_NODE_ITEM = ITEMS.register(
             "village_brain_node",

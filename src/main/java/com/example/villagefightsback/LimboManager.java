@@ -213,7 +213,12 @@ public final class LimboManager {
         if (limbo == null || dest == null) return;
         Entity e = limbo.getEntity(entry.creature);
         if (e == null || !e.isAlive()) return;
-        if (e instanceof net.minecraft.world.entity.LivingEntity le) le.removeAllEffects(); // leave limbo clean of effects
+        if (e instanceof net.minecraft.world.entity.LivingEntity le) {
+            // Strip ONLY the Limbo raid omens so they don't leak into the overworld; keep every other effect
+            // (potions, buffs, etc.) -- previously this removed ALL effects, wiping the player's buffs on return.
+            le.removeEffect(ModEffects.VERY_BAD_OMEN.get());
+            le.removeEffect(net.minecraft.world.effect.MobEffects.BAD_OMEN);
+        }
         double x = entry.gravelPos.getX() + 0.5, y = entry.gravelPos.getY(), z = entry.gravelPos.getZ() + 0.5;
         if (e instanceof ServerPlayer sp) {
             sp.teleportTo(dest, x, y, z, sp.getYRot(), sp.getXRot());

@@ -55,15 +55,6 @@ public class VillageBrainNodeBlock extends Block {
         BrainNodeData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
         ItemStack held = player.getItemInHand(hand);
 
-        // DEBUG/admin: right-click with a stick to instantly paste the computed wall (bypasses builders).
-        if (held.is(Items.STICK)) {
-            int n = BrainNodeEvents.debugPasteWall(sl, pos);
-            player.displayClientMessage(Component.literal(n < 0
-                    ? "§c[debug] no wall: not enough beds nearby"
-                    : "§e[debug] pasted §a" + n + "§e wall blocks"), false);
-            return InteractionResult.CONSUME;
-        }
-
         if (held.is(Items.EMERALD)) {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
