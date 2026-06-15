@@ -6,7 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,9 +21,8 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Worn-Limbo-gear effects.
  *  - Per worn piece: a glowing green shimmer (also for a held Limbo Pickaxe).
- *  - FULL SET bonuses: total immunity (all damage except a void-fall / {@code /kill}), fire immunity, fall
- *    immunity, no harmful status effects, Limbo Phantoms turn neutral, and the keybound green banish beam
- *    (every 30s) with its HUD cooldown ({@link LimboAbility}).
+ *  - FULL SET bonuses: fire immunity, fall immunity, no harmful status effects, Limbo Phantoms turn neutral,
+ *    and the keybound green banish beam (every 30s) with its HUD cooldown ({@link LimboAbility}).
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboGearEvents {
@@ -69,15 +68,15 @@ public final class LimboGearEvents {
         for (var eff : harmful) e.removeEffect(eff);
     }
 
-    /** Full-set immunity: cancel all incoming damage except a void-fall (so the void chain still works) and /kill. */
+    /** Full-set immunity: ONLY fire and fall damage are cancelled (harmful status effects are cleared each tick
+     *  in {@link #onPlayerTick}). All other damage -- mobs, the Limbo raid, drowning, etc. -- applies normally. */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onHurt(LivingHurtEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
         if (player.level().isClientSide() || !LimboGear.hasFullSet(player)) return;
-        if (event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD) || event.getSource().is(DamageTypes.GENERIC_KILL)) {
-            return; // let the void-fall chain and /kill through
+        if (event.getSource().is(DamageTypeTags.IS_FIRE) || event.getSource().is(DamageTypeTags.IS_FALL)) {
+            event.setCanceled(true); // fire + fall immunity only
         }
-        event.setCanceled(true);
     }
 
     /** Only Limbo PHANTOMS turn neutral toward a full-set wearer (the original gear bonus). The Limbo raiders
