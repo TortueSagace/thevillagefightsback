@@ -54,14 +54,16 @@ at the bottom.
 ### 7. The Limbo dimension
 - A dark void dimension with a 22×22×22 bedrock holding-cell at spawn (always-loaded).
 - **Limbo Potion** (drink → banished), **Limbo Gravel** return-markers (fall like gravel, name-tagged),
-  **Limbo Bed** (sleep → return), banish FX (black spirals + soul + portal swirl).
+  **Limbo Bed** (sleep → return) — and trying to sleep in ANY bed while in the Limbo returns you the same way;
+  banish FX (black spirals + soul + portal swirl).
 - **The Limbo expansion:**
   - **Green Limbo Portal** — light a fake-obsidian frame for a green portal; teleports at **2× nether
     compression** (coordinate_scale 16); never spawns inside the central cube (raised above it).
   - **Void-fall chain** — falling out of the world drops you into Limbo's top, then the End's top; only an
     End void-fall is fatal.
-  - **Floating bedrock cubes** of varying size, generated on demand, sparsely encrusted with **Forgotten
-    Glowstone** (vivid green, obsidian-tough, drops Forgotten Powder); big cubes hold an ancient-debris **nest**.
+  - **Floating bedrock cubes** of varying size, generated on demand; their OUTER surface is covered in
+    **Forgotten Glowstone** clumps (vivid green, obsidian-tough, drops Forgotten Powder — placed on the outside
+    like vines, the bedrock shell left intact); big cubes hold a **nest** built entirely of ancient debris.
   - **Limbo Eggs** — black/white dragon eggs in the nests that hatch (on destruction unless Silk Touch, or
     rarely on their own) into a **Limbo Phantom**: a 3× bedrock-phasing phantom (white vines, glowing eyes)
     that grabs prey and hauls it through bedrock; drops **Limbo Membrane**.
