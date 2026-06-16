@@ -188,7 +188,7 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> YELLOW_TNT = BLOCKS.register(
             "yellow_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("golem_factory_node")));
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("iron_golem_factory")));
     public static final RegistryObject<Item> YELLOW_TNT_ITEM = ITEMS.register(
             "yellow_tnt", () -> new BlockItem(YELLOW_TNT.get(), new Item.Properties()));
 
@@ -521,6 +521,12 @@ public final class ModBlocks {
                 output.accept(ModItems.ROCKET.get());
                 output.accept(ModItems.FIRE_GRENADE.get());
                 output.accept(ModItems.MACE.get());
+                // Alien Smasher, shown pre-enchanted (Density 3 + Wind Burst 3 + Fire Aspect 2) like a guard mace.
+                ItemStack smasher = new ItemStack(ModItems.ALIEN_SMASHER.get());
+                smasher.enchant(ModEnchantments.DENSITY.get(), 3);
+                smasher.enchant(ModEnchantments.WIND_BURST.get(), 3);
+                smasher.enchant(net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, 2);
+                output.accept(smasher);
                 output.accept(ModItems.WIND_CHARGE.get());
                 // The three mace enchanted books (at max level): native, not craftable.
                 output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
