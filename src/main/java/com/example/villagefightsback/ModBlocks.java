@@ -194,7 +194,7 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> ORANGE_TNT = BLOCKS.register(
             "orange_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks_node")));
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks")));
     public static final RegistryObject<Item> ORANGE_TNT_ITEM = ITEMS.register(
             "orange_tnt", () -> new BlockItem(ORANGE_TNT.get(), new Item.Properties()));
 
