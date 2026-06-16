@@ -80,6 +80,7 @@ public final class NodeSpawns {
         // only works while enemies keep walking onto that snow.
         WallDefenderEntity d = ModEntities.WALL_DEFENDER.get().create(level);
         if (d == null) return;
+        d.setGunOnly(true); // never upgrade to rockets, even at stage 4 -- rockets would wreck the powder-snow trap
         d.moveTo(feet.getX() + 0.5, feet.getY() + 0.1, feet.getZ() + 0.5, 0.0F, 0.0F);
         // Finalize like the golem/guard (and spawn-egg) paths so the turret initialises properly and appears.
         d.finalizeSpawn(level, level.getCurrentDifficultyAt(feet), MobSpawnType.EVENT, null, null);

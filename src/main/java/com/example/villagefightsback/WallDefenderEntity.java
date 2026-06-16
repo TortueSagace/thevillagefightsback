@@ -42,6 +42,7 @@ public class WallDefenderEntity extends Mob {
             SynchedEntityData.defineId(WallDefenderEntity.class, EntityDataSerializers.BOOLEAN);
 
     private final boolean forcedStage4; // true for the stage-4 spawn-egg variant (always rocket mode)
+    private boolean gunOnly;            // lure-tower defender: NEVER rockets, even at stage 4 (would wreck the powder-snow trap)
     private int fireCooldown;
     private int retargetCooldown;
     private boolean rocketMode;   // our village is at stage 4 -> fire rockets (refreshed on each re-target)
@@ -115,8 +116,16 @@ public class WallDefenderEntity extends Mob {
         }
     }
 
-    /** True when this defender fires rockets: forced (stage-4 spawn egg) or its nearest brainNode is stage 4. */
+    /** Mark this defender gun-only (never rockets). Used for the lure-tower defender so its blasts can't
+     *  destroy the powder-snow trap below it, even after the village reaches stage 4. */
+    public void setGunOnly(boolean v) {
+        this.gunOnly = v;
+    }
+
+    /** True when this defender fires rockets: forced (stage-4 spawn egg) or its nearest brainNode is stage 4.
+     *  A gun-only defender (lure tower) never rockets, regardless of village stage. */
     private boolean isStage4() {
+        if (gunOnly) return false;
         if (forcedStage4) return true;
         if (!(level() instanceof ServerLevel sl)) return false;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
@@ -168,6 +177,18 @@ public class WallDefenderEntity extends Mob {
         Vec3 start = from.add(dir.scale(2.0 / len));
         return level().clip(new ClipContext(start, te,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType() == HitResult.Type.MISS;
+    }
+
+    @Override
+    public void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putBoolean("GunOnly", gunOnly);
+    }
+
+    @Override
+    public void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        this.gunOnly = tag.getBoolean("GunOnly");
     }
 
     // --- immobile turret: never translate, never get pushed or knocked back ---
