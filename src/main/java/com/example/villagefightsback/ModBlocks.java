@@ -284,7 +284,6 @@ public final class ModBlocks {
 
     static {
         registerFertileRich("dirt", Blocks.DIRT, FertileKind.CUBE);
-        registerFertileRich("grass", Blocks.GRASS_BLOCK, FertileKind.CUBE); // grass converts to a green grassy fertile block
         registerFertileRich("stone", Blocks.STONE, FertileKind.CUBE);
         registerFertileRich("netherrack", Blocks.NETHERRACK, FertileKind.CUBE);
         registerFertileRich("end_stone", Blocks.END_STONE, FertileKind.CUBE);
@@ -349,6 +348,13 @@ public final class ModBlocks {
                     .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Item> FERTILE_IRON_BARS_ITEM = ITEMS.register("fertile_iron_bars",
             () -> new BlockItem(FERTILE_IRON_BARS.get(), new Item.Properties()));
+
+    /** Fertile Grass: the green glowing PLANT (not a block). Any plant the infection reaches becomes this.
+     *  Emissive (vivid green); no rich variant. See {@link FertileGrassBlock} + FertileFlora. */
+    public static final RegistryObject<Block> FERTILE_GRASS = BLOCKS.register("fertile_grass",
+            () -> new FertileGrassBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).emissiveRendering((s, l, p) -> true)));
+    public static final RegistryObject<Item> FERTILE_GRASS_ITEM = ITEMS.register("fertile_grass",
+            () -> new BlockItem(FERTILE_GRASS.get(), new Item.Properties()));
 
     // Craftable fertile wood + cobble: fertile_planks (from fertile logs) -> stairs/slabs; fertile_cobblestone
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
@@ -577,6 +583,7 @@ public final class ModBlocks {
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
                 output.accept(FERTILE_IRON_BARS_ITEM.get());
+                output.accept(FERTILE_GRASS_ITEM.get());
                 output.accept(FERTILE_PLANKS_ITEM.get());
                 output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
                 output.accept(FERTILE_PLANKS_SLAB_ITEM.get());

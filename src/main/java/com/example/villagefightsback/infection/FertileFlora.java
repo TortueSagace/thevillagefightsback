@@ -39,6 +39,7 @@ public final class FertileFlora {
     private static Block fertileLog;
     private static Block fertileLeaves;
     private static Block fertileChorusFlower;
+    private static Block fertileGrass;
     private static boolean resolved;
 
     private static void resolve() {
@@ -46,11 +47,35 @@ public final class FertileFlora {
         fertileLog = byId("fertile_log");
         fertileLeaves = byId("fertile_leaves");
         fertileChorusFlower = byId("fertile_chorus_flower");
+        fertileGrass = byId("fertile_grass");
         resolved = true;
     }
 
     private static Block byId(String name) {
         return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
+    }
+
+    /** An ordinary decorative plant the infection turns into fertile grass: short grass, fern, flowers, dead
+     *  bush, and the tall (double) plants. NOT crops/saplings (different block types) nor our own fertile grass. */
+    private static boolean isConvertiblePlant(BlockState s) {
+        Block b = s.getBlock();
+        if (b == fertileGrass) return false;
+        return b instanceof net.minecraft.world.level.block.TallGrassBlock      // short grass + fern
+                || b instanceof net.minecraft.world.level.block.FlowerBlock      // small flowers
+                || b instanceof net.minecraft.world.level.block.DoublePlantBlock // tall grass, large fern, tall flowers
+                || b instanceof net.minecraft.world.level.block.DeadBushBlock;
+    }
+
+    /** Replace a plant with fertile grass; for a double (2-tall) plant, clear its upper half too. */
+    private static void convertPlant(ServerLevel level, BlockPos pos, BlockState plant) {
+        if (fertileGrass == null) return;
+        if (plant.getBlock() instanceof net.minecraft.world.level.block.DoublePlantBlock) {
+            BlockState upper = level.getBlockState(pos.above());
+            if (upper.getBlock() == plant.getBlock()) {
+                level.setBlock(pos.above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            }
+        }
+        level.setBlock(pos, fertileGrass.defaultBlockState(), 3);
     }
 
     /**
@@ -65,8 +90,15 @@ public final class FertileFlora {
             resolve();
             BlockPos up = converted.above();
             if (!level.isLoaded(up)) return;
+            BlockState aboveState = level.getBlockState(up);
+            // Any ordinary plant standing on the newly-fertile ground becomes fertile grass (the green rises
+            // through it). Done in the SAME event so the plant can't pop off when its soil turned fertile.
+            if (isConvertiblePlant(aboveState)) {
+                convertPlant(level, up, aboveState);
+                return;
+            }
             // The conversion itself must be a SURFACE (open sky-step) -- air directly above the converted block.
-            if (!level.getBlockState(up).isAir()) return;
+            if (!aboveState.isAir()) return;
             // Cheap "flat-ish ground" guard: the 4 horizontal neighbours of the converted block must be solid
             // (so we're not sprouting on a 1-wide ledge / cliff edge), and the cells above THEM must be open.
             if (!flatOpenSurface(level, converted)) return;

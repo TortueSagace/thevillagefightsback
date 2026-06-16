@@ -39,7 +39,7 @@ public final class BlockMatcher {
     /** Base names, MOST-SPECIFIC FIRST so id-substring matching prefers "end_stone"/"deepslate" over "stone". */
     static final String[] BASES = {
             "deepslate", "end_stone", "netherrack", "sculk", "leaves", "blackstone", "basalt",
-            "soul_sand", "soul_soil", "snow_block", "gravel", "sand", "grass", "dirt", "log", "stone"
+            "soul_sand", "soul_soil", "snow_block", "gravel", "sand", "dirt", "log", "stone"
     };
 
     /** Reference hardness per base (vanilla destroy time) for the closest-toughness fallback. */
@@ -126,8 +126,7 @@ public final class BlockMatcher {
         }
 
         exact = new HashMap<>();
-        putAll(exact, "grass", Blocks.GRASS_BLOCK);   // grass_block -> fertile_grass / rich_grass (its own grassy block)
-        putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.PODZOL,
+        putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
                 Blocks.MYCELIUM, Blocks.ROOTED_DIRT, Blocks.MUD);
         putAll(exact, "sand", Blocks.SAND, Blocks.RED_SAND);
         putAll(exact, "gravel", Blocks.GRAVEL);

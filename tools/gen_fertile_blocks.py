@@ -23,7 +23,6 @@ GREEN_GAMMA = 0.80         # <1 brightens mid-tones (more punch)
 # base id -> (kind, vanilla source texture(s)). kind: "all" = cube_all, "log" = cube_column.
 BASES = {
     "dirt":       ("all", "dirt"),
-    "grass":      ("all", "grass_block_top"),  # grayscale grass-blade top, green-tinted -> a distinct grassy block
     "sand":       ("all", "sand"),
     "stone":      ("all", "stone"),
     "log":        ("log", ("oak_log", "oak_log_top")),
