@@ -38,6 +38,11 @@ public final class MaceCombatEvents {
         ItemStack weapon = attacker.getMainHandItem();
         if (!MaceItem.isMace(weapon)) return;
 
+        // The Alien Smasher carries a guaranteed baseline of the guards' enchanted mace (Density 3 + Wind
+        // Burst 3 + Fire Aspect 2) even before the player enchants it. We apply it as a FLOOR in code so the
+        // behaviour never depends on smithing copying NBT; real enchants the player adds stack on top (max).
+        boolean smasher = weapon.getItem() instanceof AlienSmasherItem;
+
         // --- BREACH: shave off part of the target's armour effectiveness. Approximate by scaling the event
         //     amount so that, after vanilla applies the FULL armour, the net matches the reduced-armour result.
         float breach = ModEnchantments.getBreachFraction(weapon);
@@ -52,6 +57,11 @@ public final class MaceCombatEvents {
             }
         }
 
+        // FIRE ASPECT 2 baseline for the Alien Smasher: ALWAYS set the target alight for 8s (FA-2 duration)
+        // on any hit, like the guard mace's Fire Aspect 2. A player-added Fire Aspect stacks naturally
+        // (vanilla applies its own burn in hurtEnemy), and setSecondsOnFire only ever extends the burn.
+        if (smasher) victim.setSecondsOnFire(8);
+
         // --- SMASH: only on a downward strike from a real fall (and never while elytra-flying).
         float fall = attacker.fallDistance;
         if (fall <= SMASH_FALL_THRESHOLD || attacker.isFallFlying()) return;
@@ -65,7 +75,10 @@ public final class MaceCombatEvents {
         } else {
             bonus = 22.0F + (fall - 8.0F);
         }
-        bonus += ModEnchantments.getDensityBonusPerFall(weapon) * fall;
+        // Density's per-fall bonus, floored at level 3 for the Alien Smasher (guard-mace baseline).
+        float densityPerFall = ModEnchantments.getDensityBonusPerFall(weapon);
+        if (smasher) densityPerFall = Math.max(densityPerFall, 0.5F * 3);
+        bonus += densityPerFall * fall;
         event.setAmount(event.getAmount() + bonus);
 
         // The smash negates the attacker's own fall damage for this fall.
@@ -92,8 +105,10 @@ public final class MaceCombatEvents {
             e.hurtMarked = true; // resync the new velocity to clients
         }
 
-        // WIND BURST: launch the ATTACKER upward by the per-level strength.
+        // WIND BURST: launch the ATTACKER upward by the per-level strength (floored at the level-3 value
+        // 2.2 for the Alien Smasher, the guard-mace baseline).
         double launch = ModEnchantments.getWindBurstLaunch(weapon);
+        if (smasher) launch = Math.max(launch, 2.2);
         if (launch > 0.0) {
             Vec3 m = attacker.getDeltaMovement();
             attacker.setDeltaMovement(m.x, launch, m.z);

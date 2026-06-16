@@ -40,6 +40,14 @@ public final class ModItems {
     public static final RegistryObject<Item> MACE =
             ITEMS.register("mace", () -> new MaceItem(new Item.Properties()));
 
+    /** The Alien Smasher: a Limbo-forged Mace upgrade (Mace + Limbo Ingot at a smithing table). It IS a mace
+     *  ({@link AlienSmasherItem} extends {@link MaceItem}), so the smash + mace enchants all apply; it carries
+     *  a guaranteed guard-mace baseline (Density 3 + Wind Burst 3 + Fire Aspect 2, enforced in
+     *  {@link MaceCombatEvents}) and a signature triple no-creature-damage block-and-fire blast beneath the
+     *  target (see {@link AlienSmasherEvents}). Fire-resistant like the Limbo gear it is forged with. */
+    public static final RegistryObject<Item> ALIEN_SMASHER =
+            ITEMS.register("alien_smasher", () -> new AlienSmasherItem(new Item.Properties().fireResistant()));
+
     /** Wind Charge: a native clone of the vanilla 1.21 wind charge -- right-click hurls a {@link WindChargeEntity}
      *  that bursts into a knockback-only gust. Sold by the Weaponsmith + dropped by guards. See {@link WindChargeItem}. */
     public static final RegistryObject<Item> WIND_CHARGE =

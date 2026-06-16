@@ -93,6 +93,8 @@
   "item.thevillagefightsback.fire_grenade": "Fire Grenade",
   "item.thevillagefightsback.mace": "Mace",
   "item.thevillagefightsback.mace.desc": "Hit while falling to smash for heavy bonus damage and knock back everything nearby.",
+  "item.thevillagefightsback.alien_smasher": "Alien Smasher",
+  "item.thevillagefightsback.alien_smasher.desc": "A Limbo-forged mace. Every hit blasts three TNT-sized holes straight down under the target, carving a fiery pit it falls into. The holes burn but the blast harms no creatures.",
   "item.thevillagefightsback.wind_charge": "Wind Charge",
   "item.thevillagefightsback.wind_charge.desc": "Throw it to burst into a gust that knocks creatures away.",
   "entity.thevillagefightsback.wind_charge": "Wind Charge",
