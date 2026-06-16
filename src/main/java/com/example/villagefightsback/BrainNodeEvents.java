@@ -2,11 +2,8 @@ package com.example.villagefightsback;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 import com.example.villagefightsback.wall.WallBlock;
@@ -36,7 +33,6 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -74,6 +70,7 @@ public final class BrainNodeEvents {
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);
         spawnInVillages(server, data);
+        announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
         driveWalls(server, data);
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
@@ -132,14 +129,8 @@ public final class BrainNodeEvents {
         }
     }
 
-    private static final int HERO_TICKS = 60 * 60 * 20; // Hero of the Village for 1 hour
-
-    /** Grant a brain node's founder Hero of the Village for an hour. */
-    public static void rewardHero(ServerPlayer player) {
-        player.addEffect(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, HERO_TICKS, 0, false, false, true));
-    }
-
-    /** Remember which player placed a village bell, so the brain node that later rises there rewards them. */
+    /** Remember which player placed a village bell (legacy; the founder reward was removed). Kept so old saves
+     *  with bellPlacers still load and so the record is pruned over time. */
     @SubscribeEvent
     public static void onBlockPlaced(BlockEvent.EntityPlaceEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -441,7 +432,7 @@ public final class BrainNodeEvents {
     private static final long OUTER_SETTLE_GRACE = 200L; // require this many ticks of expansion-quiet before fixing the plan
     private static final long OUTER_MAX_WAIT = 6000L;   // ...but never wait longer than this (a stuck settler/build can't block it)
     private static final int OUTER_SCAN_RADIUS = 140;   // larger survey so the obsidian ring encloses the expansion
-    private static final int OUTER_RAISE_BATCH = 256;   // cells the brain node lays per pass (every TICK_INTERVAL) raising the outer wall
+    private static final int OUTER_RAISE_PER_TICK = 4;  // obsidian blocks laid PER TICK -> a gradual, block-by-block raise
     private static final Map<GlobalPos, Long> outerWallReadyAt = new HashMap<>(); // transient: earliest gametime to survey
     private static final Map<GlobalPos, Long> outerWallSince = new HashMap<>();   // transient: gametime we first became eligible
 
@@ -486,22 +477,39 @@ public final class BrainNodeEvents {
                 }
                 continue;
             }
-            if (!plan.isComplete()) {
-                // The stage-3 outer obsidian ring is convex and sits far out in wilderness, where villager
-                // builders can't reach it and don't dig (they'd just stack a gate and give up). So the brain
-                // node raises it ITSELF: a batch of cells per pass, lowest course first, clearing soft terrain
-                // in the way. This always completes, regardless of the terrain the convex ring crosses.
-                plan.raiseDirectly(level, OUTER_RAISE_BATCH);
-                if (plan.recheckCompletion(level)) {
-                    com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
-                    if (!data.areOuterDefendersBuilt(gp)) {     // instantly summon the outer gate turrets
-                        for (BlockPos gate : plan.gates()) buildDefenderShell(level, gate);
-                        data.markOuterDefendersBuilt(gp);
-                    }
-                    data.setDirty();
-                    launchWallFireworks(level, plan);
+            // The stage-3 outer obsidian ring is convex and sits far out in wilderness, where villager builders
+            // can't reach it. The brain node raises it ITSELF -- but GRADUALLY, block by block, in
+            // raiseOuterWallsGradually() (every tick). Here (every 40 ticks) we only watch for completion and,
+            // once it finishes, fire the celebration + instantly raise its gate turrets.
+            if (!plan.isComplete() && plan.recheckCompletion(level)) {
+                com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
+                if (!data.areOuterDefendersBuilt(gp)) {     // instantly summon the outer gate turrets
+                    for (BlockPos gate : plan.gates()) buildDefenderShell(level, gate);
+                    data.markOuterDefendersBuilt(gp);
                 }
+                data.setDirty();
+                launchWallFireworks(level, plan);
             }
+        }
+    }
+
+    /**
+     * Raise every incomplete stage-3 OUTER obsidian wall a few blocks PER TICK -- block by block, bottom-up,
+     * the same gradual feel as the NBT-structure builder -- instead of stamping a whole layer at once. Runs
+     * every tick; the planning + completion logic stays on the 40-tick {@link #driveOuterWalls} cadence.
+     */
+    @SubscribeEvent
+    public static void raiseOuterWallsGradually(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+        BrainNodeData data = BrainNodeData.get(server);
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            WallPlan plan = data.getOuterWallPlan(gp);
+            if (plan == null || plan.isComplete()) continue;
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            plan.raiseDirectlyStep(level, OUTER_RAISE_PER_TICK);
         }
     }
 
@@ -802,17 +810,34 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
-        // If a player placed this bell, they founded the village -> Hero of the Village.
-        java.util.UUID founder = data.takeBellPlacer(key);
-        if (founder != null) {
-            ServerPlayer p = level.getServer().getPlayerList().getPlayer(founder);
-            if (p != null) rewardHero(p);
-        }
+        // Note: founding a village no longer grants Hero of the Village. The brain-discovery banner now fires
+        // the first time ANY player comes near a node (see announceDiscoveredNodes), not on placement.
         broadcast(level.getServer(), phaseBanner(1)); // "SETTLEMENT PHASE"
         playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
         HouseBedFiller.fill(level, spot);
+    }
+
+    /**
+     * Brain-discovery banner: the first time ANY player comes within {@link #VILLAGE_SCAN_RADIUS} of a tracked
+     * brain node (however that node came to exist -- auto-placed, hand-placed, or boss-reverted), broadcast the
+     * settlement-phase banner once and persist the "announced" flag so it never double-fires across reloads.
+     */
+    private static void announceDiscoveredNodes(MinecraftServer server, BrainNodeData data) {
+        double r2 = (double) VILLAGE_SCAN_RADIUS * VILLAGE_SCAN_RADIUS;
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (data.isAnnounced(gp)) continue;
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null) continue;
+            boolean someoneNear = false;
+            for (ServerPlayer player : level.players()) {
+                if (player.blockPosition().distSqr(gp.pos()) <= r2) { someoneNear = true; break; }
+            }
+            if (!someoneNear) continue;
+            broadcast(server, phaseBanner(1)); // same banner as placement: "SETTLEMENT PHASE"
+            data.markAnnounced(gp);
+        }
     }
 
     /** Nearest open ground spot within 3 blocks of the village centre, close to the centre's height. */

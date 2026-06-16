@@ -262,6 +262,37 @@ public final class WallPlan {
         return placed;
     }
 
+    // Forward build cursor for the GRADUAL outer-wall raise (raiseDirectlyStep). Transient: on reload it resets
+    // to 0 and fast-forwards past already-built blocks, so it never needs persisting.
+    private int raiseCursor = 0;
+
+    /**
+     * Raise the wall GRADUALLY, block by block: place up to {@code max} not-yet-built blocks per call, walking a
+     * forward cursor through the course-sorted block list. Because the list is sorted course-first, this builds
+     * strictly bottom-up (each block's support is already placed) -- the same block-by-block feel as the NBT
+     * structure builder, rather than stamping a whole layer at once. If the cursor reaches the end with blocks
+     * still missing (e.g. a section sat in an unloaded chunk), it wraps to retry them. Returns blocks placed.
+     */
+    public int raiseDirectlyStep(ServerLevel level, int max) {
+        int n = blocks.size();
+        if (n == 0) return 0;
+        int placed = 0, scanned = 0;
+        while (placed < max && scanned < n) {       // scan at most one full pass per call
+            if (raiseCursor >= n) raiseCursor = 0;  // wrap to retry blocks skipped this pass (unloaded chunks)
+            WallBlock wb = blocks.get(raiseCursor++);
+            scanned++;
+            BlockPos pos = wb.pos();
+            if (!level.isLoaded(pos) || satisfied(level, wb)) continue;
+            if (wb.type() == WallBlock.BlockType.STANDING_TORCH
+                    && level.getBlockState(pos.below()).canBeReplaced()) continue; // wait for the cap below it
+            if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
+            level.setBlock(pos,
+                    net.minecraft.world.level.block.Block.updateFromNeighbourShapes(wb.toState(), level, pos), 3);
+            placed++;
+        }
+        return placed;
+    }
+
     /**
      * A course block is buildable only once there is something to stand/build on directly below it (the
      * course beneath already built, or the ground for course 0). This makes each layer follow the one under
