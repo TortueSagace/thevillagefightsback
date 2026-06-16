@@ -32,7 +32,7 @@ public class BrainNodeData extends SavedData {
 
     public static final int MAX_LEVEL = 4;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
-    private static final int[] COST_TO_ADVANCE = {0, 16, 128, 256}; // 1->2=16, 2->3=128, 3->4=256
+    private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
     // Per-village economy: brainNodes within CLUSTER blocks share one Econ; brainNodes farther apart are
     // completely independent villages, each with its own level/emeralds/income.
