@@ -8,6 +8,7 @@
     "thevillagefightsback:golem_factory_node",
     "thevillagefightsback:barracks_node",
     "thevillagefightsback:lure_tower_node",
-    "thevillagefightsback:debris"
+    "thevillagefightsback:debris",
+    "thevillagefightsback:limbo_block"
   ]
 }

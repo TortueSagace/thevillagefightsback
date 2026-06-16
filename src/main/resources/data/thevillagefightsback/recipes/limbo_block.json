@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "III",
+    "III",
+    "III"
+  ],
+  "key": {
+    "I": {
+      "item": "thevillagefightsback:limbo_ingot"
+    }
+  },
+  "result": {
+    "item": "thevillagefightsback:limbo_block",
+    "count": 1
+  }
+}

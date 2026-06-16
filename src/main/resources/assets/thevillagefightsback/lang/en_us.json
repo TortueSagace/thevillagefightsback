@@ -213,5 +213,8 @@
   "item.thevillagefightsback.limbo_axe": "Limbo Axe",
   "item.thevillagefightsback.limbo_shovel": "Limbo Shovel",
   "item.thevillagefightsback.limbo_hoe": "Limbo Hoe",
-  "item.thevillagefightsback.limbo_sword": "Limbo Sword"
+  "item.thevillagefightsback.limbo_sword": "Limbo Sword",
+  "block.thevillagefightsback.limbo_block": "Limbo Block",
+  "block.thevillagefightsback.limbo_block.desc": "As tough as bedrock. Works as a beacon base.",
+  "entity.minecraft.villager.limbo_sage": "Limbo Sage"
 }

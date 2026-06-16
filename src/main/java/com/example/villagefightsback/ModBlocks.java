@@ -470,6 +470,23 @@ public final class ModBlocks {
                     "block.thevillagefightsback.fake_bedrock.desc"));
 
     /**
+     * Limbo Block: a storage block crafted from 9 Limbo Ingots. As tough as bedrock against explosions (blast
+     * resistance 1200) yet still obtainable -- a diamond+ pickaxe mines it back (hardness 50, like obsidian/the
+     * brain node). Works as a beacon base (see the beacon_base_blocks tag). Carries the Limbo gear's animated
+     * green shimmer (animated texture + .mcmeta).
+     */
+    public static final RegistryObject<Block> LIMBO_BLOCK = BLOCKS.register("limbo_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(50.0F, 1200.0F)              // obsidian/bedrock-tough vs explosions, still mineable
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
+    // Plain BlockItem: ModTooltips auto-appends "<descId>.desc" (we must NOT override appendHoverText). Fire-
+    // resistant like the rest of the Limbo gear it is crafted from.
+    public static final RegistryObject<Item> LIMBO_BLOCK_ITEM = ITEMS.register("limbo_block",
+            () -> new BlockItem(LIMBO_BLOCK.get(), new Item.Properties().fireResistant()));
+
+    /**
      * The Limbo Portal: a green nether-portal that forms inside a lit {@link #FAKE_OBSIDIAN} frame and
      * teleports between the overworld and Limbo at 16x compression ({@link LimboPortalBlock} /
      * {@link LimboPortalForcer}). No item form (like the nether portal); unbreakable; glows.
@@ -572,6 +589,7 @@ public final class ModBlocks {
                 output.accept(ModItems.VOLATILE_LIMBO_POTION.get());
                 output.accept(ModItems.LIMBO_MEMBRANE.get());
                 output.accept(ModItems.LIMBO_INGOT.get());
+                output.accept(LIMBO_BLOCK_ITEM.get());
                 output.accept(ModItems.LIMBO_SMITHING_TEMPLATE.get());
                 output.accept(ModArmor.LIMBO_HELMET.get());
                 output.accept(ModArmor.LIMBO_CHESTPLATE.get());
