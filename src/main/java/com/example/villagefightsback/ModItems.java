@@ -27,6 +27,17 @@ public final class ModItems {
     public static final RegistryObject<Item> ROCKET =
             ITEMS.register("rocket", () -> new Item(new Item.Properties()));
 
+    /** The Mace: a native clone of the vanilla 1.21 mace (durability/rarity/enchant-value live in {@link MaceItem}).
+     *  Smash + the mace enchantments are handled by {@link MaceCombatEvents}. Sold by the Weaponsmith + dropped
+     *  by stage-3/4 guards (with Density 3 + Wind Burst 3 + Fire Aspect 2, see {@link GuardWeapons}). */
+    public static final RegistryObject<Item> MACE =
+            ITEMS.register("mace", () -> new MaceItem(new Item.Properties()));
+
+    /** Wind Charge: a native clone of the vanilla 1.21 wind charge -- right-click hurls a {@link WindChargeEntity}
+     *  that bursts into a knockback-only gust. Sold by the Weaponsmith + dropped by guards. See {@link WindChargeItem}. */
+    public static final RegistryObject<Item> WIND_CHARGE =
+            ITEMS.register("wind_charge", () -> new WindChargeItem(new Item.Properties()));
+
     /** Limbo Potion: drink it to be flung into Limbo (a Limbo-gravel marker is auto-dropped where you stood,
      *  so destroying it -- or sleeping in the Limbo bed -- brings you back). See {@link LimboPotionItem}. */
     public static final RegistryObject<Item> LIMBO_POTION =

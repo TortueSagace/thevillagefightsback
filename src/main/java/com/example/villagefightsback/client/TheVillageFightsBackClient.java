@@ -105,6 +105,9 @@ public final class TheVillageFightsBackClient {
         // Fire grenade: billboard its item sprite as it flies.
         event.registerEntityRenderer(ModEntities.FIRE_GRENADE.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
+        // Wind charge: billboard its item sprite as it flies.
+        event.registerEntityRenderer(ModEntities.WIND_CHARGE.get(),
+                ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
     }
 
     @SubscribeEvent

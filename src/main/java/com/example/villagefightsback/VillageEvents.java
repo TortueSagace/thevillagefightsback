@@ -29,10 +29,18 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
@@ -41,6 +49,7 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -306,6 +315,83 @@ public final class VillageEvents {
         if (dead.getRandom().nextFloat() >= GUARD_FIRE_GRENADE_DROP_CHANCE) return;
         event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
                 dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.FIRE_GRENADE.get())));
+    }
+
+    // --- The Weaponsmith sells the mace + wind charges + the three mace enchanted books -----------
+
+    /** Master-level weaponsmiths sell a plain mace; the wind charges and the three mace enchanted books are
+     *  spread across journeyman/expert/master. NONE of these are craftable -- they are only sold or dropped. */
+    @SubscribeEvent
+    public static void onVillagerTrades(VillagerTradesEvent event) {
+        if (event.getType() != VillagerProfession.WEAPONSMITH) return;
+        var trades = event.getTrades();
+        // Journeyman (3): the Density book.
+        trades.get(3).add(bookTrade(ModEnchantments.DENSITY.get(), 5, 22, 2, 10));
+        // Expert (4): wind charges in stacks, and the Breach book.
+        trades.get(4).add(itemTrade(new ItemStack(ModItems.WIND_CHARGE.get(), 4), 8, 6, 12));
+        trades.get(4).add(bookTrade(ModEnchantments.BREACH.get(), 4, 30, 2, 15));
+        // Master (5): a plain mace, and the Wind Burst book.
+        trades.get(5).add(itemTrade(new ItemStack(ModItems.MACE.get()), 48, 2, 30));
+        trades.get(5).add(bookTrade(ModEnchantments.WIND_BURST.get(), 3, 38, 2, 15));
+    }
+
+    /** A simple "N emeralds -> {@code result}" trade (no crafting recipe involved). */
+    private static VillagerTrades.ItemListing itemTrade(ItemStack result, int emeralds, int maxUses, int xp) {
+        return (trader, rand) -> new MerchantOffer(
+                new ItemStack(Items.EMERALD, emeralds), result.copy(), maxUses, xp, 0.05F);
+    }
+
+    /** A "N emeralds -> enchanted book(enchant @ level)" trade. */
+    private static VillagerTrades.ItemListing bookTrade(
+            net.minecraft.world.item.enchantment.Enchantment ench, int level, int emeralds, int maxUses, int xp) {
+        ItemStack book = EnchantedBookItem.createForEnchantment(new EnchantmentInstance(ench, level));
+        return (trader, rand) -> new MerchantOffer(
+                new ItemStack(Items.EMERALD, emeralds), book.copy(), maxUses, xp, 0.05F);
+    }
+
+    // --- Drops: the general 5% used-weapon rule + guard wind charges -----------------------------
+
+    /** Chance a dead villager / guard / vindictive guard drops the actual weapon it was holding. */
+    private static final float USED_WEAPON_DROP_CHANCE = 0.05F;
+    /** Range of wind charges a dead guard / vindictive guard drops (1 + nextInt(5) = 1..5). */
+    private static final int GUARD_WIND_CHARGE_MAX = 5;
+
+    /**
+     * GENERAL 5% USED-WEAPON RULE: a dead Villager / Guard / Vindictive Guard has a 5% chance to drop a copy of
+     * the weapon it was actually holding (preserving enchants + durability). Plus: a dead guard / vindictive
+     * guard always drops 1-5 wind charges. Kept separate from {@link #onGuardDeathDrops} (fire grenade) and
+     * {@link #onGigachadDrops} (rockets) so the rules don't double up.
+     */
+    @SubscribeEvent
+    public static void onUsedWeaponDrops(LivingDropsEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead.level().isClientSide()) return;
+        boolean villager = dead instanceof Villager;
+        boolean guard = isGuard(dead) || dead instanceof VindictiveGuardEntity;
+        if (!villager && !guard) return;
+
+        // 5% chance: drop the real held weapon.
+        ItemStack held = dead.getMainHandItem();
+        if (!held.isEmpty() && isWeapon(held) && dead.getRandom().nextFloat() < USED_WEAPON_DROP_CHANCE) {
+            event.getDrops().add(new ItemEntity(dead.level(),
+                    dead.getX(), dead.getY(), dead.getZ(), held.copy()));
+        }
+
+        // Guards / vindictive guards also drop 1-5 wind charges.
+        if (guard) {
+            int charges = 1 + dead.getRandom().nextInt(GUARD_WIND_CHARGE_MAX);
+            event.getDrops().add(new ItemEntity(dead.level(),
+                    dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.WIND_CHARGE.get(), charges)));
+        }
+    }
+
+    /** True if {@code stack} is a weapon worth dropping (an axe/sword/mace/slasher/crossbow, i.e. not food or a block). */
+    private static boolean isWeapon(ItemStack stack) {
+        Item item = stack.getItem();
+        if (item instanceof AxeItem || item instanceof SwordItem || item instanceof CrossbowItem) return true;
+        if (item instanceof MaceItem || item instanceof AlienSlasherItem) return true;
+        // generic fallback: anything that isn't food or a placeable block counts as a weapon.
+        return !(item instanceof BlockItem) && !stack.isEdible();
     }
 
     /** Gigachad golems + vindictive gigachads drop their rocket launcher + a few rockets when they die. */

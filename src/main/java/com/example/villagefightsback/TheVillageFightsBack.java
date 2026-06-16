@@ -27,6 +27,7 @@ public class TheVillageFightsBack {
         ModEffects.register(modBus);
         ModPotions.register(modBus);
         ModEntities.register(modBus);
+        ModEnchantments.register(modBus);
         ModParticles.register(modBus);
         ModSounds.register(modBus);
         ModLoot.register(modBus);

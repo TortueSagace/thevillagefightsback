@@ -519,6 +519,15 @@ public final class ModBlocks {
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
                 output.accept(ModItems.ROCKET.get());
                 output.accept(ModItems.FIRE_GRENADE.get());
+                output.accept(ModItems.MACE.get());
+                output.accept(ModItems.WIND_CHARGE.get());
+                // The three mace enchanted books (at max level): native, not craftable.
+                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
+                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.DENSITY.get(), 5)));
+                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
+                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.BREACH.get(), 4)));
+                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
+                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.WIND_BURST.get(), 3)));
                 // Emerald gear (built from emeralds; stats between iron and diamond) -- in OUR tab.
                 output.accept(ModArmor.EMERALD_HELMET.get());
                 output.accept(ModArmor.EMERALD_CHESTPLATE.get());

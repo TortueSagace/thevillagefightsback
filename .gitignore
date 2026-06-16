@@ -29,3 +29,7 @@ libs/*.jar
 
 # Build logs we wrote while iterating
 build-output*.txt
+
+# Python bytecode cache (texture/asset gen tools)
+__pycache__/
+*.pyc

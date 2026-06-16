@@ -97,6 +97,17 @@ public final class ModEntities {
                     .setShouldReceiveVelocityUpdates(true)
                     .build("rocket"));
 
+    /** Native wind charge projectile -- a clone of the vanilla 1.21 wind charge (knockback-only gust). See
+     *  {@link WindChargeEntity}. */
+    public static final RegistryObject<EntityType<WindChargeEntity>> WIND_CHARGE = ENTITIES.register(
+            "wind_charge",
+            () -> EntityType.Builder.<WindChargeEntity>of(WindChargeEntity::new, MobCategory.MISC)
+                    .sized(0.3125F, 0.3125F)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .setShouldReceiveVelocityUpdates(true)
+                    .build("wind_charge"));
+
     /** Native bullet projectile -- a JEG-free clone of the revolver round. See {@link BulletEntity}. */
     public static final RegistryObject<EntityType<BulletEntity>> BULLET = ENTITIES.register(
             "bullet",

@@ -7,12 +7,10 @@ import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.item.PrimedTnt;
-import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -22,12 +20,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 
-/** Helpers for aiming mobs, finding hostiles, and a few soft-dependency integrations. (No longer touches JEG.) */
+/** Helpers for aiming mobs, finding hostiles, and a few soft-dependency integrations. (No longer touches JEG
+ *  or any third-party weapon mod -- the wind charge is native now.) */
 public final class CombatUtil {
     private CombatUtil() {}
-
-    // Soft integration with Mace Combat Backport (mace_port): its wind charge.
-    public static final ResourceLocation WIND_CHARGE = new ResourceLocation("mace_port", "wind_charge");
 
     // From Another World mod namespace. FAW is NOT a dependency, so its "infection" blocks (assimilated/
     // "converted" sculk, gore, tentacles, ...) are matched by namespace string rather than class.
@@ -45,22 +41,19 @@ public final class CombatUtil {
         shooter.setYHeadRot(shooter.getYRot()); // align head to body so the aim vector is consistent
     }
 
-    /** True if Mace Combat Backport's wind charge is present (soft dependency). */
+    /** True if the (native) wind charge is available. Always true now that it's our own entity. */
     public static boolean windChargeAvailable() {
-        return ForgeRegistries.ENTITY_TYPES.containsKey(WIND_CHARGE);
+        return true;
     }
 
     /**
-     * Throw a Mace Combat Backport wind charge straight down at the shooter's feet (for the visual
-     * "pogo" effect). Returns true if one was spawned. The actual upward launch is applied directly to
-     * the mob by the caller, since iron golems' knockback resistance would otherwise shrug off the burst.
+     * Throw our native wind charge straight down at the shooter's feet (for the visual "pogo" effect).
+     * Returns true if one was spawned. The actual upward launch is applied directly to the mob by the
+     * caller, since iron golems' knockback resistance would otherwise shrug off the burst.
      */
     public static boolean throwWindChargeDown(Mob shooter) {
-        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(WIND_CHARGE);
-        if (type == null) return false;
-        Entity e = type.create(shooter.level());
-        if (!(e instanceof AbstractHurtingProjectile proj)) return false;
-        proj.setOwner(shooter);
+        if (shooter.level().isClientSide()) return false;
+        WindChargeEntity proj = new WindChargeEntity(shooter.level(), shooter);
         proj.moveTo(shooter.getX(), shooter.getY() + 0.5, shooter.getZ(), shooter.getYRot(), 90.0F);
         proj.shootFromRotation(shooter, 90.0F, shooter.getYRot(), 0.0F, 1.5F, 0.0F); // 90 pitch = straight down
         shooter.level().addFreshEntity(proj);
