@@ -75,9 +75,10 @@ public final class NodeSpawns {
         AABB column = new AABB(feet.getX(), feet.getY(), feet.getZ(), feet.getX() + 1, feet.getY() + 4, feet.getZ() + 1);
         if (!level.getEntitiesOfClass(WallDefenderEntity.class, column).isEmpty()) return; // already one above
         if (!clear(level, feet, 2)) return;
-        EntityType<WallDefenderEntity> type =
-                stage >= 4 ? ModEntities.WALL_DEFENDER_STAGE4.get() : ModEntities.WALL_DEFENDER.get();
-        WallDefenderEntity d = type.create(level);
+        // ALWAYS the base (gun) wall defender here, NEVER the stage-4 rocket one -- regardless of village stage.
+        // A rocket turret's explosions would destroy the powder-snow trap under the lure tower, and the lure
+        // only works while enemies keep walking onto that snow.
+        WallDefenderEntity d = ModEntities.WALL_DEFENDER.get().create(level);
         if (d == null) return;
         d.moveTo(feet.getX() + 0.5, feet.getY() + 0.1, feet.getZ() + 0.5, 0.0F, 0.0F);
         // Finalize like the golem/guard (and spawn-egg) paths so the turret initialises properly and appears.
