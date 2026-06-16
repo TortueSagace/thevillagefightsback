@@ -32,6 +32,16 @@ public final class TheVillageFightsBackClient {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
     }
 
+    /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
+    @SubscribeEvent
+    public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
+        event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
+                ModItems.ROCKET_LAUNCHER.get(),
+                new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
+                (stack, level, entity, seed) ->
+                        (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F));
+    }
+
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
     @SubscribeEvent
     public static void onRegisterDimensionEffects(

@@ -315,8 +315,11 @@ public final class VillageEvents {
         if (dead.level().isClientSide() || !(dead instanceof GigachadGolemEntity)) return; // covers the vindictive subclass
         event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
                 dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET_LAUNCHER.get())));
-        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
-                dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET.get(), 1 + dead.getRandom().nextInt(3))));
+        int rockets = dead.getRandom().nextInt(3); // 0 to 2 rockets
+        if (rockets > 0) {
+            event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+                    dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET.get(), rockets)));
+        }
     }
 
     /**
