@@ -215,6 +215,9 @@ public final class BlockMatcher {
             String path = id.getPath();
             // cobblestone (incl. mossy/stairs/slabs/walls -> protects the village wall) and any brick block.
             if (path.contains("cobblestone") || path.contains("brick")) return false;
+            // every quartz block variant is immune (quartz_block, smooth/chiseled quartz, quartz_pillar,
+            // quartz_stairs, quartz_slab, ...). quartz_bricks is already caught by the "brick" rule above.
+            if (path.contains("quartz")) return false;
         }
         return hasAirContact(level, pos);
     }
