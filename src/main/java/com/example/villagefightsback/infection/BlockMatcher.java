@@ -107,6 +107,7 @@ public final class BlockMatcher {
         if (ModBlocks.FERTILE_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
         if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
         if (ModBlocks.FERTILE_FENCE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
+        if (ModBlocks.FERTILE_IRON_BARS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_IRON_BARS.get());
         if (ModBlocks.FERTILE_DOOR.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_DOOR.get());
         if (ModBlocks.FERTILE_PLANKS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS.get());
         if (ModBlocks.FERTILE_PLANKS_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_STAIRS.get());
@@ -298,6 +299,10 @@ public final class BlockMatcher {
             props = new Property<?>[]{BlockStateProperties.SLAB_TYPE, BlockStateProperties.WATERLOGGED};
         } else if (b instanceof FenceBlock) {
             target = ModBlocks.FERTILE_FENCE.get();
+            props = new Property<?>[]{BlockStateProperties.NORTH, BlockStateProperties.EAST,
+                    BlockStateProperties.SOUTH, BlockStateProperties.WEST, BlockStateProperties.WATERLOGGED};
+        } else if (b == Blocks.IRON_BARS) {
+            target = ModBlocks.FERTILE_IRON_BARS.get();
             props = new Property<?>[]{BlockStateProperties.NORTH, BlockStateProperties.EAST,
                     BlockStateProperties.SOUTH, BlockStateProperties.WEST, BlockStateProperties.WATERLOGGED};
         } else {

@@ -340,6 +340,12 @@ public final class ModBlocks {
             () -> new BlockItem(FERTILE_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
             () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
+    /** Fertile iron bars: shape-preserving conversion of vanilla iron bars. No rich variant. */
+    public static final RegistryObject<Block> FERTILE_IRON_BARS = BLOCKS.register("fertile_iron_bars",
+            () -> new net.minecraft.world.level.block.IronBarsBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BARS)
+                    .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final RegistryObject<Item> FERTILE_IRON_BARS_ITEM = ITEMS.register("fertile_iron_bars",
+            () -> new BlockItem(FERTILE_IRON_BARS.get(), new Item.Properties()));
 
     // Craftable fertile wood + cobble: fertile_planks (from fertile logs) -> stairs/slabs; fertile_cobblestone
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
@@ -567,6 +573,7 @@ public final class ModBlocks {
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
+                output.accept(FERTILE_IRON_BARS_ITEM.get());
                 output.accept(FERTILE_PLANKS_ITEM.get());
                 output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
                 output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
