@@ -29,7 +29,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * "Founding" a village from an empty brainNode. When the brain node is about to mark out its wall but no
- * villager is nearby, this dispatches 6 SETTLERS (hexagon at radius 10, with an air-bubble spot search +
+ * villager is nearby, this dispatches 7 SETTLERS (evenly-spaced ring at radius 10, with an air-bubble spot search +
  * radius-3 fallback) and 4 guards. Each settler scatters for 2s (keeping apart) then lights a Blue TNT
  * to build a house ({@link FoundingSettlerGoal}). ~1s after the blast the wall plan is created and the
  * settlers -- now ordinary nearby villagers -- are promoted to the wall builders by the normal flow
@@ -46,7 +46,7 @@ public final class FoundingManager {
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
     private static final double CHECK_RADIUS = 64.0;  // "no villager in the brain node's radius"
-    private static final int SETTLERS = 6;
+    private static final int SETTLERS = 7;
     private static final int HEX_RADIUS = 10;
     private static final int FALLBACK_RADIUS = 3;
     private static final int BUBBLE_SEARCH = 5;        // search this far for a 1x1x2 air bubble
@@ -125,7 +125,7 @@ public final class FoundingManager {
     }
 
     private static int[] hexOffset(int k, double radius) {
-        double a = Math.toRadians(k * 60.0);
+        double a = Math.toRadians(k * (360.0 / SETTLERS)); // evenly spaced around the ring (SETTLERS points)
         return new int[]{(int) Math.round(radius * Math.cos(a)), (int) Math.round(radius * Math.sin(a))};
     }
 
