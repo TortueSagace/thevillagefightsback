@@ -50,15 +50,16 @@ public class FakeCobblestoneBlock extends Block {
         if (context instanceof EntityCollisionContext ecc) {
             Entity e = ecc.getEntity();
             if (e != null && isPhaser(e)) {
-                // Allies phase through the wall, BUT a supported fake-cobble that has open space above acts as
-                // a floor they can stand on (so they don't fall through a platform / the top of a stack). A
-                // gate stack (fake cobble or the cobble cap directly above) has no open space above, so it
-                // stays fully passable -- the 3-high doorway still works.
+                // Allies phase through the wall, BUT a fake-cobble resting on a REAL solid block with open space
+                // above acts as a floor they can stand on (so they don't fall through a fake-cobble platform).
+                // When it sits on ANOTHER fake-cobble, it's the upper half of a vertical door/gate column, so it
+                // stays passable -- a plain 2-high fake-cobble stack (foot + head) is a walk-through doorway, and
+                // a 3-high gate (capped or not) works too. Only the BOTTOM block of a stack can be a floor.
                 BlockState below = level.getBlockState(pos.below());
                 BlockState above = level.getBlockState(pos.above());
-                boolean solidBelow = below.is(this) || (!below.isAir() && !below.canBeReplaced());
                 boolean openAbove = above.isAir() || above.canBeReplaced();
-                return (solidBelow && openAbove) ? Shapes.block() : Shapes.empty();
+                boolean realFloor = openAbove && !below.is(this) && !below.isAir() && !below.canBeReplaced();
+                return realFloor ? Shapes.block() : Shapes.empty();
             }
         }
         return Shapes.block(); // everyone else + non-entity contexts: solid
