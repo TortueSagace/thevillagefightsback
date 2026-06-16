@@ -68,15 +68,20 @@ public final class NodeSpawns {
         }
     }
 
-    /** A wall defender directly ABOVE the node -- unless one already stands above it (no stacking). */
-    public static void spawnWallDefenderAbove(ServerLevel level, BlockPos node) {
+    /** A wall defender directly ABOVE the node -- unless one already stands above it (no stacking). A stage-4
+     *  brain spawns the stage-4 (rocket) defender; otherwise the normal one (which auto-upgrades anyway). */
+    public static void spawnWallDefenderAbove(ServerLevel level, BlockPos node, int stage) {
         BlockPos feet = node.above();
         AABB column = new AABB(feet.getX(), feet.getY(), feet.getZ(), feet.getX() + 1, feet.getY() + 4, feet.getZ() + 1);
         if (!level.getEntitiesOfClass(WallDefenderEntity.class, column).isEmpty()) return; // already one above
         if (!clear(level, feet, 2)) return;
-        WallDefenderEntity d = ModEntities.WALL_DEFENDER.get().create(level);
+        EntityType<WallDefenderEntity> type =
+                stage >= 4 ? ModEntities.WALL_DEFENDER_STAGE4.get() : ModEntities.WALL_DEFENDER.get();
+        WallDefenderEntity d = type.create(level);
         if (d == null) return;
         d.moveTo(feet.getX() + 0.5, feet.getY() + 0.1, feet.getZ() + 0.5, 0.0F, 0.0F);
+        // Finalize like the golem/guard (and spawn-egg) paths so the turret initialises properly and appears.
+        d.finalizeSpawn(level, level.getCurrentDifficultyAt(feet), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(d);
     }
 }

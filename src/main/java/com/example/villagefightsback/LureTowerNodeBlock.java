@@ -14,6 +14,6 @@ public class LureTowerNodeBlock extends AbstractNodeBlock {
 
     @Override
     public void spawnPayload(ServerLevel level, BlockPos node, int stage) {
-        NodeSpawns.spawnWallDefenderAbove(level, node);
+        NodeSpawns.spawnWallDefenderAbove(level, node, stage);
     }
 }
