@@ -21,8 +21,9 @@ def px(img, x, y, c):
 
 
 def mace():
-    """A diagonal mace: a short wooden handle (bottom-left) up to a chunky dark-iron head (top-right)
-    with a glowing gold/copper core dot. Readable at 16x16."""
+    """A heavy diagonal mace: a short wooden handle (bottom-left) up to a BIG chunky spiked dark-iron head
+    (top-right) with a glowing gold core. The head is deliberately large/spiked so it reads as threatening,
+    not like a shovel. Readable at 16x16."""
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     HANDLE_DARK = (74, 52, 30, 255)
     HANDLE = (110, 78, 44, 255)
@@ -33,38 +34,40 @@ def mace():
     GOLD = (224, 170, 56, 255)
     GOLD_HI = (255, 214, 110, 255)
 
-    # handle: a 2-wide diagonal shaft from (3,13) up to (9,7)
-    handle_cells = [(3, 13), (4, 12), (5, 11), (6, 10), (7, 9), (8, 8), (9, 7)]
+    # handle: a 2-wide diagonal shaft from the pommel (bottom-left) up to the head
+    handle_cells = [(2, 14), (3, 13), (4, 12), (5, 11), (6, 10), (7, 9)]
     for (x, y) in handle_cells:
         px(img, x, y, HANDLE)
         px(img, x + 1, y, HANDLE_HI)
         px(img, x, y + 1, HANDLE_DARK)
     # pommel knob at the grip end
-    px(img, 2, 14, HANDLE_DARK)
-    px(img, 3, 14, HANDLE_DARK)
-    px(img, 2, 13, HANDLE_HI)
+    px(img, 1, 15, HANDLE_DARK)
+    px(img, 2, 15, HANDLE_DARK)
+    px(img, 1, 14, HANDLE_HI)
 
-    # mace head: a chunky 6x6 dark-iron block around (10..14, 2..7)
-    for x in range(9, 15):
-        for y in range(2, 8):
-            # carve the corners a touch so it reads as a rounded head, not a square
-            if (x, y) in [(9, 2), (14, 7), (9, 7), (14, 2)]:
+    # BIG mace head: an 8x8 chunky block at (7..14, 1..8), rounded corners
+    for x in range(7, 15):
+        for y in range(1, 9):
+            if (x, y) in [(7, 1), (14, 1), (7, 8), (14, 8)]:
                 continue
             img.putpixel((x, y), IRON)
-    # shading: dark on the lower-left, highlight on the upper-right
-    for (x, y) in [(9, 5), (9, 6), (10, 7), (11, 7), (10, 6)]:
+    # shading: dark lower-left, highlight upper-right
+    for (x, y) in [(7, 5), (7, 6), (7, 7), (8, 7), (8, 8), (9, 8), (10, 8)]:
         px(img, x, y, IRON_DARK)
-    for (x, y) in [(13, 2), (14, 3), (12, 2), (13, 3), (14, 4)]:
+    for (x, y) in [(12, 1), (13, 1), (14, 2), (13, 2), (14, 3), (14, 4)]:
         px(img, x, y, IRON_HI)
-    # spike studs on the head
-    px(img, 13, 1, IRON_DARK)
-    px(img, 8, 4, IRON_DARK)
-    px(img, 15, 5, IRON_DARK)
-    # glowing gold/copper core dot in the head's centre
-    px(img, 11, 4, GOLD)
-    px(img, 12, 4, GOLD_HI)
+    # spikes poking OUT of the head (top, right, bottom) + a couple of surface studs -> threatening
+    for (x, y) in [(9, 0), (10, 0), (11, 0), (15, 4), (15, 5), (10, 9), (11, 9), (6, 2)]:
+        px(img, x, y, IRON)
+    for (x, y) in [(10, 0), (15, 5), (11, 9)]:
+        px(img, x, y, IRON_DARK)
+    px(img, 8, 3, IRON_DARK)
+    px(img, 13, 6, IRON_DARK)
+    # glowing gold core in the head's centre
+    px(img, 10, 4, GOLD)
+    px(img, 11, 4, GOLD_HI)
+    px(img, 10, 5, GOLD)
     px(img, 11, 5, GOLD)
-    px(img, 12, 5, GOLD)
 
     img.save(os.path.join(TEX, "mace.png"))
 

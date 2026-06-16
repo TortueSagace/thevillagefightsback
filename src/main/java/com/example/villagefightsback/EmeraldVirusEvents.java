@@ -201,8 +201,12 @@ public final class EmeraldVirusEvents {
 
         if (!(e.level() instanceof ServerLevel sl)) return;
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
-        // At stage 4 the virus has evolved: after the blast, an Emeraldger rises from the corpse.
-        boolean spawnEmeraldger = EmeraldVirus.isEvolved(sl.getServer()) && !(e instanceof EmeraldgerEntity);
+        // An Emeraldger rises from the corpse if EITHER the virus has globally evolved (stage 4) OR the host
+        // carried Emerald Virus II (amplifier >= 1). So any Virus-II kill evolves a host even before stage 4.
+        net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS.get());
+        boolean virusII = vinst != null && vinst.getAmplifier() >= 1;
+        boolean spawnEmeraldger = !(e instanceof EmeraldgerEntity)
+                && (EmeraldVirus.isEvolved(sl.getServer()) || virusII);
         PENDING.add(new Pending(sl, e, sl.getGameTime() + CORPSE_DELAY, e.getMaxHealth(), spawnEmeraldger));
     }
 

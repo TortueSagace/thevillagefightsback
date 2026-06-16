@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NTN",
+    "NBN",
+    "NNN"
+  ],
+  "key": {
+    "N": { "item": "minecraft:netherite_scrap" },
+    "T": { "item": "thevillagefightsback:limbo_smithing_template" },
+    "B": { "item": "thevillagefightsback:fake_bedrock" }
+  },
+  "result": {
+    "item": "thevillagefightsback:limbo_smithing_template",
+    "count": 2
+  }
+}

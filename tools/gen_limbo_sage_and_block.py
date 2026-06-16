@@ -90,26 +90,28 @@ def gen_limbo_block(zf, dst_dir):
             r, g, b, a = base.getpixel((px, py))
             base.putpixel((px, py), (max(r - 4, 0), max(g - 6, 0), max(b - 4, 0), 255))
 
+    # UNIFORM breathing pulse: the WHOLE face brightens and dims together every frame. This is
+    # direction-agnostic, so all six cube faces animate identically (no sweeping band that would point
+    # different ways per face). A static per-pixel speckle keeps spatial texture; only the brightness pulses.
+    PULSE = [0.22, 0.42, 0.66, 0.66, 0.42, 0.22]  # symmetric dim -> bright -> dim over the 6 frames
     strip = Image.new("RGBA", (SIZE, SIZE * FRAMES), (0, 0, 0, 255))
     for f in range(FRAMES):
         frame = base.copy()
-        # a 4px-tall green glow band sweeping downward across the frames
-        center = (f / FRAMES) * SIZE
+        k = PULSE[f]
         for y in range(SIZE):
-            d = min(abs(y - center), abs(y - center - SIZE), abs(y - center + SIZE))
-            if d < 4.0:
-                k = (1.0 - d / 4.0) * 0.9  # glow strength
-                for x in range(SIZE):
-                    r, g, b, a = frame.getpixel((x, y))
-                    nr = int(r + (GREEN_GLOW[0] - r) * k)
-                    ng = int(g + (GREEN_GLOW[1] - g) * k)
-                    nb = int(b + (GREEN_GLOW[2] - b) * k)
-                    frame.putpixel((x, y), (nr, ng, nb, 255))
+            for x in range(SIZE):
+                r, g, b, a = frame.getpixel((x, y))
+                sp = ((x * 7 + y * 13) ^ (x * y * 3)) & 7  # static spatial variation (temporally uniform)
+                kk = min(1.0, k * (0.75 + sp * 0.04))
+                nr = int(r + (GREEN_GLOW[0] - r) * kk)
+                ng = int(g + (GREEN_GLOW[1] - g) * kk)
+                nb = int(b + (GREEN_GLOW[2] - b) * kk)
+                frame.putpixel((x, y), (nr, ng, nb, 255))
         strip.paste(frame, (0, f * SIZE))
     out = os.path.join(dst_dir, "limbo_block.png")
     strip.save(out)
     with open(out + ".mcmeta", "w", encoding="utf-8") as fh:
-        fh.write('{\n  "animation": {\n    "frametime": 4\n  }\n}\n')
+        fh.write('{\n  "animation": {\n    "frametime": 4,\n    "interpolate": true\n  }\n}\n')
     print("wrote", out, strip.size, "+ .mcmeta")
 
 

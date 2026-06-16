@@ -28,7 +28,7 @@ import net.minecraftforge.network.NetworkHooks;
  */
 public class WindChargeEntity extends AbstractHurtingProjectile implements ItemSupplier {
     private static final float DIRECT_DAMAGE = 1.0F;
-    private static final double BURST_RADIUS = 1.5;
+    private static final double BURST_RADIUS = 2.0;
     private static final int MAX_LIFETIME = 200; // self-destruct if it never hits anything (~10s)
 
     public WindChargeEntity(EntityType<? extends WindChargeEntity> type, Level level) {
@@ -75,21 +75,24 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
                 damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null), DIRECT_DAMAGE);
     }
 
-    /** Any contact: a knockback-only wind burst -- shove nearby living entities away, then vanish. */
+    /**
+     * Any contact: a knockback-only wind burst -- shove nearby living entities away, then vanish. The thrower
+     * is INCLUDED (vanilla wind charge launches whoever is near the burst): throwing one at your own feet pogos
+     * you straight up, exactly like the stage-3 guards' wind-charge launch.
+     */
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
         if (!(level() instanceof ServerLevel sl)) return;
         double x = getX(), y = getY(), z = getZ();
-        Entity owner = getOwner();
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 new AABB(x, y, z, x, y, z).inflate(BURST_RADIUS), LivingEntity::isAlive)) {
-            if (e == owner) continue;
             Vec3 push = e.position().subtract(x, y, z);
             double dist = push.length();
             Vec3 dir = dist > 1.0E-4 ? push.scale(1.0 / dist) : new Vec3(0, 1, 0);
             double power = (BURST_RADIUS - Math.min(dist, BURST_RADIUS)) / BURST_RADIUS + 0.2; // stronger up close
-            e.push(dir.x * power, 0.35 + power * 0.4, dir.z * power);
+            double up = 0.6 + power * 0.7; // strong upward launch -- a real pogo when burst at your feet
+            e.push(dir.x * power * 0.8, up, dir.z * power * 0.8);
             e.hurtMarked = true; // resync the new velocity to clients
         }
         sl.sendParticles(ParticleTypes.POOF, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);

@@ -79,6 +79,15 @@ public final class BrainReflexes {
         return s == null ? List.of() : new ArrayList<>(s.log);
     }
 
+    /** Append a line to the reflex log of the brain node nearest {@code pos} (for systems outside this class,
+     *  e.g. the stage-4 air strike). No-op if there is no brain node within range. */
+    public static void logExternal(ServerLevel level, BlockPos pos, String message) {
+        BrainNodeData data = BrainNodeData.get(level.getServer());
+        GlobalPos node = BrainNodeEvents.nearestBrainNode(data, level, pos, RADIUS);
+        if (node == null) return;
+        log(state(node), level, message);
+    }
+
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) { STATES.clear(); }
 
@@ -89,11 +98,15 @@ public final class BrainReflexes {
         LivingEntity v = event.getEntity();
         if (!(v instanceof Villager) || v instanceof EmeraldgerEntity) return;
         if (!(v.level() instanceof ServerLevel sl)) return;
+        // Only a REAL attack arms the golem-factory reflex: the damage must come from an attacker entity
+        // (a hostile mob or a player, directly or via a projectile). Wall suffocation, fire, and fall damage
+        // are sourceless (no attacker entity), so they do NOT count as an attack.
+        if (!(event.getSource().getEntity() instanceof LivingEntity)) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos node = BrainNodeEvents.nearestBrainNode(data, sl, v.blockPosition(), RADIUS);
         if (node == null) return;
         State s = state(node);
-        // Arm the golem-factory reflex on the FIRST villager hurt of the current stage (re-arms each stage-up).
+        // Arm the golem-factory reflex on the FIRST real attack on a villager this stage (re-arms each stage-up).
         if (s.firstHurtFiredStage < data.econ(node).getLevel()) s.firstHurtArmed = true;
     }
 
@@ -160,12 +173,19 @@ public final class BrainReflexes {
         WallPlan inner = data.getWallPlan(gp);
         long beds = level.getPoiManager().getCountInRange(h -> h.is(PoiTypes.HOME), brain, (int) RADIUS, PoiManager.Occupancy.ANY);
 
-        // A0 (all stages): first villager hurt this stage -> a settler raises a Golem Factory (yellow TNT). 10 gems.
-        if (s.firstHurtArmed && econ.spendEmeralds(10)) {
-            ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_YELLOW);
-            s.firstHurtArmed = false;
-            s.firstHurtFiredStage = stage;
-            log(s, level, "Settler sent: Golem Factory (-10)");
+        // A0 (all stages): once a villager has been ATTACKED this stage, raising a Golem Factory (yellow TNT,
+        // 10 gems) is the TOP priority. Buy it the instant the treasury can afford it (once per stage); until
+        // then, RESERVE the gems -- return early so the cheaper reflexes below cannot drain the treasury under
+        // its cost. We never give up while armed; we just keep waiting for the gems.
+        if (s.firstHurtArmed) {
+            if (econ.spendEmeralds(10)) {
+                ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_YELLOW);
+                s.firstHurtArmed = false;
+                s.firstHurtFiredStage = stage;
+                log(s, level, "Settler sent: Golem Factory (-10)");
+            } else {
+                return; // can't afford the factory yet -> reserve the treasury for it and retry next tick
+            }
         }
 
         // A4 (stage 1+): an inner-wall door broke in the past 5s -> regenerate all inner doors. 1 gem.

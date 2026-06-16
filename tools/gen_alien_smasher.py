@@ -47,41 +47,45 @@ def lerp(a, b, t):
 
 
 def base_frame():
-    """The dark-Limbo Mace silhouette WITHOUT the glow (the glow is added per-frame). Mirrors the
-    mace.py layout: a 2-wide diagonal handle from (3,13) to (9,7) and a chunky 6x6 head at (9..14, 2..7)."""
+    """The dark-Limbo Mace silhouette WITHOUT the glow (the glow is added per-frame). Mirrors the native
+    mace layout: a 2-wide diagonal handle (bottom-left) and a BIG chunky 8x8 spiked head at (7..14, 1..8)."""
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
 
-    # handle: a 2-wide diagonal shaft from (3,13) up to (9,7)
-    handle_cells = [(3, 13), (4, 12), (5, 11), (6, 10), (7, 9), (8, 8), (9, 7)]
+    # handle: a 2-wide diagonal shaft from the pommel (bottom-left) up to the head
+    handle_cells = [(2, 14), (3, 13), (4, 12), (5, 11), (6, 10), (7, 9)]
     for (x, y) in handle_cells:
         px(img, x, y, HANDLE)
         px(img, x + 1, y, HANDLE_HI)
         px(img, x, y + 1, HANDLE_DARK)
     # pommel knob at the grip end
-    px(img, 2, 14, HANDLE_DARK)
-    px(img, 3, 14, HANDLE_DARK)
-    px(img, 2, 13, HANDLE_HI)
+    px(img, 1, 15, HANDLE_DARK)
+    px(img, 2, 15, HANDLE_DARK)
+    px(img, 1, 14, HANDLE_HI)
 
-    # mace head: a chunky 6x6 dark block around (9..14, 2..7), rounded corners
-    for x in range(9, 15):
-        for y in range(2, 8):
-            if (x, y) in [(9, 2), (14, 7), (9, 7), (14, 2)]:
+    # BIG mace head: an 8x8 chunky block at (7..14, 1..8), rounded corners
+    for x in range(7, 15):
+        for y in range(1, 9):
+            if (x, y) in [(7, 1), (14, 1), (7, 8), (14, 8)]:
                 continue
             img.putpixel((x, y), BODY)
     # shading: dark lower-left, lighter upper-right
-    for (x, y) in [(9, 5), (9, 6), (10, 7), (11, 7), (10, 6)]:
+    for (x, y) in [(7, 5), (7, 6), (7, 7), (8, 7), (8, 8), (9, 8), (10, 8)]:
         px(img, x, y, BODY_DARK)
-    for (x, y) in [(13, 2), (14, 3), (12, 2), (13, 3), (14, 4)]:
+    for (x, y) in [(12, 1), (13, 1), (14, 2), (13, 2), (14, 3), (14, 4)]:
         px(img, x, y, BODY_HI)
-    # spike studs on the head
-    px(img, 13, 1, BODY_DARK)
-    px(img, 8, 4, BODY_DARK)
-    px(img, 15, 5, BODY_DARK)
+    # spikes poking OUT of the head (top, right, bottom) + surface studs
+    for (x, y) in [(9, 0), (10, 0), (11, 0), (15, 4), (15, 5), (10, 9), (11, 9), (6, 2)]:
+        px(img, x, y, BODY)
+    for (x, y) in [(10, 0), (15, 5), (11, 9)]:
+        px(img, x, y, BODY_DARK)
+    px(img, 8, 3, BODY_DARK)
+    px(img, 13, 6, BODY_DARK)
     return img
 
 
-# The head cells whose green glow PULSES (centre + a ring of accents).
-GLOW_CELLS = [(11, 4), (12, 4), (11, 5), (12, 5), (10, 3), (13, 5), (10, 5), (13, 3), (11, 6), (12, 3)]
+# The head cells whose green glow PULSES (centre + a ring of accents across the bigger 8x8 head).
+GLOW_CELLS = [(9, 3), (10, 3), (11, 3), (12, 3), (9, 4), (10, 4), (11, 4), (12, 4),
+              (9, 5), (10, 5), (11, 5), (12, 5), (10, 6), (11, 6), (12, 6)]
 
 
 def make_frame(frame):
@@ -89,7 +93,7 @@ def make_frame(frame):
     img = base_frame()
     # phase 0..1 across the loop; sweep centre runs from top of the head (y=2) to the bottom (y=7).
     phase = frame / FRAMES
-    sweep_y = 2.0 + phase * 5.0
+    sweep_y = 1.0 + phase * 7.0
     for (x, y) in GLOW_CELLS:
         # brightness peaks where the sweep line passes, plus a steady base glow so it never goes fully dark.
         dist = abs(y - sweep_y)

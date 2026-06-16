@@ -118,7 +118,6 @@ at the bottom.
   add/remove/expire events (rally on add, disengage on end) rather than a per-tick verifier.
 - Hero and Enemy of the Village both survive milk and the mod's Immunity; Enemy of the Village still clears
   on death.
-- **Angry faces**: villagers and guards scowl an angry villager face while fighting.
 
 ### Tooling
 - Built-in per-subsystem profiler (`/gbtyw profile`) + spark integration for finding lag.

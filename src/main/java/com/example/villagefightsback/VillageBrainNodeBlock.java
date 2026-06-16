@@ -108,6 +108,9 @@ public class VillageBrainNodeBlock extends Block {
                 net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE, newDuration, 0, false, false, true);
         hero.setCurativeItems(new java.util.ArrayList<>()); // milk cannot cure it
         player.addEffect(hero);
+        // Hero and Enemy of the Village are mutually exclusive: becoming a hero clears any enemy status
+        // (the reverse -- becoming an enemy clears hero -- is done in VillageEvents.markVillageEnemy/markThief).
+        player.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
     }
 
     private static Component info(BrainNodeData.Econ econ) {

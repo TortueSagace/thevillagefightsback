@@ -150,15 +150,21 @@ public class BrainNodeScreen extends Screen {
                 .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
         g.drawString(font, fert, leftPos + 8, footerY + 24, 0xFFFFFFFF, false);
 
-        // Gray help note at the very bottom, wrapped to stay inside the panel width.
+        // Small green footnote at the very bottom (rendered at a reduced scale), wrapped to the panel width.
+        float helpScale = 0.72F;
         Component help = Component.literal(
                 "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!")
-                .withStyle(ChatFormatting.GRAY);
+                .withStyle(ChatFormatting.GREEN);
+        int splitW = (int) ((PANEL_W - 16) / helpScale); // wider wrap to account for the smaller font
         int helpY = footerY + 40;
-        for (net.minecraft.util.FormattedCharSequence line : font.split(help, PANEL_W - 16)) {
-            g.drawString(font, line, leftPos + 8, helpY, 0xFFFFFFFF, false);
-            helpY += 10;
+        g.pose().pushPose();
+        g.pose().scale(helpScale, helpScale, 1.0F);
+        for (net.minecraft.util.FormattedCharSequence line : font.split(help, splitW)) {
+            // coordinates are in the scaled space, so divide the screen position by the scale
+            g.drawString(font, line, (int) ((leftPos + 8) / helpScale), (int) (helpY / helpScale), 0xFF55E07A, false);
+            helpY += 8;
         }
+        g.pose().popPose();
 
         super.render(g, mouseX, mouseY, partial);
 

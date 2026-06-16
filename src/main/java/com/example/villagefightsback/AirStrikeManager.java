@@ -92,6 +92,9 @@ public final class AirStrikeManager {
         ACTIVE.add(new Strike(level, target, target.getDisplayName().getString(),
                 cx, cy, cz, spawnY, level.getGameTime(), verdictAge, forced));
         broadcast(level.getServer(), "§fSomething is falling from the sky...");
+        // Record the strike in the nearest brain node's reflex log (so it shows in the Logs tab).
+        BrainReflexes.logExternal(level, target.blockPosition(),
+                "Air strike on " + target.getDisplayName().getString());
     }
 
     @SubscribeEvent

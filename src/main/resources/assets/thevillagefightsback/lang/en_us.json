@@ -17,7 +17,7 @@
   "block.thevillagefightsback.iron_golem_head": "Iron Golem Head",
   "block.thevillagefightsback.iron_golem_head.desc": "A decorative iron golem bust. Faces the way you place it.",
   "block.thevillagefightsback.debris": "Debris",
-  "block.thevillagefightsback.debris.desc": "The negative of ancient debris. Smelt it for an iron ingot.",
+  "block.thevillagefightsback.debris.desc": "A village node that wasn't mined with Silk Touch. Smelt it for an iron ingot.",
   "block.thevillagefightsback.blue_tnt": "House TNT",
   "block.thevillagefightsback.green_tnt": "Tower TNT",
   "block.thevillagefightsback.yellow_tnt": "Golem Factory Node TNT",
