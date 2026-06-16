@@ -4,7 +4,7 @@ A running log of what the mod does (the "achievements" -- features shipped) and 
 roadmap). Grouped by system, not by commit. Update this when a **big** update lands -- see the maintenance note
 at the bottom.
 
-> Minecraft Forge 1.20.1 (Java 17) · modid `thevillagefightsback` · package `com.example.villagergunners`
+> Minecraft Forge 1.20.1 (Java 17) · modid `thevillagefightsback` · package `com.example.villagefightsback`
 
 ---
 
@@ -48,8 +48,15 @@ at the bottom.
   explosion damage; creatures slain by a direct boss hit become vindictive minions (capped).
 - Performance-tuned (pathfinding throttled after profiling).
 
-### 6. Native weapons (JEG fully removed)
+### 6. Native weapons (JEG and the mace mod fully removed)
 - Native **bullet**, **rocket**, and **fire grenade** -- the mod no longer depends on Just Enough Guns.
+- Native **Mace** + **Wind Charge** + the three mace enchantments (**Density**, **Breach**, **Wind Burst**,
+  with enchanted books) -- a faithful clone of the vanilla 1.20.1 mace, so the mod no longer depends on the
+  mace backport mod. The mace's smash (fall-scaled bonus, area knockback, Wind Burst self-launch, no self
+  fall damage) is reproduced natively.
+- **Rocket Launcher** polish: a real muzzle hole on the firing face; aiming shows the small back face shifted
+  clear of the crosshair (barrel pointing at the target); fires from the bow-style aim, consuming one Rocket
+  in survival; gigachad / vindictive gigachad drop the launcher (100%) + 0-2 rockets.
 
 ### 7. The Limbo dimension
 - A dark void dimension with a 22×22×22 bedrock holding-cell at spawn (always-loaded).
@@ -76,7 +83,42 @@ at the bottom.
     bedrock phasing (walk through bedrock like the phantom), and a keybound (G) green **banish beam** on a
     30s HUD cooldown.
   - **Volatile Limbo Potion** -- a thrown, area banish. (The old Limbo Arrow was removed.)
-  - An 8-node **advancement tree** for the Limbo journey.
+  - **Limbo Sage** -- a new base villager profession whose job site is the Village Brain Node itself (one
+    sage per village). A black-robed cleric who sells tiered, expensive limbo goods (useless blocks up to
+    randomly-enchanted limbo tools, never limbo armour) and hurls a Volatile Limbo Potion at enemies above
+    20 HP on a 60s cooldown.
+  - **Limbo Block** -- 9 limbo ingots, bedrock-tough, animated green, and a valid beacon base.
+  - A 9-node **advancement tree** for the Limbo journey (added **Dark deal**: buy from the Limbo Sage).
+
+### 8. Expanded arsenal
+- **Alien Slasher / Alien Eradicator split**: the Slasher now always inflicts Emerald Virus I; the new
+  **Alien Eradicator** (a vivid-green Slasher) inflicts Virus II. Stage-4 villagers, Emeraldgers, and stage-4
+  guards wield the Eradicator; vindictive guards keep the plain Slasher.
+- **Emerald Virus Potion II** (brewed I + glowstone, plus splash) and a **level-II Emerald Virus Arrow**.
+- New 9-ingredient Slasher recipe (netherite axe + Emerald Virus Potion I + fire charge + echo shard + ghast
+  tear + fertile chorus corners); the Eradicator uses the same recipe with the Virus II potion. Fertile
+  chorus is edible.
+- **Alien Smasher** -- a Limbo-forged mace (Mace + Limbo Ingot at the smithing table) carrying the guard mace
+  loadout (Density 3 / Wind Burst 3 / Fire Aspect 2) and further enchantable. Every hit blasts three
+  TNT-sized holes straight down under the target (y, y-2, y-4), setting them on fire, with no creature
+  damage -- carving a fiery pit the enemy falls into.
+- **Emerald Hammer**: the 3x3 now orients to the actual mined face, works in creative, and costs one
+  durability per 3x3 (not nine).
+- **Drops**: villagers/guards have a 5% chance to drop their used weapon on death; guards also drop 1-5 wind
+  charges. The native mace + wind charges + mace-enchant books are sold by the **Weaponsmith** (not craftable).
+
+### 9. Village law (Hero / Enemy of the Village)
+- Donating emeralds to the brain grants/extends **Hero of the Village** for X minutes (X = emeralds given),
+  in any game mode. Placing the brain/bell no longer grants it.
+- The brain's discovery banner now fires the first time **any** player comes near a node, not just on placement.
+- **Chest/barrel protection**: placing one in a brain's range donates it to the village; a non-hero who opens
+  a village chest is warned (10s cooldown); taking an item brands them an **Enemy of the Village** for 30s
+  with a red "stealing from the village!" broadcast.
+- The village treats a player as hostile **iff** they hold Enemy of the Village, driven by effect
+  add/remove/expire events (rally on add, disengage on end) rather than a per-tick verifier.
+- Hero and Enemy of the Village both survive milk and the mod's Immunity; Enemy of the Village still clears
+  on death.
+- **Angry faces**: villagers and guards scowl an angry villager face while fighting.
 
 ### Tooling
 - Built-in per-subsystem profiler (`/gbtyw profile`) + spark integration for finding lag.
@@ -86,7 +128,7 @@ at the bottom.
 ## 🗺️ Roadmap
 
 ### Proposed next (needs your steer)
-- More Limbo natives / a Limbo mini-boss.
+- A Limbo mini-boss (the Limbo Sage is now the first Limbo native).
 - Limbo ambience: custom sounds + music.
 - Wider config surface (cube rarity, phantom spawn rates); drift rates are already in config.
 - More in-game advancements as the Limbo grows (these need your approval before they go in).
