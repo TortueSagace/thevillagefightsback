@@ -91,7 +91,7 @@ public final class AirStrikeManager {
 
         ACTIVE.add(new Strike(level, target, target.getDisplayName().getString(),
                 cx, cy, cz, spawnY, level.getGameTime(), verdictAge, forced));
-        broadcast(level.getServer(), "§cSomething is falling from the sky...");
+        broadcast(level.getServer(), "§fSomething is falling from the sky...");
     }
 
     @SubscribeEvent
@@ -102,7 +102,7 @@ public final class AirStrikeManager {
             Strike s = it.next();
             long age = s.level.getGameTime() - s.start;
             if (age == T_LINE2) {
-                broadcast(s.level.getServer(), "§c... and " + s.name + " is not gonna like it!");
+                broadcast(s.level.getServer(), "§f... and " + s.name + " is not gonna like it!");
                 fireWave(s);
             } else if (s.wavesFired > 0 && s.wavesFired < WAVES && age == T_LINE2 + (long) s.wavesFired * WAVE_GAP) {
                 fireWave(s);

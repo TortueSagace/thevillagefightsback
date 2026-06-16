@@ -58,8 +58,8 @@ public final class BrainNodeEvents {
     // --- stage-4 air strikes ---
     private static final long STRIKE_INTERVAL = 12000L; // consider an air strike every 10 minutes
     private static final long ATTACK_WINDOW   = 12000L; // ...only if an ally was attacked within the past 10 minutes
-    private static final Map<GlobalPos, Long> lastAllyHurt   = new HashMap<>(); // node -> gameTime an ally was last hit near it
-    private static final Map<GlobalPos, Long> nextStrikeCheck = new HashMap<>(); // node -> next gameTime to consider a strike
+    private static final Map<GlobalPos, Long> lastAllyHurt        = new HashMap<>(); // node -> gameTime an ally was last hit near it
+    private static final Map<GlobalPos, Long> strikeCooldownUntil = new HashMap<>(); // node -> gameTime the 10-min cooldown ends (set only after an ACTUAL strike)
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -218,13 +218,16 @@ public final class BrainNodeEvents {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
             long now = level.getGameTime();
-            if (!nextStrikeCheck.containsKey(gp)) { nextStrikeCheck.put(gp, now + STRIKE_INTERVAL); continue; }
-            if (now < nextStrikeCheck.get(gp)) continue;
-            nextStrikeCheck.put(gp, now + STRIKE_INTERVAL);
+            Long until = strikeCooldownUntil.get(gp);
+            if (until != null && now < until) continue;                 // still cooling down from the last strike
             Long hurt = lastAllyHurt.get(gp);
             if (hurt == null || now - hurt > ATTACK_WINDOW) continue;    // village not attacked in the window
+            // FIRE WHEN READY: as soon as there's a valid clear target, strike -- then start the 10-min cooldown.
+            // (No target right now just means we retry next pass; we don't burn the cooldown on an empty check.)
             LivingEntity target = pickAirStrikeTarget(level, data, gp.pos());
-            if (target != null) AirStrikeManager.launch(level, target);
+            if (target == null) continue;
+            AirStrikeManager.launch(level, target);
+            strikeCooldownUntil.put(gp, now + STRIKE_INTERVAL);
         }
     }
 
@@ -810,9 +813,9 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
-        // Note: founding a village no longer grants Hero of the Village. The brain-discovery banner now fires
-        // the first time ANY player comes near a node (see announceDiscoveredNodes), not on placement.
-        broadcast(level.getServer(), phaseBanner(1)); // "SETTLEMENT PHASE"
+        // Note: founding a village no longer grants Hero of the Village, and the SETTLEMENT PHASE banner is NOT
+        // broadcast here -- announceDiscoveredNodes fires it exactly once the first time any player is near the
+        // node (which, for a hand-/auto-placed node, is essentially immediately), so it never double-fires.
         playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.

@@ -24,6 +24,11 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     public static final float EXPLOSION_RADIUS = 5.0F;   // matches JEG's default missile blast
     public static final double SPEED = 2.5;              // blocks/tick: fast, near-straight flight
     private static final int MAX_LIFETIME = 200;         // self-destruct if it never hits anything (~10s)
+    private static final int AIRSTRIKE_LIFETIME = 1200;  // air-strike drops fall a long way -> a generous cap (~60s)
+
+    /** Air-strike drops fall at a CONSTANT speed (re-asserted each tick to defeat the 0.99 air-drag that would
+     *  otherwise decelerate them to a crawl and strand them above the target) and never despawn early mid-fall. */
+    private boolean airStrike;
 
     /**
      * The ONE shared rocket attack: launch a rocket from {@code shooter} straight at {@code target}'s centre,
@@ -63,6 +68,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
      */
     public static void dropFromSky(net.minecraft.server.level.ServerLevel level, double x, double y, double z) {
         RocketEntity rocket = new RocketEntity(ModEntities.ROCKET.get(), level);
+        rocket.airStrike = true;
         rocket.setPos(x, y, z);
         rocket.xOld = x; rocket.yOld = y; rocket.zOld = z;
         rocket.setXRot(90.0F); // nose-down
@@ -95,6 +101,9 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     @Override
     public void tick() {
         long _p = ModProfiler.now();
+        // Air-strike drops fall at a constant speed: re-assert the downward velocity BEFORE the move so the
+        // 0.99 air-drag in ThrowableProjectile#tick can't decelerate them and strand them above the target.
+        if (airStrike && !level().isClientSide()) setDeltaMovement(0.0, -SPEED, 0.0);
         super.tick();
         if (level() instanceof net.minecraft.server.level.ServerLevel sl) {
             // A bright, continuous fiery beam along this tick's flight path. We space the particles a fixed
@@ -117,7 +126,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
                 sl.sendParticles(pl, net.minecraft.core.particles.ParticleTypes.FIREWORK, true, now.x, now.y, now.z, 2, 0.05, 0.05, 0.05, 0.02);
             }
         }
-        if (!level().isClientSide() && tickCount > MAX_LIFETIME) {
+        if (!level().isClientSide() && tickCount > (airStrike ? AIRSTRIKE_LIFETIME : MAX_LIFETIME)) {
             discard();
         }
         ModProfiler.add("rocket", _p);
