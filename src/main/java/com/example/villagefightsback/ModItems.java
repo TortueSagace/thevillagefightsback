@@ -13,9 +13,16 @@ public final class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
 
-    /** The Alien Slasher melee weapon -- a fancier, virus-spreading netherite axe ({@link AlienSlasherItem}). */
+    /** The Alien Slasher melee weapon -- a fancier, virus-spreading netherite axe ({@link AlienSlasherItem}).
+     *  Its on-hit payload (applied in {@link EmeraldVirusEvents}) always inflicts Emerald Virus I. */
     public static final RegistryObject<Item> ALIEN_SLASHER =
             ITEMS.register("alien_slasher", () -> new AlienSlasherItem(new Item.Properties().fireResistant()));
+
+    /** The Alien Eradicator melee weapon -- a stronger Alien Slasher ({@link AlienEradicatorItem}). Same stats,
+     *  but its on-hit payload (applied in {@link EmeraldVirusEvents}) inflicts Emerald Virus II (Wither II).
+     *  Wielded by stage-4 defenders / Emeraldgers; vindictive guards keep the plain slasher (Virus I). */
+    public static final RegistryObject<Item> ALIEN_ERADICATOR =
+            ITEMS.register("alien_eradicator", () -> new AlienEradicatorItem(new Item.Properties().fireResistant()));
 
     /** The Rocket Launcher: a usable weapon (right-click fires a {@link RocketEntity}, consuming a Rocket).
      *  Held by gigachad golems and dropped by them. See {@link RocketLauncherItem}. */
@@ -65,10 +72,15 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_SMITHING_TEMPLATE =
             ITEMS.register("limbo_smithing_template", () -> new Item(new Item.Properties()));
 
-    /** Emerald Virus Arrow: a green arrow that infects whatever it hits ({@link EmeraldVirusArrowItem}).
+    /** Emerald Virus Arrow: a green arrow that infects whatever it hits with Virus I ({@link EmeraldVirusArrowItem}).
      *  Crafted from 8 arrows + a (regular) Potion of Emerald Virus. */
     public static final RegistryObject<Item> EMERALD_VIRUS_ARROW =
-            ITEMS.register("emerald_virus_arrow", () -> new EmeraldVirusArrowItem(new Item.Properties()));
+            ITEMS.register("emerald_virus_arrow", () -> new EmeraldVirusArrowItem(new Item.Properties(), 0));
+
+    /** Emerald Virus Arrow II: the stronger arrow -- infects with Virus II (Wither II) on hit
+     *  ({@link EmeraldVirusArrowItem}). Crafted from 8 arrows + a Potion of Emerald Virus II. */
+    public static final RegistryObject<Item> EMERALD_VIRUS_ARROW_2 =
+            ITEMS.register("emerald_virus_arrow_2", () -> new EmeraldVirusArrowItem(new Item.Properties(), 1));
 
     /** Fire Grenade: a throwable fire bomb (our native replacement for JEG's molotov). See {@link FireGrenadeItem}. */
     public static final RegistryObject<Item> FIRE_GRENADE =

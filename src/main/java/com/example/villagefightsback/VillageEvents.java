@@ -182,8 +182,12 @@ public final class VillageEvents {
         // for real -- the vanilla CrossedArmsItemLayer renders the held item -- and melee with it; the axe's
         // on-hit payload (Emerald Virus, Slowness IV, fire, huge knockback) is applied in EmeraldVirusEvents.
         // No guns, flamethrower, flare or molotov: the slasher is the villager's only stage-3 weapon.
-        if (villager.getMainHandItem().getItem() != ModItems.ALIEN_SLASHER.get()) {
-            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.ALIEN_SLASHER.get()));
+        // Stage-4 villagers (and Emeraldgers, the stage-4 virus spawns) wield the Alien Eradicator (Virus II);
+        // stage-3 wields the plain slasher (Virus I).
+        Item weapon = (UpgradeState.isStage4(villager) || villager instanceof EmeraldgerEntity)
+                ? ModItems.ALIEN_ERADICATOR.get() : ModItems.ALIEN_SLASHER.get();
+        if (villager.getMainHandItem().getItem() != weapon) {
+            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(weapon));
             villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
         // Iron boots on upgraded villagers (functional armour; villagers have no armour render layer).
@@ -389,7 +393,7 @@ public final class VillageEvents {
     private static boolean isWeapon(ItemStack stack) {
         Item item = stack.getItem();
         if (item instanceof AxeItem || item instanceof SwordItem || item instanceof CrossbowItem) return true;
-        if (item instanceof MaceItem || item instanceof AlienSlasherItem) return true;
+        if (item instanceof MaceItem || item instanceof AlienSlasherItem || item instanceof AlienEradicatorItem) return true;
         // generic fallback: anything that isn't food or a placeable block counts as a weapon.
         return !(item instanceof BlockItem) && !stack.isEdible();
     }

@@ -58,6 +58,19 @@ public class TheVillageFightsBack {
             net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
                     net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
                     net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash);
+
+            // Virus I -> Virus II with glowstone dust (mirrors vanilla strong-potion brewing); gunpowder then
+            // makes the Virus II splash, exactly as the Virus I splash above.
+            net.minecraft.world.item.ItemStack virus2 = potion(net.minecraft.world.item.Items.POTION,
+                    ModPotions.EMERALD_VIRUS_STRONG.get());
+            net.minecraft.world.item.ItemStack splash2 = potion(net.minecraft.world.item.Items.SPLASH_POTION,
+                    ModPotions.EMERALD_VIRUS_STRONG.get());
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GLOWSTONE_DUST), virus2);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus2),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash2);
         });
     }
 

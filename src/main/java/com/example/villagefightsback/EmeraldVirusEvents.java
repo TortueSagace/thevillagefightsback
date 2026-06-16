@@ -79,17 +79,23 @@ public final class EmeraldVirusEvents {
             return;
         }
         if (!(direct instanceof LivingEntity attacker)) return;
-        if (!(attacker.getMainHandItem().getItem() instanceof AlienSlasherItem)) return;
+        // Item-driven virus level: the Alien Eradicator inflicts Virus II, the Alien Slasher always Virus I.
+        net.minecraft.world.item.Item weapon = attacker.getMainHandItem().getItem();
+        int meleeAmplifier;
+        if (weapon instanceof AlienEradicatorItem) meleeAmplifier = 1;       // Eradicator -> Virus II
+        else if (weapon instanceof AlienSlasherItem) meleeAmplifier = 0;     // Slasher -> Virus I (always)
+        else return;                                                         // not one of our melee weapons
 
         // Virus respects immunity / one-shot rule; the rest of the payload always lands.
-        EmeraldVirus.infect(target, virusLevel(attacker)); // stage-4 attacker -> Virus II
+        EmeraldVirus.infect(target, meleeAmplifier);
         target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SLOWNESS_TICKS, 3, false, true)); // Slowness IV
         target.setSecondsOnFire(FIRE_SECONDS);
         applyHugeKnockback(attacker, target);
     }
 
-    /** Emerald Virus amplifier an attacker imparts: 1 (Virus II) ONLY for a stage-4 village guard/villager.
-     *  Vindictive creatures (the unleashed boss's minions) never impart Virus II -- always Virus I. */
+    /** Emerald Virus amplifier a guard's CROSSBOW virus arrow imparts: 1 (Virus II) ONLY for a stage-4 guard.
+     *  Vindictive creatures (the unleashed boss's minions) never impart Virus II -- always Virus I. The melee
+     *  weapons no longer use this -- their level is fixed by the item (Slasher = I, Eradicator = II). */
     private static int virusLevel(Entity attacker) {
         if (attacker == null) return 0;
         if (attacker instanceof VindictiveGuardEntity || attacker instanceof VindictiveGigachadEntity) return 0;

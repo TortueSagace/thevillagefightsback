@@ -16,7 +16,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 public final class GuardWeapons {
     private GuardWeapons() {}
 
-    private static ItemStack mace, crossbow, slasher; // built lazily (registries ready after construction)
+    private static ItemStack mace, crossbow, slasher, eradicator; // built lazily (registries ready after construction)
 
     /** Our native Mace with Density 3 + Wind Burst 3 + Fire Aspect 2 (the stage-3/4 guard loadout). */
     public static ItemStack mace() {
@@ -41,10 +41,16 @@ public final class GuardWeapons {
         return crossbow;
     }
 
-    /** The Alien Slasher (its on-hit Emerald-Virus payload is applied by EmeraldVirusEvents). */
+    /** The Alien Slasher (its on-hit Emerald-Virus payload -- Virus I -- is applied by EmeraldVirusEvents). */
     public static ItemStack slasher() {
         if (slasher == null) slasher = new ItemStack(ModItems.ALIEN_SLASHER.get());
         return slasher;
+    }
+
+    /** The Alien Eradicator (the stage-4 melee weapon: same as the slasher but its on-hit payload is Virus II). */
+    public static ItemStack eradicator() {
+        if (eradicator == null) eradicator = new ItemStack(ModItems.ALIEN_ERADICATOR.get());
+        return eradicator;
     }
 
     /** Our mace always exists (it is a native item), so the guard's bounce/smash behaviour is always available. */
