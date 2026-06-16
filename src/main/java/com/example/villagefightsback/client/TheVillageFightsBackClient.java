@@ -110,13 +110,50 @@ public final class TheVillageFightsBackClient {
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
     }
 
+    /** The Guard Villagers guard entity type id. The mod is a RUNTIME soft-dep, so this may resolve to null. */
+    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+
     @SubscribeEvent
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
-        // Villagers need NO custom layer: upgraded villagers hold the revolver and the vanilla
+        // Villagers need NO custom gun layer: upgraded villagers hold the revolver and the vanilla
         // CrossedArmsItemLayer renders it (nerfed villagers hold a stone axe, also rendered by it). A
         // villager therefore only ever shows whatever it actually holds -- no gun before the upgrade.
-
+        //
         // Gold re-skin + held rocket launcher now live on GigachadGolemRenderer (gigachads are their own
         // creature type), so the VANILLA iron golem renderer is left untouched.
+
+        // Angry-face overlays: while a villager / guard is FIGHTING (detected client-side via the synced
+        // arm-swing animation -- see AngryFaceClient), scowl an angry villager face onto its head.
+        addAngryVillagerFace(event);
+        addAngryGuardFace(event);
+    }
+
+    /** Attach the angry-face layer to the vanilla villager renderer. */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addAngryVillagerFace(EntityRenderersEvent.AddLayers event) {
+        LivingEntityRenderer<?, ?> renderer = event.getRenderer(net.minecraft.world.entity.EntityType.VILLAGER);
+        if (renderer == null) return; // defensive: some setups replace the villager renderer
+        // The villager renderer's model is a VillagerModel; the wildcard erases that, so cast through raw.
+        ((LivingEntityRenderer) renderer).addLayer(new AngryVillagerFaceLayer(
+                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+    }
+
+    /**
+     * Attach the angry-face layer to the Guard Villagers guard renderer. Guard Villagers is a runtime
+     * soft-dep -- if it is absent the entity type lookup is null and we simply skip (null-guard). The guard
+     * renderer is only decorated when it is a LivingEntityRenderer whose model is a HumanoidModel.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addAngryGuardFace(EntityRenderersEvent.AddLayers event) {
+        net.minecraft.world.entity.EntityType<?> guardType =
+                net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        if (guardType == null) return; // Guard Villagers not installed -- nothing to decorate
+        // getRenderer needs EntityType<? extends T extends LivingEntity>; the registry hands us EntityType<?>,
+        // so go through a raw EntityType (we re-check the model type below before attaching the layer).
+        LivingEntityRenderer<?, ?> renderer = event.getRenderer((net.minecraft.world.entity.EntityType) guardType);
+        if (renderer == null) return;
+        if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) return; // wrong model -> skip
+        ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
+                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
     }
 }

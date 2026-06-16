@@ -52,6 +52,10 @@ public final class LimboAbilityHud {
         if (!ready) {
             String s = String.valueOf(cd / 20 + 1); // seconds remaining (rounded up)
             g.drawString(mc.font, s, x + (size - mc.font.width(s)) / 2 + 1, y + 5, 0xFFFFFFFF, false);
+        } else {
+            // Charged: show the fire key ("G") so the player knows how to unleash the beam.
+            String key = "G";
+            g.drawString(mc.font, key, x + (size - mc.font.width(key)) / 2 + 1, y + 5, 0xFF0A2A12, false);
         }
     }
 }
