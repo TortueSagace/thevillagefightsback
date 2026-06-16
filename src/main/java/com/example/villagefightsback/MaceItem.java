@@ -76,11 +76,5 @@ public class MaceItem extends Item {
         return ench.canEnchant(stack);
     }
 
-    @Override
-    public void appendHoverText(ItemStack stack, net.minecraft.world.level.Level level,
-                                java.util.List<net.minecraft.network.chat.Component> tip,
-                                net.minecraft.world.item.TooltipFlag flag) {
-        tip.add(net.minecraft.network.chat.Component.translatable("item.thevillagefightsback.mace.desc")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
-    }
+    // The inventory tooltip (.desc) is added centrally by ModTooltips; no per-item override (it would double).
 }

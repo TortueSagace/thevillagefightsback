@@ -40,11 +40,5 @@ public class WindChargeItem extends Item {
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 
-    @Override
-    public void appendHoverText(ItemStack stack, Level level,
-                                java.util.List<net.minecraft.network.chat.Component> tip,
-                                net.minecraft.world.item.TooltipFlag flag) {
-        tip.add(net.minecraft.network.chat.Component.translatable("item.thevillagefightsback.wind_charge.desc")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
-    }
+    // The inventory tooltip (.desc) is added centrally by ModTooltips; no per-item override (it would double).
 }
