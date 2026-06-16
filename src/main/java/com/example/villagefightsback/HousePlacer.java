@@ -61,12 +61,21 @@ public final class HousePlacer {
         return place(level, center, rotation, houseId, HOUSE_LOOT);
     }
 
+    public static boolean place(ServerLevel level, BlockPos center, Rotation rotation, ResourceLocation structureId, ResourceLocation loot) {
+        return place(level, center, rotation, structureId, loot, 0);
+    }
+
     /**
      * Generic path: carve the footprint and queue an animated build of {@code structureId}, rotated by
-     * {@code rotation}, with container loot from {@code loot} (or none if null). Returns false if it
-     * can't load. The footprint size is read from the template, so this works for any square building.
+     * {@code rotation}, with container loot from {@code loot} (or none if null). Returns false if it can't load.
+     * The footprint size is read from the template, so this works for any square building.
+     *
+     * <p>{@code floorLayer} is the template's LOCAL y that should sit ONE BLOCK BELOW {@code center} (the TNT):
+     * 0 (the default) places the template's bottom there, so a normal building rises from it. A NEGATIVE value
+     * auto-anchors on the highest powder-snow layer instead -- a deep trap whose powder-snow surface lands right
+     * below the TNT while the rest of the structure extends downward.
      */
-    public static boolean place(ServerLevel level, BlockPos center, Rotation rotation, ResourceLocation structureId, ResourceLocation loot) {
+    public static boolean place(ServerLevel level, BlockPos center, Rotation rotation, ResourceLocation structureId, ResourceLocation loot, int floorLayer) {
         Optional<StructureTemplate> opt = level.getStructureManager().get(structureId);
         if (opt.isEmpty()) {
             TheVillageFightsBack.LOGGER.warn("[The Village Fights Back] missing structure template {}", structureId);
@@ -83,7 +92,26 @@ public final class HousePlacer {
                 .setRotationPivot(new BlockPos(hx, 0, hz))  // square footprint -> rotation-invariant center
                 .setKnownShape(true);
 
-        int ox = center.getX() - hx, oy = center.getY() - 1, oz = center.getZ() - hz;
+        // Read the template up front so we can (optionally) find its anchor layer before carving/placing.
+        CompoundTag data = template.save(new CompoundTag());
+        BlockState[] palette = readPalette(data);
+        ListTag blocks = data.getList("blocks", Tag.TAG_COMPOUND);
+
+        // floorLayer < 0 -> anchor on the highest powder-snow layer (a deep trap): that surface goes one below
+        // the TNT and everything else (the lava pit) extends downward. Falls back to the template bottom (0).
+        if (floorLayer < 0) {
+            int snow = 0; boolean found = false;
+            for (int i = 0; i < blocks.size(); i++) {
+                CompoundTag b = blocks.getCompound(i);
+                int idx = b.getInt("state");
+                if (idx < 0 || idx >= palette.length || !palette[idx].is(Blocks.POWDER_SNOW)) continue;
+                int ly = b.getList("pos", Tag.TAG_INT).getInt(1);
+                if (!found || ly > snow) { snow = ly; found = true; }
+            }
+            floorLayer = found ? snow : 0;
+        }
+
+        int ox = center.getX() - hx, oy = center.getY() - 1 - floorLayer, oz = center.getZ() - hz;
         BlockPos offset = new BlockPos(ox, oy, oz);
 
         // 1) carve the footprint to air instantly (square footprint -> rotation-independent box)
@@ -94,10 +122,7 @@ public final class HousePlacer {
                 for (int dz = 0; dz < sz; dz++)
                     level.setBlock(m.set(ox + dx, oy + dy, oz + dz), air, HouseBuildManager.FLAGS);
 
-        // 2) read the template's blocks, transform them, and split into structure vs. sensitive
-        CompoundTag data = template.save(new CompoundTag());
-        BlockState[] palette = readPalette(data);
-        ListTag blocks = data.getList("blocks", Tag.TAG_COMPOUND);
+        // 2) transform the template's blocks and split into structure vs. sensitive
 
         List<HouseBuildManager.Placement> structure = new ArrayList<>();
         List<HouseBuildManager.Placement> deferred = new ArrayList<>();

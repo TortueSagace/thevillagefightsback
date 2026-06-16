@@ -21,15 +21,21 @@ import net.minecraft.world.level.block.state.BlockState;
 public class StructureTntBlock extends Block {
     private final ResourceLocation structure;
     private final ResourceLocation loot; // chest loot for the structure's containers (null = no loot)
+    private final int floorLayer;        // template local y that sits one below the TNT (<0 = anchor on powder snow)
 
     public StructureTntBlock(Properties properties, ResourceLocation structure) {
-        this(properties, structure, null);
+        this(properties, structure, null, 0);
     }
 
     public StructureTntBlock(Properties properties, ResourceLocation structure, ResourceLocation loot) {
+        this(properties, structure, loot, 0);
+    }
+
+    public StructureTntBlock(Properties properties, ResourceLocation structure, ResourceLocation loot, int floorLayer) {
         super(properties);
         this.structure = structure;
         this.loot = loot;
+        this.floorLayer = floorLayer;
     }
 
     @Override
@@ -41,7 +47,7 @@ public class StructureTntBlock extends Block {
             sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 0.9F);
             sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
                     8, 1.5, 1.5, 1.5, 0.0);
-            HousePlacer.place(sl, at, Rotation.NONE, structure, loot); // loot is rolled into the structure's chests
+            HousePlacer.place(sl, at, Rotation.NONE, structure, loot, floorLayer); // loot -> chests; floorLayer sets the depth
         });
     }
 }

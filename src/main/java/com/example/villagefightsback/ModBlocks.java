@@ -201,7 +201,9 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> PURPLE_TNT = BLOCKS.register(
             "purple_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("lure_tower_node")));
+            // floorLayer -1: a deep trap -> anchor on the powder-snow surface, which lands one block below the
+            // TNT while the lava pit extends downward (and the small tower rises above).
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("lure_tower_node"), null, -1));
     public static final RegistryObject<Item> PURPLE_TNT_ITEM = ITEMS.register(
             "purple_tnt", () -> new BlockItem(PURPLE_TNT.get(), new Item.Properties()));
 
