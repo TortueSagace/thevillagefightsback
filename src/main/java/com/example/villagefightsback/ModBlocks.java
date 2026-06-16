@@ -48,7 +48,7 @@ public final class ModBlocks {
                     .strength(50.0F, 1200.0F)              // obsidian toughness
                     .sound(SoundType.STONE)
                     // Glows at least as bright as a fertile block (FERTILE_LIGHT = 5), brighter as it levels up.
-                    .lightLevel(s -> Math.max(5, s.getValue(VillageBrainNodeBlock.CHARGES) * 3))));
+                    .lightLevel(s -> 15)));   // same full light as the Forgotten Glowstone block
 
     public static final RegistryObject<Item> VILLAGE_BRAIN_NODE_ITEM = ITEMS.register(
             "village_brain_node",
@@ -194,7 +194,8 @@ public final class ModBlocks {
 
     public static final RegistryObject<Block> ORANGE_TNT = BLOCKS.register(
             "orange_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks")));
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks"),
+                    struct("chests/barracks"))); // the barracks chest rolls a weapons-oriented loot table
     public static final RegistryObject<Item> ORANGE_TNT_ITEM = ITEMS.register(
             "orange_tnt", () -> new BlockItem(ORANGE_TNT.get(), new Item.Properties()));
 

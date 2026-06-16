@@ -20,10 +20,16 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class StructureTntBlock extends Block {
     private final ResourceLocation structure;
+    private final ResourceLocation loot; // chest loot for the structure's containers (null = no loot)
 
     public StructureTntBlock(Properties properties, ResourceLocation structure) {
+        this(properties, structure, null);
+    }
+
+    public StructureTntBlock(Properties properties, ResourceLocation structure, ResourceLocation loot) {
         super(properties);
         this.structure = structure;
+        this.loot = loot;
     }
 
     @Override
@@ -35,7 +41,7 @@ public class StructureTntBlock extends Block {
             sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 0.9F);
             sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
                     8, 1.5, 1.5, 1.5, 0.0);
-            HousePlacer.place(sl, at, Rotation.NONE, structure, null); // no chest loot in the node structures
+            HousePlacer.place(sl, at, Rotation.NONE, structure, loot); // loot is rolled into the structure's chests
         });
     }
 }
