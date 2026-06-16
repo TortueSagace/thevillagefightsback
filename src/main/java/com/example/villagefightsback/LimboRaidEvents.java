@@ -42,11 +42,8 @@ public final class LimboRaidEvents {
             if (p.getY() < feetY) continue;                                           // never dig out the floor
             BlockState s = level.getBlockState(p);
             if (s.isAir() || s.getDestroySpeed(level, p) < 0) continue;               // skip air + unbreakable (bedrock)
-            // Obsidian-tough / reinforced blocks are spared -- EXCEPT protecting glass, which the raiders smash
-            // through to get at the wall defenders sealed inside their shells.
-            if (s.getBlock().getExplosionResistance() >= TOUGH_RESISTANCE
-                    && !s.is(ModBlocks.PROTECTING_GLASS.get())) continue;
-            level.destroyBlock(p, true);
+            if (s.getBlock().getExplosionResistance() >= TOUGH_RESISTANCE) continue;  // obsidian-tough / reinforced: spared
+            level.destroyBlock(p, true);                                              // (protecting glass is now weak -> smashed here)
         }
 
         // Reach an elevated target (a defender on the wall, a villager up high) by pillaring with cheap scaffolds.

@@ -230,14 +230,14 @@ public final class ModBlocks {
     /**
      * Protecting glass: a directional, one-way-for-projectiles glass (see {@link ProtectingGlassBlock} /
      * {@link ProtectingGlassEvents}). Light-blue tinted look; the white FACING face is the side a projectile
-     * can exit. Reinforced-glass tough (hardness 30, blast resistance 1200, diamond pickaxe).
+     * can exit. As fragile as normal glass (the one-way projectile block is its only strength) -- it is NOT
+     * obsidian-tough, so attackers can break the defender shells open.
      */
     public static final RegistryObject<Block> PROTECTING_GLASS = BLOCKS.register(
             "protecting_glass",
             () -> new ProtectingGlassBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_LIGHT_BLUE)
-                    .strength(30.0F, 1200.0F)
-                    .requiresCorrectToolForDrops()
+                    .strength(0.3F)                 // normal-glass toughness
                     .sound(SoundType.GLASS)
                     .noOcclusion()
                     .isValidSpawn((s, l, p, e) -> false)
@@ -516,6 +516,7 @@ public final class ModBlocks {
                 for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());
+                output.accept(ModItems.ALIEN_ERADICATOR.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
                 output.accept(ModItems.ROCKET.get());
                 output.accept(ModItems.FIRE_GRENADE.get());
@@ -576,6 +577,7 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
+                output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
             })
             .build());
 
