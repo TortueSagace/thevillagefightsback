@@ -20,7 +20,7 @@ public class BrainNodeScreen extends Screen {
     private static final int PANEL_W = 252;
     private static final int HEADER_H = 26;
     private static final int ROW_H = 28;
-    private static final int FOOTER_H = 52; // emerald progress + defender-count + fertilized-count lines
+    private static final int FOOTER_H = 80; // emerald progress + defender-count + fertilized-count + a 2-line help note
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -149,6 +149,16 @@ public class BrainNodeScreen extends Screen {
         Component fert = Component.literal("Fertilized blocks: ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
         g.drawString(font, fert, leftPos + 8, footerY + 24, 0xFFFFFFFF, false);
+
+        // Gray help note at the very bottom, wrapped to stay inside the panel width.
+        Component help = Component.literal(
+                "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!")
+                .withStyle(ChatFormatting.GRAY);
+        int helpY = footerY + 40;
+        for (net.minecraft.util.FormattedCharSequence line : font.split(help, PANEL_W - 16)) {
+            g.drawString(font, line, leftPos + 8, helpY, 0xFFFFFFFF, false);
+            helpY += 10;
+        }
 
         super.render(g, mouseX, mouseY, partial);
 

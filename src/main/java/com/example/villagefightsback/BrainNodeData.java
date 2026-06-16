@@ -42,6 +42,7 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed brainNode blocks
     private final Set<GlobalPos> nodes = new HashSet<>();         // placed node blocks (golem-factory/barracks/lure-tower): +10% sunset gems each, in radius
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a brainNode
+    private final Set<GlobalPos> announced = new HashSet<>();       // brain nodes whose discovery banner already fired (to any player)
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per brainNode
     private final Map<GlobalPos, WallPlan> outerWallPlans = new HashMap<>(); // stage-3 OUTER obsidian wall per brainNode
     private final Set<GlobalPos> defendersBuilt = new HashSet<>();  // brainNodes whose level-2 gate turrets are placed
@@ -120,6 +121,7 @@ public class BrainNodeData extends SavedData {
     public void eraseVillage(GlobalPos brainNode) {
         boolean changed = econs.keySet().removeIf(k -> nearCluster(k, brainNode));
         changed |= servicedCenters.removeIf(k -> nearCluster(k, brainNode));
+        changed |= announced.removeIf(k -> nearCluster(k, brainNode));
         changed |= defendersBuilt.removeIf(k -> nearCluster(k, brainNode));
         changed |= domeBuilt.removeIf(k -> nearCluster(k, brainNode));
         changed |= expanded.removeIf(k -> nearCluster(k, brainNode));
@@ -146,6 +148,11 @@ public class BrainNodeData extends SavedData {
 
     public boolean isServiced(GlobalPos center) { return servicedCenters.contains(center); }
     public void addServiced(GlobalPos center) { if (servicedCenters.add(center)) setDirty(); }
+
+    // --- brain-node discovery banner (fires once per node, the first time any player comes near it) ---
+
+    public boolean isAnnounced(GlobalPos brainNode) { return announced.contains(brainNode); }
+    public void markAnnounced(GlobalPos brainNode) { if (announced.add(brainNode)) setDirty(); }
 
     // --- defensive wall plans (one per brainNode) ---
 
@@ -197,6 +204,7 @@ public class BrainNodeData extends SavedData {
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "nodes", d.nodes);
         readPositions(tag, "serviced", d.servicedCenters);
+        readPositions(tag, "announced", d.announced);
         readPositions(tag, "defenders", d.defendersBuilt);
         readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
         readPositions(tag, "dome", d.domeBuilt);
@@ -244,6 +252,7 @@ public class BrainNodeData extends SavedData {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "nodes", nodes);
         writePositions(tag, "serviced", servicedCenters);
+        writePositions(tag, "announced", announced);
         writePositions(tag, "defenders", defendersBuilt);
         writePositions(tag, "outerDefenders", outerDefendersBuilt);
         writePositions(tag, "dome", domeBuilt);

@@ -548,6 +548,38 @@ public final class VillageEvents {
     public static final double NODE_DEFEND_RADIUS = 30.0;
     private static final int NODE_AGGRO_TICKS = 200;          // ...for ~10s per trigger
     public static final int ENEMY_STATUS_TICKS = 24000;      // Enemy of the Village lasts 20 minutes
+    public static final int THIEF_STATUS_TICKS = 600;        // a chest thief is an Enemy of the Village for 30s
+
+    /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on, and EMPTY curative
+     *  items so milk can never cure it (it still clears on death). Shared by every ETV grant. */
+    private static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
+        net.minecraft.world.effect.MobEffectInstance inst = new net.minecraft.world.effect.MobEffectInstance(
+                ModEffects.ENEMY_OF_THE_VILLAGE.get(), ticks, 0, false, false, true);
+        inst.setCurativeItems(new ArrayList<>()); // milk cannot cure it
+        return inst;
+    }
+
+    /**
+     * Brand a player a chest THIEF: Enemy of the Village for {@value #THIEF_STATUS_TICKS} ticks (30s) with a RED
+     * broadcast. Distinct from {@link #markVillageEnemy} (20 min) -- a short, sharp punishment for taking from a
+     * village chest. Like every ETV grant it removes Hero of the Village, uses empty curative items (milk-proof),
+     * and -- via the {@link MobEffectEvent.Added} handler -- rallies the village the instant it lands.
+     */
+    public static void markThief(ServerLevel level, Player player) {
+        if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators can't steal
+        player.addEffect(enemyInstance(THIEF_STATUS_TICKS));
+        player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
+        level.getServer().getPlayerList().broadcastSystemMessage(
+                net.minecraft.network.chat.Component.literal(
+                        player.getName().getString() + " is stealing from the village!")
+                        .withStyle(net.minecraft.ChatFormatting.RED), false);
+    }
+
+    /** Rally every defender within {@link #NODE_DEFEND_RADIUS} of {@code player} against them (used by the
+     *  event-driven hostility handler the moment Enemy of the Village is added). */
+    public static void aggroDefendersAgainst(ServerLevel level, Player player) {
+        aggroDefendersAgainst(level, player.blockPosition(), NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
+    }
     // Per-player throttle so a sustained attack doesn't re-broadcast / re-rally every tick.
     private static final java.util.Map<java.util.UUID, Long> lastEnemyTrigger = new java.util.HashMap<>();
 
@@ -559,11 +591,12 @@ public final class VillageEvents {
      * server. The rally + broadcast are throttled per player (~2s); the status refresh is not.
      */
     public static void markVillageEnemy(ServerLevel level, BlockPos center, Player player) {
-        if (player.isCreative() || player.isSpectator()) return; // admins/testers aren't village enemies
+        if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators excluded
         boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
-        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD.
-        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.ENEMY_OF_THE_VILLAGE.get(), ENEMY_STATUS_TICKS, 0, false, false, true));
+        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD. Empty curative
+        // items -> milk cannot cure it (it still clears on death). The MobEffectEvent.Added handler rallies
+        // every defender the moment this lands (event-driven hostility, no per-tick scan).
+        player.addEffect(enemyInstance(ENEMY_STATUS_TICKS));
         // You can't be a hero of the village and its enemy at once -- the enemy status revokes Hero of the Village.
         player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
 
@@ -597,6 +630,61 @@ public final class VillageEvents {
                 CompoundTag data = m.getPersistentData();
                 data.putUUID(NBT_AGGRO_UUID, attacker.getUUID());
                 data.putLong(NBT_AGGRO_UNTIL, until);
+            }
+        }
+    }
+
+    // --- EVENT-DRIVEN hostility: the village treats a player as hostile iff they hold Enemy of the Village ---
+
+    /**
+     * The instant Enemy of the Village lands on a player, rally every nearby defender against them. This is the
+     * single hook that turns ETV into hostility -- golems setTarget, villagers/guards get the aggro NBT --
+     * no matter HOW the status was applied (mining, hitting a defender, theft, ...). No per-tick verifier needed.
+     */
+    @SubscribeEvent
+    public static void onEnemyEffectAdded(net.minecraftforge.event.entity.living.MobEffectEvent.Added event) {
+        if (event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() instanceof ServerLevel sl) {
+            aggroDefendersAgainst(sl, player);
+        }
+    }
+
+    /** When Enemy of the Village is removed early (e.g. it was cleared), stop the hunt immediately. */
+    @SubscribeEvent
+    public static void onEnemyEffectRemoved(net.minecraftforge.event.entity.living.MobEffectEvent.Remove event) {
+        if (event.getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() instanceof ServerLevel sl) {
+            clearEnemyTargets(sl, player);
+        }
+    }
+
+    /** When Enemy of the Village expires on its own, stop the hunt immediately (no polling). */
+    @SubscribeEvent
+    public static void onEnemyEffectExpired(net.minecraftforge.event.entity.living.MobEffectEvent.Expired event) {
+        if (event.getEffectInstance() == null
+                || event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() instanceof ServerLevel sl) {
+            clearEnemyTargets(sl, player);
+        }
+    }
+
+    /**
+     * Stop every nearby village defender (villager / guard / iron golem / wall defender) from hunting
+     * {@code player} the moment Enemy of the Village ends: clear it as their set target, and wipe the aggro NBT
+     * that {@link #getAggroPlayer} reads. This disengages even guards/golems that kept a target set, with no
+     * per-tick scan -- it runs once, on the remove/expire event.
+     */
+    private static void clearEnemyTargets(ServerLevel level, Player player) {
+        AABB box = player.getBoundingBox().inflate(NODE_DEFEND_RADIUS + FOLLOW_RANGE);
+        for (Mob m : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && isAlly(e))) {
+            if (m.getTarget() == player) m.setTarget(null);
+            CompoundTag data = m.getPersistentData();
+            if (data.hasUUID(NBT_AGGRO_UUID) && player.getUUID().equals(data.getUUID(NBT_AGGRO_UUID))) {
+                data.remove(NBT_AGGRO_UUID);
+                data.remove(NBT_AGGRO_UNTIL);
             }
         }
     }

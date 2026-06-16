@@ -11,7 +11,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -59,6 +58,9 @@ public class VillageBrainNodeBlock extends Block {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
             if (!player.getAbilities().instabuild) held.shrink(donated);
+            // Donating emeralds buys Hero of the Village -- 1 minute per emerald, STACKING onto any time left
+            // (both creative and survival). The instance has empty curative items so milk cannot cure it.
+            if (player instanceof ServerPlayer hero) grantDonationHero(hero, donated);
             // Reflect any level-up on the clicked block immediately; the rest sync via BrainNodeEvents.
             int target = chargesForLevel(econ.getLevel());
             if (state.getValue(CHARGES) != target) {
@@ -89,6 +91,25 @@ public class VillageBrainNodeBlock extends Block {
         return InteractionResult.CONSUME;
     }
 
+    private static final int HERO_TICKS_PER_EMERALD = 60 * 20; // 1 minute of Hero of the Village per emerald
+
+    /**
+     * Grant (or EXTEND) Hero of the Village by {@code emeralds} minutes. The new duration is whatever time was
+     * left on any current Hero of the Village PLUS {@code emeralds * 60 * 20} ticks, so repeated donations
+     * stack. The instance carries EMPTY curative items so milk can never cure it (it still clears on death).
+     */
+    private static void grantDonationHero(ServerPlayer player, int emeralds) {
+        if (emeralds <= 0) return;
+        net.minecraft.world.effect.MobEffectInstance current =
+                player.getEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
+        int remaining = current != null ? current.getDuration() : 0;
+        int newDuration = remaining + emeralds * HERO_TICKS_PER_EMERALD;
+        net.minecraft.world.effect.MobEffectInstance hero = new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE, newDuration, 0, false, false, true);
+        hero.setCurativeItems(new java.util.ArrayList<>()); // milk cannot cure it
+        player.addEffect(hero);
+    }
+
     private static Component info(BrainNodeData.Econ econ) {
         if (econ.isMaxLevel()) {
             return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
@@ -109,15 +130,6 @@ public class VillageBrainNodeBlock extends Block {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
         VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
-    }
-
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-        super.setPlacedBy(level, pos, state, placer, stack);
-        // Placing the brain node by hand founds the village -> Hero of the Village for the placer.
-        if (!level.isClientSide && placer instanceof ServerPlayer player) {
-            BrainNodeEvents.rewardHero(player);
-        }
     }
 
     @Override
