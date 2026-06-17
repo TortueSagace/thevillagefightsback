@@ -16,8 +16,8 @@ SIZE = 512          # output square size (logo is 2048; 512 is plenty and keeps 
 FRAMES = 24         # frames per pulse loop
 FRAME_MS = 80       # ~1.9 s loop
 GREEN_LO, GREEN_HI = 30, 70   # greenness ramp (g - max(r,b)) that counts as "emerald"
-LIFT = 0.55         # how far green pixels shift toward bright green at the peak
-BLOOM = 0.65        # bloom-halo strength at the peak
+LIFT = 0.28         # how far green pixels shift toward bright green at the peak
+BLOOM = 0.28        # bloom-halo strength at the peak
 
 base = Image.open(SRC).convert("RGB").resize((SIZE, SIZE), Image.LANCZOS)
 arr = np.asarray(base).astype(np.float32)
