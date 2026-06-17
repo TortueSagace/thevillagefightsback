@@ -87,6 +87,13 @@ public class StoneAxeDefenseGoal extends Goal {
     }
 
     @Override
+    public void start() {
+        // A villager that was just building is bare-handed (WallBuildGoal empties the slot when it stops);
+        // re-arm with the stone axe before defending so it actually swings a weapon.
+        VillageEvents.restoreDefenderWeapon(villager);
+    }
+
+    @Override
     public void stop() {
         villager.setTarget(null);
         this.target = null;

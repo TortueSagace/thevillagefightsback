@@ -59,6 +59,9 @@ public class BuilderDefenseGoal extends Goal {
 
     @Override
     public void start() {
+        // The builder was just digging/placing and so is bare-handed; arm it with its defender weapon
+        // (Alien Slasher if upgraded, else the stone axe) before it stands and fights.
+        com.example.villagefightsback.VillageEvents.restoreDefenderWeapon(villager);
         villager.setTarget(target);
     }
 

@@ -182,7 +182,7 @@ public class WallBuildGoal extends Goal {
         if (plan != null && target != null) WallBuild.release(plan.brainNode(), target.pos());
         villager.getNavigation().stop();
         clearDig();
-        unequipTool();
+        restoreWeapon();
         plan = null;
         target = null;
         stand = null;
@@ -422,7 +422,7 @@ public class WallBuildGoal extends Goal {
 
     private void finishDig() {
         clearDig();
-        unequipTool();
+        restoreWeapon();
     }
 
     private void clearDig() {
@@ -430,10 +430,13 @@ public class WallBuildGoal extends Goal {
         digPos = null;
     }
 
-    private void unequipTool() {
-        if (!villager.getMainHandItem().isEmpty()) {
-            villager.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-        }
+    /**
+     * After a dig (or when the build goal ends) put the villager's combat weapon back in hand instead of
+     * leaving it empty: a stage-3 defender should always be visibly wielding -- and landing the on-hit
+     * payload of -- its Alien Slasher, not standing around bare-handed after it last broke a block.
+     */
+    private void restoreWeapon() {
+        com.example.villagefightsback.VillageEvents.restoreDefenderWeapon(villager);
     }
 
     private ItemStack toolFor(BlockState s) {

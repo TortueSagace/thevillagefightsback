@@ -203,6 +203,25 @@ public final class VillageEvents {
         // (WallBuildGoal is added separately by BrainNodeEvents.ensureWallBuildGoal when a brainNode is near.)
     }
 
+    /**
+     * Put the correct melee weapon back in a defender villager's hand: its stage-3+ Alien Slasher (or the
+     * Alien Eradicator at stage 4 / for an Emeraldger) if upgraded, else the nerfed stone axe. Wall-building
+     * empties the hand ({@link com.example.villagefightsback.goal.WallBuildGoal} digs with stone tools, then
+     * clears the slot), so the build goal's stop() and the combat goals call this to make sure an idle or
+     * fighting defender is actually holding -- and so visibly wielding, and dealing the on-hit payload of --
+     * its weapon. Idempotent: only touches the slot when it holds the wrong item.
+     */
+    public static void restoreDefenderWeapon(Villager villager) {
+        Item weapon = UpgradeState.isUpgraded(villager)
+                ? ((UpgradeState.isStage4(villager) || villager instanceof EmeraldgerEntity)
+                        ? ModItems.ALIEN_ERADICATOR.get() : ModItems.ALIEN_SLASHER.get())
+                : Items.STONE_AXE;
+        if (villager.getMainHandItem().getItem() != weapon) {
+            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(weapon));
+            villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
+    }
+
     private static void armVillagerFull(Villager villager) {
         // Stage-3 villagers wield the Alien Slasher (a netherite axe) instead of the revolver. They hold it
         // for real -- the vanilla CrossedArmsItemLayer renders the held item -- and melee with it; the axe's
@@ -210,12 +229,7 @@ public final class VillageEvents {
         // No guns, flamethrower, flare or molotov: the slasher is the villager's only stage-3 weapon.
         // Stage-4 villagers (and Emeraldgers, the stage-4 virus spawns) wield the Alien Eradicator (Virus II);
         // stage-3 wields the plain slasher (Virus I).
-        Item weapon = (UpgradeState.isStage4(villager) || villager instanceof EmeraldgerEntity)
-                ? ModItems.ALIEN_ERADICATOR.get() : ModItems.ALIEN_SLASHER.get();
-        if (villager.getMainHandItem().getItem() != weapon) {
-            villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(weapon));
-            villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-        }
+        restoreDefenderWeapon(villager);
         // Iron boots on upgraded villagers (functional armour; villagers have no armour render layer).
         if (!(villager.getItemBySlot(EquipmentSlot.FEET).getItem() instanceof net.minecraft.world.item.ArmorItem)) {
             villager.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));

@@ -92,6 +92,13 @@ public class AxeCombatGoal extends Goal {
     }
 
     @Override
+    public void start() {
+        // A villager that was just building is bare-handed (WallBuildGoal empties the slot when it stops).
+        // Re-arm before slashing, so the slasher is both VISIBLE and lands its Emerald-Virus on-hit payload.
+        VillageEvents.restoreDefenderWeapon(villager);
+    }
+
+    @Override
     public void stop() {
         villager.setTarget(null);
         this.target = null;
