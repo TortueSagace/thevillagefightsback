@@ -465,6 +465,14 @@ public final class VillageEvents {
             event.setCanceled(true);            // SAME-side allies never fight each other (a vindictive
             return;                             // gigachad is an IronGolem but a boss-faction ENEMY of the village)
         }
+        // The village never targets what it spares: General Darius (its champion) or the Vindictive Village
+        // Spirit (friendly toward villagers). Catches vanilla golem/guard target acquisition too. The spirit's
+        // two vindictive minions are NOT spared, so the village still hunts those.
+        if (newTarget != null && isAlly(self) && !Factions.isInfected(self)
+                && Factions.isSparedByVillage(newTarget)) {
+            event.setCanceled(true);
+            return;
+        }
         // Villagers/guards must not leave the walled zone to chase a mob: if WE stand inside our village wall
         // but the would-be target is on the far side of it, refuse the target (we engage it only once it
         // breaks IN). Players are exempt -- anti-grief retaliation can still chase the griefer.
@@ -506,12 +514,13 @@ public final class VillageEvents {
         if (best != null) data.econ(best).addEmeralds(1); // addEmeralds() self-dirties the saved data
     }
 
-    /** Immunity effect: the holder takes NO damage while it is active -- except sources that bypass
-     *  invulnerability (the void, /kill), so an immune entity can never get permanently stuck. */
+    /** Immunity effect: the holder is immune to FIRE damage only (in-fire / on-fire / lava / magma /
+     *  fireballs). It does NOT block ordinary combat damage -- its protection is fire immunity plus the
+     *  harmful-status-effect block below. */
     @SubscribeEvent
     public static void onImmunityAttack(LivingAttackEvent event) {
         if (event.getEntity().hasEffect(ModEffects.IMMUNITY.get())
-                && !event.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+                && event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
             event.setCanceled(true);
         }
     }
@@ -539,6 +548,15 @@ public final class VillageEvents {
         if (isAlly(event.getEntity()) && event.getSource().getEntity() != null
                 && isAlly(event.getSource().getEntity())
                 && Factions.isInfected(event.getEntity()) == Factions.isInfected(event.getSource().getEntity())) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // The Vindictive Village Spirit is friendly toward the village: village allies (villagers, golems,
+        // guards, wall defenders, Darius) can never harm it -- only the player's own attacks do. Its two
+        // vindictive minions (guards + gigachads) are NOT protected; the village still fights those.
+        if (event.getEntity() instanceof UnleashedBrainNodeEntity && event.getSource().getEntity() != null
+                && isAlly(event.getSource().getEntity()) && !Factions.isInfected(event.getSource().getEntity())) {
             event.setCanceled(true);
             return;
         }
