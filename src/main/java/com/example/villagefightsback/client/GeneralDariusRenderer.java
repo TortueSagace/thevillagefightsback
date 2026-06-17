@@ -12,17 +12,18 @@ import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * General Darius renders as a LIVING armoured knight -- a plain humanoid, NOT a zombie villager. The standard
- * humanoid model wears his full Limbo set (HumanoidArmorLayer), holds the Alien Smasher (ItemInHandLayer), and
- * shows the Limbo Helmet's three spikes ({@link LimboHelmetSpikesLayer}). His skin (general_darius.png) is a
- * normal tan humanoid; the worn armour covers most of it, so he reads as an armoured man.
+ * General Darius renders as a LIVING villager guard, using {@link DariusVillagerModel} -- a humanoid model with
+ * the iconic villager NOSE -- so he has a real villager face (the nose pokes out past the Limbo helmet) while
+ * still wearing the full Limbo set through the {@link HumanoidArmorLayer}. His skin (general_darius.png) is the
+ * vanilla zombie-villager texture recoloured to a living villager tan, so he is NOT green/undead. He holds the
+ * Alien Smasher ({@link ItemInHandLayer}) and shows the Limbo Helmet's three spikes ({@link LimboHelmetSpikesLayer}).
  */
-public class GeneralDariusRenderer extends MobRenderer<GeneralDariusEntity, HumanoidModel<GeneralDariusEntity>> {
+public class GeneralDariusRenderer extends MobRenderer<GeneralDariusEntity, DariusVillagerModel> {
     private static final ResourceLocation TEX =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/general_darius.png");
 
     public GeneralDariusRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER)), 0.5F);
+        super(ctx, new DariusVillagerModel(ctx.bakeLayer(TheVillageFightsBackClient.DARIUS_LAYER)), 0.5F);
         addLayer(new HumanoidArmorLayer<>(this,
                 new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
                 new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
