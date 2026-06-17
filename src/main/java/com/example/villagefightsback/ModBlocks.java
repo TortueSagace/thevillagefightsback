@@ -583,6 +583,10 @@ public final class ModBlocks {
                 for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
+                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL.get())); // Potion of Karat's Will
+                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL_LONG.get())); // Karat's Will (long)
                 output.accept(ModItems.EMERALD_APPLE.get());
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.EMERALD_VIRUS.get())); // Potion of Emerald Virus

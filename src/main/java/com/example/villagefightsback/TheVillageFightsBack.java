@@ -72,6 +72,28 @@ public class TheVillageFightsBack {
             net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
                     net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus2),
                     net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash2);
+
+            // Karat's Will: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, the
+            // standard brewing rules give the variants: gunpowder -> volatile (splash), splash + dragon's breath
+            // -> lingering, redstone -> long. (Splash/lingering of the long variant follow from vanilla's generic
+            // gunpowder/dragon's-breath container recipes.)
+            net.minecraft.world.item.ItemStack kw = potion(net.minecraft.world.item.Items.POTION,
+                    ModPotions.KARATS_WILL.get());
+            net.minecraft.world.item.ItemStack kwSplash = potion(net.minecraft.world.item.Items.SPLASH_POTION,
+                    ModPotions.KARATS_WILL.get());
+            net.minecraft.world.item.ItemStack kwLinger = potion(net.minecraft.world.item.Items.LINGERING_POTION,
+                    ModPotions.KARATS_WILL.get());
+            net.minecraft.world.item.ItemStack kwLong = potion(net.minecraft.world.item.Items.POTION,
+                    ModPotions.KARATS_WILL_LONG.get());
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kw),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), kwSplash);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kwSplash),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.DRAGON_BREATH), kwLinger);
+            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
+                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kw),
+                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.REDSTONE), kwLong);
         });
     }
 

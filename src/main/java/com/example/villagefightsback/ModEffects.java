@@ -35,6 +35,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> VERY_BAD_OMEN =
             EFFECTS.register("very_bad_omen", VeryBadOmenEffect::new);
 
+    /** "Karat's Will": deflects the whole attack -- combat damage and harmful effects an attacker inflicts on
+     *  the holder hit the attacker instead (see {@link KaratsWillEffect} / {@link KaratsWillEvents}). */
+    public static final RegistryObject<MobEffect> KARATS_WILL =
+            EFFECTS.register("karats_will", KaratsWillEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }
