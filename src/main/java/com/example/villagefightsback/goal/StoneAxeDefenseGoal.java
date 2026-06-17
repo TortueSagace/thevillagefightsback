@@ -13,16 +13,16 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Nerfed (un-upgraded) villager combat: a villager flees normally (vanilla brain) until it drops below
- * {@value #HEALTH_FRAC} of its health, at which point it makes a desperate stand -- meleeing the nearest
- * hostile (NEVER a creeper) with its stone axe. It does not fight while healthy, so the panic/flee
- * behaviour is left intact above this threshold.
+ * Nerfed (un-upgraded) villager combat: the villager actively defends, meleeing the nearest hostile (NEVER a
+ * creeper) and any player who attacked the village, with its stone axe. It is nerfed in POWER (low damage, no
+ * armour), not in courage -- it stands and fights threats near its village instead of cowering. It still will
+ * not leave its wall to chase ({@link VillageEvents#beyondHomeWall}).
  */
 public class StoneAxeDefenseGoal extends Goal {
-    private static final float HEALTH_FRAC = 0.75F;  // only fight below 75% health
     private static final double SEE_RANGE = 16.0;    // detect hostiles within this
     private static final double REACH_SQR = 4.0;     // melee reach (~2 blocks)
     private static final float AXE_DAMAGE = 5.0F;    // stone-axe-ish hit
@@ -38,8 +38,17 @@ public class StoneAxeDefenseGoal extends Goal {
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
-    private boolean hurt() {
-        return villager.getHealth() < villager.getMaxHealth() * HEALTH_FRAC;
+    /** A player who attacked the village (retaliation) takes priority, else the nearest hostile. */
+    private LivingEntity acquireTarget() {
+        Player aggro = VillageEvents.getAggroPlayer(villager);
+        if (aggro != null && inRange(aggro)) return aggro;
+        return findTarget();
+    }
+
+    private boolean inRange(LivingEntity t) {
+        return t != null && t.isAlive()
+                && villager.distanceToSqr(t) <= SEE_RANGE * SEE_RANGE
+                && villager.getSensing().hasLineOfSight(t);
     }
 
     /** Nearest living hostile (Enemy) that is NOT a creeper, in range and line of sight. */
@@ -61,18 +70,15 @@ public class StoneAxeDefenseGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (!hurt()) return false;                                   // healthy -> flee normally
         if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
-        this.target = findTarget();
+        this.target = acquireTarget();
         if (VillageEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
         return target != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return hurt() && target != null && target.isAlive()
-                && villager.distanceToSqr(target) <= SEE_RANGE * SEE_RANGE
-                && !VillageEvents.beyondHomeWall(villager, target); // stop if it leaves our wall
+        return inRange(this.target) && !VillageEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
     }
 
     @Override

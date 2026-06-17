@@ -21,8 +21,11 @@ public final class GuiEntityIcons {
 
     private static final Map<EntityType<?>, LivingEntity> CACHE = new HashMap<>();
     private static Level cacheLevel;
-    private static int age;
+    private static double age;          // advanced slowly per render so the icon spins gently
     private static boolean disabled;
+
+    private static final double SPIN_RATE = 0.45; // ticks of model-age added per render (lower = slower spin)
+    private static final int ICON_DROP = 22;       // y of the entity's feet within the slot (higher = icon sits lower)
 
     /**
      * Render {@code type}'s dummy entity centred in the 16x16 icon at (iconX, iconY) at the given display
@@ -41,9 +44,10 @@ public final class GuiEntityIcons {
                 e = created;
                 CACHE.put(type, e);
             }
-            e.tickCount = ++age; // advance the model animation (the wall defender's spin/bob reads ageInTicks)
-            // Centre the entity horizontally in the icon; its feet sit near the bottom of the 16px slot.
-            InventoryScreen.renderEntityInInventoryFollowsMouse(g, iconX + 8, iconY + 15, scale, 0.0F, 0.0F, e);
+            age += SPIN_RATE;        // advance the model animation slowly (the wall defender's spin reads ageInTicks)
+            e.tickCount = (int) age;
+            // Centre the entity horizontally; ICON_DROP lowers the feet anchor so the spinning core sits mid-slot.
+            InventoryScreen.renderEntityInInventoryFollowsMouse(g, iconX + 8, iconY + ICON_DROP, scale, 0.0F, 0.0F, e);
             return true;
         } catch (Throwable t) {
             disabled = true;

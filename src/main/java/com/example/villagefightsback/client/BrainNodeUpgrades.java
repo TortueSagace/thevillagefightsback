@@ -49,10 +49,10 @@ public final class BrainNodeUpgrades {
     public static final List<List<Upgrade>> LEVELS = List.of(
             // --- Level 1 ---
             List.of(
-                    new Upgrade(new ItemStack(ModBlocks.FAKE_COBBLESTONE_ITEM.get()),
-                            "Wall Building", "Villagers build a defensive wall around the village."),
                     new Upgrade(new ItemStack(Items.IRON_SWORD),
                             "Guards", "Guard villagers patrol and defend the village."),
+                    new Upgrade(new ItemStack(ModBlocks.FAKE_COBBLESTONE_ITEM.get()),
+                            "Wall Building", "Villagers build a defensive wall around the village."),
                     new Upgrade(new ItemStack(ModBlocks.GOLEM_FACTORY_NODE_ITEM.get()),
                             "Iron Factory", "Iron Factory nodes (craftable now) spawn an iron golem every sunset.")
             ),
@@ -73,18 +73,18 @@ public final class BrainNodeUpgrades {
                             "Advanced Weaponry", "Villagers, guards and golems hit much harder."),
                     new Upgrade(new ItemStack(ModBlocks.FAKE_OBSIDIAN_ITEM.get()),
                             "Obsidian Wall", "An obsidian-tough outer wall rises, with its own gate turrets."),
-                    new Upgrade(new ItemStack(ModBlocks.GREEN_TNT_ITEM.get()),
-                            "Expansion", "Settlers stream out and found new houses and towers beyond the wall."),
                     new Upgrade(new ItemStack(ModBlocks.LURE_TOWER_NODE_ITEM.get()),
-                            "Lure Tower", "Lure Tower nodes trap attackers in powder snow and lava under a turret.")
+                            "Lure Tower", "Lure Tower nodes trap attackers in powder snow and lava under a turret."),
+                    new Upgrade(new ItemStack(ModBlocks.GREEN_TNT_ITEM.get()),
+                            "Expansion", "Settlers stream out and found new houses and towers beyond the wall.")
             ),
             // --- Level 4 ---
             List.of(
-                    new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
-                            "Glass Dome", "A reinforced-glass dome seals the village from aerial attacks."),
                     new Upgrade(ModEntities.WALL_DEFENDER_STAGE4.get(),
                             new ItemStack(ModBlocks.WALL_DEFENDER_STAGE4_SPAWN.get()),
-                            "Rocket Defenders", "Wall defenders fire rockets every two seconds, with a revolver up close."),
+                            "Rocket Defenders", "Wall defenders fire rockets every two seconds, switching to gunfire at point-blank range."),
+                    new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
+                            "Glass Dome", "A reinforced-glass dome seals the village from aerial attacks."),
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ROCKET_LAUNCHER.get()),
                             "Gigachad Golems", "Defender Golems become gold-plated Gigachad Golems with 200 HP and a rocket launcher."),
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
