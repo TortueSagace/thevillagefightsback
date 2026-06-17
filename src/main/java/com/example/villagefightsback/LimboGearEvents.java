@@ -51,6 +51,9 @@ public final class LimboGearEvents {
             sp.fallDistance = 0.0F;
             LimboAbility.tick(sp);
             if ((sp.tickCount & 7) == 0) clearHarmfulEffects(sp);
+            // Break any block softer than ancient debris on contact (sides + ceiling on a jump, never the
+            // floor, never the fake-block doors). The armour itself grants this; Darius reuses the same helper.
+            LimboGear.breakSoftBlocksOnContact(sp);
         }
 
         // Bedrock phasing (server side): a full-set wearer passes through bedrock like the Limbo Phantom. Must
