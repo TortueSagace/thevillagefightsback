@@ -733,9 +733,12 @@ public final class VillageEvents {
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
-    /** Defenders that must never fight each other: villagers, iron golems, guards, and wall defenders. */
+    /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the
+     *  village's summoned champion General Darius. (Darius is an Enemy/Monster, so he must be listed explicitly
+     *  to be covered by the friendly-fire and change-target guards below.) */
     private static boolean isAlly(Entity e) {
-        return e instanceof Villager || e instanceof IronGolem || e instanceof WallDefenderEntity || isGuard(e);
+        return e instanceof Villager || e instanceof IronGolem || e instanceof WallDefenderEntity
+                || e instanceof GeneralDariusEntity || isGuard(e);
     }
 
     private static boolean hasGoal(Mob mob, Class<?> goalClass) {

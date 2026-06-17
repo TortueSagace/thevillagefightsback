@@ -367,6 +367,7 @@ public class StageThreeGuardGoal extends Goal {
         for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
                 x -> x != guard && x != exclude
                         && (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                        && !com.example.villagefightsback.Factions.isVillageChampion(x) // never the village's own champion (Darius)
                         && !isFactionMate(x)
                         && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {
             double d = guard.distanceToSqr(e);

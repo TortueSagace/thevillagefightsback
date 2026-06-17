@@ -17,6 +17,16 @@ public final class Factions {
                 || e instanceof VindictiveGigachadEntity;
     }
 
+    /**
+     * General Darius is the village's SUMMONED CHAMPION (a stage-4 brain reflex). He extends {@code Monster}, so
+     * he is technically an {@code Enemy}, but the village must treat him as one of its own and never target,
+     * flee, shoot, or harm him. Every village-side threat scan excludes him with this check. (The boss faction --
+     * the unleashed brain node and its vindictive minions -- is NOT filtered here: it rightly fights Darius.)
+     */
+    public static boolean isVillageChampion(Entity e) {
+        return e instanceof GeneralDariusEntity;
+    }
+
     /** The "limbo" faction: creatures native to Limbo -- the Limbo Phantom and the Limbo raiders (pillager /
      *  vindicator / evoker / ravager / vex). They never attack one another, so phantoms and raiders fight the
      *  village side by side instead of each other. */

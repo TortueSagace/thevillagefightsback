@@ -72,6 +72,7 @@ public class GolemRocketGoal extends Goal {
         if (com.example.villagefightsback.Factions.isInfected(golem)) {
             return !com.example.villagefightsback.Factions.isInfected(t);   // boss golem: anyone not boss
         }
+        if (com.example.villagefightsback.Factions.isVillageChampion(t)) return false; // never the village's own champion (Darius)
         return t instanceof Enemy || com.example.villagefightsback.Factions.isInfected(t); // village golem
     }
 
