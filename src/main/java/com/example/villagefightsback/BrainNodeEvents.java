@@ -1115,14 +1115,14 @@ public final class BrainNodeEvents {
         server.getPlayerList().broadcastSystemMessage(Component.literal(message), false);
     }
 
-    /** The short stage-transition banner shown when a brain node reaches {@code level}. Stage 1 keeps the
-     *  purple of the old "has risen" line; stages 2-4 keep the gold of the old "evolved" line. */
-    private static String phaseBanner(int level) {
+    /** The short stage-transition banner shown when a brain node reaches {@code level}. All phases use the
+     *  same purple as SETTLEMENT PHASE, so a level-up reads as the named phase, not a generic "evolved" line. */
+    public static String phaseBanner(int level) {
         return switch (level) {
             case 1 -> "§5SETTLEMENT PHASE";
-            case 2 -> "§6FERTILIZATION PHASE";
-            case 3 -> "§6EXPANSION PHASE";
-            default -> "§6CULMINATION PHASE"; // level 4 (max)
+            case 2 -> "§5FERTILIZATION PHASE";
+            case 3 -> "§5EXPANSION PHASE";
+            default -> "§5CULMINATION PHASE"; // level 4 (max)
         };
     }
 }

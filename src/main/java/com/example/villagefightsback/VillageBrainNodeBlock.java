@@ -68,9 +68,10 @@ public class VillageBrainNodeBlock extends Block {
             }
             sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.0F);
             if (gained > 0) {
-                player.displayClientMessage(Component.literal(
-                        "§6The Village Brain Node evolves. This village is now level §e" + econ.getLevel()
-                        + (econ.isMaxLevel() ? " §6(max)!" : "§6!")), false);
+                // Show the named phase in purple (SETTLEMENT / FERTILIZATION / EXPANSION / CULMINATION PHASE),
+                // matching the discovery banner -- not a generic orange "evolved" line.
+                player.displayClientMessage(
+                        Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
             } else {
                 player.displayClientMessage(info(econ), false);
             }
