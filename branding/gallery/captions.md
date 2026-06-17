@@ -12,10 +12,10 @@ Captions for the Modrinth / CurseForge gallery, in display order.
    The Brain contains 4 evolution stages. Feed it with emeralds to make it progress faster! Right-click the Brain Node to open this interface anytime.
 
 4. **gallery-4.png**
-   A Flesh Incubator defeated by angry villagers. I'm pretty sure it didn't expect that.
+   A Flesh Incubator defeated by angry villagers. I'm pretty sure it didn't expect that. (The Flesh Incubator is from the mod The Flesh That Hates, not part of ours.)
 
 5. **gallery-5.png**
-   Structures include defensive ones like this Lure Tower: hostile mobs stepping on the powder snow end up swimming in a lava pool!
+   Structures include defensive ones like this Lure Tower: hostile mobs stepping on the powder snow end up swimming in a lava pool! (The monsters shown are from the mod The Flesh That Hates, not part of ours.)
 
 6. **gallery-6.png**
    A golem factory, where an evolved golem was just crafted. The Brain decides autonomously to build specific structures based on the game state.
