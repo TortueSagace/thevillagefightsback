@@ -3,6 +3,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = mod_version
@@ -191,3 +192,31 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+// --- Publishing to Modrinth (Minotaur) ---
+// Publish with:   MODRINTH_TOKEN=xxxxxxxx ./gradlew modrinth
+//
+// One-time prerequisites (Minotaur uploads VERSIONS, it cannot create the project page):
+//   1. Create the project on modrinth.com to get its slug/ID, then set `projectId` below.
+//   2. Generate a Personal Access Token (scope: "Create versions") at
+//      https://modrinth.com/settings/pats and pass it via the MODRINTH_TOKEN env var.
+//      Never commit the token.
+//
+// This block is inert during a normal `./gradlew build`; it only matters for the `modrinth` task.
+modrinth {
+    token = providers.environmentVariable('MODRINTH_TOKEN')
+    projectId = 'the-village-fights-back' // <-- the project's slug or ID (create the page first)
+    versionNumber = mod_version
+    versionName = "${mod_name} ${mod_version}"
+    versionType = 'release'
+    uploadFile = jar                       // ForgeGradle reobfs this jar in place before upload
+    gameVersions = ['1.20.1']
+    loaders = ['forge']
+    // changelog = file('CHANGELOG.md').text          // optional, if you keep a changelog
+    // dependencies {
+    //     optional.project 'guard-villagers'         // soft dep -- guards render guns/armor when present
+    // }
+}
+
+// Ensure the production (reobfed) jar is built before we try to upload it.
+tasks.named('modrinth').configure { dependsOn tasks.named('build') }
