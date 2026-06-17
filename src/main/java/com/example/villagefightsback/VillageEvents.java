@@ -566,7 +566,7 @@ public final class VillageEvents {
     public static final double NODE_DEFEND_RADIUS = 30.0;
     private static final int NODE_AGGRO_TICKS = 200;          // ...for ~10s per trigger
     public static final int ENEMY_STATUS_TICKS = 24000;      // Enemy of the Village lasts 20 minutes
-    public static final int THIEF_STATUS_TICKS = 600;        // a chest thief is an Enemy of the Village for 30s
+    public static final int THIEF_STATUS_TICKS = 1200;       // a chest thief is an Enemy of the Village for 1 min
 
     /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on, and EMPTY curative
      *  items so milk can never cure it (it still clears on death). Shared by every ETV grant. */
@@ -578,7 +578,7 @@ public final class VillageEvents {
     }
 
     /**
-     * Brand a player a chest THIEF: Enemy of the Village for {@value #THIEF_STATUS_TICKS} ticks (30s) with a RED
+     * Brand a player a chest THIEF: Enemy of the Village for {@value #THIEF_STATUS_TICKS} ticks (1 min) with a RED
      * broadcast. Distinct from {@link #markVillageEnemy} (20 min) -- a short, sharp punishment for taking from a
      * village chest. Like every ETV grant it removes Hero of the Village, uses empty curative items (milk-proof),
      * and -- via the {@link MobEffectEvent.Added} handler -- rallies the village the instant it lands.

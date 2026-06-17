@@ -33,7 +33,7 @@ import net.minecraftforge.fml.common.Mod;
  *       once per 10s per player). The open is never cancelled -- they can look, but taking is theft.</li>
  *   <li>THEFT: snapshot the container's total item count when a non-hero opens it, and on close re-read the same
  *       source; if the total dropped, the player took something -> brand them a thief (Enemy of the Village for
- *       30s) with a red broadcast (see {@link VillageEvents#markThief}). Heroes are exempt.</li>
+ *       1 min) with a red broadcast (see {@link VillageEvents#markThief}). Heroes are exempt.</li>
  * </ul>
  *
  * Detection is snapshot-on-open + diff-on-close (no mixin). It guards against a null block entity, a chest
@@ -103,7 +103,7 @@ public final class VillageChestProtection {
         if (!isChestOrBarrel(be)) return; // chest destroyed / replaced between open and close -> can't diff
         int nowCount = totalItems((Container) be);
         if (nowCount < snap.totalCount()) {
-            VillageEvents.markThief(level, player); // ETV 30s + red broadcast, milk-proof, removes hero
+            VillageEvents.markThief(level, player); // ETV 1 min + red broadcast, milk-proof, removes hero
         }
     }
 
