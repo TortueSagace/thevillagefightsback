@@ -106,6 +106,14 @@ public final class VillageEvents {
             settler.goalSelector.addGoal(6, new com.example.villagefightsback.goal.SettlerGoal(settler));
         }
 
+        // A villager stranded OUTSIDE its wall heads back toward the brain node when it isn't fighting (low
+        // priority, so combat preempts it). Villagers never CROSS the wall to chase -- this only brings home
+        // one that is already out. Idempotent.
+        if (!emeraldger && mob instanceof Villager strayed
+                && !hasGoal(strayed, com.example.villagefightsback.goal.ReturnToVillageGoal.class)) {
+            strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
+        }
+
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
@@ -461,21 +469,6 @@ public final class VillageEvents {
         if (!(self.level() instanceof ServerLevel sl)) return false;
         WallPlan wall = WallBuild.enclosingPlan(sl, self.blockPosition());
         return wall != null && !wall.contains(target.blockPosition());
-    }
-
-    /** Perimeter-defence radius: a villager still fights a hostile within this distance even when it is just
-     *  OUTSIDE the home wall, so a walled village isn't passive toward zombies right at its gates. */
-    private static final double VILLAGER_PERIMETER = 12.0;
-
-    /**
-     * Whether the home wall should stop a VILLAGER from engaging {@code target}. Unlike a raw
-     * {@link #beyondHomeWall} check, villagers still defend threats within {@link #VILLAGER_PERIMETER} blocks
-     * even just outside the wall -- they only refuse to CHASE mobs that are both beyond the wall AND far off
-     * (which is what guards and turrets are for). Keeps walled villagers fighting nearby zombies.
-     */
-    public static boolean wallBlocksEngage(LivingEntity self, LivingEntity target) {
-        return beyondHomeWall(self, target)
-                && self.distanceToSqr(target) > VILLAGER_PERIMETER * VILLAGER_PERIMETER;
     }
 
     private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // brainNode must be within this of the kill
