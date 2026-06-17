@@ -26,8 +26,7 @@ import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.monster.ZombieVillager;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -45,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * On the locked-target queue dying out, Darius walks back to his home brain node and despawns, REFUNDING the
  * 64 gems he cost to that brain's economy ({@link #refundAndDespawn()}).
  */
-public class GeneralDariusEntity extends ZombieVillager {
+public class GeneralDariusEntity extends Monster {
     private static final String NBT_HOME_DIM = "darius_home_dim";
     private static final String NBT_HOME_POS = "darius_home_pos";
 
@@ -69,7 +68,7 @@ public class GeneralDariusEntity extends ZombieVillager {
     private int beamCooldown;
     private boolean despawning; // guards refund-once
 
-    public GeneralDariusEntity(EntityType<? extends ZombieVillager> type, Level level) {
+    public GeneralDariusEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         setPersistenceRequired();
         setCustomName(Component.literal("Darius"));
@@ -78,7 +77,7 @@ public class GeneralDariusEntity extends ZombieVillager {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Zombie.createAttributes()
+        return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 50.0)
                 .add(Attributes.ATTACK_DAMAGE, 12.0)        // stronger than a stage-4 guard
                 .add(Attributes.MOVEMENT_SPEED, 0.32)       // a bit faster than a stage-4 guard (0.28)
@@ -113,7 +112,6 @@ public class GeneralDariusEntity extends ZombieVillager {
         equipLimbo(EquipmentSlot.FEET, ModArmor.LIMBO_BOOTS.get());
         setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.alienSmasher().copy());
         setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-        setBaby(false);
         return r;
     }
 
@@ -135,19 +133,9 @@ public class GeneralDariusEntity extends ZombieVillager {
     }
 
     @Override
-    protected boolean isSunSensitive() {
-        return false; // never burns in daylight
-    }
-
-    @Override
     protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random,
             net.minecraft.world.DifficultyInstance difficulty) {
         // intentionally empty: gear is set in finalizeSpawn
-    }
-
-    @Override
-    public boolean canBreakDoors() {
-        return false;
     }
 
     // --- the home brain node (for refund + walk-home) -------------------------------------------------

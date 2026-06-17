@@ -1,35 +1,38 @@
 package com.example.villagefightsback.client;
 
+import com.example.villagefightsback.GeneralDariusEntity;
 import com.example.villagefightsback.TheVillageFightsBack;
 
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.ZombieVillagerRenderer;
+import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.monster.ZombieVillager;
 
 /**
- * General Darius renders as a LIVING villager guard, NOT a zombie. We keep the vanilla
- * {@link ZombieVillagerRenderer} -- its {@code ZombieVillagerModel} is a HumanoidModel with the iconic villager
- * nose, so the worn Limbo armour shows (via the renderer's HumanoidArmorLayer), the villager profession layer
- * still paints a normal villager's brow/clothing, and he keeps a true villager face like the village's other
- * guards. The ONLY change is the base skin: we override the texture from the green zombie-villager skin to a
- * tan, normal-villager-toned one ({@code general_darius.png}), so he reads as a man, not an undead. The
- * {@link LimboHelmetSpikesLayer} adds the Limbo Helmet's three spikes, matching a full-set wearer.
+ * General Darius renders as a LIVING armoured knight -- a plain humanoid, NOT a zombie villager. The standard
+ * humanoid model wears his full Limbo set (HumanoidArmorLayer), holds the Alien Smasher (ItemInHandLayer), and
+ * shows the Limbo Helmet's three spikes ({@link LimboHelmetSpikesLayer}). His skin (general_darius.png) is a
+ * normal tan humanoid; the worn armour covers most of it, so he reads as an armoured man.
  */
-public class GeneralDariusRenderer extends ZombieVillagerRenderer {
+public class GeneralDariusRenderer extends MobRenderer<GeneralDariusEntity, HumanoidModel<GeneralDariusEntity>> {
     private static final ResourceLocation TEX =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/general_darius.png");
 
     public GeneralDariusRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx);
-        // The zombie-villager model is a HumanoidModel, so the (generic) spikes layer attaches cleanly.
-        this.addLayer(new LimboHelmetSpikesLayer<ZombieVillager,
-                net.minecraft.client.model.ZombieVillagerModel<ZombieVillager>>(this, ctx.getModelSet()));
+        super(ctx, new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER)), 0.5F);
+        addLayer(new HumanoidArmorLayer<>(this,
+                new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
+                new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
+                ctx.getModelManager()));
+        addLayer(new ItemInHandLayer<>(this, ctx.getItemInHandRenderer()));
+        addLayer(new LimboHelmetSpikesLayer<>(this, ctx.getModelSet()));
     }
 
-    /** Tan, living-villager skin instead of the green zombie one (so Darius looks like a guard, not a zombie). */
     @Override
-    public ResourceLocation getTextureLocation(ZombieVillager entity) {
+    public ResourceLocation getTextureLocation(GeneralDariusEntity entity) {
         return TEX;
     }
 }
