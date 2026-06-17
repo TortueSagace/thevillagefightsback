@@ -104,16 +104,22 @@ public class BulletEntity extends ThrowableProjectile {
 
     /** Aim a fresh bullet from {@code shooter}'s eyes at {@code target}'s centre and launch it (JEG-style). */
     public static void fire(Mob shooter, LivingEntity target, float damage) {
+        fireFrom(shooter, shooter.getEyePosition(), target, damage);
+    }
+
+    /** Like {@link #fire} but launched from an explicit {@code origin} (e.g. a turret head higher than the
+     *  shooter's eyes, so the visible tracer leaves the head, not the chest). */
+    public static void fireFrom(Mob shooter, Vec3 origin, LivingEntity target, float damage) {
         if (shooter.level().isClientSide()) return;
         BulletEntity bullet = new BulletEntity(shooter.level(), shooter);
+        bullet.setPos(origin.x, origin.y, origin.z);
         bullet.damage = damage;
-        Vec3 from = bullet.position();
-        Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
+        Vec3 dir = target.getBoundingBox().getCenter().subtract(origin).normalize();
         bullet.setDeltaMovement(dir.scale(SPEED));
         bullet.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
         bullet.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
         shooter.level().addFreshEntity(bullet);
-        shooter.level().playSound(null, shooter.getX(), shooter.getY() + shooter.getEyeHeight(), shooter.getZ(),
+        shooter.level().playSound(null, origin.x, origin.y, origin.z,
                 ModSounds.REVOLVER_FIRE.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
     }
 }

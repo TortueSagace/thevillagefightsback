@@ -30,8 +30,11 @@ public class DefenderGolemHeadLayer extends RenderLayer<IronGolem, IronGolemMode
     // --- visual tunables (tweak in-game) ---
     private static final float GLASS_SCALE = 0.78F;  // protecting-glass cocoon ~0.78 blocks
     private static final float GLASS_DX = -0.5F;     // centre the unit block on the head bone
-    private static final float GLASS_DY = -0.55F;    // cocoon height over the bone (less negative = lower)
-    private static final float GLASS_DZ = -0.5F;
+    // Centre the cocoon on the SAME point as the conduit core: the glass centre in head-bone space is
+    // -GLASS_SCALE*(GLASS_DY+0.5); set it to the core's CORE_DY (-0.42) so glass + core are superposed.
+    // (Solving -0.78*(GLASS_DY+0.5) = -0.42 -> GLASS_DY = 0.04. Higher = more positive here.)
+    private static final float GLASS_DY = 0.04F;     // raised so the cocoon shares the core/head centre
+    private static final float GLASS_DZ = -0.54F;    // match the core's small +z so centres align in z too
     private static final float CORE_SCALE = 1.15F;   // the conduit core inside the cocoon
     private static final float CORE_DY = -0.42F;     // raise the core (model y is down) toward the cocoon centre
     private static final float CORE_DZ = 0.03F;

@@ -45,7 +45,14 @@ public class DefenderGolemEntity extends IronGolem {
         LivingEntity target = getTarget();
         if (target == null || !target.isAlive() || distanceToSqr(target) > RANGE * RANGE) return;
         if (!getSensing().hasLineOfSight(target)) return;
-        BulletEntity.fire(this, target, BULLET_DAMAGE);
+        // Fire from the wall-defender TURRET HEAD (the rendered cocoon high on the golem), not the golem's
+        // eye, so the glowing tracer visibly leaves the head. A small forward nudge clears the body.
+        net.minecraft.world.phys.Vec3 head = new net.minecraft.world.phys.Vec3(
+                getX(), getY() + getBbHeight() * 0.92, getZ());
+        net.minecraft.world.phys.Vec3 to = target.getBoundingBox().getCenter().subtract(head);
+        net.minecraft.world.phys.Vec3 muzzle = head.add(
+                new net.minecraft.world.phys.Vec3(to.x, 0.0, to.z).normalize().scale(0.4));
+        BulletEntity.fireFrom(this, muzzle, target, BULLET_DAMAGE);
         fireCooldown = FIRE_INTERVAL;
     }
 }
