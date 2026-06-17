@@ -49,6 +49,7 @@ public final class BrainReflexes {
 
     private static final long WIN_10M = 12000L;  // 10 in-game minutes (ticks)
     private static final long WIN_5M  = 6000L;
+    private static final long WIN_3M  = 3600L;   // 3 in-game minutes (Darius dangerous-player + threat window)
     private static final long WIN_5S  = 100L;
     private static final long CD_5M   = 6000L;
     private static final long CD_10M  = 12000L;
@@ -59,6 +60,10 @@ public final class BrainReflexes {
     private static final class State {
         final ArrayDeque<Long> villagerKills = new ArrayDeque<>(); // game-times, pruned to the last 10 min
         final ArrayDeque<Long> guardKills = new ArrayDeque<>();
+        // Per-player recent villager/guard kill times (game-times, pruned to the last 3 min), keyed by attacker
+        // UUID -- used to detect a "dangerous player" for the General Darius spawn reflex.
+        final Map<java.util.UUID, ArrayDeque<Long>> playerKills = new HashMap<>();
+        long cdDarius;                       // game-time the Darius reflex cooldown expires (anti-spam)
         long lastVillagerKill = 0L;          // 0 = none yet (game-time is monotonic from world start)
         boolean pendingVillagerKill;         // a villager died since the last tick -> try the guard reflex
         boolean pendingGolemKill;            // a golem died since the last tick -> try the lure-tower reflex
@@ -126,6 +131,32 @@ public final class BrainReflexes {
         if (villager) { s.villagerKills.addLast(now); s.lastVillagerKill = now; s.pendingVillagerKill = true; }
         else if (guard) { s.guardKills.addLast(now); }
         else { s.pendingGolemKill = true; }
+
+        // Per-player kill tracking for the Darius "dangerous player" check: a villager OR guard slain by a
+        // player (directly or via a projectile) stamps that player's recent-kill deque (pruned to 3 min).
+        if (villager || guard) {
+            net.minecraft.world.entity.Entity attacker = event.getSource().getEntity();
+            if (attacker instanceof net.minecraft.world.entity.player.Player p && !p.isCreative()) {
+                ArrayDeque<Long> dq = s.playerKills.computeIfAbsent(p.getUUID(), k -> new ArrayDeque<>());
+                dq.addLast(now);
+            }
+        }
+    }
+
+    /** True if {@code player} has killed at least {@value GeneralDariusEntity#DANGEROUS_PLAYER_KILLS} villagers
+     *  or guards near {@code node} within the last 3 in-game minutes. Public so the Darius targeting brain can
+     *  re-confirm a "dangerous player" lock. {@code node} may be null (then it scans no state -> not dangerous). */
+    public static boolean isDangerousPlayer(ServerLevel level, net.minecraft.world.entity.player.Player player,
+                                            GlobalPos node) {
+        if (node == null || player.isCreative() || player.isSpectator()) return false;
+        State s = STATES.get(node);
+        if (s == null) return false;
+        ArrayDeque<Long> dq = s.playerKills.get(player.getUUID());
+        if (dq == null) return false;
+        long now = level.getGameTime();
+        int recent = 0;
+        for (Long t : dq) if (now - t <= WIN_3M) recent++;
+        return recent >= GeneralDariusEntity.DANGEROUS_PLAYER_KILLS;
     }
 
     @SubscribeEvent
@@ -235,6 +266,20 @@ public final class BrainReflexes {
             log(s, level, "Settler sent: Barracks (-12)");
         }
 
+        // A8 (stage 4 ONLY): General Darius. When a HEAVY threat is present in the brain's range -- an enemy
+        // with >= 100 max HP, OR a "dangerous" player (>= 3 villager/guard kills in the last 3 min) -- and the
+        // treasury holds >= 64 gems, AND there is no Darius already serving this brain, march General Darius
+        // (costs 64 gems; refunded when he returns home -- see GeneralDariusEntity#refundAndDespawn). A short
+        // cooldown stops re-spawn spam in the same tick window if he is killed.
+        if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusNear(level, brain)
+                && heavyThreatNear(level, brain, gp)) {
+            if (econ.spendEmeralds(64)) {
+                spawnDarius(level, gp, brain);
+                s.cdDarius = now + WIN_5M; // brief anti-spam cooldown
+                log(s, level, "General Darius marches (-64)");
+            }
+        }
+
         // A1 (stage 1+): peace (no villager killed in 10 min) -> +1 villager inside + a settler founds a house
         //                (blue TNT) outside. 5 gems, 10-min cooldown, off at 100+ beds.
         if (stage >= 1 && now >= s.cdPeacetime && beds < BED_CAP && (now - s.lastVillagerKill) > WIN_10M
@@ -249,6 +294,11 @@ public final class BrainReflexes {
     private static void prune(State s, long now) {
         while (!s.villagerKills.isEmpty() && now - s.villagerKills.peekFirst() > WIN_10M) s.villagerKills.removeFirst();
         while (!s.guardKills.isEmpty() && now - s.guardKills.peekFirst() > WIN_10M) s.guardKills.removeFirst();
+        // Prune per-player kill deques to the 3-min window; drop now-empty players so the map stays bounded.
+        s.playerKills.values().forEach(dq -> {
+            while (!dq.isEmpty() && now - dq.peekFirst() > WIN_3M) dq.removeFirst();
+        });
+        s.playerKills.values().removeIf(ArrayDeque::isEmpty);
     }
 
     // --- actions --------------------------------------------------------------------------------------
@@ -281,6 +331,43 @@ public final class BrainReflexes {
     }
 
     private static EntityType<?> guardType() { return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); }
+
+    // --- General Darius (stage-4 reflex) -------------------------------------------------------------
+
+    /** True if no General Darius is already serving this brain (at most one per brain, within its RADIUS). */
+    private static boolean noDariusNear(ServerLevel level, BlockPos brain) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(brain).inflate(RADIUS);
+        return level.getEntitiesOfClass(GeneralDariusEntity.class, box).isEmpty();
+    }
+
+    /** True if a heavy threat is within the brain's RADIUS: an enemy with >= 100 max HP, or a dangerous player. */
+    private static boolean heavyThreatNear(ServerLevel level, BlockPos brain, GlobalPos node) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(brain).inflate(RADIUS);
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
+            if (Factions.isInfected(e)) continue;
+            if (e instanceof net.minecraft.world.entity.player.Player p) {
+                if (isDangerousPlayer(level, p, node)) return true;
+            } else if (e instanceof net.minecraft.world.entity.monster.Enemy && e.getMaxHealth() >= 100.0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Spawn General Darius just inside the wall near the brain node and record his home brain (for refund). */
+    private static void spawnDarius(ServerLevel level, GlobalPos node, BlockPos brain) {
+        GeneralDariusEntity d = ModEntities.GENERAL_DARIUS.get().create(level);
+        if (d == null) return;
+        BlockPos spot = findInsideSpot(level, brain);
+        d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
+        d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+        d.setHomeBrain(node);
+        level.addFreshEntity(d);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                spot.getX() + 0.5, spot.getY() + 1.0, spot.getZ() + 0.5, 30, 0.5, 0.8, 0.5, 0.02);
+        level.playSound(null, spot, net.minecraft.sounds.SoundEvents.SCULK_CATALYST_BLOOM,
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.2F, 0.6F);
+    }
 
     /** A standable spot near the brain node, searched around its OWN Y (so it's under the dome, not on it). */
     private static BlockPos findInsideSpot(ServerLevel level, BlockPos brain) {

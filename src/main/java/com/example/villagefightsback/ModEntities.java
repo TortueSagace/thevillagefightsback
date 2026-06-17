@@ -70,6 +70,16 @@ public final class ModEntities {
                     .clientTrackingRange(12)
                     .build("vindictive_guard"));
 
+    /** General Darius: a boss-grade upgrade of the stage-4 guard, summoned only by a stage-4 brain-node reflex
+     *  ({@link BrainReflexes}). Wields the Alien Smasher + full Limbo set ({@link GeneralDariusEntity}). */
+    public static final RegistryObject<EntityType<GeneralDariusEntity>> GENERAL_DARIUS = ENTITIES.register(
+            "general_darius",
+            () -> EntityType.Builder.<GeneralDariusEntity>of(GeneralDariusEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)            // base villager box
+                    .clientTrackingRange(16)
+                    .fireImmune()
+                    .build("general_darius"));
+
     /** The "Gigachad Golem": an upgraded village iron golem, its own creature type ({@link GigachadGolemEntity}). */
     public static final RegistryObject<EntityType<GigachadGolemEntity>> GIGACHAD_GOLEM = ENTITIES.register(
             "gigachad_golem",
@@ -225,6 +235,7 @@ public final class ModEntities {
         event.put(BRAIN_NODE_WARDEN.get(), Warden.createAttributes().build());
         event.put(UNLEASHED_BRAIN_NODE.get(), UnleashedBrainNodeEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
+        event.put(GENERAL_DARIUS.get(), GeneralDariusEntity.createAttributes().build());
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(DEFENDER_GOLEM.get(), DefenderGolemEntity.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());

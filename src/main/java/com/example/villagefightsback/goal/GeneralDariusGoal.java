@@ -1,0 +1,256 @@
+package com.example.villagefightsback.goal;
+
+import java.util.EnumSet;
+
+import com.example.villagefightsback.CheapScaffoldManager;
+import com.example.villagefightsback.Factions;
+import com.example.villagefightsback.GeneralDariusEntity;
+import com.example.villagefightsback.GuardWeapons;
+import com.example.villagefightsback.ModBlocks;
+import com.example.villagefightsback.NavThrottle;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * General Darius's combat brain. Unlike the stage-3/4 guard ({@link StageThreeGuardGoal}) Darius carries NO
+ * crossbow: he is a pure melee bruiser wielding the {@link GuardWeapons#alienSmasher() Alien Smasher}.
+ *
+ * Targeting: he LOCKS onto the single biggest threat in his home brain node's range (highest max-health enemy,
+ * or a "dangerous" enemy player) and ignores everything else while closing -- UNLESS another enemy hits him,
+ * in which case he kills that attacker then resumes the lock. He keeps the lock even if it leaves the brain's
+ * range. When the locked target dies he picks the next biggest (>=50 max HP, or a dangerous player); with none
+ * left he walks home and despawns (refunding 64 gems -- handled by {@link GeneralDariusEntity}).
+ *
+ * Movement: a DOUBLE-height mace jump (no ceiling check -- Darius breaks the ceiling on the way up) to close /
+ * smash, a dive smash on the way down, a Cheap-Scaffold pit-escape when boxed in below ground, and -- below
+ * 50% HP -- the Limbo banish beam at the locked target on a 30s cooldown (fired by the entity).
+ */
+public class GeneralDariusGoal extends Goal {
+    private static final double MELEE_REACH_SQR = 6.25;     // ~2.5 blocks
+    private static final int MELEE_COOLDOWN = 16;
+    private static final int RETARGET_INTERVAL = 20;
+
+    private static final double LAUNCH_VY = 2.0;            // ~2x a mace guard's 1.0-1.2 (double jump)
+    private static final double LAUNCH_HORIZ = 0.55;
+    private static final int LAUNCH_COOLDOWN = 35;
+    private static final double JUMP_MIN_DIST_SQR = 16.0;   // only jump-close when >4 blocks out
+    private static final double SMASH_RANGE_SQR = 9.0;
+    private static final float SMASH_BASE = 10.0F;
+    private static final float SMASH_PER_BLOCK = 3.5F;
+    private static final float FALL_CAP = 24.0F;
+    private static final int FIRE_ASPECT_SECONDS = 8;
+
+    private static final int STUCK_TICKS = 40;              // can't progress for this long -> try a scaffold escape
+    private static final int SCAFFOLD_INTERVAL = 4;
+
+    private final GeneralDariusEntity darius;
+    private LivingEntity locked;
+    private int meleeCooldown, launchCooldown, scaffoldCooldown;
+    private int noProgressTicks;
+    private double lastDistToTarget = Double.MAX_VALUE;
+
+    public GeneralDariusGoal(GeneralDariusEntity darius) {
+        this.darius = darius;
+        setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+    }
+
+    @Override
+    public boolean canUse() {
+        return true; // Darius always runs this goal (it also drives the walk-home / despawn path)
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        return darius.isAlive();
+    }
+
+    @Override
+    public boolean requiresUpdateEveryTick() {
+        return true;
+    }
+
+    @Override
+    public void tick() {
+        if (!(darius.level() instanceof ServerLevel sl)) return;
+        if (meleeCooldown > 0) meleeCooldown--;
+        if (launchCooldown > 0) launchCooldown--;
+        if (scaffoldCooldown > 0) scaffoldCooldown--;
+        ensureWeapon();
+
+        // 1) Retaliation override: if something OTHER than the lock just hurt Darius, deal with it first.
+        LivingEntity attacker = darius.getLastHurtByMob();
+        if (attacker != null && attacker.isAlive() && attacker != locked
+                && darius.getLastHurtByMobTimestamp() >= darius.tickCount - 100 && isEnemy(attacker)) {
+            engage(sl, attacker);
+            // when the attacker is dealt with we fall back to the lock automatically (getLastHurtByMob clears)
+            return;
+        }
+
+        // 2) Maintain the lock.
+        if (locked == null || !locked.isAlive() || !isEnemy(locked)) {
+            locked = darius.pickBiggestThreat();
+            if (locked != null) announceHunt(sl, locked);
+            else { walkHomeOrDespawn(sl); return; }
+        }
+
+        engage(sl, locked);
+    }
+
+    /** Approach + fight a single target: jump-close, dive-smash, melee, with stuck detection for pit escapes. */
+    private void engage(ServerLevel sl, LivingEntity t) {
+        darius.setTarget(t);
+        darius.getLookControl().setLookAt(t, 30.0F, 30.0F);
+        double distSqr = darius.distanceToSqr(t);
+
+        // Below 50% HP: fire the banish beam at the locked target (entity enforces the 30s cooldown).
+        if (darius.getHealth() < darius.getMaxHealth() * 0.5F) {
+            darius.tryFireBeamAt(t);
+        }
+
+        if (!darius.onGround()) {                 // airborne -> steer + dive-smash
+            diveAndSmash(t);
+            return;
+        }
+
+        if (distSqr <= MELEE_REACH_SQR) {
+            darius.getNavigation().stop();
+            if (meleeCooldown <= 0) {
+                darius.swing(InteractionHand.MAIN_HAND);
+                darius.doHurtTarget(t);
+                meleeCooldown = MELEE_COOLDOWN;
+            }
+            noProgressTicks = 0;
+            return;
+        }
+
+        // Jump-close when comfortably out of reach and the launch is ready (no ceiling check -- breaks through).
+        if (distSqr >= JUMP_MIN_DIST_SQR && launchCooldown <= 0
+                && (t.getY() - darius.getY()) > -2.0) {
+            launchAt(t);
+            return;
+        }
+
+        // Otherwise walk toward the target.
+        NavThrottle.follow(darius, t, 1.2);
+        trackProgress(sl, distSqr);
+    }
+
+    /** Detect "stuck in a pit" (no closing progress while grounded) and stack cheap scaffolds to climb out. */
+    private void trackProgress(ServerLevel sl, double distSqr) {
+        if (distSqr + 0.25 < lastDistToTarget) { // made progress
+            noProgressTicks = 0;
+        } else {
+            noProgressTicks++;
+        }
+        lastDistToTarget = distSqr;
+        if (noProgressTicks >= STUCK_TICKS && isBoxedBelowSurface(sl)) {
+            scaffoldEscape(sl);
+        }
+    }
+
+    /** True if Darius is enclosed (a solid block at head height all around / above) and below the open sky. */
+    private boolean isBoxedBelowSurface(ServerLevel sl) {
+        BlockPos head = darius.blockPosition().above((int) Math.ceil(darius.getBbHeight()) - 1);
+        // capped above (cannot just jump out) and not under open sky -> treat as a pit
+        return sl.getBlockState(head.above()).blocksMotion() || !sl.canSeeSky(darius.blockPosition());
+    }
+
+    /** Pillar up on Cheap Scaffolds (like the limbo raiders) and hop, to climb out of a pit. */
+    private void scaffoldEscape(ServerLevel sl) {
+        if (scaffoldCooldown > 0) return;
+        int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
+        BlockPos feet = new BlockPos(gx, gy, gz);
+        if (sl.getBlockState(feet).canBeReplaced()) {
+            sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+            CheapScaffoldManager.track(sl, feet);
+        }
+        darius.getNavigation().stop();
+        darius.setPos(gx + 0.5, gy + 1.0, gz + 0.5); // step up onto the scaffold
+        darius.fallDistance = 0.0F;
+        scaffoldCooldown = SCAFFOLD_INTERVAL;
+        noProgressTicks = STUCK_TICKS - 10; // keep trying to climb a few more steps
+    }
+
+    // --- mace jump (double height, no ceiling check) ------------------------------------------------
+    private void launchAt(LivingEntity t) {
+        Vec3 to = t.position().subtract(darius.position());
+        double hl = Math.sqrt(to.x * to.x + to.z * to.z);
+        double hx = hl > 1.0E-4 ? to.x / hl : 0, hz = hl > 1.0E-4 ? to.z / hl : 0;
+        darius.setDeltaMovement(hx * LAUNCH_HORIZ, LAUNCH_VY, hz * LAUNCH_HORIZ);
+        darius.hasImpulse = true;
+        darius.hurtMarked = true;
+        darius.fallDistance = 0.0F;
+        launchCooldown = LAUNCH_COOLDOWN;
+        darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
+                SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 1.3F, 0.6F);
+    }
+
+    private void diveAndSmash(LivingEntity t) {
+        Vec3 to = t.position().subtract(darius.position());
+        double hl = Math.sqrt(to.x * to.x + to.z * to.z);
+        if (hl > 0.5) {
+            Vec3 m = darius.getDeltaMovement();
+            darius.setDeltaMovement(m.x + (to.x / hl) * 0.08, m.y, m.z + (to.z / hl) * 0.08);
+        }
+        boolean descending = darius.getDeltaMovement().y < 0;
+        if (descending && darius.distanceToSqr(t) <= SMASH_RANGE_SQR && darius.fallDistance > 0.6F) {
+            smash(t);
+        }
+    }
+
+    private void smash(LivingEntity t) {
+        float fall = Math.min(darius.fallDistance, FALL_CAP);
+        float dmg = SMASH_BASE + fall * SMASH_PER_BLOCK;
+        t.hurt(darius.damageSources().mobAttack(darius), dmg);
+        t.setSecondsOnFire(FIRE_ASPECT_SECONDS);
+        darius.swing(InteractionHand.MAIN_HAND);
+        darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
+                SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.9F, 1.3F);
+        darius.fallDistance = 0.0F;
+    }
+
+    // --- walk home + despawn (with refund, handled by the entity) -----------------------------------
+    private void walkHomeOrDespawn(ServerLevel sl) {
+        darius.setTarget(null);
+        BlockPos home = darius.getHomeBrainPos();
+        if (home == null) { darius.refundAndDespawn(); return; } // no home recorded -> just leave
+        if (darius.blockPosition().closerThan(home, 4.0)) {
+            darius.refundAndDespawn();
+        } else {
+            NavThrottle.goTo(darius, home.getX() + 0.5, home.getY(), home.getZ() + 0.5, 1.15);
+        }
+    }
+
+    // --- helpers ------------------------------------------------------------------------------------
+    private void announceHunt(ServerLevel sl, LivingEntity t) {
+        Component name = t instanceof Player p ? Component.literal(p.getGameProfile().getName()) : t.getDisplayName();
+        sl.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal("General Darius hunts ").append(name).append(Component.literal("!")), false);
+    }
+
+    private boolean isEnemy(LivingEntity e) {
+        if (e == darius || !e.isAlive() || Factions.isInfected(e)) return false;
+        if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
+        return e instanceof Enemy;
+    }
+
+    private void ensureWeapon() {
+        ItemStack want = GuardWeapons.alienSmasher();
+        if (darius.getMainHandItem().getItem() != want.getItem()) {
+            darius.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
+            darius.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        }
+    }
+}

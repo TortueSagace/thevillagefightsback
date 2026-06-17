@@ -47,6 +47,17 @@ at the bottom.
 - **Infected faction** (boss + vindictive guards + vindictive gigachads): never fight each other, absorb 90%
   explosion damage; creatures slain by a direct boss hit become vindictive minions (capped).
 - Performance-tuned (pathfinding throttled after profiling).
+- **General Darius** -- a boss-grade upgrade of the stage-4 guard, marched ONLY by a **stage-4** brain node's
+  reflex (costs 64 gems, refunded when he returns home) when a heavy threat appears: an enemy with >= 100 max
+  HP, or a player who has killed >= 3 villagers/guards in 3 minutes. Wields the **Alien Smasher** and the full
+  **Limbo set** (incl. the elytra chestplate), so he gets every full-set advantage (fire/fall immunity,
+  harmful-effect clearing, contact soft-block breaking, and -- below 50% HP -- the **banish beam** on a 30s
+  cooldown). Limbo-banish immune like the Vindictive Village Spirit; has a boss bar and the name "Darius". He
+  **locks onto the single biggest threat** and ignores all others (retaliating only against whoever hits him),
+  hunts it anywhere, then picks the next biggest; with none left he walks home and despawns. **Hires** nearby
+  idle village guards into a follow-squad, **double-jumps** (no ceiling -- he breaks through), pillars out of
+  pits with cheap scaffolds, and uses **custom pathfinding** that routes around the village's own walls while
+  plowing straight through generic terrain (broken on contact).
 
 ### 6. Native weapons (JEG and the mace mod fully removed)
 - Native **bullet**, **rocket**, and **fire grenade** -- the mod no longer depends on Just Enough Guns.

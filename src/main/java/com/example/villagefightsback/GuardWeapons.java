@@ -16,7 +16,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 public final class GuardWeapons {
     private GuardWeapons() {}
 
-    private static ItemStack mace, crossbow, slasher, eradicator; // built lazily (registries ready after construction)
+    private static ItemStack mace, crossbow, slasher, eradicator, alienSmasher; // built lazily (registries ready after construction)
 
     /** Our native Mace with Density 3 + Wind Burst 3 + Fire Aspect 2 (the stage-3/4 guard loadout). */
     public static ItemStack mace() {
@@ -51,6 +51,21 @@ public final class GuardWeapons {
     public static ItemStack eradicator() {
         if (eradicator == null) eradicator = new ItemStack(ModItems.ALIEN_ERADICATOR.get());
         return eradicator;
+    }
+
+    /** The Alien Smasher: General Darius's weapon. It IS a mace ({@link AlienSmasherItem} extends
+     *  {@link MaceItem}) and carries the guard-mace baseline (Density 3 + Wind Burst 3 + Fire Aspect 2,
+     *  also enforced in {@link MaceCombatEvents}). We force-enchant it here so a freshly-equipped Darius
+     *  always wields the full enchanted-mace power even before MaceCombatEvents runs. */
+    public static ItemStack alienSmasher() {
+        if (alienSmasher == null) {
+            ItemStack s = new ItemStack(ModItems.ALIEN_SMASHER.get());
+            s.enchant(ModEnchantments.DENSITY.get(), 3);
+            s.enchant(ModEnchantments.WIND_BURST.get(), 3);
+            s.enchant(Enchantments.FIRE_ASPECT, 2);
+            alienSmasher = s;
+        }
+        return alienSmasher;
     }
 
     /** Our mace always exists (it is a native item), so the guard's bounce/smash behaviour is always available. */

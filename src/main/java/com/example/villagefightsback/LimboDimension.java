@@ -48,9 +48,9 @@ public final class LimboDimension {
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
-        // The Vindictive Village Spirit cannot be banished -- it IS of the Limbo. Tell nearby players it shrugged
-        // off the attempt (e.g. a Volatile Limbo Potion), then leave it where it stands.
-        if (e instanceof UnleashedBrainNodeEntity) { notifyBanishImmune(e); return e; }
+        // The Vindictive Village Spirit and General Darius cannot be banished -- they ARE of the Limbo. Tell
+        // nearby players it shrugged off the attempt (e.g. a Volatile Limbo Potion), then leave it standing.
+        if (e instanceof UnleashedBrainNodeEntity || e instanceof GeneralDariusEntity) { notifyBanishImmune(e); return e; }
         // Multipart bosses can't change dimensions; banishing one leaves a ghost marker (and duplicates). Skip.
         if (e instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
                 || e instanceof net.minecraft.world.entity.boss.EnderDragonPart

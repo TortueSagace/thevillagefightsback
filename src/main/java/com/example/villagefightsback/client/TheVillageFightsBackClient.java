@@ -85,6 +85,8 @@ public final class TheVillageFightsBackClient {
         // Vindictive guards render as plain zombie villagers (vanilla renderer).
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
                 net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);
+        // General Darius: zombie-villager body (armour via the vanilla HumanoidArmorLayer) + Limbo helmet spikes.
+        event.registerEntityRenderer(ModEntities.GENERAL_DARIUS.get(), GeneralDariusRenderer::new);
         // Gigachad golem: gold-skinned golem + rocket launcher. The vindictive subclass adds green vines on top.
         event.registerEntityRenderer(ModEntities.GIGACHAD_GOLEM.get(), GigachadGolemRenderer::new);
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GIGACHAD.get(), VindictiveGigachadRenderer::new);

@@ -21,9 +21,18 @@ public final class LimboBeam {
     private static final double RADIUS = 5.0;
 
     public static void fire(ServerPlayer player) {
-        if (!(player.level() instanceof ServerLevel sl)) return;
-        Vec3 origin = player.getEyePosition();
-        Vec3 dir = player.getLookAngle();
+        fireFrom(player, player.getEyePosition(), player.getLookAngle(), SoundSource.PLAYERS);
+    }
+
+    /**
+     * Fire the banish beam from any living entity toward {@code dir} (used by General Darius -- the boss fires
+     * it programmatically at its target once below 50% HP). Mirrors the player beam: same particles, sound, and
+     * whole-hitbox banish sweep. The shooter itself, the village's infected/limbo factions are never banished,
+     * and the shooter is always spared. Server-side; no-op off a ServerLevel.
+     */
+    public static void fireFrom(LivingEntity shooter, Vec3 origin, Vec3 dir, SoundSource sound) {
+        if (!(shooter.level() instanceof ServerLevel sl)) return;
+        dir = dir.normalize();
 
         // green sonic-boom trail along the beam line
         for (int i = 1; i < RANGE + 7; i++) {
@@ -31,12 +40,12 @@ public final class LimboBeam {
             sl.sendParticles(ModParticles.GREEN_SONIC_BOOM.get(), p.x, p.y, p.z, 1, 0.0, 0.0, 0.0, 0.0);
         }
         sl.playSound(null, origin.x, origin.y, origin.z, SoundEvents.WARDEN_SONIC_BOOM,
-                SoundSource.PLAYERS, 3.0F, 1.3F);
+                sound, 3.0F, 1.3F);
 
         Vec3 end = origin.add(dir.scale(RANGE));
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 new AABB(origin, end).inflate(RADIUS),
-                x -> x != player && x.isAlive() && x instanceof Enemy && !Factions.isLimbo(x))) {
+                x -> x != shooter && x.isAlive() && x instanceof Enemy && !Factions.isLimbo(x))) {
             // whole-hitbox test so big creatures (boss, golems) are caught, not just centre points;
             // contains(origin) also catches point-blank targets (clip() is empty when origin is inside the box).
             AABB box = e.getBoundingBox().inflate(RADIUS);
