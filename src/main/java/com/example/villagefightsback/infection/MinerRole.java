@@ -21,6 +21,7 @@ public final class MinerRole {
     }
 
     public static void promote(Villager v) {
+        if (isLimboSage(v)) return; // the Limbo Sage keeps its job; it never mines
         v.getPersistentData().putBoolean(NBT_MINER, true);
         v.setCustomName(Component.literal(MINER_NAME));
         v.setCustomNameVisible(true);
@@ -39,7 +40,12 @@ public final class MinerRole {
     /** A villager that may be promoted to miner: not already one and not on the step-down cooldown.
      *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
-        return !(v instanceof com.example.villagefightsback.EmeraldgerEntity)
+        return !(v instanceof com.example.villagefightsback.EmeraldgerEntity) && !isLimboSage(v)
                 && !isMiner(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+    }
+
+    /** The Limbo Sage works at the brain node and must never be drafted as a miner. */
+    static boolean isLimboSage(Villager v) {
+        return v.getVillagerData().getProfession() == com.example.villagefightsback.ModVillagers.LIMBO_SAGE.get();
     }
 }

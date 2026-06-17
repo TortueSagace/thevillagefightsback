@@ -31,6 +31,7 @@ public final class BuilderRole {
     }
 
     public static void promote(Villager v, int door) {
+        if (isLimboSage(v)) return; // the Limbo Sage keeps its job; it never builds
         v.getPersistentData().putBoolean(NBT_BUILDER, true);
         v.getPersistentData().putInt(NBT_DOOR, door);
         v.setCustomName(Component.literal(BUILDER_NAME));
@@ -50,7 +51,12 @@ public final class BuilderRole {
     /** A villager that may be promoted: not already a builder and not on the step-down cool-down.
      *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
-        return !(v instanceof EmeraldgerEntity)
+        return !(v instanceof EmeraldgerEntity) && !isLimboSage(v)
                 && !isBuilder(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+    }
+
+    /** The Limbo Sage works at the brain node and must never be drafted as a builder. */
+    static boolean isLimboSage(Villager v) {
+        return v.getVillagerData().getProfession() == ModVillagers.LIMBO_SAGE.get();
     }
 }
