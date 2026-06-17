@@ -53,5 +53,28 @@ def build(size, frames, colors, out_name):
     print("%-20s %dpx %2d frames %3d colors -> %.1f KiB" % (out_name, size, frames, colors, kib))
     return kib
 
+def build_static(size, t_static, out_name, max_kib=250):
+    """A single non-animated frame at a fixed glow level, kept under max_kib (palettized if needed)."""
+    base = Image.open(SRC).convert("RGB").resize((size, size), Image.LANCZOS)
+    arr = np.asarray(base).astype(np.float32)
+    r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
+    mask = np.clip((g - np.maximum(r, b) - GREEN_LO) / (GREEN_HI - GREEN_LO), 0.0, 1.0)
+    glow_blur = np.asarray(
+        Image.fromarray((mask[..., None] * GLOW_RGB).astype(np.uint8))
+        .filter(ImageFilter.GaussianBlur(size * 0.014))).astype(np.float32)
+    lift = mask[..., None] * (LIFT * t_static)
+    frame = arr * (1 - lift) + GLOW_RGB * lift + glow_blur * (BLOOM * t_static)
+    img = Image.fromarray(np.clip(frame, 0, 255).astype(np.uint8))
+
+    out = os.path.join(HERE, out_name)
+    for colors in (256, 192, 128, 96, 64):           # palettize down until it fits
+        img.convert("RGB").quantize(colors=colors, method=Image.MEDIANCUT).save(out, optimize=True)
+        kib = os.path.getsize(out) / 1024
+        if kib <= max_kib:
+            break
+    print("%-20s %dpx static %3d colors -> %.1f KiB" % (out_name, size, colors, kib))
+    return kib
+
 build(512, 24, 256, "logo_glow.gif")          # gallery / feature image
-build(256, 12,  64, "logo_glow_icon.gif")     # project icon (must be < 256 KiB)
+build(256, 12,  64, "logo_glow_icon.gif")     # animated project icon (must be < 256 KiB)
+build_static(512, 0.5, "logo_static.png")     # static icon, < 250 KiB
