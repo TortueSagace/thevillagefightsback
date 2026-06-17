@@ -106,6 +106,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
                                        boolean recentlyHit) {
         super.dropCustomDeathLoot(source, looting, recentlyHit);
         this.spawnAtLocation(new net.minecraft.world.item.ItemStack(ModBlocks.VILLAGE_BRAIN_NODE_ITEM.get()));
+        this.spawnAtLocation(new net.minecraft.world.item.ItemStack(ModBlocks.FERTILE_SCULK_CATALYST_ITEM.get()));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
