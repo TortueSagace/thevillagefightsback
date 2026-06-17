@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -27,21 +27,25 @@ public final class KaratsWillEvents {
     private KaratsWillEvents() {}
 
     /**
-     * Deflect combat damage onto the attacker. We cancel at HURT (not ATTACK) so the hit still "registers" --
-     * on-hit effects (e.g. a wither skull's Wither) are still applied to the holder and then bounced to the
-     * attacker by {@link #onEffectAdded}. The holder loses no health; the attacker takes the damage. Only damage
-     * from a living attacker is deflected (fall / fire / drowning have no attacker and pass through normally).
+     * Deflect the WHOLE attack onto the attacker. We cancel at ATTACK (the earliest hook), so the holder takes
+     * NO damage, NO knockback, and no invulnerability flicker, and the FULL incoming amount (before the holder's
+     * own armour) is dealt straight back to the attacker. Only attacks from a living attacker are deflected
+     * (fall / fire / drowning / cactus have no living attacker and pass through normally). Harmful status effects
+     * are bounced separately by {@link #onEffectAdded}.
      */
     @SubscribeEvent
-    public static void onHurt(LivingHurtEvent event) {
+    public static void onAttack(LivingAttackEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
         if (!victim.hasEffect(ModEffects.KARATS_WILL.get())) return;
         DamageSource source = event.getSource();
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) return;
         float amount = event.getAmount();
-        event.setCanceled(true);                          // the protected holder loses no health...
-        if (amount > 0.0F) attacker.hurt(source, amount); // ...the attacker takes their own attack instead
+        event.setCanceled(true);                          // the protected holder takes nothing...
+        if (amount > 0.0F) {
+            attacker.invulnerableTime = 0;                // ...bypass i-frames so the deflected hit always lands...
+            attacker.hurt(source, amount);                // ...the attacker takes their own attack instead
+        }
     }
 
     /**
