@@ -55,8 +55,13 @@ public class GeneralDariusGoal extends Goal {
     private static final int STUCK_TICKS = 40;              // can't progress for this long -> try a scaffold escape
     private static final int SCAFFOLD_INTERVAL = 4;
 
+    private static final int WITHER_SCAN_INTERVAL = 20;     // re-scan for a wither storm ~1/s (it is the priority)
+    private static final double WITHER_HUNT_RANGE = 160.0;  // hunt a wither storm within this (found even hitbox-off)
+
     private final GeneralDariusEntity darius;
     private LivingEntity locked;
+    private LivingEntity witherStorm;                       // cached apex target, re-scanned periodically
+    private int witherScanCd;
     private int meleeCooldown, launchCooldown, scaffoldCooldown;
     private int noProgressTicks;
     private double lastDistToTarget = Double.MAX_VALUE;
@@ -89,6 +94,19 @@ public class GeneralDariusGoal extends Goal {
         if (scaffoldCooldown > 0) scaffoldCooldown--;
         ensureWeapon();
 
+        // 0) WITHER STORM gets special treatment: while one is near it is ALWAYS Darius's target, overriding
+        //    any lock or retaliation. Found by a hitbox-independent scan, so it works even when the storm has
+        //    deactivated its hitbox. Throttled (scanning the whole entity list is not free).
+        if (--witherScanCd <= 0) {
+            witherScanCd = WITHER_SCAN_INTERVAL;
+            witherStorm = Factions.findNearestWitherStorm(sl, darius.position(), WITHER_HUNT_RANGE);
+        }
+        if (witherStorm != null && witherStorm.isAlive() && Factions.isWitherStorm(witherStorm)) {
+            locked = witherStorm;
+            engage(sl, witherStorm);
+            return;
+        }
+
         // 1) Retaliation override: if something OTHER than the lock just hurt Darius, deal with it first.
         LivingEntity attacker = darius.getLastHurtByMob();
         if (attacker != null && attacker.isAlive() && attacker != locked
@@ -114,8 +132,9 @@ public class GeneralDariusGoal extends Goal {
         darius.getLookControl().setLookAt(t, 30.0F, 30.0F);
         double distSqr = darius.distanceToSqr(t);
 
-        // Below 50% HP: fire the banish beam at the locked target (entity enforces the 30s cooldown).
-        if (darius.getHealth() < darius.getMaxHealth() * 0.5F) {
+        // Fire the banish beam at the locked target (the entity enforces the 30s cooldown). Normally gated to
+        // below 50% HP, but a wither storm -- the apex threat -- is beamed on sight regardless of Darius's HP.
+        if (Factions.isWitherStorm(t) || darius.getHealth() < darius.getMaxHealth() * 0.5F) {
             darius.tryFireBeamAt(t);
         }
 

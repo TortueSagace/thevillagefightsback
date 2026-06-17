@@ -46,6 +46,7 @@ public final class BrainReflexes {
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
     private static final double RADIUS = 100.0;  // the brain node's influence radius (== INCOME_RADIUS)
+    private static final double WITHER_RADIUS = 200.0; // detect a wither storm to summon Darius within this
 
     private static final long WIN_10M = 12000L;  // 10 in-game minutes (ticks)
     private static final long WIN_5M  = 6000L;
@@ -266,13 +267,15 @@ public final class BrainReflexes {
             log(s, level, "Settler sent: Barracks (-12)");
         }
 
-        // A8 (stage 4 ONLY): General Darius. When a HEAVY threat is present in the brain's range -- an enemy
-        // with >= 100 max HP, OR a "dangerous" player (>= 3 villager/guard kills in the last 3 min) -- and the
-        // treasury holds >= 64 gems, AND there is no Darius already serving this brain, march General Darius
-        // (costs 64 gems; refunded when he returns home -- see GeneralDariusEntity#refundAndDespawn). A short
-        // cooldown stops re-spawn spam in the same tick window if he is killed.
+        // A8 (stage 4 ONLY): General Darius. Normally he marches only when a HEAVY threat is present -- an enemy
+        // with >= 100 max HP, OR a "dangerous" player (>= 3 villager/guard kills in the last 3 min). SPECIAL CASE:
+        // when a WITHER STORM is detected (hitbox-independent, so it counts even with its hitbox off), Darius does
+        // NOT wait for any condition -- he marches the instant the treasury holds 64 gems at stage 4. Costs 64
+        // gems (refunded when he returns home); a short cooldown stops re-spawn spam if he is killed.
+        boolean witherStorm = Factions.findNearestWitherStorm(level,
+                net.minecraft.world.phys.Vec3.atCenterOf(brain), WITHER_RADIUS) != null;
         if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusNear(level, brain)
-                && heavyThreatNear(level, brain, gp)) {
+                && (witherStorm || heavyThreatNear(level, brain, gp))) {
             if (econ.spendEmeralds(64)) {
                 spawnDarius(level, gp, brain);
                 s.cdDarius = now + WIN_5M; // brief anti-spam cooldown

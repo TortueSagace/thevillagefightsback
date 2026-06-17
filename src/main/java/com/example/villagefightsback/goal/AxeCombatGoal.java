@@ -56,7 +56,7 @@ public class AxeCombatGoal extends Goal {
         AABB box = villager.getBoundingBox().inflate(SEE_RANGE);
         List<LivingEntity> candidates = villager.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> (e instanceof Enemy || com.example.villagefightsback.Factions.isInfected(e))
-                        && !com.example.villagefightsback.Factions.isVillageChampion(e) // never the village's own champion (Darius)
+                        && !com.example.villagefightsback.Factions.isSparedByVillage(e) // never Darius or the friendly Vindictive Village Spirit
                         && !(e instanceof Creeper) && e.isAlive() && e != villager
                         && villager.distanceToSqr(e) <= SEE_RANGE * SEE_RANGE
                         && villager.getSensing().hasLineOfSight(e));

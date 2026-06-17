@@ -138,7 +138,7 @@ public class TntFleeGoal extends Goal {
     private static boolean isFighting(Villager v) {
         LivingEntity tgt = v.getTarget();
         return tgt != null && tgt.isAlive()
-                && !com.example.villagefightsback.Factions.isVillageChampion(tgt) // Darius is an ally, not a foe to "fight"
+                && !com.example.villagefightsback.Factions.isSparedByVillage(tgt) // Darius / the friendly spirit are allies, not foes to "fight"
                 && (tgt instanceof Enemy || com.example.villagefightsback.Factions.isInfected(tgt));
     }
 }

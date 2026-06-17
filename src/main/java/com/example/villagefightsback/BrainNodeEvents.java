@@ -58,6 +58,7 @@ public final class BrainNodeEvents {
 
     // --- stage-4 air strikes ---
     private static final long STRIKE_INTERVAL = 12000L; // consider an air strike every 10 minutes
+    private static final double WITHER_STRIKE_RANGE = 200.0; // detect a wither storm to air-strike within this
     private static final long ATTACK_WINDOW   = 12000L; // ...only if an ally was attacked within the past 10 minutes
     private static final Map<GlobalPos, Long> lastAllyHurt        = new HashMap<>(); // node -> gameTime an ally was last hit near it
     private static final Map<GlobalPos, Long> strikeCooldownUntil = new HashMap<>(); // node -> gameTime the 10-min cooldown ends (set only after an ACTUAL strike)
@@ -234,6 +235,12 @@ public final class BrainNodeEvents {
 
     /** The strongest (most-HP) hostile near the brain node whose strike column is clear; null if none qualify. */
     private static LivingEntity pickAirStrikeTarget(ServerLevel level, BrainNodeData data, BlockPos node) {
+        // A wither storm is the apex threat: if one is present it is ALWAYS the target, with NO clear-column
+        // requirement. Found by a hitbox-independent scan, so it is struck even when its hitbox is deactivated.
+        LivingEntity ws = Factions.findNearestWitherStorm(level,
+                net.minecraft.world.phys.Vec3.atCenterOf(node), WITHER_STRIKE_RANGE);
+        if (ws != null) return ws;
+
         AABB box = new AABB(node).inflate(INCOME_RADIUS);
         List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box, e -> isAirStrikeEnemy(e, data));
         candidates.sort((a, b) -> Float.compare(b.getHealth(), a.getHealth())); // most HP first

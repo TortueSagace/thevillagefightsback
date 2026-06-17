@@ -86,7 +86,7 @@ public final class CombatUtil {
         List<LivingEntity> candidates = mob.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
                                   : (e instanceof Enemy || Factions.isInfected(e)))
-                        && (mobInfected || !Factions.isVillageChampion(e)) // a village mob never targets its own champion (Darius)
+                        && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
                         && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr
                         && mob.getSensing().hasLineOfSight(e));
@@ -110,7 +110,7 @@ public final class CombatUtil {
         return mob.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
                                   : (e instanceof Enemy || Factions.isInfected(e)))
-                        && (mobInfected || !Factions.isVillageChampion(e)) // a village mob never targets its own champion (Darius)
+                        && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
                         && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr).size();
     }
