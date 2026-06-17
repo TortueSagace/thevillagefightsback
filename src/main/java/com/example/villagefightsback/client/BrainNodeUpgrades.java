@@ -54,59 +54,43 @@ public final class BrainNodeUpgrades {
                     new Upgrade(new ItemStack(Items.IRON_SWORD),
                             "Guards", "Guard villagers patrol and defend the village."),
                     new Upgrade(new ItemStack(ModBlocks.GOLEM_FACTORY_NODE_ITEM.get()),
-                            "Iron Factory", "The brain node can craft Iron Factory nodes, each spawning an iron "
-                            + "golem below it every sunset.")
+                            "Iron Factory", "Iron Factory nodes (craftable now) spawn an iron golem every sunset.")
             ),
             // --- Level 2 ---
             List.of(
                     new Upgrade(ModEntities.WALL_DEFENDER.get(), new ItemStack(ModBlocks.WALL_DEFENDER_SPAWN.get()),
-                            "Wall Defenders", "Conduit turrets rise in protecting-glass shells above the gates "
-                            + "and gun down attackers."),
+                            "Wall Defenders", "Turrets in protecting-glass shells rise above the gates and gun down attackers."),
                     new Upgrade(new ItemStack(ModBlocks.PROTECTING_GLASS_ITEM.get()),
-                            "Defender Golems", "Village iron golems evolve into Defender Golems: a wall defender "
-                            + "sealed in a protecting-glass cocoon for a head, 150 HP, with a golem punch AND a "
-                            + "turret that guns down attackers from range."),
+                            "Defender Golems", "Iron golems become Defender Golems with 150 HP, a golem punch and a built-in turret."),
                     new Upgrade(new ItemStack(ModBlocks.BARRACKS_NODE_ITEM.get()),
-                            "Barracks", "The brain node can craft Barracks nodes, each mustering a squad of "
-                            + "stage-appropriate guards every sunset."),
+                            "Barracks", "Barracks nodes (craftable now) muster a squad of guards every sunset."),
                     new Upgrade(new ItemStack(Items.EMERALD),
-                            "Fertilization", "Dirt paths spread and fertilize the land into Fertile/Rich blocks; "
-                            + "miner villagers dig the Rich ones for emeralds to feed the brain node.")
+                            "Fertilization", "Paths fertilize the land; miners dig the Rich blocks for emeralds.")
             ),
             // --- Level 3 ---
             List.of(
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ALIEN_SLASHER.get()),
-                            "Advanced Weaponry",
-                            "The battle power of villagers, guards and golems is strongly improved."),
+                            "Advanced Weaponry", "Villagers, guards and golems hit much harder."),
                     new Upgrade(new ItemStack(ModBlocks.FAKE_OBSIDIAN_ITEM.get()),
-                            "Obsidian Wall", "A second, obsidian-tough outer wall rises around the whole village, "
-                            + "with its own gate turrets."),
+                            "Obsidian Wall", "An obsidian-tough outer wall rises, with its own gate turrets."),
                     new Upgrade(new ItemStack(ModBlocks.GREEN_TNT_ITEM.get()),
-                            "Expansion", "The village outgrows its wall: a wave of settlers streams out and "
-                            + "founds a ring of new houses and towers beyond it."),
+                            "Expansion", "Settlers stream out and found new houses and towers beyond the wall."),
                     new Upgrade(new ItemStack(ModBlocks.LURE_TOWER_NODE_ITEM.get()),
-                            "Lure Tower", "The brain node can craft Lure Tower nodes: a powder-snow-and-lava trap "
-                            + "topped by a wall defender that lures attackers in and guns them down.")
+                            "Lure Tower", "Lure Tower nodes trap attackers in powder snow and lava under a turret.")
             ),
             // --- Level 4 ---
             List.of(
                     new Upgrade(new ItemStack(ModBlocks.REINFORCED_GLASS_ITEM.get()),
-                            "Glass Dome", "A reinforced-glass dome rises over the whole village, sealing it from "
-                            + "aerial attacks."),
+                            "Glass Dome", "A reinforced-glass dome seals the village from aerial attacks."),
                     new Upgrade(ModEntities.WALL_DEFENDER_STAGE4.get(),
                             new ItemStack(ModBlocks.WALL_DEFENDER_STAGE4_SPAWN.get()),
-                            "Rocket Defenders", "Wall defenders are upgraded to launch rockets like the Gigachad "
-                            + "Golems -- one every two seconds, with a revolver fallback at point-blank range."),
+                            "Rocket Defenders", "Wall defenders fire rockets every two seconds, with a revolver up close."),
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ROCKET_LAUNCHER.get()),
-                            "Gigachad Golems", "Defender Golems evolve into Gigachad Golems: gold-plated, 200 HP, "
-                            + "and armed with a rocket launcher that blasts attackers from range."),
+                            "Gigachad Golems", "Defender Golems become gold-plated Gigachad Golems with 200 HP and a rocket launcher."),
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
-                            "Emeraldgers", "The Emerald Virus evolves: it inflicts Wither II, and every host that "
-                            + "dies and explodes rises again as an Emeraldger -- a green-eyed warrior that grows "
-                            + "with the strength of what it killed."),
+                            "Emeraldgers", "Emerald Virus inflicts Wither II; dead hosts rise as Emeraldgers that grow with each kill."),
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/air_strike.png"),
-                            "Air Strikes", "When the village is attacked, every 10 minutes the brain node calls "
-                            + "down a rain of 27 rockets from the sky onto the strongest enemy in range.")
+                            "Air Strikes", "When attacked, the brain node rains 27 rockets on the strongest nearby enemy.")
             )
     );
 
