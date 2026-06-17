@@ -38,7 +38,18 @@ public abstract class AbstractNodeBlock extends Block {
         GlobalPos gp = GlobalPos.of(level.dimension(), pos.immutable());
         BrainNodeData.get(sl.getServer()).addNode(gp);
         // Spawn on genuine creation only -- NOT on a piston relocation (moved), which would be a free spawn.
-        if (!moved) BrainNodeEvents.triggerNodeSpawn(sl, pos.immutable());
+        // The payload spawn runs INSIDE the rising-building animation (this onPlace fires as HouseBuildManager
+        // sets the node block during a TNT build), and it is standalone: triggerNodeSpawn spawns at the nearest
+        // brain's stage, or STAGE 1 when no brain is in range -- so a player-placed node TNT always behaves as
+        // if a stage-1 node were nearby. Guarded so a payload-spawn hiccup can NEVER abort the building animation
+        // (the structure must always finish, with or without a brain).
+        if (!moved) {
+            try {
+                BrainNodeEvents.triggerNodeSpawn(sl, pos.immutable());
+            } catch (Throwable t) {
+                TheVillageFightsBack.LOGGER.error("[The Village Fights Back] node payload spawn failed at {}", pos, t);
+            }
+        }
     }
 
     @Override
