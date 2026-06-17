@@ -13,8 +13,9 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Draws the two-line "village discovered" message at the bottom of the screen (above the hotbar, NOT in chat)
  * for a few seconds when a brain node first awakens near the player. The first line is green, the second red.
- * Triggered by {@link com.example.villagefightsback.network.VillageDiscoveryPacket}; the timer runs off the
- * client level game-time, so it needs no tick subscriber and pauses with the game.
+ * Triggered by {@link com.example.villagefightsback.network.VillageDiscoveryPacket}; the countdown is a plain
+ * client-tick timer ({@link VillageDiscoveryTicker} decrements it each unpaused tick) so it ALWAYS expires,
+ * independent of world/dimension game-time.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillageDiscoveryHud {
@@ -26,13 +27,16 @@ public final class VillageDiscoveryHud {
     private static final int RED = 0xFF5555;    // ChatFormatting.RED rgb
     private static final int FADE_TICKS = 20;   // fade out over the last second
 
-    private static long expiryGameTime = Long.MIN_VALUE;
+    private static int ticksLeft; // counts down to 0, then the message is gone
 
     /** Show the message for {@code ticks} (called on the client when the discovery packet arrives). */
     public static void show(int ticks) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) return;
-        expiryGameTime = mc.level.getGameTime() + ticks;
+        ticksLeft = ticks;
+    }
+
+    /** Decrement the timer one tick (called from {@link VillageDiscoveryTicker} each unpaused client tick). */
+    public static void tickDown() {
+        if (ticksLeft > 0) ticksLeft--;
     }
 
     @SubscribeEvent
@@ -42,11 +46,10 @@ public final class VillageDiscoveryHud {
     }
 
     private static void draw(GuiGraphics g, int w, int h) {
+        if (ticksLeft <= 0) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.options.hideGui) return;
-        long left = expiryGameTime - mc.level.getGameTime();
-        if (left <= 0) return;
-        int alpha = left < FADE_TICKS ? Math.max(16, (int) (255L * left / FADE_TICKS)) : 255;
+        if (mc.player == null || mc.options.hideGui) return;
+        int alpha = ticksLeft < FADE_TICKS ? Math.max(16, 255 * ticksLeft / FADE_TICKS) : 255;
         int top = h - 72, bot = h - 60;
         line(g, mc, LINE1, w / 2, top, (alpha << 24) | GREEN);
         line(g, mc, LINE2, w / 2, bot, (alpha << 24) | RED);
