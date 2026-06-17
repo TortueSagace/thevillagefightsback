@@ -18,6 +18,8 @@
   "block.thevillagefightsback.iron_golem_head.desc": "A decorative iron golem bust. Faces the way you place it.",
   "block.thevillagefightsback.debris": "Debris",
   "block.thevillagefightsback.debris.desc": "A village node that wasn't mined with Silk Touch. Smelt it for an iron ingot.",
+  "block.thevillagefightsback.elegant_stand": "Elegant Stand",
+  "block.thevillagefightsback.elegant_stand.desc": "A display pedestal. A creature standing on it freezes in place and always turns to face you.",
   "block.thevillagefightsback.blue_tnt": "House TNT",
   "block.thevillagefightsback.green_tnt": "Tower TNT",
   "block.thevillagefightsback.yellow_tnt": "Golem Factory Node TNT",
@@ -165,6 +167,8 @@
   "item.thevillagefightsback.brain_node_warden": "Vindictive Village Spirit Spawn Egg",
   "item.thevillagefightsback.vindictive_guard_spawn": "Vindictive Guard Spawn Egg",
   "item.thevillagefightsback.vindictive_gigachad_spawn": "Vindictive Gigachad Spawn Egg",
+  "item.thevillagefightsback.general_darius_spawn": "General Darius Spawn Egg",
+  "item.thevillagefightsback.general_darius_spawn.desc": "Summons General Darius: the stage-4 boss guard.",
   "entity.thevillagefightsback.rocket": "Rocket",
   "item.thevillagefightsback.villager_stage1": "Villager (Stage 1)",
   "item.thevillagefightsback.villager_stage3": "Villager (Stage 3)",
@@ -227,5 +231,6 @@
   "item.thevillagefightsback.limbo_sword": "Limbo Sword",
   "block.thevillagefightsback.limbo_block": "Limbo Block",
   "block.thevillagefightsback.limbo_block.desc": "As tough as bedrock. Works as a beacon base.",
-  "entity.minecraft.villager.limbo_sage": "Limbo Sage"
+  "entity.minecraft.villager.limbo_sage": "Limbo Sage",
+  "entity.minecraft.villager.thevillagefightsback.limbo_sage": "Limbo Sage"
 }

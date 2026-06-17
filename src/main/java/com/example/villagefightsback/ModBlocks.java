@@ -135,6 +135,17 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(DEBRIS.get(), new Item.Properties(),
                     "block.thevillagefightsback.debris.desc"));
 
+    /** Elegant Stand: a slab-shaped quartz-and-gold display pedestal. A creature standing on it is frozen in
+     *  place and always turns to face the nearest player (see {@link ElegantStandEvents}). */
+    public static final RegistryObject<Block> ELEGANT_STAND = BLOCKS.register(
+            "elegant_stand",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.QUARTZ_BLOCK)));
+
+    public static final RegistryObject<Item> ELEGANT_STAND_ITEM = ITEMS.register(
+            "elegant_stand",
+            () -> new TooltipBlockItem(ELEGANT_STAND.get(), new Item.Properties(),
+                    "block.thevillagefightsback.elegant_stand.desc"));
+
     /** Obsidian stairs: the stage-3 OUTER wall's loophole stairs, so the obsidian curtain isn't broken up by
      *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
     public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
@@ -535,6 +546,7 @@ public final class ModBlocks {
                 output.accept(BARRACKS_NODE_ITEM.get());
                 output.accept(LURE_TOWER_NODE_ITEM.get());
                 output.accept(DEBRIS_ITEM.get());
+                output.accept(ELEGANT_STAND_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(ORANGE_TNT_ITEM.get());
@@ -553,6 +565,7 @@ public final class ModBlocks {
                 output.accept(ModItems.RICH_SHEEP_SPAWN.get());
                 output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
                 output.accept(ModItems.VINDICTIVE_GIGACHAD_SPAWN.get());
+                output.accept(ModItems.GENERAL_DARIUS_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
                 for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(ModItems.ALIEN_SLASHER.get());

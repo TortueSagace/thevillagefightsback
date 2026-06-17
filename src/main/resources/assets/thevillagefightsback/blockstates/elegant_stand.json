@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": { "model": "thevillagefightsback:block/elegant_stand" },
+    "type=double": { "model": "thevillagefightsback:block/elegant_stand_double" },
+    "type=top": { "model": "thevillagefightsback:block/elegant_stand_top" }
+  }
+}
