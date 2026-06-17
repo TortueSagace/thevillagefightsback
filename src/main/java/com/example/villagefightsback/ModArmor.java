@@ -35,6 +35,11 @@ public final class ModArmor {
     public static final RegistryObject<Item> LIMBO_BOOTS = ITEMS.register("limbo_boots",
             () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant()));
 
+    // A Limbo chestplate that also glides like an elytra (combine a Limbo Chestplate + an Elytra). Counts as
+    // the chest piece of the Limbo set (LimboGear). Wings render via the vanilla ElytraLayer (canElytraFly).
+    public static final RegistryObject<Item> LIMBO_ELYTRA_CHESTPLATE = ITEMS.register("limbo_elytra_chestplate",
+            () -> new LimboElytraChestplateItem(LimboArmorMaterial.INSTANCE, new Item.Properties().fireResistant()));
+
     /** Call from the mod constructor. */
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);

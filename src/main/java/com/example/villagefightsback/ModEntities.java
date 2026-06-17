@@ -78,6 +78,15 @@ public final class ModEntities {
                     .clientTrackingRange(12)
                     .build("gigachad_golem"));
 
+    /** The "Defender Golem": the stage-2 evolution of the village iron golem -- an iron golem with a wall
+     *  defender (in a protecting-glass cocoon) for a head, 150 HP, melee + a turret ({@link DefenderGolemEntity}). */
+    public static final RegistryObject<EntityType<DefenderGolemEntity>> DEFENDER_GOLEM = ENTITIES.register(
+            "defender_golem",
+            () -> EntityType.Builder.<DefenderGolemEntity>of(DefenderGolemEntity::new, MobCategory.MISC)
+                    .sized(1.4F, 2.7F)             // same hitbox as a vanilla iron golem
+                    .clientTrackingRange(12)
+                    .build("defender_golem"));
+
     /** The "Vindictive Gigachad": a boss-minion gigachad golem the unleashed brainNode summons ({@link VindictiveGigachadEntity}). */
     public static final RegistryObject<EntityType<VindictiveGigachadEntity>> VINDICTIVE_GIGACHAD = ENTITIES.register(
             "vindictive_gigachad",
@@ -217,6 +226,7 @@ public final class ModEntities {
         event.put(UNLEASHED_BRAIN_NODE.get(), UnleashedBrainNodeEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
         event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
+        event.put(DEFENDER_GOLEM.get(), DefenderGolemEntity.createAttributes().build());
         event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
         event.put(LIMBO_PHANTOM.get(), LimboPhantomEntity.createAttributes().build());
         event.put(LIMBO_PILLAGER.get(), LimboPillagerEntity.createAttributes().build());

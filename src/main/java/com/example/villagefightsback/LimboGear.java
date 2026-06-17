@@ -16,8 +16,15 @@ public final class LimboGear {
     public static boolean isLimboPiece(ItemStack stack) {
         return stack.getItem() == ModArmor.LIMBO_HELMET.get()
                 || stack.getItem() == ModArmor.LIMBO_CHESTPLATE.get()
+                || stack.getItem() == ModArmor.LIMBO_ELYTRA_CHESTPLATE.get()
                 || stack.getItem() == ModArmor.LIMBO_LEGGINGS.get()
                 || stack.getItem() == ModArmor.LIMBO_BOOTS.get();
+    }
+
+    /** True for either chest piece of the set: the plain Limbo chestplate or the elytra variant. */
+    private static boolean isLimboChest(ItemStack stack) {
+        return stack.getItem() == ModArmor.LIMBO_CHESTPLATE.get()
+                || stack.getItem() == ModArmor.LIMBO_ELYTRA_CHESTPLATE.get();
     }
 
     /** How many Limbo armour pieces the entity wears (0..4). */
@@ -33,7 +40,7 @@ public final class LimboGear {
     /** True only when all four slots hold the matching Limbo piece. */
     public static boolean hasFullSet(LivingEntity e) {
         return e.getItemBySlot(EquipmentSlot.HEAD).getItem() == ModArmor.LIMBO_HELMET.get()
-                && e.getItemBySlot(EquipmentSlot.CHEST).getItem() == ModArmor.LIMBO_CHESTPLATE.get()
+                && isLimboChest(e.getItemBySlot(EquipmentSlot.CHEST))
                 && e.getItemBySlot(EquipmentSlot.LEGS).getItem() == ModArmor.LIMBO_LEGGINGS.get()
                 && e.getItemBySlot(EquipmentSlot.FEET).getItem() == ModArmor.LIMBO_BOOTS.get();
     }

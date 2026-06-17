@@ -154,6 +154,24 @@ public final class VillageEvents {
         old.discard();
     }
 
+    /** Replace a plain village iron golem with a {@link DefenderGolemEntity} at the same spot (the stage-2
+     *  golem evolution). The new type carries its own kit (150 HP + turret) by construction, so no arming is
+     *  needed. A Defender Golem itself is later replaced by a {@link GigachadGolemEntity} at stage 4 via
+     *  {@link #convertToGigachad}. */
+    public static void convertToDefenderGolem(IronGolem old) {
+        if (old instanceof DefenderGolemEntity || old instanceof GigachadGolemEntity) return;
+        if (!(old.level() instanceof ServerLevel sl)) return;
+        DefenderGolemEntity d = ModEntities.DEFENDER_GOLEM.get().create(sl);
+        if (d == null) return;
+        d.moveTo(old.getX(), old.getY(), old.getZ(), old.getYRot(), old.getXRot());
+        d.yBodyRot = old.yBodyRot;
+        d.yHeadRot = old.yHeadRot;
+        d.finalizeSpawn(sl, sl.getCurrentDifficultyAt(old.blockPosition()),
+                net.minecraft.world.entity.MobSpawnType.CONVERSION, null, null);
+        sl.addFreshEntity(d);
+        old.discard();
+    }
+
     /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 brainNode). */
     public static void applyUpgrade(LivingEntity e) {
         if (e instanceof Villager villager) {

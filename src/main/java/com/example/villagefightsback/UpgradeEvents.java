@@ -24,7 +24,9 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 public final class UpgradeEvents {
     private UpgradeEvents() {}
 
-    private static final int REQUIRED_LEVEL = 3;
+    private static final int REQUIRED_LEVEL = 3;    // villagers/guards get the full kit at stage 3+
+    private static final int DEFENDER_LEVEL = 2;     // a plain iron golem becomes a Defender Golem at stage 2+
+    private static final int GIGACHAD_LEVEL = 4;     // a golem (iron OR defender) becomes a Gigachad at stage 4+
     private static final double RADIUS = 100.0;
     private static final int INTERVAL = 100; // check every ~5s (upgrade is permanent; no need to be fast)
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
@@ -41,13 +43,20 @@ public final class UpgradeEvents {
         for (GlobalPos gp : data.blocks()) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
-            if (data.econ(gp).getLevel() < REQUIRED_LEVEL) continue; // only this village's defenders, at level 3+
+            int stage = data.econ(gp).getLevel();
+            if (stage < DEFENDER_LEVEL) continue; // nothing happens below stage 2 (golems evolve from stage 2)
             AABB box = new AABB(gp.pos()).inflate(RADIUS);
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, UpgradeEvents::needsProcessing)) {
                 if (e instanceof IronGolem golem) {
-                    VillageEvents.convertToGigachad(golem); // a village golem becomes its own gigachad creature type
-                } else {
-                    UpgradeState.setUpgraded(e);
+                    // Golems have THREE forms: iron (s1) -> Defender Golem (s2-3) -> Gigachad Golem (s4).
+                    if (stage >= GIGACHAD_LEVEL) {
+                        VillageEvents.convertToGigachad(golem);           // iron OR defender -> gigachad
+                    } else if (!(golem instanceof DefenderGolemEntity)) {
+                        VillageEvents.convertToDefenderGolem(golem);      // plain iron -> defender (stage 2-3)
+                    }
+                    // else: already a Defender Golem at stage 2-3 -> leave it as-is
+                } else if (stage >= REQUIRED_LEVEL) {
+                    UpgradeState.setUpgraded(e);                          // villagers/guards: full kit at stage 3+
                     VillageEvents.applyUpgrade(e);
                 }
             }

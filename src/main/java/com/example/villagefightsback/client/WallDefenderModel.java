@@ -40,6 +40,17 @@ public class WallDefenderModel extends EntityModel<WallDefenderEntity> {
         core.y = 12.0F + (float) Math.sin(ageInTicks * 0.10F) * 0.8F;    // gentle float bob
     }
 
+    /**
+     * Spin animation for when this model is reused as the Defender Golem's head (see
+     * {@link DefenderGolemHeadLayer}): same rotation as {@link #setupAnim}, but the core stays CENTRED on the
+     * part origin (no y=12 standalone-entity offset, no bob) so the layer can place it inside the head cocoon.
+     */
+    public void setupHeadAnim(float ageInTicks) {
+        core.yRot = ageInTicks * 0.10F;
+        core.xRot = (float) Math.sin(ageInTicks * 0.05F) * 0.10F;
+        core.y = 0.0F;
+    }
+
     @Override
     public void renderToBuffer(PoseStack pose, VertexConsumer buffer, int packedLight, int packedOverlay,
                                float r, float g, float b, float a) {

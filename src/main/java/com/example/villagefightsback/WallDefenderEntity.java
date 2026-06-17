@@ -61,9 +61,11 @@ public class WallDefenderEntity extends Mob {
         this.entityData.define(DATA_STAGE4, false);
     }
 
-    /** Client-side: true if this defender should render as a stage-4 (rocket) defender. */
+    /** Client-side: true if this defender should render as a stage-4 (rocket) defender. The forced stage-4
+     *  type (spawn egg + the upgrade-tree GUI dummy) is gold immediately; village defenders flip the synced
+     *  flag once their nearest brain node is stage 4. */
     public boolean isStage4Visual() {
-        return this.entityData.get(DATA_STAGE4);
+        return this.forcedStage4 || this.entityData.get(DATA_STAGE4);
     }
 
     public static AttributeSupplier.Builder createAttributes() {

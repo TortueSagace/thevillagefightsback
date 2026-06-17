@@ -27,9 +27,14 @@ public final class TheVillageFightsBackClient {
     public static final ModelLayerLocation WALL_DEFENDER_LAYER =
             new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "wall_defender"), "main");
 
+    /** Three spikes baked at the top of a humanoid head, added to wearers of the Limbo Helmet. */
+    public static final ModelLayerLocation LIMBO_HELMET_SPIKES =
+            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "limbo_helmet_spikes"), "main");
+
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
+        event.registerLayerDefinition(LIMBO_HELMET_SPIKES, LimboHelmetSpikesLayer::createSpikesLayer);
     }
 
     /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
@@ -83,6 +88,8 @@ public final class TheVillageFightsBackClient {
         // Gigachad golem: gold-skinned golem + rocket launcher. The vindictive subclass adds green vines on top.
         event.registerEntityRenderer(ModEntities.GIGACHAD_GOLEM.get(), GigachadGolemRenderer::new);
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GIGACHAD.get(), VindictiveGigachadRenderer::new);
+        // Defender golem: vanilla iron golem body with its iron head replaced by a wall-defender-in-a-cocoon.
+        event.registerEntityRenderer(ModEntities.DEFENDER_GOLEM.get(), DefenderGolemRenderer::new);
         // Native rocket projectile: billboard its item sprite (RocketEntity implements ItemSupplier).
         event.registerEntityRenderer(ModEntities.ROCKET.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
@@ -126,6 +133,19 @@ public final class TheVillageFightsBackClient {
         // arm-swing animation -- see AngryFaceClient), scowl the angry villager face onto its head.
         addAngryVillagerFace(event);
         addAngryGuardFace(event);
+        addLimboHelmetSpikes(event);
+    }
+
+    /**
+     * Attach the Limbo Helmet spikes layer to every player skin renderer (default + slim). The player is the
+     * key wearer; the layer itself only draws when the head slot actually holds the Limbo Helmet.
+     */
+    private static void addLimboHelmetSpikes(EntityRenderersEvent.AddLayers event) {
+        for (String skin : event.getSkins()) {
+            if (event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer pr) {
+                pr.addLayer(new LimboHelmetSpikesLayer<>(pr, event.getEntityModels()));
+            }
+        }
     }
 
     /** Attach the angry-face layer to the vanilla villager renderer. */

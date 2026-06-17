@@ -17,5 +17,5 @@ public enum LimboToolTier implements Tier {
     @Override public float getAttackDamageBonus() { return 4.0F; }
     @Override public int getLevel() { return 4; }               // netherite harvest level
     @Override public int getEnchantmentValue() { return 15; }
-    @Override public Ingredient getRepairIngredient() { return Ingredient.of(ModItems.LIMBO_INGOT.get()); }
+    @Override public Ingredient getRepairIngredient() { return Ingredient.of(ModItems.LIMBO_MEMBRANE.get()); }
 }

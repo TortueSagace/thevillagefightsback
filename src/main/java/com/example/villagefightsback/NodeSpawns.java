@@ -39,19 +39,27 @@ public final class NodeSpawns {
         return true;
     }
 
-    /** An iron golem below/above the node -- a gigachad if the brain node is stage 3+. */
+    /** A golem below/above the node, in the stage-appropriate form: iron (stage 1), Defender Golem (stage 2-3),
+     *  or Gigachad Golem (stage 4+). The upgraded forms are spawned directly so the result is immediate. */
     public static void spawnGolem(ServerLevel level, BlockPos node, int stage) {
         BlockPos spot = belowOrAbove(level, node, 3);
         if (spot == null) return;
-        if (stage >= 3) {
+        float yaw = level.getRandom().nextFloat() * 360.0F;
+        if (stage >= 4) {
             GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(level);
             if (g == null) return;
-            g.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+            g.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
             g.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
             UpgradeState.setUpgraded(g);                 // gigachad is born fully upgraded
             level.addFreshEntity(g);
+        } else if (stage >= 2) {
+            DefenderGolemEntity d = ModEntities.DEFENDER_GOLEM.get().create(level);
+            if (d == null) return;
+            d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
+            d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+            level.addFreshEntity(d);                     // defender golem carries its own kit by construction
         } else {
-            EntityType.IRON_GOLEM.spawn(level, spot, MobSpawnType.EVENT); // plain golem (auto-arms with the village)
+            EntityType.IRON_GOLEM.spawn(level, spot, MobSpawnType.EVENT); // stage 1: plain golem
         }
     }
 

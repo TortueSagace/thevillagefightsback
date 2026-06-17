@@ -24,6 +24,7 @@ public class BrainNodeScreen extends Screen {
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
+    private static final int ENTITY_ICON_SCALE = 14; // display scale for a live-entity icon (e.g. wall defender)
 
     private final int level;
     private final int maxLevel;
@@ -110,7 +111,9 @@ public class BrainNodeScreen extends Screen {
             for (int i = 0; i < ups.size(); i++) {
                 Upgrade u = ups.get(i);
                 int iconX = leftPos + ICONS_X + i * (ICON + ICON_GAP);
-                if (u.texture() != null) {
+                if (u.entity() != null && GuiEntityIcons.render(g, iconX, iconY, u.entity(), ENTITY_ICON_SCALE)) {
+                    // drawn as a live, animated entity (e.g. the spinning wall defender)
+                } else if (u.texture() != null) {
                     g.blit(u.texture(), iconX, iconY, 0, 0, ICON, ICON, ICON, ICON); // 16x16 face/GUI texture
                 } else {
                     g.renderItem(u.icon(), iconX, iconY);

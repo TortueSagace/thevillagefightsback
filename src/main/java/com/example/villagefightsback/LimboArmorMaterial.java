@@ -54,7 +54,7 @@ public final class LimboArmorMaterial implements ArmorMaterial {
 
     @Override
     public Ingredient getRepairIngredient() {
-        return Ingredient.of(ModItems.LIMBO_INGOT.get());
+        return Ingredient.of(ModItems.LIMBO_MEMBRANE.get()); // repair Limbo armour with Limbo Membrane
     }
 
     @Override

@@ -267,6 +267,13 @@ public final class ModBlocks {
             () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
                     0x6e3a10, 0xffb020, new Item.Properties()));
 
+    /** Defender Golem spawn egg: places the stage-2 evolution of the iron golem (iron body, wall-defender
+     *  head in a protecting-glass cocoon, 150 HP, melee + turret). See {@link DefenderGolemEntity}. */
+    public static final RegistryObject<Item> DEFENDER_GOLEM_SPAWN = ITEMS.register(
+            "defender_golem",
+            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.DEFENDER_GOLEM,
+                    0xDBD3D0, 0x78ebf5, new Item.Properties()));
+
     /** Spawn egg for the {@link BrainNodeWardenEntity} (a green Warden with a brainNode-block head). */
     public static final RegistryObject<Item> BRAIN_NODE_WARDEN_SPAWN = ITEMS.register(
             "brain_node_warden",
@@ -539,6 +546,7 @@ public final class ModBlocks {
                 output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(WALL_DEFENDER_SPAWN.get());
                 output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
+                output.accept(DEFENDER_GOLEM_SPAWN.get());
                 output.accept(BRAIN_NODE_WARDEN_SPAWN.get());
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
@@ -610,6 +618,7 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_SMITHING_TEMPLATE.get());
                 output.accept(ModArmor.LIMBO_HELMET.get());
                 output.accept(ModArmor.LIMBO_CHESTPLATE.get());
+                output.accept(ModArmor.LIMBO_ELYTRA_CHESTPLATE.get());
                 output.accept(ModArmor.LIMBO_LEGGINGS.get());
                 output.accept(ModArmor.LIMBO_BOOTS.get());
                 output.accept(ModItems.LIMBO_SWORD.get());
