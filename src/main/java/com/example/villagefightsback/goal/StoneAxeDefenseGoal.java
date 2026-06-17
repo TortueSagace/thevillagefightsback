@@ -98,10 +98,13 @@ public class StoneAxeDefenseGoal extends Goal {
         LivingEntity t = this.target;
         if (t == null) return;
 
-        // Override the brain's flee while making this last stand (the goal only runs when hurt < 75%).
+        // Suppress the villager's vanilla flee/panic so it stands and fights any threat in range -- including
+        // an enemy that broke INSIDE the wall (beyondHomeWall is false for an in-wall target). Mirrors the
+        // upgraded AxeCombatGoal (which also erases HURT_BY_ENTITY).
         Brain<?> brain = villager.getBrain();
         brain.eraseMemory(MemoryModuleType.WALK_TARGET);
         brain.eraseMemory(MemoryModuleType.HURT_BY);
+        brain.eraseMemory(MemoryModuleType.HURT_BY_ENTITY);
         brain.eraseMemory(MemoryModuleType.NEAREST_HOSTILE);
 
         villager.setTarget(t);
