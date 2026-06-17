@@ -46,6 +46,11 @@ public final class ModNetwork {
                 .decoder(LimboCooldownPacket::decode)
                 .consumerMainThread(LimboCooldownPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(VillageDiscoveryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(VillageDiscoveryPacket::encode)
+                .decoder(VillageDiscoveryPacket::decode)
+                .consumerMainThread(VillageDiscoveryPacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */

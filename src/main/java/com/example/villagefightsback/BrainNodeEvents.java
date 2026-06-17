@@ -51,6 +51,7 @@ public final class BrainNodeEvents {
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
     private static final int INCOME_RADIUS = 100;     // count defenders within this of a brainNode
     private static final int VILLAGE_SCAN_RADIUS = 64; // look for village centres this far from players
+    private static final int DISCOVERY_HUD_TICKS = 180; // 9s on-screen discovery message (bottom of screen)
     private static final int TICK_INTERVAL = 40;       // run all of this every 2 seconds
     private static final long SUNSET_TIME = 12000L;     // day-time at dusk
     private static final double VILLAGER_BED_RATIO_CAP = 1.5; // skip reinforcement above this villagers:beds
@@ -833,12 +834,17 @@ public final class BrainNodeEvents {
             if (data.isAnnounced(gp)) continue;
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null) continue;
-            boolean someoneNear = false;
+            java.util.List<ServerPlayer> near = new ArrayList<>();
             for (ServerPlayer player : level.players()) {
-                if (player.blockPosition().distSqr(gp.pos()) <= r2) { someoneNear = true; break; }
+                if (player.blockPosition().distSqr(gp.pos()) <= r2) near.add(player);
             }
-            if (!someoneNear) continue;
+            if (near.isEmpty()) continue;
             broadcast(server, phaseBanner(1)); // same banner as placement: "SETTLEMENT PHASE"
+            // Plus a two-line on-screen message (bottom of the screen, NOT chat) for the players who found it.
+            for (ServerPlayer p : near) {
+                com.example.villagefightsback.network.ModNetwork.sendTo(
+                        p, new com.example.villagefightsback.network.VillageDiscoveryPacket(DISCOVERY_HUD_TICKS));
+            }
             data.markAnnounced(gp);
         }
     }
