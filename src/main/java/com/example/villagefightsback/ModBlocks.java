@@ -538,36 +538,31 @@ public final class ModBlocks {
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
             .icon(() -> new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get()))
             .displayItems((params, output) -> {
+                // === Village brain & node blocks (the brain node leads the whole tab) ===
                 output.accept(VILLAGE_BRAIN_NODE_ITEM.get());
-                output.accept(CHEAP_SCAFFOLD_ITEM.get());
-                output.accept(FAKE_COBBLESTONE_ITEM.get());
-                output.accept(FAKE_OBSIDIAN_ITEM.get());
                 output.accept(GOLEM_FACTORY_NODE_ITEM.get());
                 output.accept(BARRACKS_NODE_ITEM.get());
                 output.accept(LURE_TOWER_NODE_ITEM.get());
-                output.accept(DEBRIS_ITEM.get());
-                output.accept(ELEGANT_STAND_ITEM.get());
+
+                // === Defensive / structural blocks ===
+                output.accept(FAKE_COBBLESTONE_ITEM.get());
+                output.accept(FAKE_OBSIDIAN_ITEM.get());
+                output.accept(CHEAP_SCAFFOLD_ITEM.get());
+                output.accept(REINFORCED_GLASS_ITEM.get());
+                output.accept(PROTECTING_GLASS_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
+                output.accept(ELEGANT_STAND_ITEM.get());
+                output.accept(DEBRIS_ITEM.get());
+
+                // === TNT family ===
                 output.accept(ORANGE_TNT_ITEM.get());
                 output.accept(YELLOW_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(PURPLE_TNT_ITEM.get());
-                output.accept(REINFORCED_GLASS_ITEM.get());
-                output.accept(PROTECTING_GLASS_ITEM.get());
-                output.accept(WALL_DEFENDER_SPAWN.get());
-                output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
-                output.accept(DEFENDER_GOLEM_SPAWN.get());
-                output.accept(BRAIN_NODE_WARDEN_SPAWN.get());
-                output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
-                output.accept(ModItems.EMERALDGER_SPAWN.get());
-                output.accept(ModItems.RICH_SHEEP_SPAWN.get());
-                output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
-                output.accept(ModItems.VINDICTIVE_GIGACHAD_SPAWN.get());
-                output.accept(ModItems.GENERAL_DARIUS_SPAWN.get());
-                for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
-                for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
+
+                // === Weapons, ammo & mace enchants ===
                 output.accept(ModItems.ALIEN_SLASHER.get());
                 output.accept(ModItems.ALIEN_ERADICATOR.get());
                 output.accept(ModItems.ROCKET_LAUNCHER.get());
@@ -588,21 +583,28 @@ public final class ModBlocks {
                         new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.BREACH.get(), 4)));
                 output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
                         new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.WIND_BURST.get(), 3)));
-                // Emerald gear (built from emeralds; stats between iron and diamond) -- in OUR tab.
+
+                // === Emerald gear & food (built from emeralds; stats between iron and diamond) -- in OUR tab ===
                 output.accept(ModArmor.EMERALD_HELMET.get());
                 output.accept(ModArmor.EMERALD_CHESTPLATE.get());
                 output.accept(ModArmor.EMERALD_LEGGINGS.get());
                 output.accept(ModArmor.EMERALD_BOOTS.get());
                 for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
+                output.accept(ModItems.EMERALD_APPLE.get());
+
+                // === Potions ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL.get())); // Potion of Karat's Will
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL_LONG.get())); // Karat's Will (long)
-                output.accept(ModItems.EMERALD_APPLE.get());
+
+                // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.EMERALD_VIRUS.get())); // Potion of Emerald Virus
+                output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
+                output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
@@ -621,18 +623,34 @@ public final class ModBlocks {
                 output.accept(ModItems.FERTILE_CHORUS.get());
                 output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
                 output.accept(RICH_SCULK_CATALYST_ITEM.get());
+
+                // === Spawn eggs: ONE cluster (village defenders, bosses, staged, then the Limbo creatures) ===
+                output.accept(WALL_DEFENDER_SPAWN.get());
+                output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
+                output.accept(DEFENDER_GOLEM_SPAWN.get());
+                for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
+                output.accept(BRAIN_NODE_WARDEN_SPAWN.get());
+                output.accept(ModItems.EMERALDGER_SPAWN.get());
+                output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
+                output.accept(ModItems.VINDICTIVE_GIGACHAD_SPAWN.get());
+                output.accept(ModItems.GENERAL_DARIUS_SPAWN.get());
+                output.accept(ModItems.RICH_SHEEP_SPAWN.get());
+                output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
+                for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
+
+                // === Limbo cluster (the end): blocks -> materials -> potions -> armour -> tools ===
+                output.accept(LIMBO_BLOCK_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(LIMBO_EGG_ITEM.get());
-                output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
                 output.accept(FAKE_BEDROCK_ITEM.get());
+                output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
                 output.accept(ModItems.FORGOTTEN_POWDER.get());
-                output.accept(ModItems.LIMBO_POTION.get());
-                output.accept(ModItems.VOLATILE_LIMBO_POTION.get());
                 output.accept(ModItems.LIMBO_MEMBRANE.get());
                 output.accept(ModItems.LIMBO_INGOT.get());
-                output.accept(LIMBO_BLOCK_ITEM.get());
                 output.accept(ModItems.LIMBO_SMITHING_TEMPLATE.get());
+                output.accept(ModItems.LIMBO_POTION.get());
+                output.accept(ModItems.VOLATILE_LIMBO_POTION.get());
                 output.accept(ModArmor.LIMBO_HELMET.get());
                 output.accept(ModArmor.LIMBO_CHESTPLATE.get());
                 output.accept(ModArmor.LIMBO_ELYTRA_CHESTPLATE.get());
@@ -643,8 +661,6 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_AXE.get());
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
-                output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
-                output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
             })
             .build());
 
