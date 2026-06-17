@@ -230,7 +230,7 @@ public final class ModItems {
     public static final RegistryObject<Item> GUARD_STAGE3 = egg("guard_stage3", StagedDefenderEggItem.Kind.GUARD, 3, 0x8E9BA8, 0x2BBF4E);
     public static final RegistryObject<Item> GUARD_STAGE4 = egg("guard_stage4", StagedDefenderEggItem.Kind.GUARD, 4, 0x2BBF4E, 0x0A5C28);
     public static final RegistryObject<Item> IRON_GOLEM = egg("iron_golem", StagedDefenderEggItem.Kind.GOLEM, 1, 0xDBD3D0, 0x70A35A);
-    public static final RegistryObject<Item> GIGACHAD_GOLEM = egg("gigachad_golem", StagedDefenderEggItem.Kind.GOLEM, 3, 0xFFD24D, 0xB8860B); // golden
+    public static final RegistryObject<Item> GIGACHAD_GOLEM = egg("gigachad_golem", StagedDefenderEggItem.Kind.GOLEM, 4, 0xFFD24D, 0xB8860B); // golden; stage 4 == the fully-evolved gigachad type
 
     /** All staged-defender eggs, in creative-tab / colour-handler order. */
     public static final java.util.List<RegistryObject<Item>> STAGED_EGGS = java.util.List.of(

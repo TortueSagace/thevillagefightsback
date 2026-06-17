@@ -51,9 +51,21 @@ public class StagedDefenderEggItem extends Item {
     private EntityType<?> entityType() {
         return switch (kind) {
             case VILLAGER -> EntityType.VILLAGER;
-            case GOLEM -> EntityType.IRON_GOLEM;
+            case GOLEM -> golemTypeForStage();
             case GUARD -> ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); // null if Guard Villagers absent
         };
+    }
+
+    /**
+     * A golem egg spawns its named EVOLUTION form directly, never a plain iron golem to be upgraded later:
+     * Gigachad Golem (stage 4), Defender Golem (stage 2-3), else a normal iron golem (stage 1). Golem
+     * evolutions are now distinct entity types, so -- unlike villagers/guards, which stay one type and are
+     * armed by a stage flag -- the egg must pick the right type up front, independent of any brain node.
+     */
+    private EntityType<?> golemTypeForStage() {
+        if (stage >= 4) return ModEntities.GIGACHAD_GOLEM.get();
+        if (stage >= 2) return ModEntities.DEFENDER_GOLEM.get();
+        return EntityType.IRON_GOLEM;
     }
 
     @Override
