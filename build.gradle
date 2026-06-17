@@ -213,9 +213,9 @@ modrinth {
     gameVersions = ['1.20.1']
     loaders = ['forge']
     // changelog = file('CHANGELOG.md').text          // optional, if you keep a changelog
-    // dependencies {
-    //     optional.project 'guard-villagers'         // soft dep -- guards render guns/armor when present
-    // }
+    dependencies {
+        required.project 'guard-villagers'            // mandatory -- the village's guards are built on it
+    }
 }
 
 // Ensure the production (reobfed) jar is built before we try to upload it.
