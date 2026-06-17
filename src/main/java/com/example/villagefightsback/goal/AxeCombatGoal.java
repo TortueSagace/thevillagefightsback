@@ -74,7 +74,7 @@ public class AxeCombatGoal extends Goal {
         long _p = com.example.villagefightsback.ModProfiler.now();
         try {
             this.target = acquireTarget();
-            if (VillageEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
+            if (VillageEvents.wallBlocksEngage(villager, this.target)) this.target = null; // don't leave our wall to chase it
             return target != null;
         } finally {
             com.example.villagefightsback.ModProfiler.add("ai.axe", _p);
@@ -83,7 +83,7 @@ public class AxeCombatGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return inRange(this.target) && !VillageEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
+        return inRange(this.target) && !VillageEvents.wallBlocksEngage(villager, this.target); // stop if it leaves our wall
     }
 
     @Override

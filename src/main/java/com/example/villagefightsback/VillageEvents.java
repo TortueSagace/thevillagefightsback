@@ -463,6 +463,21 @@ public final class VillageEvents {
         return wall != null && !wall.contains(target.blockPosition());
     }
 
+    /** Perimeter-defence radius: a villager still fights a hostile within this distance even when it is just
+     *  OUTSIDE the home wall, so a walled village isn't passive toward zombies right at its gates. */
+    private static final double VILLAGER_PERIMETER = 12.0;
+
+    /**
+     * Whether the home wall should stop a VILLAGER from engaging {@code target}. Unlike a raw
+     * {@link #beyondHomeWall} check, villagers still defend threats within {@link #VILLAGER_PERIMETER} blocks
+     * even just outside the wall -- they only refuse to CHASE mobs that are both beyond the wall AND far off
+     * (which is what guards and turrets are for). Keeps walled villagers fighting nearby zombies.
+     */
+    public static boolean wallBlocksEngage(LivingEntity self, LivingEntity target) {
+        return beyondHomeWall(self, target)
+                && self.distanceToSqr(target) > VILLAGER_PERIMETER * VILLAGER_PERIMETER;
+    }
+
     private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // brainNode must be within this of the kill
 
     /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */

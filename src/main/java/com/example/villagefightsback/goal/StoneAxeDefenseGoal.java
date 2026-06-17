@@ -72,13 +72,13 @@ public class StoneAxeDefenseGoal extends Goal {
     public boolean canUse() {
         if (villager.tickCount % RETARGET_INTERVAL != 0) return false;
         this.target = acquireTarget();
-        if (VillageEvents.beyondHomeWall(villager, this.target)) this.target = null; // don't leave our wall to chase it
+        if (VillageEvents.wallBlocksEngage(villager, this.target)) this.target = null; // don't leave our wall to chase it
         return target != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return inRange(this.target) && !VillageEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
+        return inRange(this.target) && !VillageEvents.wallBlocksEngage(villager, this.target); // stop if it leaves our wall
     }
 
     @Override
