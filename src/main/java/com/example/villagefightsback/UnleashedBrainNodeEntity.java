@@ -364,9 +364,10 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         return sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(radius), this::isHostileTarget).size();
     }
 
-    /** Hostile to every player (non-creative) and every monster, except the infected faction. */
+    /** Hostile to every player (non-creative) and every monster, except the infected faction and General
+     *  Darius -- the Spirit is friendly toward the village (Darius included), so it never fights him. */
     private boolean isHostileTarget(LivingEntity e) {
-        if (e == this || !e.isAlive() || Factions.isInfected(e)) return false;
+        if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isVillageChampion(e)) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
         return e instanceof Enemy;
     }

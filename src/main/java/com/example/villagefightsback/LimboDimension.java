@@ -48,6 +48,10 @@ public final class LimboDimension {
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
+        // Apex threat: a wither storm can't change dimensions (canChangeDimensions is false) and is a multipart
+        // boss, so the normal dimension-hop below would silently no-op. BANISH it specially instead -- remove
+        // the whole creature (core + heads + segments + tentacles) in place, with the banish FX.
+        if (Factions.isWitherStorm(e)) { banishWitherStorm(e); return e; }
         // The Vindictive Village Spirit and General Darius cannot be banished -- they ARE of the Limbo. Tell
         // nearby players it shrugged off the attempt (e.g. a Volatile Limbo Potion), then leave it standing.
         if (e instanceof UnleashedBrainNodeEntity || e instanceof GeneralDariusEntity) { notifyBanishImmune(e); return e; }
@@ -76,6 +80,23 @@ public final class LimboDimension {
                 return moved;
             }
         });
+    }
+
+    /**
+     * Banish a wither storm: it can't change dimensions and is multipart, so we remove the whole creature in
+     * place instead of teleporting it. Matched HITBOX-INDEPENDENTLY -- by entity id + position over ALL loaded
+     * entities (the storm and its parts can deactivate their hitboxes) -- so the core and every head / segment /
+     * tentacle within range is discarded. The banish FX plays where the core stood.
+     */
+    private static void banishWitherStorm(Entity storm) {
+        if (!(storm.level() instanceof ServerLevel sl)) return;
+        LimboBanishFx.start(storm);
+        net.minecraft.world.phys.Vec3 c = storm.position();
+        double r2 = 128.0 * 128.0;
+        for (Entity e : sl.getAllEntities()) {
+            if (Factions.isWitherStormPart(e) && e.distanceToSqr(c) <= r2) e.discard();
+        }
+        storm.discard(); // ensure the core itself is gone even if the sweep missed it
     }
 
     private static long lastBanishImmuneMsg = Long.MIN_VALUE;

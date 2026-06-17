@@ -53,6 +53,17 @@ public final class Factions {
         return WITHER_STORM_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
+    /** The wither storm's BODY entities (the core + its heads, segments and tentacles) -- everything that makes
+     *  up the storm, so a banish can remove the whole creature, not just leave dangling parts behind. */
+    private static final java.util.Set<String> WITHER_STORM_PARTS = java.util.Set.of(
+            "wither_storm", "wither_storm_head", "wither_storm_segment", "tentacle", "tentacle_spike");
+
+    /** True for any part of a wither storm's body (core / head / segment / tentacle). Used to banish the lot. */
+    public static boolean isWitherStormPart(Entity e) {
+        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        return id != null && "witherstormmod".equals(id.getNamespace()) && WITHER_STORM_PARTS.contains(id.getPath());
+    }
+
     /**
      * The nearest living wither storm within {@code radius} of {@code center}, or null if none. Scans ALL loaded
      * entities by type and POSITION -- never an AABB query -- so the storm is still found when it has DEACTIVATED

@@ -4,7 +4,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
@@ -20,7 +19,6 @@ public final class LimboBeam {
 
     private static final double RANGE = 100.0;
     private static final double RADIUS = 5.0;
-    private static final double WS_RADIUS = 12.0; // wider tolerance for the wither storm (matched by position, not hitbox)
 
     public static void fire(ServerPlayer player) {
         fireFrom(player, player.getEyePosition(), player.getLookAngle(), SoundSource.PLAYERS);
@@ -57,16 +55,11 @@ public final class LimboBeam {
             }
         }
 
-        // Special treatment for the apex threat: a wither storm can DEACTIVATE its hitbox, so the box sweep
-        // above would miss it. Scan ALL loaded entities by type and use the storm's POSITION (not its box):
-        // if the beam line passes within WS_RADIUS of it, banish it. So Darius's / the player's beam always
-        // lands on a wither storm it is aimed at, hitbox or no hitbox.
-        for (Entity e : sl.getAllEntities()) {
-            if (e == shooter || !e.isAlive() || !Factions.isWitherStorm(e) || !(e instanceof LivingEntity ws)) continue;
-            AABB box = new AABB(ws.position(), ws.position()).inflate(WS_RADIUS);
-            if (box.contains(origin) || box.clip(origin, end).isPresent()) {
-                LimboDimension.sendToLimbo(ws);
-            }
-        }
+        // Special treatment for the apex threat: the beam ALWAYS banishes a wither storm within range when it
+        // fires -- no precise aim required, since the rule is that the beam must always choose the storm. It is
+        // found HITBOX-INDEPENDENTLY (by id + position), so it works even when the storm has deactivated its
+        // hitbox; sendToLimbo then performs the actual banish (removing the storm's core and all its parts).
+        LivingEntity ws = Factions.findNearestWitherStorm(sl, origin, RANGE);
+        if (ws != null && ws != shooter) LimboDimension.sendToLimbo(ws);
     }
 }
