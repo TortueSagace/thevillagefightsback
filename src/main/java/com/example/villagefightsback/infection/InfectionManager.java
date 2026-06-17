@@ -398,6 +398,9 @@ public final class InfectionManager {
                     boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
                     BlockState conv = BlockMatcher.convertedState(src, richVariant);
                     if (conv != null) {
+                        // Any small plant next to this new fertile block becomes fertile grass. Done BEFORE the
+                        // soil flips so a plant standing on it is replaced (and survives) rather than popping off.
+                        convertNearbyPlants(level, cand);
                         conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
                         level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
                         inf.addFrontier(cand.asLong());
@@ -442,6 +445,21 @@ public final class InfectionManager {
 
     /** A convertible neighbour in the 26-neighbourhood (scan starts at a random offset to avoid bias) that is
      *  also within a brain node's range, or null. */
+    /** Turn small plants in the 26-neighbourhood of {@code center} into fertile grass. Called just BEFORE the
+     *  block at {@code center} flips to fertile, so a plant standing on it is replaced (and survives on the new
+     *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
+    private static void convertNearbyPlants(ServerLevel level, BlockPos center) {
+        BlockState fg = com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get().defaultBlockState();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int[] o : N26) {
+            m.set(center.getX() + o[0], center.getY() + o[1], center.getZ() + o[2]);
+            if (!level.isLoaded(m)) continue;
+            if (BlockMatcher.isConvertiblePlant(level.getBlockState(m))) {
+                level.setBlock(m.immutable(), fg, 3);
+            }
+        }
+    }
+
     private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges) {
         int start = rnd.nextInt(N26.length);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();

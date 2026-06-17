@@ -172,6 +172,20 @@ public final class BlockMatcher {
         return upgradableFertile.contains(s.getBlock());
     }
 
+    /** A small decorative plant the infection turns into fertile grass when fertile blocks appear next to it:
+     *  short grass, fern, small flowers, dead bush, and the LOWER half of tall (double) plants -- converting the
+     *  lower half auto-removes the upper half via vanilla shape updates. NOT crops/saplings/sugar cane. */
+    public static boolean isConvertiblePlant(BlockState s) {
+        Block b = s.getBlock();
+        if (b instanceof net.minecraft.world.level.block.DoublePlantBlock) {
+            return s.getValue(net.minecraft.world.level.block.DoublePlantBlock.HALF)
+                    == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER;
+        }
+        return b instanceof net.minecraft.world.level.block.TallGrassBlock
+                || b instanceof net.minecraft.world.level.block.FlowerBlock
+                || b instanceof net.minecraft.world.level.block.DeadBushBlock;
+    }
+
     /**
      * Whether the block at {@code pos} may be converted to a fertile/rich block: a solid, non-fluid block
      * that is NOT a path/cobblestone/farmland/planks/ore/resource-block/brick/bright-light source, is not
