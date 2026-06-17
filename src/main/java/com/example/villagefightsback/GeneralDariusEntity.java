@@ -179,9 +179,10 @@ public class GeneralDariusEntity extends ZombieVillager {
         if (beamCooldown > 0) beamCooldown--;
 
         bossBar.setProgress(getHealth() / getMaxHealth());
-        bossBar.setName(Component.literal("General Darius (" + DariusSquad.size(squad) + " hired)"));
+        // While hunting (a locked target) Darius glows so players can always spot him; off when walking home.
+        setGlowingTag(getTarget() != null);
 
-        if ((tickCount % 10) == 0) DariusSquad.tick(sl, this, squad); // hire + command the guard squad
+        if ((tickCount % 10) == 0) DariusSquad.tick(sl, this, squad); // hire + command the guard squad (count hidden)
     }
 
     private void clearHarmfulEffects() {

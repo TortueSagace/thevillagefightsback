@@ -40,10 +40,11 @@ public final class LimboSageTrades {
         trades.get(2).add(emeraldsFor(new ItemStack(ModBlocks.FORGOTTEN_GLOWSTONE_ITEM.get()), 18, 6, 5));
         trades.get(2).add(emeraldsFor(new ItemStack(ModItems.LIMBO_POTION.get()), 22, 4, 5));
 
-        // --- Tier 3 (journeyman): obsidian gate block, the thrown volatile potion, the phantom egg. ---
+        // --- Tier 3 (journeyman): obsidian gate block, the thrown volatile potion, an actual Limbo Egg. ---
         trades.get(3).add(emeraldsFor(new ItemStack(ModBlocks.FAKE_OBSIDIAN_ITEM.get()), 26, 5, 8));
         trades.get(3).add(emeraldsFor(new ItemStack(ModItems.VOLATILE_LIMBO_POTION.get()), 32, 3, 10));
-        trades.get(3).add(emeraldsFor(new ItemStack(ModItems.LIMBO_PHANTOM_SPAWN.get()), 40, 2, 12));
+        // The literal Limbo Egg (the dragon-egg-like block that hatches a phantom), NOT a phantom spawn egg.
+        trades.get(3).add(emeraldsFor(new ItemStack(ModBlocks.LIMBO_EGG_ITEM.get()), 40, 2, 12));
 
         // --- Tier 4 (expert): a randomly enchanted Limbo tool, VERY expensive. ---
         trades.get(4).add(enchantedTool(ModItems.LIMBO_PICKAXE, 44, 2, 15));

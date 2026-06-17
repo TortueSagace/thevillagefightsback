@@ -106,6 +106,10 @@ public class StageThreeGuardGoal extends Goal {
         if (climbCooldown > 0) climbCooldown--;
         tickClutch();
 
+        // On fire -> the same water trick used to clutch a landing, but to douse the flames (stage-3 guards
+        // know how to MLG a fire out). Places a brief water source at the feet that extinguishes them.
+        if (guard.isOnFire() && !guard.fireImmune()) extinguishWithWater();
+
         if (guard.tickCount % RETARGET_INTERVAL == 0) refreshTarget();
         LivingEntity t = target;
         if (t == null) {                       // nothing to fight: just clutch a landing if we were bouncing
@@ -243,6 +247,20 @@ public class StageThreeGuardGoal extends Goal {
         guard.fallDistance = 0.0F;
     }
 
+    /** Douse the guard's flames the same way it clutches a landing: a brief water source at the feet. */
+    private void extinguishWithWater() {
+        if (clutchPos != null) return; // a clutch (landing or fire) is already down
+        BlockPos feet = guard.blockPosition();
+        Level level = guard.level();
+        if (!level.getBlockState(feet).canBeReplaced()) return;
+        level.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
+        clutchPos = feet.immutable();
+        clutchTimer = CLUTCH_REMOVE_TICKS;
+        guard.clearFire(); // out instantly; the water just makes the trick visible
+        level.playSound(null, guard.getX(), guard.getY(), guard.getZ(),
+                SoundEvents.BUCKET_EMPTY, SoundSource.HOSTILE, 0.7F, 1.2F);
+    }
+
     private void tickClutch() {
         if (clutchPos == null) return;
         if (--clutchTimer <= 0) removeClutch();
@@ -303,7 +321,9 @@ public class StageThreeGuardGoal extends Goal {
         Level level = guard.level();
         if (level.isClientSide()) return;
         WindChargeEntity charge = new WindChargeEntity(level, guard).setCosmetic(true);
-        charge.shootFromRotation(guard, 90.0F, guard.getYRot(), 0.0F, 1.2F, 0.0F); // pitch 90 = straight down
+        // Spawn at the FEET (not the eyes) and fire straight down, so the gust bursts directly below the guard.
+        charge.setPos(guard.getX(), guard.getY() + 0.1, guard.getZ());
+        charge.shootFromRotation(guard, 90.0F, 0.0F, 0.0F, 1.2F, 0.0F); // pitch 90 = straight down, dead centre
         level.addFreshEntity(charge);
     }
 

@@ -142,6 +142,14 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
+        // Target well below us and roughly above its column -> dig straight down to reach it (Darius plows
+        // through terrain). The horizontal nav can't descend through solid floors, so we break a shaft.
+        double horizSqr = (t.getX() - darius.getX()) * (t.getX() - darius.getX())
+                + (t.getZ() - darius.getZ()) * (t.getZ() - darius.getZ());
+        if ((darius.getY() - t.getY()) > 2.0 && horizSqr <= 16.0 && digDown(sl)) {
+            return;
+        }
+
         // Otherwise walk toward the target.
         NavThrottle.follow(darius, t, 1.2);
         trackProgress(sl, distSqr);
@@ -181,6 +189,23 @@ public class GeneralDariusGoal extends Goal {
         darius.fallDistance = 0.0F;
         scaffoldCooldown = SCAFFOLD_INTERVAL;
         noProgressTicks = STUCK_TICKS - 10; // keep trying to climb a few more steps
+    }
+
+    /**
+     * Break the block directly under Darius's feet to sink one step closer to a target below him, then drop
+     * into the hole. Skips an already-open way down, bedrock (unbreakable), and the village's own phase-door
+     * gate blocks (so he never tears the village's gates apart digging). Returns true if it acted this tick.
+     */
+    private boolean digDown(ServerLevel sl) {
+        BlockPos below = darius.blockPosition().below();
+        net.minecraft.world.level.block.state.BlockState s = sl.getBlockState(below);
+        if (s.isAir() || !s.getFluidState().isEmpty()) return false;       // already a way down
+        if (s.getDestroySpeed(sl, below) < 0) return false;                // unbreakable (bedrock)
+        if (com.example.villagefightsback.LimboGear.isPhaseDoor(s)) return false; // not the gate doors
+        darius.getNavigation().stop();
+        sl.destroyBlock(below, false);
+        darius.fallDistance = 0.0F;
+        return true;
     }
 
     // --- mace jump (double height, no ceiling check) ------------------------------------------------
@@ -224,8 +249,9 @@ public class GeneralDariusGoal extends Goal {
     // --- walk home + despawn (with refund, handled by the entity) -----------------------------------
     private void walkHomeOrDespawn(ServerLevel sl) {
         darius.setTarget(null);
+        if (darius.getHomeBrain() == null) return; // spawn-egg / admin Darius (no home) -> just idle, don't vanish
         BlockPos home = darius.getHomeBrainPos();
-        if (home == null) { darius.refundAndDespawn(); return; } // no home recorded -> just leave
+        if (home == null) { darius.refundAndDespawn(); return; } // home is in another dimension -> leave
         if (darius.blockPosition().closerThan(home, 4.0)) {
             darius.refundAndDespawn();
         } else {

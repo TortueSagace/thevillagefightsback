@@ -183,6 +183,11 @@ public final class ModItems {
             ITEMS.register("vindictive_gigachad_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.VINDICTIVE_GIGACHAD, 0xB8860B, 0x2BBF4E, new Item.Properties()));
 
+    /** Creative spawn egg for General Darius (the stage-4 boss guard). */
+    public static final RegistryObject<Item> GENERAL_DARIUS_SPAWN =
+            ITEMS.register("general_darius_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                    ModEntities.GENERAL_DARIUS, 0x35402A, 0x5AE682, new Item.Properties()));
+
     // --- Limbo raider spawn eggs: a custom animated/foil icon (item/generated, not the egg template) so they
     //     shimmer exactly like the Limbo gear. ---
     private static RegistryObject<Item> limboEgg(String name,

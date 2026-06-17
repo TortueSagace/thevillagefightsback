@@ -372,6 +372,14 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
 
     // --- kill -> vindictive guard + 64-kill win -------------------------------------------------
     private static final int MAX_GUARDS = 20; // cap simultaneous vindictive guards in the boss's reach
+    /** On revert, EVERY vindictive unit within this radius of the reborn node turns back to normal. */
+    private static final double REVERT_RADIUS = 128.0;
+
+    /** A small sculk-soul puff marking a vindictive unit snapping back to normal on the spirit's revert. */
+    private static void revertPuff(ServerLevel sl, BlockPos p) {
+        sl.sendParticles(ParticleTypes.SCULK_SOUL, p.getX() + 0.5, p.getY() + 1.0, p.getZ() + 0.5, 18, 0.4, 0.6, 0.4, 0.02);
+        sl.playSound(null, p, SoundEvents.SCULK_CATALYST_BLOOM, net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.4F);
+    }
 
     /** True if there is room for another vindictive guard (fewer than {@value #MAX_GUARDS} within the boss's
      *  reach). When false, a killed creature just dies normally instead of converting. */
@@ -435,8 +443,15 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         // Also drop the TRANSIENT wall-build state (reservations / skips / abandon counts) at this spot, so a
         // wall rebuilt here can't inherit "abandoned >3 times" cells from the previous village and stall.
         com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
+        // Place the node with a normal block-update: this fires VillageBrainNodeBlock#onPlace -> data.addBlock,
+        // EXACTLY as if a player had placed the brain node block here (fresh stage-1 village, discovery banner
+        // when a player is near, walls/defenders/economy all rebuild off data.blocks()).
         sl.setBlock(at, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3);
-        for (VindictiveGuardEntity vg : sl.getEntitiesOfClass(VindictiveGuardEntity.class, getBoundingBox().inflate(DETECT_RANGE))) {
+
+        // EVERY vindictive unit in the area reverts to a normal one (the spirit's hold is broken). Use a
+        // generous radius so none are missed: guards -> stage-3 villagers, gigachads -> normal gigachad golems.
+        net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(at).inflate(REVERT_RADIUS);
+        for (VindictiveGuardEntity vg : sl.getEntitiesOfClass(VindictiveGuardEntity.class, area)) {
             BlockPos p = vg.blockPosition();
             vg.discard();
             Villager v = EntityType.VILLAGER.create(sl);
@@ -446,6 +461,17 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             v.setBaby(false);
             UpgradeState.setUpgraded(v);   // stage-3 villager (armed by VillageEvents#onEntityJoin)
             sl.addFreshEntity(v);
+            revertPuff(sl, p);
+        }
+        for (VindictiveGigachadEntity vgc : sl.getEntitiesOfClass(VindictiveGigachadEntity.class, area)) {
+            BlockPos p = vgc.blockPosition();
+            vgc.discard();
+            GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(sl);
+            if (g == null) continue;
+            g.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, vgc.getYRot(), 0.0F);
+            g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
+            sl.addFreshEntity(g);
+            revertPuff(sl, p);
         }
         sl.players().forEach(pl -> pl.displayClientMessage(
                 Component.literal("§5The Village Brain Node is reborn. The village rises again."), false));
