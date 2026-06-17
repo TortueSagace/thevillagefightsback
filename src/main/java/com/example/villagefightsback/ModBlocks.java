@@ -537,10 +537,10 @@ public final class ModBlocks {
                 output.accept(DEBRIS_ITEM.get());
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
-                output.accept(BLUE_TNT_ITEM.get());
-                output.accept(GREEN_TNT_ITEM.get());
-                output.accept(YELLOW_TNT_ITEM.get());
                 output.accept(ORANGE_TNT_ITEM.get());
+                output.accept(YELLOW_TNT_ITEM.get());
+                output.accept(GREEN_TNT_ITEM.get());
+                output.accept(BLUE_TNT_ITEM.get());
                 output.accept(PURPLE_TNT_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
