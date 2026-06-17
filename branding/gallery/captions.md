@@ -9,7 +9,7 @@ Captions for the Modrinth / CurseForge gallery, in display order.
    The Brain progressively equips its villagers and golems with increasingly stronger weapons, like the Alien Slayer or the Rocket Launcher.
 
 3. **gallery-3.png**
-   The Brain contains 4 evolution stages. Feed it with emeralds to make it progress faster!
+   The Brain contains 4 evolution stages. Feed it with emeralds to make it progress faster! Right-click the Brain Node to open this interface anytime.
 
 4. **gallery-4.png**
    A Flesh Incubator defeated by angry villagers. I'm pretty sure it didn't expect that.
