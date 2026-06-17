@@ -7,6 +7,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -20,6 +21,9 @@ public final class NodeSpawns {
     private NodeSpawns() {}
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+
+    private static final int GOLEM_CAP = 20;               // the Iron Factory halts at 20+ golems in the zone
+    private static final double GOLEM_ZONE_RADIUS = 100.0;  // the zone == the brain node's income radius
 
     /** A clear feet position with {@code height} non-colliding blocks: prefer the gap just BELOW the node, else
      *  just ABOVE it. Null if neither side has room. */
@@ -42,6 +46,10 @@ public final class NodeSpawns {
     /** A golem below/above the node, in the stage-appropriate form: iron (stage 1), Defender Golem (stage 2-3),
      *  or Gigachad Golem (stage 4+). The upgraded forms are spawned directly so the result is immediate. */
     public static void spawnGolem(ServerLevel level, BlockPos node, int stage) {
+        // Halt the Iron Factory once the zone is saturated: stop spawning when 20+ golems (iron / defender /
+        // gigachad, village or player) are already alive within the income radius of the factory node.
+        AABB zone = new AABB(node).inflate(GOLEM_ZONE_RADIUS);
+        if (level.getEntitiesOfClass(IronGolem.class, zone, g -> g.isAlive()).size() >= GOLEM_CAP) return;
         BlockPos spot = belowOrAbove(level, node, 3);
         if (spot == null) return;
         float yaw = level.getRandom().nextFloat() * 360.0F;
