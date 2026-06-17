@@ -1,7 +1,8 @@
 """
 Generates the Limbo content assets for "The Village Fights Back":
   - The Limbo Sage villager PROFESSION overlay (textures/entity/villager/profession/limbo_sage.png):
-    a dark/black recolor of the vanilla cleric (priest) robe, with a faint limbo-green trim.
+    a DRIPPY recolor of the vanilla cleric (priest) robe -- near-black robe with glowing limbo-green folds
+    and shiny gold jewellery where the cleric had its gold trim.
   - Copies the vanilla profession_level badge textures (stone/iron/gold/emerald/diamond) into OUR
     namespace, since the renderer builds the badge path in the profession's namespace.
   - The Limbo BLOCK face: an animated 16 x (16*FRAMES) vertical strip in the limbo_ingot green palette,
@@ -16,20 +17,32 @@ ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefig
 CLIENT_JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
               r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
 
-# The limbo green palette (sampled from limbo_ingot.png): dark base + bright highlight.
-DARK = (12, 30, 20)        # near-black green base for the robe
+# The limbo green palette (sampled from limbo_ingot.png): dark base + bright highlight. Used by the BLOCK.
+DARK = (12, 30, 20)        # near-black green base
 GREEN_TRIM = (23, 130, 56) # faint limbo-green trim
 GREEN_GLOW = (106, 193, 132)
+
+# A separate, punchier palette JUST for the Limbo Sage robe (the "drip"), so the block is untouched.
+SAGE_DARK = (9, 20, 14)       # near-black green base for the robe
+SAGE_TRIM = (28, 150, 70)     # mid limbo-green trim (saturated)
+SAGE_GLOW = (130, 255, 165)   # vivid glowing-green highlight (the drip)
+GOLD = (255, 214, 92)         # bright gold for the robe's jewellery/trim accents
+GOLD_DK = (120, 82, 26)       # shaded gold
 
 
 def mkdir(p):
     os.makedirs(p, exist_ok=True)
 
 
+def _lerp(c0, c1, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(int(c0[i] + (c1[i] - c0[i]) * t) for i in range(3))
+
+
 def darken_to_limbo(img):
-    """Recolor the vanilla cleric robe to a black/very-dark robe with a faint limbo-green tint.
-    Keeps the original alpha (the robe shape); pushes every opaque pixel toward DARK, with the
-    brighter source pixels picking up a touch of limbo green as trim."""
+    """Recolor the vanilla cleric robe into a DRIPPY limbo-priest robe: a near-black robe whose mid-tones
+    glow limbo-green and whose brightest folds flare to a vivid glow, while the cleric's original gold trim
+    is reborn as shiny gold jewellery. Keeps the original alpha (the robe shape)."""
     img = img.convert("RGBA")
     w, h = img.size
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -39,11 +52,15 @@ def darken_to_limbo(img):
             if a == 0:
                 continue
             lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0  # 0..1 source brightness
-            # base: very dark; brighter source areas lift slightly toward the green trim (the "highlights")
-            t = lum ** 1.6  # bias dark so most of the robe is near-black
-            nr = int(DARK[0] + (GREEN_TRIM[0] - DARK[0]) * t)
-            ng = int(DARK[1] + (GREEN_TRIM[1] - DARK[1]) * t)
-            nb = int(DARK[2] + (GREEN_TRIM[2] - DARK[2]) * t)
+            # The cleric's gold trim (warm: red >= green >= blue, not too blue) becomes gold jewellery -- drip.
+            if r >= 110 and r >= g >= b and (r - b) >= 45:
+                nr, ng, nb = _lerp(GOLD_DK, GOLD, min(1.0, lum * 1.25))
+            elif lum < 0.5:
+                # lower half: black base lifting into the green trim
+                nr, ng, nb = _lerp(SAGE_DARK, SAGE_TRIM, (lum / 0.5) ** 1.1)
+            else:
+                # upper half: green trim flaring to the bright glow (glowing-rune highlights)
+                nr, ng, nb = _lerp(SAGE_TRIM, SAGE_GLOW, (lum - 0.5) / 0.5)
             out.putpixel((x, y), (nr, ng, nb, a))
     return out
 
