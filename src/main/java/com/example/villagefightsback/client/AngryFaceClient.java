@@ -45,7 +45,10 @@ public final class AngryFaceClient {
         if (mc.level == null) return false; // no client level -> nothing to time against
         long now = mc.level.getGameTime();
 
-        if (isSwinging(entity)) {
+        // Only a FIGHT swing counts -- never a work swing. A villager mining swings an iron pickaxe and a
+        // builder swings a block; the face must stay normal for those. So we refresh the angry timer only
+        // when the mob is mid-swing AND holding an actual combat weapon (see isCombatItem).
+        if (isSwinging(entity) && isCombatItem(entity)) {
             ANGRY_UNTIL.put(entity.getId(), now + ANGRY_TICKS);
         }
 
@@ -63,6 +66,22 @@ public final class AngryFaceClient {
      */
     private static boolean isSwinging(LivingEntity entity) {
         return entity.swinging || entity.swingTime > 0;
+    }
+
+    /**
+     * True only when the swung item is an actual COMBAT weapon -- so a fight scowl never appears for a work
+     * swing (mining, building, farming). Miner villagers swing an iron pickaxe; builders swing blocks; both
+     * are excluded. The village arms its defenders with swords/axes/maces/crossbows/bows: AlienSlasher and
+     * AlienEradicator extend AxeItem, and AlienSmasher extends MaceItem, so the base-class checks cover them.
+     */
+    private static boolean isCombatItem(LivingEntity entity) {
+        net.minecraft.world.item.Item item = entity.getMainHandItem().getItem();
+        return item instanceof net.minecraft.world.item.SwordItem
+                || item instanceof net.minecraft.world.item.AxeItem
+                || item instanceof net.minecraft.world.item.TridentItem
+                || item instanceof net.minecraft.world.item.CrossbowItem
+                || item instanceof net.minecraft.world.item.BowItem
+                || item instanceof com.example.villagefightsback.MaceItem;
     }
 
     /** Drop entries that have expired well in the past so the map does not grow without bound. */

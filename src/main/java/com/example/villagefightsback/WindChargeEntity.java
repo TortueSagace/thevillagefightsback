@@ -31,8 +31,20 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     private static final double BURST_RADIUS = 2.0;
     private static final int MAX_LIFETIME = 200; // self-destruct if it never hits anything (~10s)
 
+    // When true this is a PURELY VISUAL wind charge: it bursts into the same gust particles + sound but applies
+    // NO knockback and NO damage. Used by the stage-3 guards' mace jump, where the leap is already done by a
+    // hand-tuned impulse -- the cosmetic charge just makes a gust visibly burst under the guard as it leaps,
+    // without double-launching the guard or tossing nearby allies. Server-side only (visuals are sent on burst).
+    private boolean cosmetic;
+
     public WindChargeEntity(EntityType<? extends WindChargeEntity> type, Level level) {
         super(type, level);
+    }
+
+    /** Mark this wind charge cosmetic (visual burst only -- no knockback, no damage). Returns this for chaining. */
+    public WindChargeEntity setCosmetic(boolean value) {
+        this.cosmetic = value;
+        return this;
     }
 
     public WindChargeEntity(Level level, LivingEntity owner) {
@@ -69,7 +81,7 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (level().isClientSide()) return;
+        if (level().isClientSide() || cosmetic) return; // cosmetic charges deal no direct damage
         Entity owner = getOwner();
         result.getEntity().hurt(
                 damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null), DIRECT_DAMAGE);
@@ -85,15 +97,17 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
         super.onHit(result);
         if (!(level() instanceof ServerLevel sl)) return;
         double x = getX(), y = getY(), z = getZ();
-        for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
-                new AABB(x, y, z, x, y, z).inflate(BURST_RADIUS), LivingEntity::isAlive)) {
-            Vec3 push = e.position().subtract(x, y, z);
-            double dist = push.length();
-            Vec3 dir = dist > 1.0E-4 ? push.scale(1.0 / dist) : new Vec3(0, 1, 0);
-            double power = (BURST_RADIUS - Math.min(dist, BURST_RADIUS)) / BURST_RADIUS + 0.2; // stronger up close
-            double up = 0.6 + power * 0.7; // strong upward launch -- a real pogo when burst at your feet
-            e.push(dir.x * power * 0.8, up, dir.z * power * 0.8);
-            e.hurtMarked = true; // resync the new velocity to clients
+        if (!cosmetic) { // cosmetic charges are a visual gust only -- no knockback
+            for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
+                    new AABB(x, y, z, x, y, z).inflate(BURST_RADIUS), LivingEntity::isAlive)) {
+                Vec3 push = e.position().subtract(x, y, z);
+                double dist = push.length();
+                Vec3 dir = dist > 1.0E-4 ? push.scale(1.0 / dist) : new Vec3(0, 1, 0);
+                double power = (BURST_RADIUS - Math.min(dist, BURST_RADIUS)) / BURST_RADIUS + 0.2; // stronger up close
+                double up = 0.6 + power * 0.7; // strong upward launch -- a real pogo when burst at your feet
+                e.push(dir.x * power * 0.8, up, dir.z * power * 0.8);
+                e.hurtMarked = true; // resync the new velocity to clients
+            }
         }
         sl.sendParticles(ParticleTypes.POOF, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
         sl.sendParticles(ParticleTypes.CLOUD, x, y, z, 12, 0.4, 0.4, 0.4, 0.05);

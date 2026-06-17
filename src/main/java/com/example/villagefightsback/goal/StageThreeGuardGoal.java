@@ -4,6 +4,7 @@ import java.util.EnumSet;
 
 import com.example.villagefightsback.GuardWeapons;
 import com.example.villagefightsback.ModBlocks;
+import com.example.villagefightsback.WindChargeEntity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -180,6 +181,7 @@ public class StageThreeGuardGoal extends Goal {
         launchCooldown = LAUNCH_COOLDOWN;
         guard.level().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 1.2F, 0.7F);
+        throwLaunchWindCharge(); // a gust visibly bursts under the guard as it leaps (visual only)
     }
 
     private void diveAndSmash(LivingEntity t) {
@@ -218,6 +220,7 @@ public class StageThreeGuardGoal extends Goal {
             guard.setDeltaMovement(hx * LAUNCH_HORIZ, LAUNCH_VY * 0.85, hz * LAUNCH_HORIZ);
             guard.hasImpulse = true;
             guard.hurtMarked = true;
+            throwLaunchWindCharge(); // gust burst under the guard on the Wind-Burst bounce (visual only)
         }
     }
 
@@ -287,6 +290,21 @@ public class StageThreeGuardGoal extends Goal {
         guard.setPos(gx + 0.5, gy + 1.0, gz + 0.5);       // step onto the scaffold (it self-expires in ~30s)
         guard.fallDistance = 0.0F;
         climbCooldown = CLIMB_INTERVAL;
+    }
+
+    /**
+     * Hurl a COSMETIC wind charge straight down at the floor under the guard as it leaps, so a gust visibly
+     * bursts beneath it (more realistic mace-jump). It is visual only -- knockback and damage are suppressed
+     * (see {@link WindChargeEntity#setCosmetic}) -- so it never double-launches the guard (the leap is the
+     * hand-tuned impulse above) nor tosses nearby allies. The charge ignores its owner, so it passes through
+     * the guard and bursts on the ground a tick or two later.
+     */
+    private void throwLaunchWindCharge() {
+        Level level = guard.level();
+        if (level.isClientSide()) return;
+        WindChargeEntity charge = new WindChargeEntity(level, guard).setCosmetic(true);
+        charge.shootFromRotation(guard, 90.0F, guard.getYRot(), 0.0F, 1.2F, 0.0F); // pitch 90 = straight down
+        level.addFreshEntity(charge);
     }
 
     // --- shared ---------------------------------------------------------------------------------
