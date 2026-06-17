@@ -51,7 +51,7 @@ public final class BrainNodeEvents {
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
     private static final int INCOME_RADIUS = 100;     // count defenders within this of a brainNode
     private static final int VILLAGE_SCAN_RADIUS = 64; // look for village centres this far from players
-    private static final int DISCOVERY_HUD_TICKS = 180; // 9s on-screen discovery message (bottom of screen)
+    private static final int DISCOVERY_HUD_TICKS = 100; // 5s on-screen discovery message (bottom of screen)
     private static final int TICK_INTERVAL = 40;       // run all of this every 2 seconds
     private static final long SUNSET_TIME = 12000L;     // day-time at dusk
     private static final double VILLAGER_BED_RATIO_CAP = 1.5; // skip reinforcement above this villagers:beds
