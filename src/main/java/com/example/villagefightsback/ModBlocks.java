@@ -269,14 +269,14 @@ public final class ModBlocks {
      */
     public static final RegistryObject<Item> WALL_DEFENDER_SPAWN = ITEMS.register(
             "wall_defender",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER,
-                    0x1b4a4a, 0x78ebf5, new Item.Properties()));
+            () -> new WallDefenderSpawnEggItem(ModEntities.WALL_DEFENDER,
+                    0x1b4a4a, 0x78ebf5, new Item.Properties())); // icon = the live spinning defender (see its item model)
 
     /** Stage-4 (rocket) wall defender spawn egg -- always in rocket mode + the gold stage-4 texture. */
     public static final RegistryObject<Item> WALL_DEFENDER_STAGE4_SPAWN = ITEMS.register(
             "wall_defender_stage4",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
-                    0x6e3a10, 0xffb020, new Item.Properties()));
+            () -> new WallDefenderSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
+                    0x6e3a10, 0xffb020, new Item.Properties())); // icon = the live spinning gold stage-4 defender
 
     /** Defender Golem spawn egg: places the stage-2 evolution of the iron golem (iron body, wall-defender
      *  head in a protecting-glass cocoon, 150 HP, melee + turret). See {@link DefenderGolemEntity}. */
