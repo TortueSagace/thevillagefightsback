@@ -20,6 +20,9 @@ import org.joml.Matrix4f;
  */
 public class LimboGravelRenderer implements BlockEntityRenderer<LimboGravelBlockEntity> {
 
+    /** The unstable countdown's full length, in ticks (matches {@code LimboManager.UNSTABLE_TICKS} = 30s). */
+    private static final double TOTAL = 600.0;
+
     // A unit cube slightly inflated so the glow wraps the gravel; 8 corners + 6 faces.
     private static final float LO = -0.02F, HI = 1.02F;
     private static final float[][] C = {
@@ -41,11 +44,16 @@ public class LimboGravelRenderer implements BlockEntityRenderer<LimboGravelBlock
         if (level == null) return;
         double remaining = until - (level.getGameTime() + partialTick);
         if (remaining <= 0) return;
-        // Pulse period shrinks from ~20 ticks (far) to ~2 ticks (imminent) -> the glow flashes faster over time.
-        double period = Math.max(2.0, Math.min(20.0, remaining / 30.0));
-        double cycle = (level.getGameTime() + partialTick) / period;
-        float intensity = (float) (0.5 - 0.5 * Math.cos(cycle * Math.PI * 2.0)); // smooth 0..1 pulse
-        float a = 0.12F + 0.55F * intensity;                                     // faint base glow + the pulse
+        // elapsed = time since the gravel was placed (0 -> TOTAL as the deadline nears). Driving the pulse off
+        // elapsed (a small, smoothly-growing number) -- NOT the huge absolute game time -- avoids aliasing.
+        double elapsed = TOTAL - remaining;
+        if (elapsed < 0) elapsed = 0;
+        // The flash RATE ramps linearly from slow (1/F_START_TICKS) to fast (1/F_END_TICKS); the phase is the
+        // integral of that rate, so the glow starts pulsing lazily and accelerates smoothly to a frantic blink.
+        double fStart = 1.0 / 26.0, fEnd = 1.0 / 2.0;
+        double phase = fStart * elapsed + (fEnd - fStart) * elapsed * elapsed / (2.0 * TOTAL);
+        float intensity = (float) (0.5 - 0.5 * Math.cos(phase * 2.0 * Math.PI)); // smooth 0..1 pulse
+        float a = 0.08F + 0.6F * intensity;                                      // near-dark between flashes
 
         VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
         Matrix4f m = pose.last().pose();
