@@ -138,10 +138,16 @@ public final class LimboManager {
         }
 
         // 4. Over-population: release the most ancient CREATURES (a storm counts once) until back at the limit.
+        //    A creature the player has fully COLLECTED -- every one of its leashes carried as a soul-gravel item
+        //    (all held) -- is NEVER auto-evicted: collecting all of a boss's gravels banishes it for good. Only
+        //    creatures with at least one still-PLACED gravel are eligible.
         while (data.creatureCount() > MAX_CREATURES) {
             LimboData.Entry oldest = null;
-            for (LimboData.Entry e : data.entries()) if (oldest == null || e.entryTime < oldest.entryTime) oldest = e;
-            if (oldest == null) break;
+            for (LimboData.Entry e : data.entries()) {
+                if (e.held) continue; // skip carried leashes -> a fully-held creature can't be the victim
+                if (oldest == null || e.entryTime < oldest.entryTime) oldest = e;
+            }
+            if (oldest == null) break; // everything left is fully held -> stop (don't betray the player's hold)
             ServerLevel dest = server.getLevel(oldest.originDim);
             restoreCreatureAndCleanup(server, oldest.creature, dest,
                     oldest.gravelPos.getX() + 0.5, oldest.gravelPos.getY(), oldest.gravelPos.getZ() + 0.5);
