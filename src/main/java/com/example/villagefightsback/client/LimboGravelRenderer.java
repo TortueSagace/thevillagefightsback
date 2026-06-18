@@ -48,12 +48,15 @@ public class LimboGravelRenderer implements BlockEntityRenderer<LimboGravelBlock
         // elapsed (a small, smoothly-growing number) -- NOT the huge absolute game time -- avoids aliasing.
         double elapsed = TOTAL - remaining;
         if (elapsed < 0) elapsed = 0;
-        // The flash RATE ramps linearly from slow (1/F_START_TICKS) to fast (1/F_END_TICKS); the phase is the
-        // integral of that rate, so the glow starts pulsing lazily and accelerates smoothly to a frantic blink.
-        double fStart = 1.0 / 26.0, fEnd = 1.0 / 2.0;
-        double phase = fStart * elapsed + (fEnd - fStart) * elapsed * elapsed / (2.0 * TOTAL);
+        double frac = Math.min(1.0, elapsed / TOTAL); // 0 at placement -> 1 at self-destruct
+        // The flash RATE ramps with frac^2 (NOT linearly): it stays a calm slow pulse for most of the 30s, then
+        // accelerates hard into a frantic blink only as the deadline nears -- so the urgency reads late, matching
+        // the real cooldown. The phase is the time-integral of that rate, so it's smooth and continuous.
+        double fStart = 1.0 / 30.0;  // ~1 flash / 1.5s at the start (calm)
+        double fEnd = 1.0 / 2.5;     // ~1 flash / 0.13s right before it blows (frantic)
+        double phase = fStart * elapsed + (fEnd - fStart) * elapsed * frac * frac / 3.0;
         float intensity = (float) (0.5 - 0.5 * Math.cos(phase * 2.0 * Math.PI)); // smooth 0..1 pulse
-        float a = 0.08F + 0.6F * intensity;                                      // near-dark between flashes
+        float a = 0.06F + 0.62F * intensity;                                     // near-dark between flashes
 
         VertexConsumer vc = buffer.getBuffer(RenderType.lightning());
         Matrix4f m = pose.last().pose();
