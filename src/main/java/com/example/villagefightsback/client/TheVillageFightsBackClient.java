@@ -67,6 +67,23 @@ public final class TheVillageFightsBackClient {
         for (RegistryObject<net.minecraft.world.item.Item> ro : ModItems.STAGED_EGGS) {
             event.register(handler, ro.get());
         }
+        // Soul gravel: tint toward the held creature's colour (its spawn egg, else a sampled texture colour).
+        event.register((stack, layer) -> {
+            String type = com.example.villagefightsback.LimboSoulGravelItem.typeId(stack);
+            return type.isEmpty() ? 0xFFFFFF : LimboGravelPalette.colorFor(type);
+        }, com.example.villagefightsback.ModBlocks.LIMBO_SOUL_GRAVEL.get());
+    }
+
+    /** Tint a placed Limbo gravel toward the colour of the creature it holds (read from its block entity). */
+    @SubscribeEvent
+    public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
+        event.register((state, level, pos, tintIndex) -> {
+            if (level != null && pos != null
+                    && level.getBlockEntity(pos) instanceof com.example.villagefightsback.LimboGravelBlockEntity be) {
+                return LimboGravelPalette.colorFor(be.typeId());
+            }
+            return 0xFFFFFF; // unlinked / plain gravel -> untinted
+        }, com.example.villagefightsback.ModBlocks.LIMBO_GRAVEL.get());
     }
 
     @SubscribeEvent

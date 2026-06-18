@@ -48,14 +48,17 @@ public final class LimboDimension {
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
-        // Apex threat: a wither storm can't change dimensions (canChangeDimensions is false) and is a multipart
-        // boss, so the normal dimension-hop below would silently no-op. BANISH it specially instead -- remove
-        // the whole creature (core + heads + segments + tentacles) in place, with the banish FX.
+        // TOGGLE: an entity ALREADY in Limbo, hit by a beam/potion (or a player drinking one), returns to the
+        // overworld instead of being banished again.
+        if (LIMBO.equals(e.level().dimension())) {
+            LimboManager.sendBackToOverworld(e);
+            return e;
+        }
+        // Apex threat: a wither storm can't change dimensions and is multipart, so it gets a bespoke teleport +
+        // many "part" gravels rather than the normal single-leash path.
         if (Factions.isWitherStorm(e)) { banishWitherStorm(e); return e; }
-        // The Vindictive Village Spirit and General Darius cannot be banished -- they ARE of the Limbo. Tell
-        // nearby players it shrugged off the attempt (e.g. a Volatile Limbo Potion), then leave it standing.
-        if (e instanceof UnleashedBrainNodeEntity || e instanceof GeneralDariusEntity) { notifyBanishImmune(e); return e; }
-        // Multipart bosses can't change dimensions; banishing one leaves a ghost marker (and duplicates). Skip.
+        // The Ender Dragon's own part system can't be cleanly relocated -- leave it. (Our bosses ARE now
+        // banishable: they return via their gravel like anything else.)
         if (e instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
                 || e instanceof net.minecraft.world.entity.boss.EnderDragonPart
                 || !e.canChangeDimensions()) return e;
@@ -71,6 +74,7 @@ public final class LimboDimension {
             player.teleportTo(limbo, x, y, z, player.getYRot(), player.getXRot());
             return player;
         }
+        // changeDimension fires EntityTravelToDimensionEvent, which LimboManager uses to auto-place the leash.
         return e.changeDimension(limbo, new net.minecraftforge.common.util.ITeleporter() {
             @Override
             public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
@@ -83,35 +87,43 @@ public final class LimboDimension {
     }
 
     /**
-     * Banish a wither storm: it can't change dimensions and is multipart, so we remove the whole creature in
-     * place instead of teleporting it. Matched HITBOX-INDEPENDENTLY -- by entity id + position over ALL loaded
-     * entities (the storm and its parts can deactivate their hitboxes) -- so the core and every head / segment /
-     * tentacle within range is discarded. The banish FX plays where the core stood.
+     * Banish a wither storm: TELEPORT the core into Limbo (the engine {@code teleportTo}, like {@code /tp},
+     * bypasses its can't-change-dimensions flag and keeps it coherent -- no destroy/respawn), discard any
+     * detached parts left behind in the origin dimension, then scatter MANY "Wither Storm part" gravels around
+     * its origin -- all tethering the one core. Breaking ANY part returns the whole storm there
+     * ({@link LimboManager#registerWitherStorm} / {@link LimboManager#onGravelDestroyed}).
      */
     private static void banishWitherStorm(Entity storm) {
         if (!(storm.level() instanceof ServerLevel sl)) return;
-        LimboBanishFx.start(storm);
-        net.minecraft.world.phys.Vec3 c = storm.position();
+        MinecraftServer server = sl.getServer();
+        ServerLevel limbo = server == null ? null : server.getLevel(LIMBO);
+        if (limbo == null) return;
+        ResourceKey<Level> originDim = sl.dimension();
+        BlockPos originPos = storm.blockPosition();
+        java.util.UUID creature = storm.getUUID();
+        float maxHealth = storm instanceof net.minecraft.world.entity.LivingEntity le ? le.getMaxHealth() : 300.0F;
         double r2 = 128.0 * 128.0;
+        // How many "part" gravels to scatter: roughly the number of the storm's part entities (8..24).
+        int parts = 0;
         for (Entity e : sl.getAllEntities()) {
-            if (Factions.isWitherStormPart(e) && e.distanceToSqr(c) <= r2) e.discard();
+            if (e != storm && Factions.isWitherStormPart(e) && e.distanceToSqr(storm.position()) <= r2) parts++;
         }
-        storm.discard(); // ensure the core itself is gone even if the sweep missed it
-    }
+        int partCount = Math.max(8, Math.min(24, parts > 0 ? parts : 12));
 
-    private static long lastBanishImmuneMsg = Long.MIN_VALUE;
-
-    /** Briefly tell nearby players the boss is immune to banishment (throttled so repeats don't spam the chat). */
-    private static void notifyBanishImmune(Entity boss) {
-        if (!(boss.level() instanceof ServerLevel sl)) return;
-        long now = sl.getGameTime();
-        if (now - lastBanishImmuneMsg < 40L) return; // at most once per ~2s
-        lastBanishImmuneMsg = now;
-        net.minecraft.network.chat.Component msg = net.minecraft.network.chat.Component.literal(
-                "§5The Vindictive Village Spirit is immune to banishment.");
-        for (ServerPlayer p : sl.players()) {
-            if (p.distanceToSqr(boss.getX(), boss.getY(), boss.getZ()) <= 64.0 * 64.0) p.sendSystemMessage(msg);
+        LimboBanishFx.start(storm);
+        forceLoadCube(limbo);
+        ensureCube(limbo);
+        double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
+        storm.teleportTo(limbo, x, y, z, java.util.Set.of(), storm.getYRot(), storm.getXRot());
+        // Discard any detached parts still in the origin dimension (the old core instance is already removed by
+        // the teleport; the relocated core regenerates its own parts in Limbo).
+        for (Entity e : sl.getAllEntities()) {
+            if (Factions.isWitherStormPart(e)
+                    && e.distanceToSqr(originPos.getX() + 0.5, originPos.getY(), originPos.getZ() + 0.5) <= r2) {
+                e.discard();
+            }
         }
+        LimboManager.registerWitherStorm(server, creature, originDim, originPos, maxHealth, partCount);
     }
 
     /** Keep Limbo loaded in parallel with the overworld: force-load the cube chunks and build the room. */

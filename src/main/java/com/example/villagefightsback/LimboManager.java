@@ -1,18 +1,17 @@
 package com.example.villagefightsback;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,61 +19,61 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
- * Runs the Limbo "holding cell" rules:
- *  - Every creature teleported INTO Limbo gets a {@link LimboGravelBlock} marker dropped where it stood (with
- *    a floating name tag showing the creature's name), and is remembered ({@link LimboData}) until it leaves.
- *  - The marker falls like gravel; falling just re-homes it (the creature stays). Only DESTROYING the marker
- *    returns the creature, to the marker's most recent resting spot.
- *  - A creature that dies in Limbo has its marker instantly destroyed (no return).
- *  - If Limbo ever holds more than {@value #MAX_CREATURES} creatures, the most ancient are released first.
+ * Runs the Limbo "holding cell": each creature banished into Limbo is leashed by a {@link LimboGravelBlock}
+ * dropped where it stood (with a floating name tag), tracked in {@link LimboData}, and returned when that gravel
+ * is freed -- broken, or its carried "soul gravel" item dropped/destroyed. Falling just re-homes a leash.
+ *
+ * <p>Extras layered on top: a banished WITHER STORM is one creature anchored by MANY gravel "parts" (breaking
+ * any returns the whole storm and clears the rest); creatures over {@value LimboData#UNSTABLE_HP} HP are
+ * UNSTABLE -- their placed gravel self-destructs after {@value #UNSTABLE_TICKS} ticks (silk-mining it into the
+ * carried item is the only stable hold); and Silk Touch converts a gravel into a carried soul-gravel item that
+ * keeps the creature banished until it is freed.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboManager {
     private LimboManager() {}
 
     public static final int MAX_CREATURES = 100;
-    private static final int TICK_INTERVAL = 20;     // register/cap upkeep ~1/s
+    public static final int UNSTABLE_TICKS = 600;    // 30s: a >150 HP hold's placed gravel self-destructs
+    private static final int TICK_INTERVAL = 20;     // register / cap / countdown upkeep ~1/s
     private static final int PENDING_STALE_TICKS = 200;
-    // Generous box around the cube (cube is y 60..81, x/z -11..10) -- everything in Limbo is in here.
     private static final AABB SCAN = new AABB(-48, 40, -48, 48, 100, 48);
 
-    /** Pre-teleport origin (dimension + block) captured the instant a creature heads to Limbo. */
     private record PendingOrigin(ResourceKey<Level> dim, BlockPos pos, long tick) {}
     private static final Map<UUID, PendingOrigin> PENDING = new ConcurrentHashMap<>();
-    private static final Set<UUID> LIMBO_PLAYERS = ConcurrentHashMap.newKeySet(); // players currently in Limbo
+    private static final Set<UUID> LIMBO_PLAYERS = ConcurrentHashMap.newKeySet();
 
-    // --- capture where a MOB came from, just before it enters Limbo (covers changeDimension/sendToLimbo) ---
+    // --- capture where a MOB came from, just before it enters Limbo (changeDimension path) ---
     @SubscribeEvent
     public static void onTravel(EntityTravelToDimensionEvent event) {
         if (!LimboDimension.LIMBO.equals(event.getDimension())) return;
         Entity e = event.getEntity();
         if (e.level().isClientSide() || !(e instanceof LivingEntity)) return;
-        if (LimboDimension.LIMBO.equals(e.level().dimension())) return; // already in Limbo
+        if (LimboDimension.LIMBO.equals(e.level().dimension())) return;
         PENDING.put(e.getUUID(), new PendingOrigin(e.level().dimension(), e.blockPosition(), e.level().getGameTime()));
     }
 
-    /**
-     * Players reach Limbo via teleportTo (command / sendToLimbo), which fires NO travel event -- so track them
-     * here: remember each player's position while it is OUTSIDE Limbo (its return point), and greet it on entry.
-     */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer sp)) return;
         UUID id = sp.getUUID();
         if (LimboDimension.LIMBO.equals(sp.level().dimension())) {
-            if (LIMBO_PLAYERS.add(id)) { // first tick inside Limbo
+            if (LIMBO_PLAYERS.add(id)) {
                 sp.sendSystemMessage(Component.literal("Get out. Now.").withStyle(ChatFormatting.DARK_RED));
             }
         } else {
@@ -83,17 +82,12 @@ public final class LimboManager {
         }
     }
 
-    // --- a creature that dies IN Limbo: instantly destroy its marker, no return ---
+    // --- a creature that dies IN Limbo: drop all its leashes (markers + blocks + carried items), no return ---
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         if (!LimboDimension.LIMBO.equals(sl.dimension())) return;
-        MinecraftServer server = sl.getServer();
-        LimboData.Entry entry = LimboData.get(server).removeByCreature(event.getEntity().getUUID());
-        if (entry == null) return;
-        killMarker(server, entry);
-        ServerLevel origin = server.getLevel(entry.originDim);
-        if (origin != null) origin.removeBlock(entry.gravelPos, false); // entry already gone -> onRemove won't return
+        releaseCreatureNoReturn(sl.getServer(), event.getEntity().getUUID());
     }
 
     @SubscribeEvent
@@ -107,144 +101,332 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         long now = limbo.getGameTime();
 
-        // 1. Register newly-arrived tracked creatures: drop their gravel marker (+ name tag) where they came from.
+        // 1. Register newly-arrived tracked creatures (the auto path: changeDimension'd mobs + teleported players).
+        //    The wither storm is registered explicitly at banish time, so it is already known here and skipped.
         for (LivingEntity e : limbo.getEntitiesOfClass(LivingEntity.class, SCAN, LivingEntity::isAlive)) {
             UUID id = e.getUUID();
-            if (data.getByCreature(id) != null) continue;
+            if (data.isCreatureRegistered(id)) continue;
             PendingOrigin po = PENDING.remove(id);
-            if (po == null) continue; // wasn't tracked-in via a dimension change (e.g. /summon) -> ignore
+            if (po == null) continue; // not tracked-in (e.g. /summon) -> ignore
+            float maxhp = e.getMaxHealth();
+            String typeId = typeKey(e);
+            long unstable = maxhp > LimboData.UNSTABLE_HP ? now + UNSTABLE_TICKS : 0L;
             BlockPos gravelPos = placeGravel(server, po.dim(), po.pos(), data);
-            String name = e.getName().getString();
             ServerLevel origin = server.getLevel(po.dim());
+            String name = e.getName().getString();
             UUID marker = origin != null ? spawnMarker(origin, gravelPos, name) : null;
-            data.add(new LimboData.Entry(id, po.dim(), gravelPos, now, name, marker));
+            LimboData.Entry entry = new LimboData.Entry(UUID.randomUUID(), id, po.dim(), gravelPos, now, name,
+                    marker, typeId, maxhp, false, false, unstable);
+            data.add(entry);
+            if (origin != null) stampBE(origin, gravelPos, entry);
         }
 
-        // 2. Forget creatures that left Limbo some other way; clear their (now-meaningless) marker + name tag.
+        // 2. Unstable holds (> 150 HP): a placed gravel past its deadline self-destructs -> the creature returns.
         for (LimboData.Entry entry : data.entries()) {
-            if (limbo.getEntity(entry.creature) == null) {
-                data.removeByCreature(entry.creature);
-                killMarker(server, entry);
-                ServerLevel origin = server.getLevel(entry.originDim);
-                if (origin != null && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
-                    origin.removeBlock(entry.gravelPos, false);
-                }
+            if (entry.held || entry.unstableUntil == 0L || now < entry.unstableUntil) continue;
+            ServerLevel origin = server.getLevel(entry.originDim);
+            if (origin != null && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
+                origin.removeBlock(entry.gravelPos, false); // entry present -> onGravelDestroyed -> return
             }
         }
 
-        // 3. Over-population: release the most ancient creatures until back at the limit.
-        if (data.size() > MAX_CREATURES) {
-            List<LimboData.Entry> all = data.entries();
-            all.sort(Comparator.comparingLong(en -> en.entryTime));
-            int excess = data.size() - MAX_CREATURES;
-            for (int i = 0; i < excess && i < all.size(); i++) {
-                LimboData.Entry old = all.get(i);
-                ServerLevel origin = server.getLevel(old.originDim);
-                if (origin != null && origin.getBlockState(old.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
-                    origin.removeBlock(old.gravelPos, false); // -> onGravelDestroyed -> kill marker + return
-                } else {                                      // gravel/origin not loaded -> release directly
-                    data.removeByCreature(old.creature);
-                    killMarker(server, old);
-                    teleportOut(server, old);
-                }
-            }
+        // 3. Forget creatures that vanished from Limbo by other means (despawn, etc.) -- clear their leashes.
+        Set<UUID> handled = new HashSet<>();
+        for (LimboData.Entry entry : data.entries()) {
+            if (!handled.add(entry.creature)) continue;
+            if (limbo.getEntity(entry.creature) == null) releaseCreatureNoReturn(server, entry.creature);
         }
 
-        // 4. Drop stale pending-origins (a travel that never completed).
+        // 4. Over-population: release the most ancient CREATURES (a storm counts once) until back at the limit.
+        while (data.creatureCount() > MAX_CREATURES) {
+            LimboData.Entry oldest = null;
+            for (LimboData.Entry e : data.entries()) if (oldest == null || e.entryTime < oldest.entryTime) oldest = e;
+            if (oldest == null) break;
+            ServerLevel dest = server.getLevel(oldest.originDim);
+            restoreCreatureAndCleanup(server, oldest.creature, dest,
+                    oldest.gravelPos.getX() + 0.5, oldest.gravelPos.getY(), oldest.gravelPos.getZ() + 0.5);
+            if (data.isCreatureRegistered(oldest.creature)) data.removeByCreature(oldest.creature); // safety
+        }
+
+        // 5. Drop stale pending-origins.
         PENDING.values().removeIf(po -> now - po.tick() > PENDING_STALE_TICKS);
         ModProfiler.add("limbo", _p);
     }
 
-    /** Place a gravel marker at (or just above) the creature's origin position; returns the actual spot used. */
+    // --- registration helpers -------------------------------------------------------------------------
+
     private static BlockPos placeGravel(MinecraftServer server, ResourceKey<Level> dim, BlockPos pos, LimboData data) {
         ServerLevel origin = server.getLevel(dim);
         if (origin == null) return pos;
         BlockPos p = pos;
         int guard = 0;
-        while (data.hasGravelAt(dim, p) && guard++ < 8) p = p.above(); // don't stack two markers on one block
+        while (data.hasGravelAt(dim, p) && guard++ < 8) p = p.above();
         origin.setBlock(p, ModBlocks.LIMBO_GRAVEL.get().defaultBlockState(), 3);
         return p;
     }
 
-    /** A marker was DESTROYED (not merely falling) -> return its creature to this, the most recent, spot. */
-    public static void onGravelDestroyed(ServerLevel level, BlockPos pos) {
-        MinecraftServer server = level.getServer();
-        LimboData.Entry entry = LimboData.get(server).removeByGravel(level.dimension(), pos);
-        if (entry == null) return;
-        killMarker(server, entry);
-        teleportOut(server, entry);
+    /** Stamp a gravel's block entity with its hold data (the renderer reads the colour + instability deadline). */
+    private static void stampBE(ServerLevel origin, BlockPos pos, LimboData.Entry e) {
+        if (origin.getBlockEntity(pos) instanceof LimboGravelBlockEntity be) {
+            be.setHold(e.typeId, e.name, e.stormPart, e.unstableUntil);
+        }
     }
 
-    /** A marker fell and came to rest at a new spot -> re-home the entry + its name tag (creature stays in Limbo). */
+    /** Explicitly register a banished WITHER STORM: ONE creature anchored by {@code partCount} gravel "parts"
+     *  scattered around its origin. Called from the banish path (the storm never fires a travel event). */
+    public static void registerWitherStorm(MinecraftServer server, UUID creature, ResourceKey<Level> dim,
+                                           BlockPos origin, float maxHealth, int partCount) {
+        ServerLevel level = server.getLevel(dim);
+        if (level == null) return;
+        LimboData data = LimboData.get(server);
+        long now = level.getGameTime();
+        String typeId = Factions.WITHER_STORM_ID.toString();
+        long unstable = maxHealth > LimboData.UNSTABLE_HP ? now + UNSTABLE_TICKS : 0L;
+        int placed = 0;
+        for (int attempt = 0; attempt < partCount * 4 && placed < partCount; attempt++) {
+            int dx = (int) Math.round((level.random.nextDouble() * 2 - 1) * 10);
+            int dz = (int) Math.round((level.random.nextDouble() * 2 - 1) * 10);
+            int x = origin.getX() + dx, z = origin.getZ() + dz;
+            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+            BlockPos spot = new BlockPos(x, y, z);
+            if (data.hasGravelAt(dim, spot)) continue;
+            placeStormPart(level, data, creature, dim, spot, now, typeId, maxHealth, unstable);
+            placed++;
+        }
+        // Never leave the storm with NO leash (it could never be returned): force one at the origin column.
+        if (placed == 0) {
+            BlockPos p = origin;
+            int guard = 0;
+            while (data.hasGravelAt(dim, p) && guard++ < 8) p = p.above();
+            placeStormPart(level, data, creature, dim, p, now, typeId, maxHealth, unstable);
+        }
+    }
+
+    private static void placeStormPart(ServerLevel level, LimboData data, UUID creature, ResourceKey<Level> dim,
+                                       BlockPos spot, long now, String typeId, float maxHealth, long unstable) {
+        level.setBlock(spot, ModBlocks.LIMBO_GRAVEL.get().defaultBlockState(), 3);
+        UUID marker = spawnMarker(level, spot, "Wither Storm part");
+        LimboData.Entry e = new LimboData.Entry(UUID.randomUUID(), creature, dim, spot, now,
+                "Wither Storm part", marker, typeId, maxHealth, true, false, unstable);
+        data.add(e);
+        stampBE(level, spot, e);
+    }
+
+    // --- destruction / restore -------------------------------------------------------------------------
+
+    /** A gravel was DESTROYED (broken, exploded, self-destructed) -> return its creature here. A wither-storm
+     *  part returns the WHOLE storm and clears all its other parts. */
+    public static void onGravelDestroyed(ServerLevel level, BlockPos pos) {
+        MinecraftServer server = level.getServer();
+        LimboData.Entry entry = LimboData.get(server).getByGravel(level.dimension(), pos);
+        if (entry == null) return;
+        restoreCreatureAndCleanup(server, entry.creature, level,
+                pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+    }
+
+    /** A gravel was SILK-mined -> it becomes a carried soul-gravel item; the creature STAYS banished. */
+    public static void onGravelSilkHarvested(ServerLevel level, BlockPos pos) {
+        MinecraftServer server = level.getServer();
+        LimboData data = LimboData.get(server);
+        LimboData.Entry entry = data.getByGravel(level.dimension(), pos);
+        if (entry == null) return;
+        data.markHeld(entry);                       // no placed block, countdown paused -- creature stays in Limbo
+        killMarker(server, entry);
+        Block.popResource(level, pos, LimboSoulGravelItem.of(entry)); // loose item; 3s grace to pick it up
+    }
+
+    /** A soul-gravel item was placed back as a block -> re-anchor its leash (wherever it now sits), restart the
+     *  self-destruct countdown for unstable holds, re-spawn the name tag and stamp the block entity. */
+    public static void onSoulGravelPlaced(ServerLevel level, BlockPos pos, ItemStack stack) {
+        MinecraftServer server = level.getServer();
+        LimboData data = LimboData.get(server);
+        UUID token = LimboSoulGravelItem.token(stack);
+        LimboData.Entry entry = token != null ? data.getByToken(token) : null;
+        // Re-anchor only a genuinely HELD leash. A stale token (creature already returned) or a DUPLICATED item
+        // (creative pick-block / /give) whose leash is still placed elsewhere must NOT steal the index -> inert.
+        if (entry == null || !entry.held) return;
+        long unstable = entry.maxHealth > LimboData.UNSTABLE_HP ? level.getGameTime() + UNSTABLE_TICKS : 0L;
+        UUID marker = spawnMarker(level, pos, entry.name);
+        data.markPlaced(entry, level.dimension(), pos, marker, unstable);
+        stampBE(level, pos, entry);
+    }
+
+    /** A carried soul-gravel item was FREED (loose &gt;3s, or destroyed in lava/void) -> return its creature at
+     *  the item's location. A wither-storm part frees the WHOLE storm there. */
+    public static void freeSoulGravel(ServerLevel level, double x, double y, double z, UUID token) {
+        MinecraftServer server = level.getServer();
+        LimboData.Entry entry = LimboData.get(server).getByToken(token);
+        if (entry == null) return; // stale -> nothing to free
+        restoreCreatureAndCleanup(server, entry.creature, level, x, y, z);
+    }
+
+    /** A marker fell to a new spot -> re-home its leash + name tag + block-entity stamp (creature stays). */
     public static void onGravelLanded(ServerLevel level, BlockPos from, BlockPos to) {
         MinecraftServer server = level.getServer();
         LimboData data = LimboData.get(server);
-        LimboData.Entry e = data.removeByGravel(level.dimension(), from);
-        if (e == null) return; // untracked gravel (e.g. player-placed)
-        data.add(new LimboData.Entry(e.creature, e.originDim, to, e.entryTime, e.name, e.marker));
+        LimboData.Entry e = data.getByGravel(level.dimension(), from);
+        if (e == null) return;
+        data.moveGravel(e, to);
         moveMarker(level, e.marker, to);
+        stampBE(level, to, e); // a falling block does not carry its block entity -> repopulate on landing
     }
 
-    /** Sleeping in the Limbo bed = destroy your own marker = return. */
+    /** Sleeping in the Limbo bed = return (destroy your own leash). */
     public static void requestReturn(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         LimboData data = LimboData.get(server);
-        LimboData.Entry entry = data.getByCreature(player.getUUID());
+        LimboData.Entry entry = firstLeash(data, player.getUUID());
         if (entry == null) {
             player.sendSystemMessage(Component.literal("There is no way back from here.")
                     .withStyle(ChatFormatting.DARK_RED));
             return;
         }
         ServerLevel origin = server.getLevel(entry.originDim);
-        boolean removed = origin != null
+        boolean removed = !entry.held && origin != null
                 && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())
-                && origin.removeBlock(entry.gravelPos, false); // -> onGravelDestroyed -> kill marker + teleportOut
-        if (!removed) { // marker already gone -> return directly
-            data.removeByCreature(player.getUUID());
-            killMarker(server, entry);
-            teleportOut(server, entry);
+                && origin.removeBlock(entry.gravelPos, false); // -> onGravelDestroyed -> return
+        if (!removed) {
+            restoreCreatureAndCleanup(server, player.getUUID(), origin,
+                    entry.gravelPos.getX() + 0.5, entry.gravelPos.getY(), entry.gravelPos.getZ() + 0.5);
         }
     }
 
-    /** Move the entry's creature out of Limbo, back to its marker's most recent location. */
-    private static void teleportOut(MinecraftServer server, LimboData.Entry entry) {
+    /** Banish toggle: an entity ALREADY in Limbo that is hit by a beam/potion (or drinks one) returns to the
+     *  overworld. Tracked creatures go back via their leash; an untracked one is dropped at the overworld spawn. */
+    public static boolean sendBackToOverworld(Entity e) {
+        if (!(e.level() instanceof ServerLevel sl) || !LimboDimension.LIMBO.equals(sl.dimension())) return false;
+        MinecraftServer server = sl.getServer();
+        LimboData data = LimboData.get(server);
+        LimboData.Entry leash = firstLeash(data, e.getUUID());
+        if (leash != null) {
+            ServerLevel dest = server.getLevel(leash.originDim);
+            restoreCreatureAndCleanup(server, e.getUUID(), dest,
+                    leash.gravelPos.getX() + 0.5, leash.gravelPos.getY(), leash.gravelPos.getZ() + 0.5);
+            return true;
+        }
+        ServerLevel overworld = server.overworld();
+        BlockPos sp = overworld.getSharedSpawnPos();
+        double x = sp.getX() + 0.5, y = sp.getY(), z = sp.getZ() + 0.5;
+        if (e instanceof ServerPlayer p) p.teleportTo(overworld, x, y, z, p.getYRot(), p.getXRot());
+        else e.teleportTo(overworld, x, y, z, java.util.Set.of(), e.getYRot(), e.getXRot());
+        return true;
+    }
+
+    // --- shared restore / cleanup ---------------------------------------------------------------------
+
+    /** Restore a creature to {@code dest} at (x,y,z), then clear ALL of its leashes (markers, blocks, items). */
+    private static void restoreCreatureAndCleanup(MinecraftServer server, UUID creature, ServerLevel dest,
+                                                  double x, double y, double z) {
+        if (dest == null) dest = server.overworld(); // never strand the creature if its origin dim is gone
+        Set<LimboData.Entry> removed = releaseCreatureNoReturn(server, creature);
+        boolean moved = teleportCreature(server, creature, dest, x, y, z);
+        // A returned wither storm regenerates its parts at the destination -- discard the now-orphaned ones the
+        // core left ticking inside the (always-loaded) Limbo cube.
+        if (moved && removed.stream().anyMatch(e -> e.stormPart)) discardLimboWitherStormParts(server);
+    }
+
+    /** Discard any orphaned wither-storm body parts left inside Limbo (after the core has been teleported out). */
+    private static void discardLimboWitherStormParts(MinecraftServer server) {
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
-        ServerLevel dest = server.getLevel(entry.originDim);
-        if (limbo == null || dest == null) return;
-        Entity e = limbo.getEntity(entry.creature);
-        if (e == null || !e.isAlive()) return;
-        // Keep ALL effects on the way out: the player's potions/buffs persist, and -- crucially -- the Very Bad
-        // Omen must survive so LimboRaidManager fires the Limbo raid when the omen-carrier reaches a village
-        // ("once you stayed 30s in the Limbo, it's already too late"). Do NOT strip effects here.
-        double x = entry.gravelPos.getX() + 0.5, y = entry.gravelPos.getY(), z = entry.gravelPos.getZ() + 0.5;
+        if (limbo == null) return;
+        for (Entity e : limbo.getAllEntities()) {
+            if (Factions.isWitherStormPart(e)) e.discard();
+        }
+    }
+
+    /** Clear every leash for a creature WITHOUT returning it: kill name tags, silently remove placed gravel
+     *  blocks, and strip any carried soul-gravel items from online players' inventories. */
+    private static Set<LimboData.Entry> releaseCreatureNoReturn(MinecraftServer server, UUID creature) {
+        LimboData data = LimboData.get(server);
+        Set<LimboData.Entry> removed = data.removeByCreature(creature);
+        if (removed.isEmpty()) return removed;
+        for (LimboData.Entry e : removed) {
+            killMarker(server, e);
+            if (!e.held) {
+                ServerLevel o = server.getLevel(e.originDim);
+                if (o != null && o.getBlockState(e.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
+                    LimboGravelBlock.suppress(o, e.gravelPos);
+                    o.removeBlock(e.gravelPos, false);
+                }
+            }
+        }
+        removeSoulItemsForCreature(server, creature);
+        return removed;
+    }
+
+    /** Move the live Limbo creature out to {@code dest} at (x,y,z). Uses the engine cross-dimension teleport
+     *  ({@code teleportTo}, like {@code /tp}) so multipart bosses that can't change dimensions still move, and
+     *  ALL effects/NBT are preserved. No-op if the creature is no longer alive in Limbo. */
+    private static boolean teleportCreature(MinecraftServer server, UUID creature, ServerLevel dest,
+                                            double x, double y, double z) {
+        ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
+        if (limbo == null || dest == null) return false;
+        Entity e = limbo.getEntity(creature);
+        if (e == null || !e.isAlive()) return false;
         if (e instanceof ServerPlayer sp) {
             sp.teleportTo(dest, x, y, z, sp.getYRot(), sp.getXRot());
         } else {
-            e.changeDimension(dest, new ITeleporter() {
-                @Override
-                public Entity placeEntity(Entity entity, ServerLevel currentWorld, ServerLevel destWorld,
-                                          float yaw, Function<Boolean, Entity> repositionEntity) {
-                    Entity moved = repositionEntity.apply(false);
-                    moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
-                    return moved;
+            e.teleportTo(dest, x, y, z, java.util.Set.of(), e.getYRot(), e.getXRot());
+        }
+        return true;
+    }
+
+    /** True if any online player is currently carrying a soul-gravel item for {@code token} (so a removed loose
+     *  item was picked up / stored, not destroyed -- don't free the creature). */
+    public static boolean isTokenCarried(MinecraftServer server, UUID token) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            var inv = p.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
+                if (LimboSoulGravelItem.isSoulGravel(s) && token.equals(LimboSoulGravelItem.token(s))) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Remove every carried soul-gravel item referencing {@code creature} from online players' inventories. */
+    private static void removeSoulItemsForCreature(MinecraftServer server, UUID creature) {
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            var inv = p.getInventory();
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
+                if (!LimboSoulGravelItem.isSoulGravel(s)) continue;
+                CompoundTag h = LimboSoulGravelItem.hold(s);
+                if (h != null && h.hasUUID("creature") && creature.equals(h.getUUID("creature"))) {
+                    inv.setItem(i, ItemStack.EMPTY);
                 }
-            });
+            }
         }
     }
 
-    // --- floating name-tag marker (an inert armor stand wearing the creature's name) ---
+    /** A leash to return this creature by -- preferring a PLACED one (its gravelPos is a real spot) over a
+     *  carried/held one (whose gravelPos is stale). */
+    private static LimboData.Entry firstLeash(LimboData data, UUID creature) {
+        LimboData.Entry held = null;
+        for (LimboData.Entry e : data.getByCreature(creature)) {
+            if (!e.held) return e;
+            held = e;
+        }
+        return held;
+    }
+
+    private static String typeKey(Entity e) {
+        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        return id == null ? "" : id.toString();
+    }
+
+    // --- floating name-tag marker (an inert armor stand wearing the creature's name) ------------------
 
     private static UUID spawnMarker(ServerLevel origin, BlockPos pos, String name) {
         ArmorStand as = EntityType.ARMOR_STAND.create(origin);
         if (as == null) return null;
-        as.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 0.0F, 0.0F); // float the name ABOVE the block
+        as.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 0.0F, 0.0F);
         as.setInvisible(true);
         as.setSilent(true);
         as.setInvulnerable(true);
         as.setNoGravity(true);
         as.setCustomName(Component.literal(name));
         as.setCustomNameVisible(true);
-        // Marker (no hitbox), Small and NoBasePlate have no public setters -> set them via an NBT round-trip.
         CompoundTag tag = new CompoundTag();
         if (as.save(tag)) {
             tag.putBoolean("Marker", true);

@@ -35,6 +35,8 @@ public final class ModBlocks {
             DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
     public static final DeferredRegister<CreativeModeTab> TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
+    public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, TheVillageFightsBack.MODID);
 
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
@@ -458,9 +460,19 @@ public final class ModBlocks {
      */
     public static final RegistryObject<Block> LIMBO_GRAVEL = BLOCKS.register("limbo_gravel",
             () -> new LimboGravelBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL)
-                    .mapColor(MapColor.COLOR_BLACK)));
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .noLootTable()));               // drops are handled in-code (plain item / soul item / restore)
     public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
+    /** The block entity that caches a leashed gravel's render data (held entity type, name, instability deadline). */
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
+            BLOCK_ENTITIES.register("limbo_gravel", () ->
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            LimboGravelBlockEntity::new, LIMBO_GRAVEL.get()).build(null));
+    /** The "soul gravel" carried form: silk-mining an entity's gravel yields this non-stackable, entity-named
+     *  item. While it is carried/stored the creature stays in Limbo; it returns when the item is freed. */
+    public static final RegistryObject<Item> LIMBO_SOUL_GRAVEL = ITEMS.register("limbo_soul_gravel",
+            () -> new LimboSoulGravelItem(new Item.Properties().stacksTo(1)));
 
     /**
      * Limbo Egg: a black-and-white dragon egg that nests in the Limbo. It does NOT teleport when clicked;
@@ -669,5 +681,6 @@ public final class ModBlocks {
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         TABS.register(modBus);
+        BLOCK_ENTITIES.register(modBus);
     }
 }
