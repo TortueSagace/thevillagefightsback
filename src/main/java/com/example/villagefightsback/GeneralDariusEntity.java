@@ -66,7 +66,8 @@ public class GeneralDariusEntity extends Monster {
 
     @Nullable private GlobalPos homeBrain;
     private int beamCooldown;
-    private boolean despawning; // guards refund-once
+    private boolean despawning;     // guards refund-once
+    private boolean regenTriggered; // true once the below-50%-HP Regeneration II has been granted (re-armed above 50%)
 
     public GeneralDariusEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -165,6 +166,18 @@ public class GeneralDariusEntity extends Monster {
         LimboGear.breakSoftBlocksOnContact(this); // breaks soft blocks (incl. cobblestone) on contact
 
         if (beamCooldown > 0) beamCooldown--;
+
+        // Below 50% HP: spontaneously gain Regeneration II for 30s. Granted once on dropping below half, then
+        // re-armed if he heals back above half (so a second collapse triggers it again).
+        if (getHealth() < getMaxHealth() * 0.5F) {
+            if (!regenTriggered) {
+                addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.REGENERATION, 600, 1, false, true, true));
+                regenTriggered = true;
+            }
+        } else {
+            regenTriggered = false;
+        }
 
         bossBar.setProgress(getHealth() / getMaxHealth());
         // While hunting (a locked target) Darius glows so players can always spot him; off when walking home.
