@@ -44,11 +44,10 @@ public final class KaratsWillEvents {
         event.setCanceled(true);                          // the protected holder takes nothing...
         if (amount <= 0.0F) return;
         // A wither storm's chomp is a Float.MAX_VALUE instakill, and its own invulnerability would just shrug
-        // off the reflected damage -- so deflecting it back KILLS the storm outright instead (a real /kill-style
-        // death: WitherStormEntity#kill removes it with RemovalReason.KILLED + the ENTITY_DIE game event, not a
-        // silent discard, and bypasses the storm's damage immunity since it never goes through hurt()).
+        // off the reflected damage -- so deflecting it back KILLS the storm instead, WITH its full death
+        // sequence (death roar + sound + animation), not a silent removal.
         if (Factions.isWitherStorm(attacker) || Factions.isWitherStormPart(attacker)) {
-            attacker.kill();
+            killWithDeathAnimation(attacker, source);
             return;
         }
         attacker.invulnerableTime = 0;                    // ...bypass i-frames so the deflected hit always lands...
@@ -84,5 +83,27 @@ public final class KaratsWillEvents {
         VillagerTrades.ItemListing listing = (trader, rand) ->
                 new MerchantOffer(new ItemStack(Items.EMERALD, 18), potion.copy(), 3, 30, 0.05F);
         event.getTrades().get(5).add(listing); // 5 = master
+    }
+
+    /** Cached handle to the protected {@code LivingEntity#die(DamageSource)} (SRG m_6667_). */
+    private static java.lang.reflect.Method dieMethod;
+
+    /**
+     * Kill {@code entity} through its real {@code die()} path so a boss with a custom death sequence (the
+     * wither storm) plays its full death animation, rather than the silent {@code kill()} removal. {@code die}
+     * is protected, so we invoke it reflectively (Forge resolves the SRG name at runtime). Health is zeroed
+     * first so the dying state is consistent; falls back to {@code kill()} if reflection ever fails.
+     */
+    private static void killWithDeathAnimation(LivingEntity entity, DamageSource source) {
+        try {
+            if (dieMethod == null) {
+                dieMethod = net.minecraftforge.fml.util.ObfuscationReflectionHelper.findMethod(
+                        LivingEntity.class, "m_6667_", DamageSource.class);
+            }
+            entity.setHealth(0.0F);
+            dieMethod.invoke(entity, source);
+        } catch (Throwable t) {
+            entity.kill(); // last resort: clean removal
+        }
     }
 }
