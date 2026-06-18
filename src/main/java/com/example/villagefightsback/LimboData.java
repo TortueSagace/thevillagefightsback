@@ -45,7 +45,7 @@ public class LimboData extends SavedData {
         public final String name;
         public UUID marker;               // floating name-tag armor stand, or null
         public final String typeId;       // banished entity's type id (for the client gravel colour), or ""
-        public final float maxHealth;     // captured at banish (> 150 HP => unstable in Limbo)
+        public final float maxHealth;     // BASE max-health captured at banish (> 150 => unstable in Limbo)
         public final boolean stormPart;   // part of a multi-gravel wither storm
         public boolean held;              // currently carried as an item (no physical block; countdown paused)
         public long unstableUntil;        // game-time the placed gravel self-destructs (0 = stable)

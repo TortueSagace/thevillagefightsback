@@ -114,7 +114,11 @@ public final class LimboDimension {
         ResourceKey<Level> originDim = sl.dimension();
         BlockPos originPos = storm.blockPosition();
         java.util.UUID creature = storm.getUUID();
-        float maxHealth = storm instanceof net.minecraft.world.entity.LivingEntity le ? le.getMaxHealth() : 300.0F;
+        // BASE max-health (not getMaxHealth(), which folds in transient modifiers, and not current HP): a storm's
+        // base is 400, so it is always unstable regardless of how injured/buffed it is when banished.
+        float maxHealth = storm instanceof net.minecraft.world.entity.LivingEntity le
+                ? (float) le.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH)
+                : 300.0F;
         double r2 = 128.0 * 128.0;
         // How many "part" gravels to scatter: roughly the number of the storm's part entities (8..24).
         int parts = 0;

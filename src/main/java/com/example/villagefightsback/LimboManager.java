@@ -109,7 +109,10 @@ public final class LimboManager {
             if (data.isCreatureRegistered(id)) continue;
             PendingOrigin po = PENDING.remove(id);
             if (po == null) continue; // not tracked-in (e.g. /summon) -> ignore
-            float maxhp = e.getMaxHealth();
+            // BASE max-health (the entity's designed HP), not getMaxHealth() -- which folds in transient
+            // attribute modifiers (buffs/debuffs) -- and certainly not current HP. A mob's instability is a
+            // property of what it IS, so a temporary buff or a chunk of damage must not change the verdict.
+            float maxhp = (float) e.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
             String typeId = typeKey(e);
             long unstable = maxhp > LimboData.UNSTABLE_HP ? now + UNSTABLE_TICKS : 0L;
             BlockPos gravelPos = placeGravel(server, po.dim(), po.pos(), data);
