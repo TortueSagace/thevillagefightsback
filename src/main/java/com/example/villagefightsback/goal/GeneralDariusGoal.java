@@ -154,6 +154,14 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
+        // Target ABOVE us behind a ceiling (e.g. Darius is underground and the target is on the surface): tunnel
+        // UP toward it -- break the block above his head and rise into the gap. The mirror of the dig-down below.
+        // digUp returns false when the way up is already open, so an above-target in open air falls through to the
+        // mace jump instead.
+        if ((t.getY() - darius.getY()) > 2.0 && digUp(sl)) {
+            return;
+        }
+
         // Jump-close when comfortably out of reach and the launch is ready (no ceiling check -- breaks through).
         if (distSqr >= JUMP_MIN_DIST_SQR && launchCooldown <= 0
                 && (t.getY() - darius.getY()) > -2.0) {
@@ -223,6 +231,32 @@ public class GeneralDariusGoal extends Goal {
         if (com.example.villagefightsback.LimboGear.isPhaseDoor(s)) return false; // not the gate doors
         darius.getNavigation().stop();
         sl.destroyBlock(below, false);
+        darius.fallDistance = 0.0F;
+        return true;
+    }
+
+    /**
+     * Tunnel one step UP toward a target above Darius (he is underground, the target is on the surface): break
+     * the block directly above his head and rise into the gap. A pure jump would just drop him back into the
+     * same hole, so -- as with the pit escape -- a cheap scaffold is dropped under his feet to give him a floor
+     * one block higher. Returns false (so the caller falls back to the mace jump) when the way up is already
+     * open air, and skips bedrock and the village's own phase-door gate blocks. Returns true if it acted.
+     */
+    private boolean digUp(ServerLevel sl) {
+        int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
+        BlockPos head = new BlockPos(gx, gy + 2, gz);                       // the block just above his head (~2 tall)
+        net.minecraft.world.level.block.state.BlockState s = sl.getBlockState(head);
+        if (s.isAir() || !s.getFluidState().isEmpty()) return false;       // already open above -> let him jump
+        if (s.getDestroySpeed(sl, head) < 0) return false;                 // unbreakable (bedrock)
+        if (com.example.villagefightsback.LimboGear.isPhaseDoor(s)) return false; // not the gate doors
+        sl.destroyBlock(head, false);
+        BlockPos feet = new BlockPos(gx, gy, gz);
+        if (sl.getBlockState(feet).canBeReplaced()) {
+            sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+            CheapScaffoldManager.track(sl, feet);
+        }
+        darius.getNavigation().stop();
+        darius.setPos(gx + 0.5, gy + 1.0, gz + 0.5);                       // step up into the cleared space
         darius.fallDistance = 0.0F;
         return true;
     }
