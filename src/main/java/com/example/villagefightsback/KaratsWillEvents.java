@@ -42,10 +42,17 @@ public final class KaratsWillEvents {
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) return;
         float amount = event.getAmount();
         event.setCanceled(true);                          // the protected holder takes nothing...
-        if (amount > 0.0F) {
-            attacker.invulnerableTime = 0;                // ...bypass i-frames so the deflected hit always lands...
-            attacker.hurt(source, amount);                // ...the attacker takes their own attack instead
+        if (amount <= 0.0F) return;
+        // A wither storm's chomp is a Float.MAX_VALUE instakill, and its own invulnerability would just shrug
+        // off the reflected damage -- so deflecting it back KILLS the storm outright instead (a real /kill-style
+        // death: WitherStormEntity#kill removes it with RemovalReason.KILLED + the ENTITY_DIE game event, not a
+        // silent discard, and bypasses the storm's damage immunity since it never goes through hurt()).
+        if (Factions.isWitherStorm(attacker) || Factions.isWitherStormPart(attacker)) {
+            attacker.kill();
+            return;
         }
+        attacker.invulnerableTime = 0;                    // ...bypass i-frames so the deflected hit always lands...
+        attacker.hurt(source, amount);                    // ...the attacker takes their own attack instead
     }
 
     /**
