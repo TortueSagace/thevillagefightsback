@@ -128,12 +128,14 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
     }
 
     /** The falling gravel could NOT re-place (landed on a non-replaceable surface, etc.) -> it never re-homed, so
-     *  its leash still points at the now-air origin cell. Return the creature there rather than stranding it. */
+     *  its leash still points at the now-air origin cell. This is a PHYSICS loss, not a deliberate break: for a
+     *  multi-part wither storm it just drops that one redundant part (the storm stays banished); for a lone
+     *  creature it returns it (so it is never stranded). See {@link LimboManager#onGravelFellAndBroke}. */
     @Override
     public void onBrokenAfterFall(Level level, BlockPos pos, FallingBlockEntity fallingBlock) {
         if (level instanceof ServerLevel sl) {
             BlockPos from = PENDING_FALL.remove(colKey(sl, pos));
-            if (from != null) LimboManager.onGravelDestroyed(sl, from);
+            if (from != null) LimboManager.onGravelFellAndBroke(sl, from);
         }
         super.onBrokenAfterFall(level, pos, fallingBlock);
     }

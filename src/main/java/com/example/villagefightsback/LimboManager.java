@@ -157,8 +157,11 @@ public final class LimboManager {
             if (!handled.add(entry.creature)) continue;
             if (now - entry.entryTime < FORGET_GRACE_TICKS) continue;
             if (limbo.getEntity(entry.creature) == null) {
-                TheVillageFightsBack.LOGGER.info("[Limbo] forgetting creature {} (gone from Limbo, {}t after entry)",
-                        entry.creature, now - entry.entryTime);
+                Entity elsewhere = findAnywhere(server, entry.creature);
+                String where = elsewhere == null ? "no (dead/unloaded)"
+                        : elsewhere.level().dimension().location() + " @ " + elsewhere.blockPosition();
+                TheVillageFightsBack.LOGGER.info("[Limbo] forgetting creature {} ({}t after entry); found elsewhere: {}",
+                        entry.creature, now - entry.entryTime, where);
                 releaseCreatureNoReturn(server, entry.creature);
             }
         }
@@ -190,11 +193,24 @@ public final class LimboManager {
     private static BlockPos placeGravel(MinecraftServer server, ResourceKey<Level> dim, BlockPos pos, LimboData data) {
         ServerLevel origin = server.getLevel(dim);
         if (origin == null) return pos;
-        BlockPos p = pos;
+        BlockPos p = restOnSolid(origin, pos); // rest on solid ground so the gravel can't fall and break
         int guard = 0;
         while (data.hasGravelAt(dim, p) && guard++ < 8) p = p.above();
         origin.setBlock(p, ModBlocks.LIMBO_GRAVEL.get().defaultBlockState(), 3);
         return p;
+    }
+
+    /** Walk a candidate gravel cell DOWN until it rests on a solid (non-free) block. A gravel left floating over
+     *  air/fluid (common on the wrecked, cratered terrain a wither storm leaves behind) would FALL the moment it
+     *  ticks; if it then failed to re-place it would break and wrongly return its creature long before the 30s
+     *  countdown. Resting it on solid ground up front removes that accidental-return path entirely. */
+    private static BlockPos restOnSolid(ServerLevel level, BlockPos spot) {
+        int minY = level.getMinBuildHeight() + 1;
+        while (spot.getY() > minY
+                && net.minecraft.world.level.block.FallingBlock.isFree(level.getBlockState(spot.below()))) {
+            spot = spot.below();
+        }
+        return spot;
     }
 
     /** Stamp a gravel's block entity with its hold data (the renderer reads the colour + instability deadline). */
@@ -220,14 +236,14 @@ public final class LimboManager {
             int dz = (int) Math.round((level.random.nextDouble() * 2 - 1) * 10);
             int x = origin.getX() + dx, z = origin.getZ() + dz;
             int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-            BlockPos spot = new BlockPos(x, y, z);
+            BlockPos spot = restOnSolid(level, new BlockPos(x, y, z)); // rest on solid so the part can't fall+break
             if (data.hasGravelAt(dim, spot)) continue;
             placeStormPart(level, data, creature, dim, spot, now, typeId, maxHealth, unstable);
             placed++;
         }
         // Never leave the storm with NO leash (it could never be returned): force one at the origin column.
         if (placed == 0) {
-            BlockPos p = origin;
+            BlockPos p = restOnSolid(level, origin);
             int guard = 0;
             while (data.hasGravelAt(dim, p) && guard++ < 8) p = p.above();
             placeStormPart(level, data, creature, dim, p, now, typeId, maxHealth, unstable);
@@ -252,8 +268,32 @@ public final class LimboManager {
         MinecraftServer server = level.getServer();
         LimboData.Entry entry = LimboData.get(server).getByGravel(level.dimension(), pos);
         if (entry == null) return;
+        TheVillageFightsBack.LOGGER.info("[Limbo] gravel destroyed at {} ({}{}) -> returning creature {}",
+                pos, entry.name, entry.stormPart ? " [storm part]" : "", entry.creature);
         restoreCreatureAndCleanup(server, entry.creature, level,
                 pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+    }
+
+    /** A falling gravel could NOT re-place after sliding down (it broke as an item). This is a PHYSICS loss, not
+     *  a deliberate break -- so for a multi-part wither storm, dropping one redundant "part" leash must NOT end
+     *  the banishment (the player breaking a part on purpose still does, via {@link #onGravelDestroyed}). Only if
+     *  this was the creature's LAST leash do we return it, so a single-gravel creature is never stranded. */
+    public static void onGravelFellAndBroke(ServerLevel level, BlockPos pos) {
+        MinecraftServer server = level.getServer();
+        LimboData data = LimboData.get(server);
+        LimboData.Entry entry = data.getByGravel(level.dimension(), pos);
+        if (entry == null) return;
+        int remaining = data.getByCreature(entry.creature).size();
+        if (remaining > 1) {
+            TheVillageFightsBack.LOGGER.info("[Limbo] gravel fell+broke at {} ({}); dropping 1 of {} leashes, "
+                    + "creature {} stays banished", pos, entry.name, remaining, entry.creature);
+            killMarker(server, entry);
+            data.removeByGravel(level.dimension(), pos);
+            return;
+        }
+        TheVillageFightsBack.LOGGER.info("[Limbo] last gravel fell+broke at {} ({}) -> returning creature {}",
+                pos, entry.name, entry.creature);
+        restoreCreatureAndCleanup(server, entry.creature, level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
     }
 
     /** A gravel was SILK-mined -> it becomes a carried soul-gravel item; the creature STAYS banished. */
@@ -440,6 +480,16 @@ public final class LimboManager {
             held = e;
         }
         return held;
+    }
+
+    /** Find a creature by UUID across every server dimension (diagnostic: tells us where a "missing from Limbo"
+     *  creature actually went -- back to the overworld, or truly gone). */
+    private static Entity findAnywhere(MinecraftServer server, UUID id) {
+        for (ServerLevel lvl : server.getAllLevels()) {
+            Entity e = lvl.getEntity(id);
+            if (e != null) return e;
+        }
+        return null;
     }
 
     private static String typeKey(Entity e) {
