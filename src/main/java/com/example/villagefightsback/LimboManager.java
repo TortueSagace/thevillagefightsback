@@ -106,6 +106,7 @@ public final class LimboManager {
         //    The wither storm is registered explicitly at banish time, so it is already known here and skipped.
         for (LivingEntity e : limbo.getEntitiesOfClass(LivingEntity.class, SCAN, LivingEntity::isAlive)) {
             UUID id = e.getUUID();
+            if (e instanceof net.minecraft.world.entity.player.Player) continue; // players are never leashed/contained
             if (data.isCreatureRegistered(id)) continue;
             PendingOrigin po = PENDING.remove(id);
             if (po == null) continue; // not tracked-in (e.g. /summon) -> ignore
@@ -134,6 +135,12 @@ public final class LimboManager {
             if (!contained.add(entry.creature)) continue;
             Entity e = limbo.getEntity(entry.creature);
             if (e == null) continue;
+            if (e instanceof net.minecraft.world.entity.player.Player) {
+                // A player must roam Limbo freely (and leave the cube). Never confine one; purge any stale leash a
+                // previous build wrongly registered (cleans up its orphan overworld gravel + floating name tag).
+                releaseCreatureNoReturn(server, entry.creature);
+                continue;
+            }
             if (e instanceof net.minecraft.world.entity.Mob mob) mob.setPersistenceRequired();
             if (LimboDimension.outsideCube(e)) {
                 BlockPos sp = LimboDimension.cubeSpawn();
@@ -359,8 +366,7 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         LimboData.Entry entry = firstLeash(data, player.getUUID());
         if (entry == null) {
-            player.sendSystemMessage(Component.literal("There is no way back from here.")
-                    .withStyle(ChatFormatting.DARK_RED));
+            sendPlayerHome(player); // players aren't leashed -> the bed just sends them home
             return;
         }
         ServerLevel origin = server.getLevel(entry.originDim);
@@ -500,6 +506,17 @@ public final class LimboManager {
             if (e != null) return e;
         }
         return null;
+    }
+
+    /** Send a player out of Limbo to where they came from (their recorded origin), or the overworld spawn if that
+     *  is unknown. Players are never leashed, so the Limbo bed has no gravel to break -- it just sends them home. */
+    private static void sendPlayerHome(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        PendingOrigin po = PENDING.get(player.getUUID());
+        ServerLevel dest = po != null ? server.getLevel(po.dim()) : null;
+        if (dest == null) dest = server.overworld();
+        BlockPos pos = po != null ? po.pos() : dest.getSharedSpawnPos();
+        player.teleportTo(dest, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, player.getYRot(), player.getXRot());
     }
 
     /** True if any leash for {@code creature} is currently HELD (carried as a soul gravel) -- i.e. the player has
