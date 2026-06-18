@@ -2,14 +2,19 @@ package com.example.villagefightsback;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -49,6 +54,7 @@ public final class VillageStatusCommand {
         }
 
         final BlockPos pos = nearest.pos();
+        requestGlow(level, pos); // highlight the node with a bright glow for 10s so the player can find it
         final BrainNodeData.Econ econ = data.econ(nearest);
         final int[] def = BrainNodeEvents.countDefenderTypes(level, pos); // [villagers, guards, golems] in radius
         final int dist = (int) Math.round(Math.sqrt(bestSqr));
@@ -70,5 +76,39 @@ public final class VillageStatusCommand {
         src.sendSuccess(() -> Component.literal("§7Villagers: §a" + def[0]
                 + "   §7Guards: §a" + def[1] + "   §7Golems: §a" + def[2]), false);
         return 1;
+    }
+
+    // --- "glow" the reported node for 10 seconds -------------------------------------------------
+    private static final int GLOW_TICKS = 200; // 10 seconds
+
+    /** An active node highlight: bright particles around {@code pos} until {@code endGameTime}. */
+    private record Glow(ServerLevel level, BlockPos pos, long endGameTime) {}
+
+    private static final List<Glow> GLOWS = new ArrayList<>();
+
+    private static void requestGlow(ServerLevel level, BlockPos pos) {
+        // Replace any existing glow on the same node so a re-run just refreshes the 10s timer.
+        GLOWS.removeIf(g -> g.level == level && g.pos.equals(pos));
+        GLOWS.add(new Glow(level, pos, level.getGameTime() + GLOW_TICKS));
+    }
+
+    /** Each tick, emit a bright fullbright aura around every actively-glowing node; drop expired ones. */
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || GLOWS.isEmpty()) return;
+        GLOWS.removeIf(g -> {
+            if (g.level.getGameTime() >= g.endGameTime) return true;
+            if (g.level.isLoaded(g.pos) && (g.level.getGameTime() & 1L) == 0L) emitGlow(g.level, g.pos);
+            return false;
+        });
+    }
+
+    /** Force a small cloud of END_ROD (fullbright) + GLOW particles around the node, visible from far away. */
+    private static void emitGlow(ServerLevel level, BlockPos pos) {
+        double cx = pos.getX() + 0.5, cy = pos.getY() + 0.5, cz = pos.getZ() + 0.5;
+        for (ServerPlayer p : level.players()) {
+            level.sendParticles(p, ParticleTypes.END_ROD, true, cx, cy, cz, 6, 0.45, 0.5, 0.45, 0.015);
+            level.sendParticles(p, ParticleTypes.GLOW, true, cx, cy, cz, 4, 0.5, 0.55, 0.5, 0.0);
+        }
     }
 }
