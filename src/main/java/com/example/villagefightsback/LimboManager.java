@@ -144,6 +144,13 @@ public final class LimboManager {
         // 3. Unstable holds (> 150 HP): a placed gravel past its deadline self-destructs -> the creature returns.
         for (LimboData.Entry entry : data.entries()) {
             if (entry.held || entry.unstableUntil == 0L || now < entry.unstableUntil) continue;
+            // If the player has STARTED collecting this creature -- any sibling leash already silk-mined into a
+            // carried soul gravel -- stop the auto-return so they can finish gathering the rest at their own pace
+            // (collecting them all banishes it for good; deliberately breaking a remaining piece still returns
+            // it). Without this, a multi-part wither storm's still-placed parts self-destruct at 30s and yank the
+            // whole storm back mid-collection, wiping the pieces already gathered -- making silk collection
+            // unwinnable. A lone-gravel boss has no siblings, so it is unaffected.
+            if (anyHeldSibling(data, entry.creature)) continue;
             ServerLevel origin = server.getLevel(entry.originDim);
             if (origin != null && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
                 TheVillageFightsBack.LOGGER.info("[Limbo] unstable self-destruct: creature {} {}t after entry (deadline {}t)",
@@ -493,6 +500,13 @@ public final class LimboManager {
             if (e != null) return e;
         }
         return null;
+    }
+
+    /** True if any leash for {@code creature} is currently HELD (carried as a soul gravel) -- i.e. the player has
+     *  begun collecting it. Used to pause a multi-part storm's self-destruct once collection is under way. */
+    private static boolean anyHeldSibling(LimboData data, UUID creature) {
+        for (LimboData.Entry e : data.getByCreature(creature)) if (e.held) return true;
+        return false;
     }
 
     private static String typeKey(Entity e) {
