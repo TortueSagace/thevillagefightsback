@@ -144,14 +144,35 @@ public final class TheVillageFightsBackClient {
     }
 
     /**
-     * Attach the Limbo Helmet spikes layer to every player skin renderer (default + slim). The player is the
-     * key wearer; the layer itself only draws when the head slot actually holds the Limbo Helmet.
+     * Attach the Limbo Helmet spikes layer to every player skin renderer (default + slim) AND to every other
+     * humanoid mob renderer, so ANYONE wearing the Limbo Helmet shows the spikes -- not just the player. The
+     * layer itself only draws when the head slot actually holds the Limbo Helmet, so adding it everywhere is a
+     * no-op for mobs that aren't wearing it.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addLimboHelmetSpikes(EntityRenderersEvent.AddLayers event) {
+        // Players (default + slim skins).
         for (String skin : event.getSkins()) {
             if (event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer pr) {
                 pr.addLayer(new LimboHelmetSpikesLayer<>(pr, event.getEntityModels()));
             }
+        }
+        // Every other humanoid mob (zombies, skeletons, piglins, armour stands, the Guard Villagers guard, ...).
+        // Skip the player (handled above) and General Darius (his renderer already adds the layer) so neither
+        // gets a doubled layer.
+        for (EntityType<?> type : net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValues()) {
+            if (type == EntityType.PLAYER || type == ModEntities.GENERAL_DARIUS.get()) continue;
+            LivingEntityRenderer<?, ?> renderer;
+            try {
+                renderer = event.getRenderer((EntityType) type); // throws CCE for non-living renderers
+            } catch (ClassCastException notLiving) {
+                continue;
+            }
+            if (renderer == null || !(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) {
+                continue;
+            }
+            ((LivingEntityRenderer) renderer).addLayer(
+                    new LimboHelmetSpikesLayer((LivingEntityRenderer) renderer, event.getEntityModels()));
         }
     }
 
