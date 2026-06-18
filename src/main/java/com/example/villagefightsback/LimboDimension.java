@@ -47,6 +47,17 @@ public final class LimboDimension {
     /** The Limbo cube's spawn cell (centre floor). */
     public static BlockPos cubeSpawn() { return SPAWN; }
 
+    /** Guarantee the cell directly under {@code feet} (in Limbo) is a solid standing surface. If it has been
+     *  destroyed/replaced by something you would fall through (air, fluid, a non-sturdy block), drop a
+     *  fake-bedrock block there -- so anything spawned at that spot can never fall into the void. Fake bedrock
+     *  is itself solid as a floor (it only goes passable when a block covers it), so the new block holds. */
+    public static void ensureFloorUnder(ServerLevel limbo, BlockPos feet) {
+        BlockPos below = feet.below();
+        if (!limbo.getBlockState(below).isFaceSturdy(limbo, below, net.minecraft.core.Direction.UP)) {
+            limbo.setBlock(below, ModBlocks.FAKE_BEDROCK.get().defaultBlockState(), 3);
+        }
+    }
+
     /** True if {@code e} has drifted outside the cube interior (so it should be re-centred to keep it loaded). */
     public static boolean outsideCube(Entity e) {
         return e.getX() < MIN_X || e.getX() > MAX_X + 1
@@ -82,6 +93,7 @@ public final class LimboDimension {
         LimboBanishFx.start(e); // black spirals + soul + teleport swirl where its hitbox was, BEFORE it leaves
         forceLoadCube(limbo);
         ensureCube(limbo);
+        ensureFloorUnder(limbo, SPAWN); // solid ground under the arrival spot, even if the floor cell was destroyed
         double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
         if (e instanceof ServerPlayer player) {
             player.teleportTo(limbo, x, y, z, player.getYRot(), player.getXRot());
@@ -130,6 +142,7 @@ public final class LimboDimension {
         LimboBanishFx.start(storm);
         forceLoadCube(limbo);
         ensureCube(limbo);
+        ensureFloorUnder(limbo, SPAWN); // solid ground under the arrival spot, even if the floor cell was destroyed
         double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
         storm.teleportTo(limbo, x, y, z, java.util.Set.of(), storm.getYRot(), storm.getXRot());
         // Pin the relocated core so it doesn't despawn, and confirm it actually landed in Limbo (a soft-dep boss
@@ -181,6 +194,8 @@ public final class LimboDimension {
             player.teleportTo(limbo, SPAWN.getX() + 0.5, SPAWN.getY(), SPAWN.getZ() + 0.5,
                     player.getYRot(), player.getXRot());
         }
+        // Wherever the player ends up standing, never let them drop through a destroyed floor cell.
+        ensureFloorUnder(limbo, player.blockPosition());
     }
 
     /** Force-load every chunk the cube occupies (cube spans block -11..10 on X/Z -> chunks -1..0 on each). */
