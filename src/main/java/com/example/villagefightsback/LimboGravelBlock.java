@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -21,8 +20,6 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 /**
  * Limbo Gravel: marks where a creature was pulled into Limbo, and tethers it ({@link LimboData}). It FALLS like
@@ -41,9 +38,6 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
     private static final Map<String, BlockPos> PENDING_FALL = new ConcurrentHashMap<>(); // dim@x,z -> pos it fell from
     private static final Set<String> SILK_BREAK = ConcurrentHashMap.newKeySet();     // dim|pos being silk-mined
     private static final Set<String> SUPPRESS = ConcurrentHashMap.newKeySet();       // dim|pos being removed silently
-
-    private static final DustParticleOptions PULSE =
-            new DustParticleOptions(new Vector3f(0.6F, 0.1F, 0.9F), 1.4F); // purple instability pulse
 
     public LimboGravelBlock(Properties properties) {
         super(properties);
@@ -158,8 +152,8 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
         }
     }
 
-    /** Ambient soul particles, plus -- for a &gt;150 HP "unstable" hold -- a purple pulse that quickens as the
-     *  self-destruct deadline (stored on the block entity) approaches: a visible countdown. Client-side. */
+    /** Ambient soul particles, like soul soil. The &gt;150 HP "unstable" purple GLOW is drawn by the block
+     *  entity renderer ({@code LimboGravelRenderer}), not by particles. Client-side. */
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         super.animateTick(state, level, pos, random);
@@ -167,18 +161,6 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
             level.addParticle(ParticleTypes.SOUL,
                     pos.getX() + 0.2 + random.nextDouble() * 0.6, pos.getY() + 1.0, pos.getZ() + 0.2 + random.nextDouble() * 0.6,
                     0.0, 0.02 + random.nextDouble() * 0.04, 0.0);
-        }
-        if (level.getBlockEntity(pos) instanceof LimboGravelBlockEntity be && be.unstableUntil() > 0L) {
-            long remaining = be.unstableUntil() - level.getGameTime();
-            if (remaining <= 0L) return;
-            // Pulse period shrinks from ~20 ticks (far) to ~2 ticks (imminent) as the deadline nears.
-            int period = (int) Math.max(2, Math.min(20, remaining / 30));
-            if (level.getGameTime() % period == 0) {
-                for (int i = 0; i < 4; i++) {
-                    Vec3 v = new Vec3((random.nextDouble() - 0.5) * 0.9, random.nextDouble() * 0.9, (random.nextDouble() - 0.5) * 0.9);
-                    level.addParticle(PULSE, pos.getX() + 0.5 + v.x, pos.getY() + 0.5 + v.y, pos.getZ() + 0.5 + v.z, 0.0, 0.0, 0.0);
-                }
-            }
         }
     }
 }
