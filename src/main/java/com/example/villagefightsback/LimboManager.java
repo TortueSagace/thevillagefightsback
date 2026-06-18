@@ -49,6 +49,7 @@ public final class LimboManager {
 
     public static final int MAX_CREATURES = 100;
     public static final int UNSTABLE_TICKS = 600;    // 30s: a >150 HP hold's placed gravel self-destructs
+    private static final int FORGET_GRACE_TICKS = 100; // 5s grace before a missing creature is "forgotten"
     private static final int TICK_INTERVAL = 20;     // register / cap / countdown upkeep ~1/s
     private static final int PENDING_STALE_TICKS = 200;
     private static final AABB SCAN = new AABB(-48, 40, -48, 48, 100, 48);
@@ -121,20 +122,45 @@ public final class LimboManager {
             if (origin != null) stampBE(origin, gravelPos, entry);
         }
 
-        // 2. Unstable holds (> 150 HP): a placed gravel past its deadline self-destructs -> the creature returns.
+        // 2. Containment: keep every banished creature INSIDE the force-loaded cube. The cube walls are passable,
+        //    so a big/mobile creature (the wither storm!) can drift out, unload, and then be wrongly "forgotten"
+        //    in step 4 -- which would vanish its gravels long before the countdown. Re-centre any drifter and pin
+        //    it so it never despawns.
+        Set<UUID> contained = new HashSet<>();
+        for (LimboData.Entry entry : data.entries()) {
+            if (!contained.add(entry.creature)) continue;
+            Entity e = limbo.getEntity(entry.creature);
+            if (e == null) continue;
+            if (e instanceof net.minecraft.world.entity.Mob mob) mob.setPersistenceRequired();
+            if (LimboDimension.outsideCube(e)) {
+                BlockPos sp = LimboDimension.cubeSpawn();
+                e.teleportTo(sp.getX() + 0.5, sp.getY(), sp.getZ() + 0.5);
+            }
+        }
+
+        // 3. Unstable holds (> 150 HP): a placed gravel past its deadline self-destructs -> the creature returns.
         for (LimboData.Entry entry : data.entries()) {
             if (entry.held || entry.unstableUntil == 0L || now < entry.unstableUntil) continue;
             ServerLevel origin = server.getLevel(entry.originDim);
             if (origin != null && origin.getBlockState(entry.gravelPos).is(ModBlocks.LIMBO_GRAVEL.get())) {
+                TheVillageFightsBack.LOGGER.info("[Limbo] unstable self-destruct: creature {} {}t after entry (deadline {}t)",
+                        entry.creature, now - entry.entryTime, UNSTABLE_TICKS);
                 origin.removeBlock(entry.gravelPos, false); // entry present -> onGravelDestroyed -> return
             }
         }
 
-        // 3. Forget creatures that vanished from Limbo by other means (despawn, etc.) -- clear their leashes.
+        // 4. Forget creatures that genuinely vanished from Limbo (died/removed) -- clear their leashes. A grace
+        //    period after registration prevents forgetting one that is merely still settling or briefly unloaded
+        //    (which would vanish its gravels before the 30s countdown).
         Set<UUID> handled = new HashSet<>();
         for (LimboData.Entry entry : data.entries()) {
             if (!handled.add(entry.creature)) continue;
-            if (limbo.getEntity(entry.creature) == null) releaseCreatureNoReturn(server, entry.creature);
+            if (now - entry.entryTime < FORGET_GRACE_TICKS) continue;
+            if (limbo.getEntity(entry.creature) == null) {
+                TheVillageFightsBack.LOGGER.info("[Limbo] forgetting creature {} (gone from Limbo, {}t after entry)",
+                        entry.creature, now - entry.entryTime);
+                releaseCreatureNoReturn(server, entry.creature);
+            }
         }
 
         // 4. Over-population: release the most ancient CREATURES (a storm counts once) until back at the limit.

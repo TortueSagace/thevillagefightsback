@@ -40,6 +40,19 @@ public final class LimboDimension {
     private static final int MIN_Y = 60, MAX_Y = 81;
     // Spawn stands on the bedrock floor in the centre of the hollow interior.
     private static final BlockPos SPAWN = new BlockPos(0, MIN_Y + 1, 0);
+    // Extra force-loaded chunk ring around the cube, so a banished creature that drifts through the (passable)
+    // walls stays loaded long enough for the containment sweep to re-centre it before it can be "forgotten".
+    private static final int LOAD_PAD = 1;
+
+    /** The Limbo cube's spawn cell (centre floor). */
+    public static BlockPos cubeSpawn() { return SPAWN; }
+
+    /** True if {@code e} has drifted outside the cube interior (so it should be re-centred to keep it loaded). */
+    public static boolean outsideCube(Entity e) {
+        return e.getX() < MIN_X || e.getX() > MAX_X + 1
+                || e.getZ() < MIN_Z || e.getZ() > MAX_Z + 1
+                || e.getY() < MIN_Y || e.getY() > MAX_Y + 1;
+    }
 
     /**
      * Banish any entity to Limbo's spawn. Players are re-seated with {@code teleportTo}; mobs cross dimensions
@@ -115,6 +128,13 @@ public final class LimboDimension {
         ensureCube(limbo);
         double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
         storm.teleportTo(limbo, x, y, z, java.util.Set.of(), storm.getYRot(), storm.getXRot());
+        // Pin the relocated core so it doesn't despawn, and confirm it actually landed in Limbo (a soft-dep boss
+        // could refuse the teleport -- if so, the storm was NOT banished and we must not drop phantom gravels).
+        Entity core = limbo.getEntity(creature);
+        TheVillageFightsBack.LOGGER.info("[Limbo] banish wither storm {}: landed-in-limbo={}, parts={}",
+                creature, core != null, partCount);
+        if (core instanceof net.minecraft.world.entity.Mob m) m.setPersistenceRequired();
+        if (core == null) return; // teleport failed -> abort the banish rather than scatter unanchored gravels
         // Discard any detached parts still in the origin dimension (the old core instance is already removed by
         // the teleport; the relocated core regenerates its own parts in Limbo).
         for (Entity e : sl.getAllEntities()) {
@@ -161,8 +181,8 @@ public final class LimboDimension {
 
     /** Force-load every chunk the cube occupies (cube spans block -11..10 on X/Z -> chunks -1..0 on each). */
     private static void forceLoadCube(ServerLevel level) {
-        for (int cx = MIN_X >> 4; cx <= (MAX_X >> 4); cx++) {
-            for (int cz = MIN_Z >> 4; cz <= (MAX_Z >> 4); cz++) {
+        for (int cx = (MIN_X >> 4) - LOAD_PAD; cx <= (MAX_X >> 4) + LOAD_PAD; cx++) {
+            for (int cz = (MIN_Z >> 4) - LOAD_PAD; cz <= (MAX_Z >> 4) + LOAD_PAD; cz++) {
                 level.setChunkForced(cx, cz, true);
             }
         }
