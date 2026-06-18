@@ -35,14 +35,17 @@ public final class LimboPortalShape {
 
         BlockPos bottomLeft = fire.relative(left, l).relative(Direction.DOWN, d);
 
-        // Every interior cell must be replaceable (air/fire), and the whole border must be fake obsidian.
+        // Every interior cell must be replaceable (air/fire); the border must be fake obsidian EXCEPT the four
+        // corners, which can be anything -- exactly like a vanilla nether portal.
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 BlockPos p = bottomLeft.relative(right, i).relative(Direction.UP, j);
                 if (!isInterior(level, p)) return false;
             }
         }
-        for (int i = -1; i <= width; i++) {
+        // Bottom and top edges sit directly under/over the interior columns only (i = 0..width-1); the corner
+        // cells at i = -1 and i = width are intentionally NOT checked.
+        for (int i = 0; i < width; i++) {
             if (!isFrame(level, bottomLeft.relative(right, i).relative(Direction.DOWN, 1))) return false; // bottom
             if (!isFrame(level, bottomLeft.relative(right, i).relative(Direction.UP, height))) return false; // top
         }
@@ -59,7 +62,26 @@ public final class LimboPortalShape {
                 level.setBlock(bottomLeft.relative(right, i).relative(Direction.UP, j), portal, 18);
             }
         }
+
+        // The frame cells DIRECTLY touching the portal lose their "fake" (player-passable) nature: convert them to
+        // real obsidian so nobody can slip out through the frame -- you must use the portal itself. The four
+        // corners and any surrounding wall keep their fake nature (only fake-obsidian edge cells are converted).
+        BlockState solid = net.minecraft.world.level.block.Blocks.OBSIDIAN.defaultBlockState();
+        for (int i = 0; i < width; i++) {
+            solidifyFrame(level, bottomLeft.relative(right, i).relative(Direction.DOWN, 1), solid);    // bottom edge
+            solidifyFrame(level, bottomLeft.relative(right, i).relative(Direction.UP, height), solid); // top edge
+        }
+        for (int j = 0; j < height; j++) {
+            solidifyFrame(level, bottomLeft.relative(left, 1).relative(Direction.UP, j), solid);    // left edge
+            solidifyFrame(level, bottomLeft.relative(right, width).relative(Direction.UP, j), solid); // right edge
+        }
         return true;
+    }
+
+    /** If {@code pos} is fake obsidian, replace it with real (solid, impassable) obsidian. Used to harden the
+     *  frame cells in direct contact with a freshly-lit portal. */
+    private static void solidifyFrame(ServerLevel level, BlockPos pos, BlockState solid) {
+        if (level.getBlockState(pos).is(ModBlocks.FAKE_OBSIDIAN.get())) level.setBlock(pos, solid, 3);
     }
 
     /** How far the air interior extends from {@code from} in {@code dir} (exclusive of the bounding frame). */

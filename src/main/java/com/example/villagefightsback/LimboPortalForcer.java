@@ -138,11 +138,13 @@ public final class LimboPortalForcer {
         return best;
     }
 
-    /** Build a 2x3 Limbo portal (axis X) with a fake-obsidian frame and a 5x5 obsidian platform under it.
+    /** Build a 2x3 Limbo portal (axis X) with a solid obsidian frame and a 5x5 obsidian platform under it.
      *  {@code interiorBase} is the bottom-centre-left interior cell; returns the spot to stand on. */
     private static BlockPos buildPortal(ServerLevel level, BlockPos interiorBase) {
         int bx = interiorBase.getX(), by = interiorBase.getY(), bz = interiorBase.getZ();
-        BlockState frame = ModBlocks.FAKE_OBSIDIAN.get().defaultBlockState();
+        // Real (solid, impassable) obsidian frame: a portal's frame loses its "fake"/passable nature so nobody can
+        // slip out through it -- the portal itself is the only way through.
+        BlockState frame = Blocks.OBSIDIAN.defaultBlockState();
         BlockState platform = Blocks.OBSIDIAN.defaultBlockState();
         BlockState portalX = ModBlocks.LIMBO_PORTAL.get().defaultBlockState()
                 .setValue(LimboPortalBlock.AXIS, Direction.Axis.X);
