@@ -242,6 +242,24 @@ public final class VillageEvents {
         villager.goalSelector.addGoal(0, new TntFleeGoal(villager));
         villager.goalSelector.addGoal(1, new AxeCombatGoal(villager)); // hunt and slash hostiles with the axe
         villager.goalSelector.addGoal(3, new WallBuildGoal(villager)); // build the brain node's wall when idle
+        enableDoorOpening(villager); // so running builders/miners can pass through normal wooden doors
+    }
+
+    /**
+     * Let a village villager ROUTE THROUGH and physically OPEN normal wooden doors while it runs its errands
+     * (build / mine / settle). Our goals drive the navigation directly, so we (1) enable door routing on the
+     * ground navigation -- the default villager navigation can't path through a CLOSED wooden door -- and
+     * (2) add a vanilla {@link net.minecraft.world.entity.ai.goal.OpenDoorGoal} (auto-closes behind) at a high
+     * priority so it can briefly take over movement to open a door the path runs through. Idempotent.
+     */
+    public static void enableDoorOpening(Villager villager) {
+        if (villager.getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation nav) {
+            nav.setCanPassDoors(true);
+            nav.setCanOpenDoors(true);
+        }
+        if (!hasGoal(villager, net.minecraft.world.entity.ai.goal.OpenDoorGoal.class)) {
+            villager.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(villager, true));
+        }
     }
 
     // Fixed UUID so re-applying the armour buff on world reload is idempotent.
@@ -270,6 +288,7 @@ public final class VillageEvents {
         if (!hasGoal(villager, WallBuildGoal.class)) {
             villager.goalSelector.addGoal(3, new WallBuildGoal(villager));
         }
+        enableDoorOpening(villager); // a running builder must be able to open normal wooden doors
     }
 
     /**

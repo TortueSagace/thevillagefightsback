@@ -522,6 +522,7 @@ public final class InfectionManager {
 
     /** Add the (dormant) MinerGoal to a villager if it doesn't have one yet. */
     public static void ensureMinerGoal(Villager v) {
+        com.example.villagefightsback.VillageEvents.enableDoorOpening(v); // a running miner must open wooden doors
         for (WrappedGoal w : v.goalSelector.getAvailableGoals()) {
             if (w.getGoal() instanceof MinerGoal) return;
         }
