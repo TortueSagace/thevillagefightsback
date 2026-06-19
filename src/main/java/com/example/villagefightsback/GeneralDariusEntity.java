@@ -48,8 +48,8 @@ public class GeneralDariusEntity extends Monster {
     private static final String NBT_HOME_DIM = "darius_home_dim";
     private static final String NBT_HOME_POS = "darius_home_pos";
 
-    /** The brain node's influence radius -- the zone Darius hunts within (mirrors BrainReflexes.RADIUS). */
-    public static final double BRAIN_RADIUS = 100.0;
+    /** The brain node's influence radius -- the zone Darius hunts within (set from Config.apply(); base 100). */
+    public static double BRAIN_RADIUS = 100.0;
     /** Targets weaker than this max-HP are ignored once the first lock dies (a "big threat" floor). */
     private static final double NEXT_TARGET_MIN_MAXHP = 50.0;
     /** A player is "dangerous" if they have recently killed several villagers/guards (see BrainReflexes). */
@@ -137,6 +137,27 @@ public class GeneralDariusEntity extends Monster {
     protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random,
             net.minecraft.world.DifficultyInstance difficulty) {
         // intentionally empty: gear is set in finalizeSpawn
+    }
+
+    /** Spawn {@code count} village guards next to Darius and immediately enroll them in his squad
+     *  (guards_spawning_with_general_darius). No-op if count &lt;= 0 or Guard Villagers isn't installed. */
+    public void enrollEscort(net.minecraft.server.level.ServerLevel level, int count) {
+        if (count <= 0) return;
+        net.minecraft.world.entity.EntityType<?> guardType = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
+                .getValue(new net.minecraft.resources.ResourceLocation("guardvillagers", "guard"));
+        if (guardType == null) return; // soft dep absent
+        for (int i = 0; i < count; i++) {
+            net.minecraft.world.entity.Entity e = guardType.create(level);
+            if (!(e instanceof net.minecraft.world.entity.Mob m)) { if (e != null) e.discard(); continue; }
+            double ang = level.random.nextDouble() * Math.PI * 2.0;
+            double r = 1.5 + level.random.nextDouble() * 2.0;
+            m.moveTo(getX() + Math.cos(ang) * r, getY(), getZ() + Math.sin(ang) * r,
+                    level.random.nextFloat() * 360.0F, 0.0F);
+            m.finalizeSpawn(level, level.getCurrentDifficultyAt(m.blockPosition()),
+                    net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null, null);
+            level.addFreshEntity(m);
+            squad.add(m.getUUID());
+        }
     }
 
     // --- the home brain node (for refund + walk-home) -------------------------------------------------

@@ -23,7 +23,7 @@ public final class NodeSpawns {
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     private static final int GOLEM_CAP = 20;               // the Iron Factory halts at 20+ golems in the zone
-    private static final double GOLEM_ZONE_RADIUS = 100.0;  // the zone == the brain node's income radius
+    static double GOLEM_ZONE_RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100)
 
     /** A clear feet position with {@code height} non-colliding blocks: prefer the gap just BELOW the node, else
      *  just ABOVE it. Null if neither side has room. */

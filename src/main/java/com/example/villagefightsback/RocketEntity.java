@@ -141,6 +141,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         result.getEntity().hurt(
                 damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null),
                 DIRECT_DAMAGE);
+        result.getEntity().setSecondsOnFire(5); // the blast sets the struck unit alight regardless of the block-fire config
     }
 
     /** Any contact (block or entity): detonate with JEG's explosion animation, then vanish. */
@@ -153,13 +154,21 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         // the vanilla explosion packet -- that lets us show JEG's big-explosion animation instead of the
         // generic TNT poof. explode() applies entity damage + knockback; finalizeExplosion(false) destroys
         // blocks with NO vanilla particles.
+        // Block destruction + fire are independently config-gated (per rocket source); the blast ALWAYS damages
+        // and ignites entities via ex.explode() regardless. Air-strike rockets read the air_strike_* switches;
+        // every other creature/unit rocket reads the creature_rocket_* switches.
         boolean grief = sl.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
+        boolean destroyBlocks = (airStrike ? Config.airStrikeDestroysBlocks() : Config.creatureRocketDestroysBlocks()) && grief;
+        boolean setFire = airStrike ? Config.airStrikeSetsFire() : Config.creatureRocketSetsFire();
         net.minecraft.world.level.Explosion ex = new net.minecraft.world.level.Explosion(sl, owner, null, null,
                 getX(), getY(), getZ(), EXPLOSION_RADIUS, false,
-                grief ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
+                destroyBlocks ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
                       : net.minecraft.world.level.Explosion.BlockInteraction.KEEP);
         ex.explode();
         ex.finalizeExplosion(false);
+        // Engine fire only ignites blocks it DESTROYS, so scatter our own fire when the fire switch is on
+        // (independent of destruction). Units are already set alight by the blast above.
+        if (setFire) ModExplosions.scorch(sl, blockPosition(), 3);
         // JEG's big-explosion animation + a smoke cloud + the usual blast sound.
         sl.sendParticles(ModParticles.GIGACHAD_EXPLOSION.get(), getX(), getY(), getZ(), 1, 0.0, 0.0, 0.0, 0.0);
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, getX(), getY(), getZ(), 10, 1.2, 1.2, 1.2, 0.02);

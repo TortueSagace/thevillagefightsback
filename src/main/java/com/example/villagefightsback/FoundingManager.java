@@ -45,7 +45,7 @@ public final class FoundingManager {
     public static final String NBT_FOUNDING = "vgun_founding";
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
-    private static final double CHECK_RADIUS = 64.0;  // "no villager in the brain node's radius"
+    static double CHECK_RADIUS = 64.0;  // brain influence radius for founding (set from Config.apply(); base 64)
     private static final int SETTLERS = 7;
     private static final int HEX_RADIUS = 10;
     private static final int FALLBACK_RADIUS = 3;
@@ -105,8 +105,11 @@ public final class FoundingManager {
         JOBS.put(gp, level.getGameTime());
         BlockPos g = gp.pos();
 
-        for (int k = 0; k < SETTLERS; k++) {
-            BlockPos spot = findSettlerSpot(level, g, k);
+        // multiplier_number_of_settlers scales the count; the ring divides by the actual count so they stay
+        // evenly spaced around it (distinct spots, never stacked) -- the scatter goal then separates them further.
+        int count = Math.max(1, (int) Math.round(SETTLERS * Config.settlerCountMult()));
+        for (int k = 0; k < count; k++) {
+            BlockPos spot = findSettlerSpot(level, g, k, count);
             if (spot == null) {
                 continue;
             }
@@ -116,16 +119,16 @@ public final class FoundingManager {
     }
 
     /** Hex point at radius 10 (then radius 3 as a fallback), each searched for a nearby 1x1x2 air bubble. */
-    private static BlockPos findSettlerSpot(ServerLevel level, BlockPos brainNode, int k) {
-        int[] far = hexOffset(k, HEX_RADIUS);
+    private static BlockPos findSettlerSpot(ServerLevel level, BlockPos brainNode, int k, int total) {
+        int[] far = hexOffset(k, total, HEX_RADIUS);
         BlockPos spot = closestStandable(level, brainNode.offset(far[0], 0, far[1]), BUBBLE_SEARCH);
         if (spot != null) return spot;
-        int[] near = hexOffset(k, FALLBACK_RADIUS);
+        int[] near = hexOffset(k, total, FALLBACK_RADIUS);
         return closestStandable(level, brainNode.offset(near[0], 0, near[1]), BUBBLE_SEARCH);
     }
 
-    private static int[] hexOffset(int k, double radius) {
-        double a = Math.toRadians(k * (360.0 / SETTLERS)); // evenly spaced around the ring (SETTLERS points)
+    private static int[] hexOffset(int k, int total, double radius) {
+        double a = Math.toRadians(k * (360.0 / total)); // evenly spaced around the ring (total points)
         return new int[]{(int) Math.round(radius * Math.cos(a)), (int) Math.round(radius * Math.sin(a))};
     }
 

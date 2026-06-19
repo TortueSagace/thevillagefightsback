@@ -49,7 +49,7 @@ public final class BrainNodeEvents {
     private BrainNodeEvents() {}
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
-    private static final int INCOME_RADIUS = 100;     // count defenders within this of a brainNode
+    static int INCOME_RADIUS = 100;     // brain influence radius (set from Config.apply(); base 100)
     private static final int VILLAGE_SCAN_RADIUS = 64; // look for village centres this far from players
     private static final int DISCOVERY_HUD_TICKS = 100; // 5s on-screen discovery message (bottom of screen)
     private static final int TICK_INTERVAL = 40;       // run all of this every 2 seconds
@@ -216,7 +216,7 @@ public final class BrainNodeEvents {
      *  {@link AirStrikeManager}. */
     private static void manageAirStrikes(MinecraftServer server, BrainNodeData data) {
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
-            if (data.econ(gp).getLevel() < 4) continue;                 // stage 4 only
+            if (data.econ(gp).getLevel() < Config.airStrikesAppearAtStage()) continue; // configurable stage gate (default 4)
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
             long now = level.getGameTime();
@@ -224,12 +224,12 @@ public final class BrainNodeEvents {
             if (until != null && now < until) continue;                 // still cooling down from the last strike
             Long hurt = lastAllyHurt.get(gp);
             if (hurt == null || now - hurt > ATTACK_WINDOW) continue;    // village not attacked in the window
-            // FIRE WHEN READY: as soon as there's a valid clear target, strike -- then start the 10-min cooldown.
+            // FIRE WHEN READY: as soon as there's a valid clear target, strike -- then start the cooldown.
             // (No target right now just means we retry next pass; we don't burn the cooldown on an empty check.)
             LivingEntity target = pickAirStrikeTarget(level, data, gp.pos());
             if (target == null) continue;
             AirStrikeManager.launch(level, target);
-            strikeCooldownUntil.put(gp, now + STRIKE_INTERVAL);
+            strikeCooldownUntil.put(gp, now + (long) (STRIKE_INTERVAL * Config.airStrikeCooldownMult()));
         }
     }
 
@@ -885,16 +885,31 @@ public final class BrainNodeEvents {
         long dayTime = server.overworld().getDayTime();
         long day = Math.floorDiv(dayTime, 24000L);
         long timeOfDay = Math.floorMod(dayTime, 24000L);
-        if (timeOfDay < SUNSET_TIME) return;
 
-        // Once per day: every tracked node (golem-factory / barracks / lure-tower) spawns its payload, even
-        // when NO brain node is in range (standalone, at stage 1). A node within a village's radius uses that
-        // (nearest) village's stage. Runs independently of the per-village income loop below.
-        if (lastNodeDay != day) {
-            lastNodeDay = day;
-            spawnAllNodes(server, data, day);
+        // UNIT SPAWNS fire N times per day at even intervals (N = multiplier_unit_spawn_rate, rounded, >=1). The
+        // period boundaries are offset so that with N=1 the single spawn still lands at sunset (as it always did).
+        int spawnsPerDay = Config.spawnsPerDay();
+        long interval = Math.max(1L, 24000L / spawnsPerDay);
+        long period = Math.floorDiv(dayTime + (24000L - SUNSET_TIME), interval);
+
+        // Every tracked node (golem-factory / barracks / lure-tower) spawns its payload once per period, even
+        // when NO brain node is in range (standalone, at stage 1); a node within a village's radius uses that
+        // (nearest) village's stage.
+        if (lastNodePeriod != period) {
+            lastNodePeriod = period;
+            spawnAllNodes(server, data, period);
+        }
+        // Village reinforcements (scaled by stage) also fire once per period, per village.
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            if (lastReinforcePeriod.getOrDefault(gp, Long.MIN_VALUE) == period) continue;
+            lastReinforcePeriod.put(gp, period);
+            reinforceVillage(level, data.getWallPlan(gp), gp.pos(), data.econ(gp).getLevel());
         }
 
+        // EMERALD HARVEST + the stage-3 one-time expansion wave stay ONCE PER DAY, at sunset.
+        if (timeOfDay < SUNSET_TIME) return;
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
@@ -902,9 +917,7 @@ public final class BrainNodeEvents {
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
 
-            reinforceVillage(level, data.getWallPlan(gp), gp.pos(), econ.getLevel()); // reinforcements scale with the village's stage
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
-            // (golem-factory / barracks / lure-tower payloads are spawned once per day by spawnAllNodes above)
 
             // Daily harvest = one emerald per nearby defender, increased by 10% for EACH node in the income
             // radius (e.g. base 10 with 3 nodes -> 10 * 1.30 = 13).
@@ -1048,33 +1061,36 @@ public final class BrainNodeEvents {
         }
     }
 
-    // Per-node day-stamp so a node spawns its payload at most once per in-game day (dedupes across overlapping
-    // village radii). Transient: a restart at the exact sunset of the same day could spawn once more -- harmless.
+    // Per-node spawn-period stamp so a node spawns its payload at most once per SPAWN PERIOD (dedupes across
+    // overlapping village radii). With multiplier_unit_spawn_rate=1 there is one period per day (at sunset);
+    // higher values give more, evenly-spaced periods. Transient: a restart can re-run once -- harmless.
     private static final Map<GlobalPos, Long> nodeSpawnDay = new HashMap<>();
 
-    // Day of the last global node-spawn pass, so spawnAllNodes runs at most once per in-game day (it is invoked
-    // from the every-tick sunset handler). Transient like nodeSpawnDay -- a restart re-runs it at worst once.
-    private static long lastNodeDay = Long.MIN_VALUE;
+    // The last global node-spawn period, so spawnAllNodes runs at most once per period (invoked every tick).
+    private static long lastNodePeriod = Long.MIN_VALUE;
 
-    /** Drop a removed node's day-stamp so the transient map stays bounded (called from AbstractNodeBlock.onRemove). */
-    static void forgetNode(GlobalPos node) { nodeSpawnDay.remove(node); }
+    // Per-brain-node reinforcement-period stamp (reinforcements also fire once per spawn period). Transient.
+    private static final Map<GlobalPos, Long> lastReinforcePeriod = new HashMap<>();
+
+    /** Drop a removed node's stamps so the transient maps stay bounded (called from AbstractNodeBlock.onRemove). */
+    static void forgetNode(GlobalPos node) { nodeSpawnDay.remove(node); lastReinforcePeriod.remove(node); }
 
     /** Once per day at sunset, spawn the payload of EVERY tracked node (across dimensions, loaded only).
      *  Standalone-capable: a node within {@value #INCOME_RADIUS} of a brain node spawns at that (nearest)
      *  village's stage; a node with no brain in range still spawns, at STAGE 1. The per-node day-stamp dedupes
      *  so each node spawns at most once per day. */
-    private static void spawnAllNodes(MinecraftServer server, BrainNodeData data, long day) {
+    private static void spawnAllNodes(MinecraftServer server, BrainNodeData data, long period) {
         for (GlobalPos node : new ArrayList<>(data.nodes())) {
             ServerLevel level = server.getLevel(node.dimension());
             if (level == null || !level.isLoaded(node.pos())) continue; // spawn only where the world is loaded
             if (!(level.getBlockState(node.pos()).getBlock() instanceof AbstractNodeBlock nb)) {
                 data.removeNode(node);                                  // the block is gone -> stop tracking it
-                nodeSpawnDay.remove(node);                              // ...and forget its day-stamp
+                nodeSpawnDay.remove(node);                              // ...and forget its stamp
                 continue;
             }
             Long last = nodeSpawnDay.get(node);
-            if (last != null && last == day) continue;                  // already spawned today
-            nodeSpawnDay.put(node, day);
+            if (last != null && last == period) continue;               // already spawned this period
+            nodeSpawnDay.put(node, period);
             GlobalPos brain = nearestBrainNode(data, level, node.pos(), INCOME_RADIUS);
             int stage = (brain != null) ? data.econ(brain).getLevel() : 1; // standalone node -> stage-1 units
             nb.spawnPayload(level, node.pos(), stage);

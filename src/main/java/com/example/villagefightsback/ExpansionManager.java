@@ -73,7 +73,9 @@ public final class ExpansionManager {
         BlockPos gm = gp.pos();
         WallPlan plan = data.getWallPlan(gp);
         double wallRadius = wallRadius(plan, gm);
-        int n = estimateBuildings(wallRadius);
+        // multiplier_number_of_settlers scales the wave size; the ring divides by the actual count so the
+        // expansion settlers stay evenly spread around it (the claims/stagger system still prevents overlap).
+        int n = Math.max(1, (int) Math.round(estimateBuildings(wallRadius) * Config.settlerCountMult()));
 
         int spawned = 0;
         for (int k = 0; k < n; k++) {

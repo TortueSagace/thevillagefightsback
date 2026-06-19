@@ -101,6 +101,7 @@ public class VillageBrainNodeBlock extends Block {
      */
     private static void grantDonationHero(ServerPlayer player, int emeralds) {
         if (emeralds <= 0) return;
+        if (Config.playerIsHostile()) return; // a permanently-hostile player can never become a Hero of the Village
         net.minecraft.world.effect.MobEffectInstance current =
                 player.getEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
         int remaining = current != null ? current.getDuration() : 0;

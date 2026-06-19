@@ -57,7 +57,8 @@ public class EmeraldgerEntity extends Villager {
         float hp = Mth.clamp(deadMaxHealth * 0.5F, MIN_HP, MAX_HP);
         getAttribute(Attributes.MAX_HEALTH).setBaseValue(hp);
         setHealth(hp);
-        setEmeraldgerScale(scaleForHp(hp));
+        // Body size tracks HP only when emeraldgers_size_variation is on; otherwise a uniform default villager size.
+        setEmeraldgerScale(Config.emeraldgerSizeVariation() ? scaleForHp(hp) : 1.0F);
         this.despawnAt = level().getGameTime() + NO_KILL_TICKS;
     }
 

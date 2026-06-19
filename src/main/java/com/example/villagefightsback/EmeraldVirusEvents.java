@@ -264,18 +264,13 @@ public final class EmeraldVirusEvents {
         level.addFreshEntity(em);
     }
 
-    /** TNT-strength explosion that also leaves the whole blast range on fire. */
+    /** TNT-strength blast. The blast ALWAYS hurts units; whether it breaks blocks and whether it leaves the
+     *  blast range on fire are independently config-gated (emerald_virus_explosion_destroy_blocks / _set_blocks_on_fire). */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
-        level.explode(null, x, y, z, BLAST_RADIUS, true, Level.ExplosionInteraction.TNT);
-        BlockPos center = BlockPos.containing(x, y, z);
-        int r = FIRE_PASS_RADIUS;
-        for (BlockPos bp : BlockPos.betweenClosed(center.offset(-r, -r, -r), center.offset(r, r, r))) {
-            if (center.distSqr(bp) > (long) r * r) continue;
-            if (!level.getBlockState(bp).isAir()) continue;
-            BlockPos below = bp.below();
-            if (level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) {
-                level.setBlockAndUpdate(bp.immutable(), Blocks.FIRE.defaultBlockState());
-            }
-        }
+        // NONE still damages entities but destroys no blocks; TNT also destroys blocks.
+        Level.ExplosionInteraction interaction = Config.emeraldVirusDestroysBlocks()
+                ? Level.ExplosionInteraction.TNT : Level.ExplosionInteraction.NONE;
+        level.explode(null, x, y, z, BLAST_RADIUS, false, interaction); // engine fire off; we scorch separately
+        if (Config.emeraldVirusSetsFire()) ModExplosions.scorch(level, BlockPos.containing(x, y, z), FIRE_PASS_RADIUS);
     }
 }

@@ -131,7 +131,8 @@ public final class LimboRaidManager {
             if (groups > phantomGroups.getOrDefault(raid, 0)) {
                 phantomGroups.put(raid, groups);
                 BlockPos center = raid.getCenter();
-                spawnPhantoms(level, center, 2 + level.getRandom().nextInt(2));
+                int phantoms = (int) Math.round((2 + level.getRandom().nextInt(2)) * Config.limboRaidersMult());
+                spawnPhantoms(level, center, phantoms);
                 if (groups >= raid.getNumGroups(level.getDifficulty()) && finalEvokerDone.add(raid)) {
                     spawnFinalEvoker(level, raid, center, groups);
                 }

@@ -27,7 +27,7 @@ public final class SpawnInVillage {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        if (!Config.SPAWN_AT_NEAREST_VILLAGE.get()) return; // opt-in: off by default (config/thevillagefightsback-common.toml)
+        if (!Config.playerSpawnInVillage()) return; // opt-in: off by default (config/thevillagefightsback-common.toml)
         ServerLevel overworld = event.getServer().overworld();
         BlockPos from = overworld.getSharedSpawnPos();
 

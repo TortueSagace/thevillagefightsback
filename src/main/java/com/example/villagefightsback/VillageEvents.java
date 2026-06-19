@@ -512,7 +512,7 @@ public final class VillageEvents {
         return wall != null && !wall.contains(target.blockPosition());
     }
 
-    private static final double GUARD_KILL_EMERALD_RANGE = 100.0; // brainNode must be within this of the kill
+    static double GUARD_KILL_EMERALD_RANGE = 100.0; // brain influence radius (set from Config.apply(); base 100)
 
     /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */
     @SubscribeEvent

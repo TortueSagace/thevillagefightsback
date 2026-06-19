@@ -67,10 +67,11 @@ public class LimboData extends SavedData {
             this.unstableUntil = unstableUntil;
         }
 
-        public boolean unstable() { return maxHealth > UNSTABLE_HP; }
+        public boolean unstable() { return maxHealth > Config.unstableLimboGravelHpThreshold(); }
     }
 
     /** Creatures stronger than this are not stable in Limbo: their placed gravel self-destructs after a delay. */
+    /** Default unstable threshold. The live value comes from {@link Config#unstableLimboGravelHpThreshold()}. */
     public static final float UNSTABLE_HP = 150.0F;
 
     private final Map<UUID, Entry> byToken = new HashMap<>();

@@ -82,6 +82,7 @@ public final class InfectionManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if (!com.example.villagefightsback.Config.blockInfectionEnabled()) return; // master switch: no seeding, paths or fertile blocks
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         long tc = server.getTickCount();
@@ -126,7 +127,10 @@ public final class InfectionManager {
             int stage = gdata.econ(gp).getLevel();
             if (stage < START_LEVEL) continue;
             double factor = Math.min(1.0, (stage - 1) / 3.0); // stage2=1/3, stage3=2/3, stage4+=1
-            double r = INFECT_RANGE_FULL * factor;
+            // Base reach scaled by the brain influence-radius multiplier AND the infection-reach multiplier; the
+            // per-stage factor still applies on top.
+            double r = INFECT_RANGE_FULL * com.example.villagefightsback.Config.brainRadiusMult()
+                    * com.example.villagefightsback.Config.infectionReachMult() * factor;
             out.add(new double[]{gp.pos().getX() + 0.5, gp.pos().getZ() + 0.5, r * r});
         }
         return out.toArray(new double[0][]);
@@ -275,7 +279,7 @@ public final class InfectionManager {
             if (!BlockMatcher.isPath(level.getBlockState(p))) { inf.dropPathHead(head); continue; }
             double mult = inf.multiplierAt(p, now);
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
-            double chance = Math.min(1.0, PATH_GROW_CHANCE * mult * slow);
+            double chance = Math.min(1.0, PATH_GROW_CHANCE * mult * slow * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() >= chance) continue;
             int res = tryGrow(level, inf, p, rnd, ranges);
             if (res < 0) {
@@ -387,7 +391,7 @@ public final class InfectionManager {
 
             double mult = inf.multiplierAt(pos, now);
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR;            // not slowed while fighting back
-            double chance = Math.min(1.0, CONV_CHANCE * mult * slow);
+            double chance = Math.min(1.0, CONV_CHANCE * mult * slow * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() < chance) {
                 BlockState src = level.getBlockState(cand);
                 if (BlockMatcher.isWoodenDoor(src)) {                   // doors: replace BOTH halves at once

@@ -302,6 +302,9 @@ public class GeneralDariusGoal extends Goal {
     // --- walk home + despawn (with refund, handled by the entity) -----------------------------------
     private void walkHomeOrDespawn(ServerLevel sl) {
         darius.setTarget(null);
+        // general_darius_remains: once summoned he never returns to the brain node -- he just holds his ground
+        // even after every 100+ HP enemy is cleared, instead of marching home and refunding.
+        if (com.example.villagefightsback.Config.generalDariusRemains()) { darius.getNavigation().stop(); return; }
         if (darius.getHomeBrain() == null) return; // spawn-egg / admin Darius (no home) -> just idle, don't vanish
         BlockPos home = darius.getHomeBrainPos();
         if (home == null) { darius.refundAndDespawn(); return; } // home is in another dimension -> leave

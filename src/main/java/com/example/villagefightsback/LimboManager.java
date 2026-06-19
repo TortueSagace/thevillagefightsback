@@ -115,7 +115,7 @@ public final class LimboManager {
             // property of what it IS, so a temporary buff or a chunk of damage must not change the verdict.
             float maxhp = (float) e.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
             String typeId = typeKey(e);
-            long unstable = maxhp > LimboData.UNSTABLE_HP ? now + UNSTABLE_TICKS : 0L;
+            long unstable = maxhp > Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
             BlockPos gravelPos = placeGravel(server, po.dim(), po.pos(), data);
             ServerLevel origin = server.getLevel(po.dim());
             String name = e.getName().getString();
@@ -246,7 +246,7 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         long now = level.getGameTime();
         String typeId = Factions.WITHER_STORM_ID.toString();
-        long unstable = maxHealth > LimboData.UNSTABLE_HP ? now + UNSTABLE_TICKS : 0L;
+        long unstable = maxHealth > Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
         int placed = 0;
         for (int attempt = 0; attempt < partCount * 4 && placed < partCount; attempt++) {
             int dx = (int) Math.round((level.random.nextDouble() * 2 - 1) * 10);
@@ -334,7 +334,7 @@ public final class LimboManager {
         // Re-anchor only a genuinely HELD leash. A stale token (creature already returned) or a DUPLICATED item
         // (creative pick-block / /give) whose leash is still placed elsewhere must NOT steal the index -> inert.
         if (entry == null || !entry.held) return;
-        long unstable = entry.maxHealth > LimboData.UNSTABLE_HP ? level.getGameTime() + UNSTABLE_TICKS : 0L;
+        long unstable = entry.maxHealth > Config.unstableLimboGravelHpThreshold() ? level.getGameTime() + UNSTABLE_TICKS : 0L;
         UUID marker = spawnMarker(level, pos, entry.name);
         data.markPlaced(entry, level.dimension(), pos, marker, unstable);
         stampBE(level, pos, entry);

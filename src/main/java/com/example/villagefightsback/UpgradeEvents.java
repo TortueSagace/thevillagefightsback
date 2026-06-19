@@ -27,7 +27,7 @@ public final class UpgradeEvents {
     private static final int REQUIRED_LEVEL = 3;    // villagers/guards get the full kit at stage 3+
     private static final int DEFENDER_LEVEL = 2;     // a plain iron golem becomes a Defender Golem at stage 2+
     private static final int GIGACHAD_LEVEL = 4;     // a golem (iron OR defender) becomes a Gigachad at stage 4+
-    private static final double RADIUS = 100.0;
+    static double RADIUS = 100.0; // brain influence radius (set from Config.apply(); base 100)
     private static final int INTERVAL = 100; // check every ~5s (upgrade is permanent; no need to be fast)
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 

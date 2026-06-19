@@ -2,17 +2,24 @@ package com.example.villagefightsback;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
  * Gives every player a single Bell the first time they ever join a world -- the seed for founding their own
- * Village Brain Node. Tracked with a flag in the player's PERSISTED data so it is granted exactly once and
- * survives death, dimension changes and relogs.
+ * Village Brain Node (gated by {@link Config#playerGivenBellAtSpawn()}). Tracked with a flag in the player's
+ * PERSISTED data so it is granted exactly once and survives death, dimension changes and relogs.
+ *
+ * <p>Also enforces {@link Config#playerIsHostile()}: while that switch is on, every player is kept permanently
+ * marked as an Enemy of the Village and can never hold Hero of the Village -- re-applied on login and policed by
+ * a cheap once-a-second sweep (so milk, expiry or a donation can never lift it).
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StartingItems {
@@ -23,6 +30,9 @@ public final class StartingItems {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (Config.playerIsHostile()) enforceHostile(player);
+
+        if (!Config.playerGivenBellAtSpawn()) return;               // bell handout disabled by config
         CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_GOT_BELL)) return;             // already received the starter bell
         persisted.putBoolean(NBT_GOT_BELL, true);
@@ -30,5 +40,29 @@ public final class StartingItems {
 
         ItemStack bell = new ItemStack(Items.BELL);
         if (!player.getInventory().add(bell)) player.drop(bell, false); // drop at feet if the inventory is full
+    }
+
+    /** Once a second, while player_is_hostile is on, keep every player an Enemy of the Village and never a Hero. */
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!Config.playerIsHostile()) return;
+        if (!(event.player instanceof ServerPlayer player)) return;
+        if (player.tickCount % 20 != 0) return;                     // cheap: ~1/s
+        enforceHostile(player);
+    }
+
+    /** Strip Hero of the Village and (re)apply a permanent Enemy of the Village mark. */
+    private static void enforceHostile(ServerPlayer player) {
+        if (player.hasEffect(MobEffects.HERO_OF_THE_VILLAGE)) {
+            player.removeEffect(MobEffects.HERO_OF_THE_VILLAGE);
+        }
+        var enemy = ModEffects.ENEMY_OF_THE_VILLAGE.get();
+        if (!player.hasEffect(enemy)) {
+            // Permanent, no particles (visible=false), shows icon; empty curatives so milk cannot lift it.
+            MobEffectInstance inst = new MobEffectInstance(enemy, Integer.MAX_VALUE, 0, false, false, true);
+            inst.setCurativeItems(new java.util.ArrayList<>());
+            player.addEffect(inst);
+        }
     }
 }

@@ -6,35 +6,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * {@code /village_status_report}: prints, in chat, the status of the Village Brain Node nearest the player --
- * its evolution stage, the emeralds still needed to reach the next stage, and how many villagers, guards and
- * iron golems are currently associated with it (within its income/defender radius).
+ * The status report for the Village Brain Node nearest the player -- its evolution stage, the emeralds still
+ * needed to reach the next stage, and how many villagers, guards and iron golems are currently associated with
+ * it (within its income/defender radius). Exposed as {@code /thevillagefightsback village_status_report}
+ * ({@link ModCommands}); this class also runs the 10s node-highlight glow.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VillageStatusCommand {
     private VillageStatusCommand() {}
 
-    @SubscribeEvent
-    public static void onRegisterCommands(RegisterCommandsEvent event) {
-        // No permission gate: any player can check the status of their own village.
-        event.getDispatcher().register(Commands.literal("village_status_report")
-                .executes(c -> report(c.getSource())));
-    }
-
-    private static int report(CommandSourceStack src) throws CommandSyntaxException {
+    public static int report(CommandSourceStack src) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
         ServerLevel level = player.serverLevel();
         BrainNodeData data = BrainNodeData.get(level.getServer());

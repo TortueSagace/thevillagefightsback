@@ -60,9 +60,10 @@ And it raises purpose-built structures as the situation demands: **golem factori
 
 ![Map showing the counter-infection (stage 2)](https://cdn.modrinth.com/data/cached_images/bea99b47c5b0eef7b9593040d1524a43ffe6deac.png)
 
+![Map showing the counter-infection (stage 3)](https://cdn.modrinth.com/data/cached_images/e3f1c4595b6c5af8bbba90bbf3ddd984829066b4.png)
+
 To answer the infection mods that rot the world, the village grows a green one of its own. Spreading out from the Brain Node, it slowly converts the world around it into **Fertile blocks** (with richer **Rich** variants), a full family of green-veined dirt, stone, sand, wood, deepslate, netherrack, end stone, sculk, leaves, and more. The spread is deliberately slow and capped, and it leaves your ores untouched. Those blocks are not just decoration: the **Rich** ones drop emeralds when mined, like a natural emerald ore, feeding the very economy the Brain runs on. The growth even has its own **fertile chorus plants**, whose fruit you can eat (it teleports you like ordinary chorus fruit, with a rare and unfortunate side effect). Out among the fertile fields you may meet the **Rich Sheep**, a green-touched sheep that drops lime wool and an emerald.
 
-![Map showing the counter-infection (stage 3)](https://cdn.modrinth.com/data/cached_images/e3f1c4595b6c5af8bbba90bbf3ddd984829066b4.png)
 
 ## Easier Mining
 
@@ -109,6 +110,38 @@ The village keeps score of how you treat it, and it responds in kind.
 **Become a Hero.** Donate emeralds to the Brain Node and you earn **Hero of the Village**, one minute per emerald, stacking onto whatever time you have left, in any game mode. Helping the village **win a raid** earns it the usual way too. As a Hero you are trusted, and may freely open and take from the village's chests.
 
 **Become an Enemy.** Cross the village and you are branded an **Enemy of the Village for 20 minutes**: strike a villager, guard, or golem, or steal from its stores. Any chest or barrel placed within a Brain Node's range is **claimed by the village**. Open one without Hero standing and you get a warning; take something anyway and the whole server hears that you are **stealing from the village**, your Hero standing is revoked, and every defender turns to hunt you. The mark sticks through milk and even the mod's own Immunity, and clears only when the timer runs out or you die.
+
+## Configs
+
+Tune the village to taste. Every setting lives in a single commented file (`config/thevillagefightsback-common.toml`) and can also be changed live in-game with `/thevillagefightsback config <name> [value]` (read it with no value, set it as an operator). Multipliers default to `1.0`; most switches default on.
+
+**Multipliers** (1.0 = vanilla pace):
+
+- `multiplier_level_up_emerald_threshold` -- emerald cost for the Brain Node to reach each stage
+- `multiplier_unit_spawn_rate` -- how many times a day every node and the Brain Node spawn their units (2.0 = twice a day, evenly spaced)
+- `multiplier_number_of_settlers` -- how many settlers each wave sends out
+- `multiplier_brain_initiatives_cooldown` -- how often the Brain Node's reflexes fire
+- `multiplier_air_strikes_cooldown` -- how often air strikes fire (kept separate from the reflexes)
+- `multiplier_block_infection_speed` / `multiplier_block_infection_reach` -- how fast and how far the fertile zone spreads
+- `multiplier_brain_influence_radius` -- the reach of every "within the Brain's radius" rule
+- `multiplier_limbo_raiders` -- how many raiders a Limbo raid throws at you
+
+**Switches and values:**
+
+- `enable_block_infection` -- master switch for the fertile-zone takeover
+- `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire` -- whether each kind of explosion breaks blocks or starts fires (it always still hits units)
+- `brain_node_extinguishes_fire` -- the Brain Node douses fire in its radius for an emerald
+- `air_strikes_appear_at_stage` (1-4) -- the stage air strikes unlock at
+- `unstable_limbo_gravel_HP_threshold` -- the HP above which a banished creature is "unstable" in Limbo
+- `guards_spawning_with_general_darius` -- guards that spawn already under General Darius's command
+- `general_darius_remains` -- Darius holds the field instead of returning home
+- `emeraldgers_size_variation` -- emeraldgers sized by the HP of the host they sprang from
+- `player_spawn_in_village` / `player_is_given_bell_at_spawn` -- where you start and whether you start with a Bell
+- `player_is_hostile` -- you are permanently an Enemy of the Village and can never be its Hero
+- `mega_expansion_mode` -- the Brain Node founds a new building every minute
+- `mega_brutal_mode` -- every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
+
+**Handy commands:** `/thevillagefightsback brain_stage_get` and `brain_stage_set <1-4>`, `village_status_report` (the nearest Brain Node's report), and `tp_to_nearest_node` (warp above the nearest Brain Node).
 
 ## Requirements and credits
 

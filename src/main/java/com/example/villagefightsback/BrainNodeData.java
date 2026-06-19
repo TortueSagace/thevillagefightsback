@@ -34,6 +34,11 @@ public class BrainNodeData extends SavedData {
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
     private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
+    /** The cost to advance from {@code level}, scaled by multiplier_level_up_emerald_threshold (min 1). */
+    private static int scaledCost(int level) {
+        return Math.max(1, (int) Math.round(COST_TO_ADVANCE[level] * Config.levelUpThresholdMult()));
+    }
+
     // Per-village economy: brainNodes within CLUSTER blocks share one Econ; brainNodes farther apart are
     // completely independent villages, each with its own level/emeralds/income.
     private static final double CLUSTER = 100.0;
@@ -68,8 +73,10 @@ public class BrainNodeData extends SavedData {
 
         public int getLevel() { return level; }
         public int getEmeralds() { return emeralds; }
+        /** Force the village stage (1..{@value #MAX_LEVEL}); clears the pending emeralds so it doesn't re-promote. */
+        public void setLevel(int lvl) { level = Math.max(1, Math.min(MAX_LEVEL, lvl)); emeralds = 0; setDirty(); }
         public boolean isMaxLevel() { return level >= MAX_LEVEL; }
-        public int costForNext() { return isMaxLevel() ? -1 : COST_TO_ADVANCE[level]; }
+        public int costForNext() { return isMaxLevel() ? -1 : scaledCost(level); }
         public long getLastIncomeDay() { return lastIncomeDay; }
         public void setLastIncomeDay(long day) { lastIncomeDay = day; setDirty(); }
 
@@ -79,8 +86,10 @@ public class BrainNodeData extends SavedData {
             if (n <= 0) return 0;
             emeralds += n;
             int gained = 0;
-            while (!isMaxLevel() && emeralds >= COST_TO_ADVANCE[level]) {
-                emeralds -= COST_TO_ADVANCE[level];
+            while (!isMaxLevel()) {
+                int cost = scaledCost(level);
+                if (emeralds < cost) break;
+                emeralds -= cost;
                 level++;
                 gained++;
             }

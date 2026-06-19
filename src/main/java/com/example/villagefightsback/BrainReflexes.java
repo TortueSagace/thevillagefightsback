@@ -45,16 +45,24 @@ public final class BrainReflexes {
     private BrainReflexes() {}
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
-    private static final double RADIUS = 100.0;  // the brain node's influence radius (== INCOME_RADIUS)
+    static double RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100, == INCOME_RADIUS)
     private static final double WITHER_RADIUS = 200.0; // detect a wither storm to summon Darius within this
 
     private static final long WIN_10M = 12000L;  // 10 in-game minutes (ticks)
     private static final long WIN_5M  = 6000L;
     private static final long WIN_3M  = 3600L;   // 3 in-game minutes (Darius dangerous-player + threat window)
     private static final long WIN_5S  = 100L;
+    private static final long CD_1M   = 1200L;   // 1 in-game minute (fire-extinguish + mega-expansion cooldowns)
     private static final long CD_5M   = 6000L;
     private static final long CD_10M  = 12000L;
     private static final long CD_30M  = 36000L;
+
+    /** Scale a base cooldown by multiplier_brain_initiatives_cooldown (>1 = rarer initiatives). */
+    private static long cd(long base) { return (long) (base * Config.brainInitiativeCooldownMult()); }
+
+    /** Vanilla fire blocks (normal + soul). The mod adds no fire blocks of its own; other mods' fire is ignored. */
+    private static final java.util.function.Predicate<net.minecraft.world.level.block.state.BlockState> IS_FIRE =
+            s -> s.is(net.minecraft.world.level.block.Blocks.FIRE) || s.is(net.minecraft.world.level.block.Blocks.SOUL_FIRE);
     private static final int  BED_CAP = 100;     // abilities that grow the village switch off above this many beds
 
     /** Per-brain-node reflex bookkeeping. Transient (rebuilt from events; reset on world unload). */
@@ -73,6 +81,7 @@ public final class BrainReflexes {
         boolean firstHurtArmed;              // a villager was hurt this stage and the golem-factory reflex is armed
         int firstHurtFiredStage;             // the stage at which the golem-factory reflex last fired (0 = never)
         long cdPeacetime, cdGuard, cdGolem, cdBarracks, cdLure; // game-time each cooldown expires
+        long cdFireExtinguish, cdMegaExpansion;                 // game-time the fire-douse / mega-expansion cooldowns expire
         final ArrayDeque<String> log = new ArrayDeque<>();      // last 10 reflex lines, newest last
     }
 
@@ -205,6 +214,25 @@ public final class BrainReflexes {
         WallPlan inner = data.getWallPlan(gp);
         long beds = level.getPoiManager().getCountInRange(h -> h.is(PoiTypes.HOME), brain, (int) RADIUS, PoiManager.Occupancy.ANY);
 
+        // A-FIRE (all stages): for 1 gem on a 1-minute cooldown, douse ALL fire within the brain's radius -- but
+        // only when fire is actually present (so it never wastes a gem). Vanilla fire + soul fire only (the mod
+        // adds none of its own; other mods' custom fire is left untouched).
+        if (Config.brainExtinguishesFire() && now >= s.cdFireExtinguish && econ.getEmeralds() >= 1) {
+            int doused = extinguishFire(level, brain, (int) RADIUS);
+            if (doused > 0 && econ.spendEmeralds(1)) {
+                s.cdFireExtinguish = now + CD_1M;
+                log(s, level, "Fire doused (" + doused + ", -1)");
+            }
+        }
+
+        // MEGA-EXPANSION (all stages, opt-in): every minute send a settler to place a random colored TNT block.
+        // The normal settler placement rules (far enough from existing buildings, etc.) still apply.
+        if (Config.megaExpansionMode() && now >= s.cdMegaExpansion && inner != null) {
+            ExpansionManager.summonReflexSettler(level, gp, inner, level.random.nextInt(5)); // TNT_BLUE..TNT_PURPLE
+            s.cdMegaExpansion = now + CD_1M;
+            log(s, level, "Mega-expansion settler sent");
+        }
+
         // A0 (all stages): once a villager has been ATTACKED this stage, raising a Golem Factory (yellow TNT,
         // 10 gems) is the TOP priority. Buy it the instant the treasury can afford it (once per stage); until
         // then, RESERVE the gems -- return early so the cheaper reflexes below cannot drain the treasury under
@@ -238,7 +266,7 @@ public final class BrainReflexes {
             s.pendingVillagerKill = false;
             if (now >= s.cdGuard && econ.spendEmeralds(3)) {
                 spawnInside(level, brain, guardType());
-                s.cdGuard = now + CD_10M;
+                s.cdGuard = now + cd(CD_10M);
                 log(s, level, "Guard raised (-3)");
             }
         }
@@ -246,7 +274,7 @@ public final class BrainReflexes {
         // A3 (stage 1+): 5+ villagers killed in the past 10 min -> forge an iron golem. 9 gems, 5-min cooldown.
         if (stage >= 1 && s.villagerKills.size() >= 5 && now >= s.cdGolem && econ.spendEmeralds(9)) {
             spawnInside(level, brain, EntityType.IRON_GOLEM);
-            s.cdGolem = now + CD_5M;
+            s.cdGolem = now + cd(CD_5M);
             log(s, level, "Iron golem forged (-9)");
         }
 
@@ -255,7 +283,7 @@ public final class BrainReflexes {
             s.pendingGolemKill = false;
             if (now >= s.cdLure && beds < BED_CAP && econ.spendEmeralds(12)) {
                 ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_PURPLE);
-                s.cdLure = now + CD_30M;
+                s.cdLure = now + cd(CD_30M);
                 log(s, level, "Settler sent: Lure Tower (-12)");
             }
         }
@@ -263,7 +291,7 @@ public final class BrainReflexes {
         // A5 (stage 2+): 3+ guards killed in the past 10 min -> a settler builds a Barracks (orange TNT). 12 gems, 30-min cd, off at 100+ beds.
         if (stage >= 2 && s.guardKills.size() >= 3 && now >= s.cdBarracks && beds < BED_CAP && econ.spendEmeralds(12)) {
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_ORANGE);
-            s.cdBarracks = now + CD_30M; // rolling-window + 30-min cooldown (kills age out of the 10-min window)
+            s.cdBarracks = now + cd(CD_30M); // rolling-window + 30-min cooldown (kills age out of the 10-min window)
             log(s, level, "Settler sent: Barracks (-12)");
         }
 
@@ -278,7 +306,7 @@ public final class BrainReflexes {
                 && (witherStorm || heavyThreatNear(level, brain, gp))) {
             if (econ.spendEmeralds(64)) {
                 spawnDarius(level, gp, brain);
-                s.cdDarius = now + WIN_5M; // brief anti-spam cooldown
+                s.cdDarius = now + cd(WIN_5M); // brief anti-spam cooldown
                 log(s, level, "General Darius marches (-64)");
             }
         }
@@ -289,9 +317,50 @@ public final class BrainReflexes {
                 && econ.spendEmeralds(5)) {
             spawnInside(level, brain, EntityType.VILLAGER);
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_BLUE);
-            s.cdPeacetime = now + CD_10M;
+            s.cdPeacetime = now + cd(CD_10M);
             log(s, level, "Villager + house settler (-5)");
         }
+    }
+
+    /** Douse all vanilla fire within {@code radius} (horizontal) and a +/-32 Y band of the brain. Whole chunk
+     *  sections whose palette holds no fire are skipped via a cheap palette pre-filter, so when nothing is
+     *  burning this costs only a handful of section checks. Returns how many fire blocks were removed. */
+    private static int extinguishFire(ServerLevel level, BlockPos brain, int radius) {
+        int yLo = Math.max(level.getMinBuildHeight(), brain.getY() - 32);
+        int yHi = Math.min(level.getMaxBuildHeight() - 1, brain.getY() + 32);
+        int secLo = level.getSectionIndex(yLo), secHi = level.getSectionIndex(yHi);
+        int xMin = brain.getX() - radius, xMax = brain.getX() + radius;
+        int zMin = brain.getZ() - radius, zMax = brain.getZ() + radius;
+        long r2 = (long) radius * radius;
+        int removed = 0;
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int cx = xMin >> 4; cx <= (xMax >> 4); cx++) {
+            for (int cz = zMin >> 4; cz <= (zMax >> 4); cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue; // unloaded -> skip (never force-load)
+                boolean maybe = false;
+                for (int idx = secLo; idx <= secHi && !maybe; idx++) {
+                    net.minecraft.world.level.chunk.LevelChunkSection sec = chunk.getSection(idx);
+                    if (!sec.hasOnlyAir() && sec.maybeHas(IS_FIRE)) maybe = true;
+                }
+                if (!maybe) continue;
+                int bx0 = Math.max(xMin, cx << 4), bx1 = Math.min(xMax, (cx << 4) + 15);
+                int bz0 = Math.max(zMin, cz << 4), bz1 = Math.min(zMax, (cz << 4) + 15);
+                for (int x = bx0; x <= bx1; x++) {
+                    for (int z = bz0; z <= bz1; z++) {
+                        long dx = x - brain.getX(), dz = z - brain.getZ();
+                        if (dx * dx + dz * dz > r2) continue;
+                        for (int y = yLo; y <= yHi; y++) {
+                            if (IS_FIRE.test(level.getBlockState(m.set(x, y, z)))) {
+                                level.removeBlock(m, false);
+                                removed++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return removed;
     }
 
     private static void prune(State s, long now) {
@@ -366,6 +435,7 @@ public final class BrainReflexes {
         d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
         d.setHomeBrain(node);
         level.addFreshEntity(d);
+        d.enrollEscort(level, Config.guardsWithGeneralDarius()); // guards_spawning_with_general_darius (default 0)
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
                 spot.getX() + 0.5, spot.getY() + 1.0, spot.getZ() + 0.5, 30, 0.5, 0.8, 0.5, 0.02);
         level.playSound(null, spot, net.minecraft.sounds.SoundEvents.SCULK_CATALYST_BLOOM,
