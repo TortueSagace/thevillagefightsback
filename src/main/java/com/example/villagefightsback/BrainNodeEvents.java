@@ -245,9 +245,31 @@ public final class BrainNodeEvents {
         List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box, e -> isAirStrikeEnemy(e, data));
         candidates.sort((a, b) -> Float.compare(b.getHealth(), a.getHealth())); // most HP first
         for (LivingEntity c : candidates) {
-            if (isStrikeColumnClear(level, c)) return c;
+            // Only bomb a threat that stands clear of the village's own units: the column must be clear of village
+            // structures AND no village ally may be inside the strike's blast footprint (so we never bomb our own).
+            if (isStrikeColumnClear(level, c) && noAlliesNear(level, c)) return c;
         }
         return null;
+    }
+
+    // Allies must be clear of the WHOLE blast footprint, not just the drop column. The 3x3 grid's corner cells sit
+    // ~CLEAR_RADIUS from the centre (by GRID_SPACING construction) and each rocket blast reaches EXPLOSION_RADIUS
+    // further, so any village ally within this distance of the target could be caught -- if one is, we skip the
+    // target. This is what makes the air strike pick heavy threats that are AWAY from the village's units.
+    private static final double AIRSTRIKE_ALLY_CLEAR =
+            AirStrikeManager.CLEAR_RADIUS + RocketEntity.EXPLOSION_RADIUS + 1.0;
+
+    /** True if NO village ally (villager / guard / iron golem) is within the air strike's blast footprint of the
+     *  target, in 3D (so allies above, below, and around are all spared). */
+    private static boolean noAlliesNear(ServerLevel level, LivingEntity target) {
+        AABB box = target.getBoundingBox().inflate(AIRSTRIKE_ALLY_CLEAR);
+        double cx = target.getX(), cy = target.getY(), cz = target.getZ();
+        double r2 = AIRSTRIKE_ALLY_CLEAR * AIRSTRIKE_ALLY_CLEAR;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, BrainNodeEvents::isVillageAlly)) {
+            double dx = e.getX() - cx, dy = e.getY() - cy, dz = e.getZ() - cz;
+            if (dx * dx + dy * dy + dz * dz <= r2) return false;
+        }
+        return true;
     }
 
     /** Air-strike target: a hostile mob, or a player flagged as a village enemy. Never an ally or the boss. */
@@ -262,8 +284,8 @@ public final class BrainNodeEvents {
     }
 
     /** True if the vertical column above the target (radius {@link AirStrikeManager#CLEAR_RADIUS}, from the
-     *  target up to the sky) is free of village allies and of cobblestone/brick (village structures). Rockets
-     *  fall top-to-bottom, so we check the whole column UP, not a sphere. */
+     *  target up to the sky) is free of cobblestone/brick (village structures) -- rockets fall top-to-bottom, so
+     *  we check the whole column UP, not a sphere. Ally clearance is a separate, wider 3D check ({@link #noAlliesNear}). */
     private static boolean isStrikeColumnClear(ServerLevel level, LivingEntity target) {
         int cx = (int) Math.floor(target.getX());
         int cz = (int) Math.floor(target.getZ());
@@ -271,12 +293,6 @@ public final class BrainNodeEvents {
         int topY = level.getMaxBuildHeight() - 1;
         int r = AirStrikeManager.CLEAR_RADIUS;
         double r2 = (double) r * r;
-        double ccx = cx + 0.5, ccz = cz + 0.5;
-        AABB cyl = new AABB(cx - r, baseY, cz - r, cx + r + 1, topY, cz + r + 1);
-        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, cyl, BrainNodeEvents::isVillageAlly)) {
-            double dx = e.getX() - ccx, dz = e.getZ() - ccz;
-            if (dx * dx + dz * dz <= r2) return false;
-        }
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
