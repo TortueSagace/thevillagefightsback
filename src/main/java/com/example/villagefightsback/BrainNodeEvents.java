@@ -886,7 +886,7 @@ public final class BrainNodeEvents {
         long day = Math.floorDiv(dayTime, 24000L);
         long timeOfDay = Math.floorMod(dayTime, 24000L);
 
-        // UNIT SPAWNS fire N times per day at even intervals (N = multiplier_unit_spawn_rate, rounded, >=1). The
+        // UNIT SPAWNS fire N times per day at even intervals (N = multiplier_unit_spawn_frequency, rounded, >=1). The
         // period boundaries are offset so that with N=1 the single spawn still lands at sunset (as it always did).
         int spawnsPerDay = Config.spawnsPerDay();
         long interval = Math.max(1L, 24000L / spawnsPerDay);
@@ -1062,7 +1062,7 @@ public final class BrainNodeEvents {
     }
 
     // Per-node spawn-period stamp so a node spawns its payload at most once per SPAWN PERIOD (dedupes across
-    // overlapping village radii). With multiplier_unit_spawn_rate=1 there is one period per day (at sunset);
+    // overlapping village radii). With multiplier_unit_spawn_frequency=1 there is one period per day (at sunset);
     // higher values give more, evenly-spaced periods. Transient: a restart can re-run once -- harmless.
     private static final Map<GlobalPos, Long> nodeSpawnDay = new HashMap<>();
 

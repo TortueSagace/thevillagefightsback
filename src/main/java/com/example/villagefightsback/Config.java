@@ -51,9 +51,10 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
     public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_INFECTION;
+    public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_RATE;
+    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_NUMBER_OF_SETTLERS;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_BRAIN_INITIATIVES_COOLDOWN;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_AIR_STRIKES_COOLDOWN;
@@ -142,14 +143,18 @@ public final class Config {
                 .comment("Master switch for block infection. If false, neither paths proliferate nor fertile blocks appear at all",
                         "(the multiplier_block_infection_* settings are then irrelevant). Default: true.")
                 .define("enable_block_infection", true);
+        GUARDS_DROP_FIRE_GRENADE_UPON_DEATH = b
+                .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
+                        "blast (a 'fire grenade'). If false, guards die quietly. Default: true.")
+                .define("guards_drop_fire_grenade_upon_death", true);
         b.pop();
 
         b.push("multipliers");
         MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD = mult(b,
                 "multiplier_level_up_emerald_threshold",
                 "Scales the emerald cost for the brain node to reach each stage. 2.0 = every stage costs twice as much.");
-        MULTIPLIER_UNIT_SPAWN_RATE = mult(b,
-                "multiplier_unit_spawn_rate",
+        MULTIPLIER_UNIT_SPAWN_FREQUENCY = mult(b,
+                "multiplier_unit_spawn_frequency",
                 "Scales how OFTEN nodes spawn their unit. 2.0 = each unit that would spawn once a day at sunset instead spawns",
                 "twice a day, at even intervals. Applies to the brain node and every node (iron golem factory, barracks, lure",
                 "tower). Rounded to a whole number of spawns per day.");
@@ -212,8 +217,9 @@ public final class Config {
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
+        INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
-        INDEX.put("multiplier_unit_spawn_rate", MULTIPLIER_UNIT_SPAWN_RATE);
+        INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);
         INDEX.put("multiplier_brain_initiatives_cooldown", MULTIPLIER_BRAIN_INITIATIVES_COOLDOWN);
         INDEX.put("multiplier_air_strikes_cooldown", MULTIPLIER_AIR_STRIKES_COOLDOWN);
@@ -263,9 +269,10 @@ public final class Config {
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
+    public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }
 
     public static double levelUpThresholdMult()  { return MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD.get(); }
-    public static double unitSpawnRateMult()     { return MULTIPLIER_UNIT_SPAWN_RATE.get(); }
+    public static double unitSpawnFrequencyMult()     { return MULTIPLIER_UNIT_SPAWN_FREQUENCY.get(); }
     public static double settlerCountMult()      { return MULTIPLIER_NUMBER_OF_SETTLERS.get(); }
     public static double brainInitiativeCooldownMult() { return MULTIPLIER_BRAIN_INITIATIVES_COOLDOWN.get(); }
     public static double airStrikeCooldownMult() { return MULTIPLIER_AIR_STRIKES_COOLDOWN.get(); }
@@ -279,5 +286,5 @@ public final class Config {
     public static int guardsWithGeneralDarius()  { return GUARDS_SPAWNING_WITH_GENERAL_DARIUS.get(); }
 
     /** How many spawn events per day the unit-spawn-rate multiplier implies (>=1, rounded). */
-    public static int spawnsPerDay() { return Math.max(1, (int) Math.round(unitSpawnRateMult())); }
+    public static int spawnsPerDay() { return Math.max(1, (int) Math.round(unitSpawnFrequencyMult())); }
 }

@@ -118,7 +118,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 **Multipliers** (1.0 = vanilla pace):
 
 - `multiplier_level_up_emerald_threshold` -- emerald cost for the Brain Node to reach each stage
-- `multiplier_unit_spawn_rate` -- how many times a day every node and the Brain Node spawn their units (2.0 = twice a day, evenly spaced)
+- `multiplier_unit_spawn_frequency` -- how many times a day every node and the Brain Node spawn their units (2.0 = twice a day, evenly spaced)
 - `multiplier_number_of_settlers` -- how many settlers each wave sends out
 - `multiplier_brain_initiatives_cooldown` -- how often the Brain Node's reflexes fire
 - `multiplier_air_strikes_cooldown` -- how often air strikes fire (kept separate from the reflexes)
@@ -130,6 +130,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 
 - `enable_block_infection` -- master switch for the fertile-zone takeover
 - `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire` -- whether each kind of explosion breaks blocks or starts fires (it always still hits units)
+- `guards_drop_fire_grenade_upon_death` -- whether a slain stage-3 guard goes out in a fiery blast
 - `brain_node_extinguishes_fire` -- the Brain Node douses fire in its radius for an emerald
 - `air_strikes_appear_at_stage` (1-4) -- the stage air strikes unlock at
 - `unstable_limbo_gravel_HP_threshold` -- the HP above which a banished creature is "unstable" in Limbo

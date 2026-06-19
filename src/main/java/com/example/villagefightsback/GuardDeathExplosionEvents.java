@@ -29,6 +29,7 @@ public final class GuardDeathExplosionEvents {
 
     @SubscribeEvent
     public static void onGuardDeath(LivingDeathEvent event) {
+        if (!Config.guardsDropFireGrenadeUponDeath()) return;                            // config: off = guards die quietly
         LivingEntity e = event.getEntity();
         if (!(e.level() instanceof ServerLevel level)) return;
         if (!GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) return; // Guard Villagers guard only
