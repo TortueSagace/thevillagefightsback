@@ -23,11 +23,23 @@ public final class EmeraldInfection {
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
         if (event.getEntity().level().isClientSide()) return;
+        if (!Config.mobInfectionEnabled()) return;  // mob infection disabled -> never infect anything
         Entity src = event.getSource().getEntity(); // attacker / arrow shooter / creeper (explosion) / wither (skull)
         if (!Factions.isEmerald(src)) return;
         LivingEntity victim = event.getEntity();
         if (Factions.isEmerald(victim)) return;     // never infect a fellow emerald unit
         apply(victim);
+    }
+
+    /**
+     * Master gate for "enable_mob_infection": when the feature is OFF, NO emerald unit may ever enter the world,
+     * via ANY path (infection-conversion, brain summon, or even a creative spawn egg). Cheap when ON (a single
+     * boolean check, the default), so it only inspects entities when the feature is disabled.
+     */
+    @SubscribeEvent
+    public static void onEmeraldJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if (Config.mobInfectionEnabled() || event.getLevel().isClientSide()) return;
+        if (Factions.isEmerald(event.getEntity())) event.setCanceled(true);
     }
 
     /** Inflict Emerald Infection (Wither I, no particles) for 20 seconds. */

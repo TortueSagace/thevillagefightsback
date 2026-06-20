@@ -51,6 +51,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
     public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_INFECTION;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_MOB_INFECTION;
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
@@ -143,6 +144,10 @@ public final class Config {
                 .comment("Master switch for block infection. If false, neither paths proliferate nor fertile blocks appear at all",
                         "(the multiplier_block_infection_* settings are then irrelevant). Default: true.")
                 .define("enable_block_infection", true);
+        ENABLE_MOB_INFECTION = b
+                .comment("Master switch for MOB infection (the 18 emerald units). If false, NO emerald unit can ever spawn:",
+                        "no infection-conversion of a slain mob, no brain summon, not even a spawn egg. Default: true.")
+                .define("enable_mob_infection", true);
         GUARDS_DROP_FIRE_GRENADE_UPON_DEATH = b
                 .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
                         "blast (a 'fire grenade'). If false, guards die quietly. Default: true.")
@@ -217,6 +222,7 @@ public final class Config {
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
+        INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
@@ -269,6 +275,7 @@ public final class Config {
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
+    public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }
 
     public static double levelUpThresholdMult()  { return MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD.get(); }
