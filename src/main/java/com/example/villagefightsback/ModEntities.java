@@ -223,6 +223,44 @@ public final class ModEntities {
                     .clientTrackingRange(10)
                     .build("rich_sheep"));
 
+    // --- v1.0.3 EMERALD faction ("mob infection"): vanilla mobs reskinned + emerald-faction AI ---
+    public static final RegistryObject<EntityType<EmeraldCow>> EMERALD_COW = ENTITIES.register("emerald_cow",
+            () -> EntityType.Builder.<EmeraldCow>of(EmeraldCow::new, MobCategory.CREATURE).sized(0.9F, 1.4F).clientTrackingRange(10).build("emerald_cow"));
+    public static final RegistryObject<EntityType<EmeraldChicken>> EMERALD_CHICKEN = ENTITIES.register("emerald_chicken",
+            () -> EntityType.Builder.<EmeraldChicken>of(EmeraldChicken::new, MobCategory.CREATURE).sized(0.4F, 0.7F).clientTrackingRange(10).build("emerald_chicken"));
+    public static final RegistryObject<EntityType<EmeraldCat>> EMERALD_CAT = ENTITIES.register("emerald_cat",
+            () -> EntityType.Builder.<EmeraldCat>of(EmeraldCat::new, MobCategory.CREATURE).sized(0.6F, 0.7F).clientTrackingRange(10).build("emerald_cat"));
+    public static final RegistryObject<EntityType<EmeraldEndermite>> EMERALD_ENDERMITE = ENTITIES.register("emerald_endermite",
+            () -> EntityType.Builder.<EmeraldEndermite>of(EmeraldEndermite::new, MobCategory.MONSTER).sized(0.4F, 0.3F).clientTrackingRange(8).build("emerald_endermite"));
+    public static final RegistryObject<EntityType<EmeraldWolf>> EMERALD_WOLF = ENTITIES.register("emerald_wolf",
+            () -> EntityType.Builder.<EmeraldWolf>of(EmeraldWolf::new, MobCategory.CREATURE).sized(0.6F, 0.85F).clientTrackingRange(10).build("emerald_wolf"));
+    public static final RegistryObject<EntityType<EmeraldHorse>> EMERALD_HORSE = ENTITIES.register("emerald_horse",
+            () -> EntityType.Builder.<EmeraldHorse>of(EmeraldHorse::new, MobCategory.CREATURE).sized(1.396F, 1.6F).clientTrackingRange(10).build("emerald_horse"));
+    public static final RegistryObject<EntityType<EmeraldPig>> EMERALD_PIG = ENTITIES.register("emerald_pig",
+            () -> EntityType.Builder.<EmeraldPig>of(EmeraldPig::new, MobCategory.CREATURE).sized(0.9F, 0.9F).clientTrackingRange(10).build("emerald_pig"));
+    public static final RegistryObject<EntityType<EmeraldSalmon>> EMERALD_SALMON = ENTITIES.register("emerald_salmon",
+            () -> EntityType.Builder.<EmeraldSalmon>of(EmeraldSalmon::new, MobCategory.WATER_CREATURE).sized(0.7F, 0.4F).clientTrackingRange(8).build("emerald_salmon"));
+    public static final RegistryObject<EntityType<EmeraldBat>> EMERALD_BAT = ENTITIES.register("emerald_bat",
+            () -> EntityType.Builder.<EmeraldBat>of(EmeraldBat::new, MobCategory.AMBIENT).sized(0.5F, 0.9F).clientTrackingRange(8).build("emerald_bat"));
+    public static final RegistryObject<EntityType<EmeraldZombie>> EMERALD_ZOMBIE = ENTITIES.register("emerald_zombie",
+            () -> EntityType.Builder.<EmeraldZombie>of(EmeraldZombie::new, MobCategory.MONSTER).sized(0.6F, 1.95F).clientTrackingRange(8).build("emerald_zombie"));
+    public static final RegistryObject<EntityType<EmeraldSkeleton>> EMERALD_SKELETON = ENTITIES.register("emerald_skeleton",
+            () -> EntityType.Builder.<EmeraldSkeleton>of(EmeraldSkeleton::new, MobCategory.MONSTER).sized(0.6F, 1.99F).clientTrackingRange(8).build("emerald_skeleton"));
+    public static final RegistryObject<EntityType<EmeraldCreeper>> EMERALD_CREEPER = ENTITIES.register("emerald_creeper",
+            () -> EntityType.Builder.<EmeraldCreeper>of(EmeraldCreeper::new, MobCategory.MONSTER).sized(0.6F, 1.7F).clientTrackingRange(8).build("emerald_creeper"));
+    public static final RegistryObject<EntityType<EmeraldEnderman>> EMERALD_ENDERMAN = ENTITIES.register("emerald_enderman",
+            () -> EntityType.Builder.<EmeraldEnderman>of(EmeraldEnderman::new, MobCategory.MONSTER).sized(0.6F, 2.9F).clientTrackingRange(8).build("emerald_enderman"));
+    public static final RegistryObject<EntityType<EmeraldIronGolem>> EMERALD_IRON_GOLEM = ENTITIES.register("emerald_iron_golem",
+            () -> EntityType.Builder.<EmeraldIronGolem>of(EmeraldIronGolem::new, MobCategory.MISC).sized(1.4F, 2.7F).clientTrackingRange(10).build("emerald_iron_golem"));
+    public static final RegistryObject<EntityType<EmeraldPhantom>> EMERALD_PHANTOM = ENTITIES.register("emerald_phantom",
+            () -> EntityType.Builder.<EmeraldPhantom>of(EmeraldPhantom::new, MobCategory.MONSTER).sized(0.9F, 0.5F).clientTrackingRange(8).build("emerald_phantom"));
+    public static final RegistryObject<EntityType<EmeraldWither>> EMERALD_WITHER = ENTITIES.register("emerald_wither",
+            () -> EntityType.Builder.<EmeraldWither>of(EmeraldWither::new, MobCategory.MONSTER).sized(0.9F, 3.5F).fireImmune().clientTrackingRange(10).build("emerald_wither"));
+    public static final RegistryObject<EntityType<EmeraldGuardian>> EMERALD_GUARDIAN = ENTITIES.register("emerald_guardian",
+            () -> EntityType.Builder.<EmeraldGuardian>of(EmeraldGuardian::new, MobCategory.MONSTER).sized(0.85F, 0.85F).clientTrackingRange(10).build("emerald_guardian"));
+    public static final RegistryObject<EntityType<EmeraldElderGuardian>> EMERALD_ELDER_GUARDIAN = ENTITIES.register("emerald_elder_guardian",
+            () -> EntityType.Builder.<EmeraldElderGuardian>of(EmeraldElderGuardian::new, MobCategory.MONSTER).sized(1.9975F, 1.9975F).clientTrackingRange(10).build("emerald_elder_guardian"));
+
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
     }
@@ -247,5 +285,24 @@ public final class ModEntities {
         event.put(LIMBO_VEX.get(), LimboVexEntity.createAttributes().build());
         event.put(LIMBO_WITCH.get(), LimboWitchEntity.createAttributes().build());
         event.put(RICH_SHEEP.get(), net.minecraft.world.entity.animal.Sheep.createAttributes().build());
+        // --- emerald faction ---
+        event.put(EMERALD_COW.get(), EmeraldCow.createAttributes().build());
+        event.put(EMERALD_CHICKEN.get(), EmeraldChicken.createAttributes().build());
+        event.put(EMERALD_CAT.get(), EmeraldCat.createAttributes().build());
+        event.put(EMERALD_ENDERMITE.get(), EmeraldEndermite.createAttributes().build());
+        event.put(EMERALD_WOLF.get(), EmeraldWolf.createAttributes().build());
+        event.put(EMERALD_HORSE.get(), EmeraldHorse.createAttributes().build());
+        event.put(EMERALD_PIG.get(), EmeraldPig.createAttributes().build());
+        event.put(EMERALD_SALMON.get(), EmeraldSalmon.createAttributes().build());
+        event.put(EMERALD_BAT.get(), EmeraldBat.createAttributes().build());
+        event.put(EMERALD_ZOMBIE.get(), EmeraldZombie.createAttributes().build());
+        event.put(EMERALD_SKELETON.get(), EmeraldSkeleton.createAttributes().build());
+        event.put(EMERALD_CREEPER.get(), EmeraldCreeper.createAttributes().build());
+        event.put(EMERALD_ENDERMAN.get(), EmeraldEnderman.createAttributes().build());
+        event.put(EMERALD_IRON_GOLEM.get(), EmeraldIronGolem.createAttributes().build());
+        event.put(EMERALD_PHANTOM.get(), EmeraldPhantom.createAttributes().build());
+        event.put(EMERALD_WITHER.get(), EmeraldWither.createAttributes().build());
+        event.put(EMERALD_GUARDIAN.get(), EmeraldGuardian.createAttributes().build());
+        event.put(EMERALD_ELDER_GUARDIAN.get(), EmeraldElderGuardian.createAttributes().build());
     }
 }

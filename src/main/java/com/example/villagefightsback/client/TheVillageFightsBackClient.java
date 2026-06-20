@@ -104,6 +104,25 @@ public final class TheVillageFightsBackClient {
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.WALL_DEFENDER_STAGE4.get(), WallDefenderRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALDGER.get(), EmeraldgerRenderer::new);
+        // --- emerald faction (v1.0.3): vanilla mob shapes, emerald textures + emissive eyes ---
+        event.registerEntityRenderer(ModEntities.EMERALD_COW.get(), EmeraldCowRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_CHICKEN.get(), EmeraldChickenRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_CAT.get(), EmeraldCatRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_ENDERMITE.get(), EmeraldEndermiteRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_WOLF.get(), EmeraldWolfRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_HORSE.get(), EmeraldHorseRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_PIG.get(), EmeraldPigRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_SALMON.get(), EmeraldSalmonRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_BAT.get(), EmeraldBatRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_ZOMBIE.get(), EmeraldZombieRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_SKELETON.get(), EmeraldSkeletonRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_CREEPER.get(), EmeraldCreeperRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_ENDERMAN.get(), EmeraldEndermanRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_IRON_GOLEM.get(), EmeraldIronGolemRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_PHANTOM.get(), EmeraldPhantomRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_WITHER.get(), EmeraldWitherRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_GUARDIAN.get(), EmeraldGuardianRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_ELDER_GUARDIAN.get(), EmeraldElderGuardianRenderer::new);
         event.registerEntityRenderer(ModEntities.BRAIN_NODE_WARDEN.get(), BrainNodeWardenRenderer::new);
         // The boss reuses the green-warden + brainNode-head renderer (it extends BrainNodeWardenEntity).
         event.registerEntityRenderer(ModEntities.UNLEASHED_BRAIN_NODE.get(), BrainNodeWardenRenderer::new);

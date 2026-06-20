@@ -87,4 +87,23 @@ public final class Factions {
     public static boolean isLimbo(Entity e) {
         return e instanceof LimboPhantomEntity || e instanceof LimboRaider;
     }
+
+    /** The Guard Villagers guard entity id (soft dep). */
+    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+
+    /** True for the village's own (non-infected) defenders: villagers (incl. emeraldgers), iron golems, wall
+     *  defenders, General Darius, and Guard Villagers guards. Vindictive units (infected) are NOT village. */
+    public static boolean isVillage(Entity e) {
+        if (isInfected(e)) return false; // a vindictive gigachad is an IronGolem -> exclude the boss faction
+        return e instanceof net.minecraft.world.entity.npc.Villager
+                || e instanceof net.minecraft.world.entity.animal.IronGolem
+                || e instanceof WallDefenderEntity
+                || e instanceof GeneralDariusEntity
+                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+    }
+
+    /** The "emerald" faction (the v1.0.3 mob-infection units). Membership = the {@link EmeraldUnit} marker. */
+    public static boolean isEmerald(Entity e) {
+        return e instanceof EmeraldUnit;
+    }
 }
