@@ -175,30 +175,46 @@ public final class ModItems {
             ITEMS.register("rich_sheep_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
                     ModEntities.RICH_SHEEP, 0x2BBF4E, 0x17DD62, new Item.Properties()));
 
-    /** Creative spawn egg for an emerald-faction mob (shared emerald palette). */
-    private static RegistryObject<Item> emeraldEgg(String name,
-            java.util.function.Supplier<? extends net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob>> type) {
-        return ITEMS.register(name, () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                type, 0x14532A, 0x57E08A, new Item.Properties()));
+    /** The emerald-faction tint every emerald mob egg is shifted toward. */
+    private static final int EMERALD_TINT = 0x2BBF4E;
+
+    /** Blend {@code color} 45% toward the emerald tint, so an egg still reads as its vanilla creature (its base
+     *  / spot hues survive) while clearly being an emerald-green unit. */
+    private static int greenify(int color) {
+        int r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        int er = (EMERALD_TINT >> 16) & 0xFF, eg = (EMERALD_TINT >> 8) & 0xFF, eb = EMERALD_TINT & 0xFF;
+        int nr = Math.round(r * 0.55F + er * 0.45F);
+        int ng = Math.round(g * 0.55F + eg * 0.45F);
+        int nb = Math.round(b * 0.55F + eb * 0.45F);
+        return (nr << 16) | (ng << 8) | nb;
     }
-    public static final RegistryObject<Item> EMERALD_COW_SPAWN = emeraldEgg("emerald_cow_spawn", ModEntities.EMERALD_COW);
-    public static final RegistryObject<Item> EMERALD_CHICKEN_SPAWN = emeraldEgg("emerald_chicken_spawn", ModEntities.EMERALD_CHICKEN);
-    public static final RegistryObject<Item> EMERALD_CAT_SPAWN = emeraldEgg("emerald_cat_spawn", ModEntities.EMERALD_CAT);
-    public static final RegistryObject<Item> EMERALD_ENDERMITE_SPAWN = emeraldEgg("emerald_endermite_spawn", ModEntities.EMERALD_ENDERMITE);
-    public static final RegistryObject<Item> EMERALD_WOLF_SPAWN = emeraldEgg("emerald_wolf_spawn", ModEntities.EMERALD_WOLF);
-    public static final RegistryObject<Item> EMERALD_HORSE_SPAWN = emeraldEgg("emerald_horse_spawn", ModEntities.EMERALD_HORSE);
-    public static final RegistryObject<Item> EMERALD_PIG_SPAWN = emeraldEgg("emerald_pig_spawn", ModEntities.EMERALD_PIG);
-    public static final RegistryObject<Item> EMERALD_SALMON_SPAWN = emeraldEgg("emerald_salmon_spawn", ModEntities.EMERALD_SALMON);
-    public static final RegistryObject<Item> EMERALD_BAT_SPAWN = emeraldEgg("emerald_bat_spawn", ModEntities.EMERALD_BAT);
-    public static final RegistryObject<Item> EMERALD_ZOMBIE_SPAWN = emeraldEgg("emerald_zombie_spawn", ModEntities.EMERALD_ZOMBIE);
-    public static final RegistryObject<Item> EMERALD_SKELETON_SPAWN = emeraldEgg("emerald_skeleton_spawn", ModEntities.EMERALD_SKELETON);
-    public static final RegistryObject<Item> EMERALD_CREEPER_SPAWN = emeraldEgg("emerald_creeper_spawn", ModEntities.EMERALD_CREEPER);
-    public static final RegistryObject<Item> EMERALD_ENDERMAN_SPAWN = emeraldEgg("emerald_enderman_spawn", ModEntities.EMERALD_ENDERMAN);
-    public static final RegistryObject<Item> EMERALD_IRON_GOLEM_SPAWN = emeraldEgg("emerald_iron_golem_spawn", ModEntities.EMERALD_IRON_GOLEM);
-    public static final RegistryObject<Item> EMERALD_PHANTOM_SPAWN = emeraldEgg("emerald_phantom_spawn", ModEntities.EMERALD_PHANTOM);
-    public static final RegistryObject<Item> EMERALD_WITHER_SPAWN = emeraldEgg("emerald_wither_spawn", ModEntities.EMERALD_WITHER);
-    public static final RegistryObject<Item> EMERALD_GUARDIAN_SPAWN = emeraldEgg("emerald_guardian_spawn", ModEntities.EMERALD_GUARDIAN);
-    public static final RegistryObject<Item> EMERALD_ELDER_GUARDIAN_SPAWN = emeraldEgg("emerald_elder_guardian_spawn", ModEntities.EMERALD_ELDER_GUARDIAN);
+
+    /** Creative spawn egg for an emerald-faction mob: its two colours are the VANILLA creature's spawn-egg
+     *  colours green-shifted ({@link #greenify}), so each of the 18 is distinct AND recognisable as its creature. */
+    private static RegistryObject<Item> emeraldEgg(String name,
+            java.util.function.Supplier<? extends net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob>> type,
+            int vanillaBase, int vanillaSpots) {
+        return ITEMS.register(name, () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+                type, greenify(vanillaBase), greenify(vanillaSpots), new Item.Properties()));
+    }
+    public static final RegistryObject<Item> EMERALD_COW_SPAWN = emeraldEgg("emerald_cow_spawn", ModEntities.EMERALD_COW, 0x443626, 0xA1A1A1);
+    public static final RegistryObject<Item> EMERALD_CHICKEN_SPAWN = emeraldEgg("emerald_chicken_spawn", ModEntities.EMERALD_CHICKEN, 0xA1A1A1, 0xFF0000);
+    public static final RegistryObject<Item> EMERALD_CAT_SPAWN = emeraldEgg("emerald_cat_spawn", ModEntities.EMERALD_CAT, 0xEFC88E, 0x957256);
+    public static final RegistryObject<Item> EMERALD_ENDERMITE_SPAWN = emeraldEgg("emerald_endermite_spawn", ModEntities.EMERALD_ENDERMITE, 0x161616, 0x6E6E6E);
+    public static final RegistryObject<Item> EMERALD_WOLF_SPAWN = emeraldEgg("emerald_wolf_spawn", ModEntities.EMERALD_WOLF, 0xD7D3D3, 0xCEAF96);
+    public static final RegistryObject<Item> EMERALD_HORSE_SPAWN = emeraldEgg("emerald_horse_spawn", ModEntities.EMERALD_HORSE, 0xC09E7D, 0xEEE500);
+    public static final RegistryObject<Item> EMERALD_PIG_SPAWN = emeraldEgg("emerald_pig_spawn", ModEntities.EMERALD_PIG, 0xF0A5A2, 0xCF7B7B);
+    public static final RegistryObject<Item> EMERALD_SALMON_SPAWN = emeraldEgg("emerald_salmon_spawn", ModEntities.EMERALD_SALMON, 0xA00F10, 0x0E8474);
+    public static final RegistryObject<Item> EMERALD_BAT_SPAWN = emeraldEgg("emerald_bat_spawn", ModEntities.EMERALD_BAT, 0x4C3E30, 0x0F0F0F);
+    public static final RegistryObject<Item> EMERALD_ZOMBIE_SPAWN = emeraldEgg("emerald_zombie_spawn", ModEntities.EMERALD_ZOMBIE, 0x00AFAF, 0x799C65);
+    public static final RegistryObject<Item> EMERALD_SKELETON_SPAWN = emeraldEgg("emerald_skeleton_spawn", ModEntities.EMERALD_SKELETON, 0xC1C1C1, 0x494949);
+    public static final RegistryObject<Item> EMERALD_CREEPER_SPAWN = emeraldEgg("emerald_creeper_spawn", ModEntities.EMERALD_CREEPER, 0x0DA70B, 0x000000);
+    public static final RegistryObject<Item> EMERALD_ENDERMAN_SPAWN = emeraldEgg("emerald_enderman_spawn", ModEntities.EMERALD_ENDERMAN, 0x161616, 0x000000);
+    public static final RegistryObject<Item> EMERALD_IRON_GOLEM_SPAWN = emeraldEgg("emerald_iron_golem_spawn", ModEntities.EMERALD_IRON_GOLEM, 0xDBD3D0, 0x9E8B79);
+    public static final RegistryObject<Item> EMERALD_PHANTOM_SPAWN = emeraldEgg("emerald_phantom_spawn", ModEntities.EMERALD_PHANTOM, 0x43518A, 0x88FF00);
+    public static final RegistryObject<Item> EMERALD_WITHER_SPAWN = emeraldEgg("emerald_wither_spawn", ModEntities.EMERALD_WITHER, 0x141414, 0x4D4D4D);
+    public static final RegistryObject<Item> EMERALD_GUARDIAN_SPAWN = emeraldEgg("emerald_guardian_spawn", ModEntities.EMERALD_GUARDIAN, 0x4A7283, 0xD0B43E);
+    public static final RegistryObject<Item> EMERALD_ELDER_GUARDIAN_SPAWN = emeraldEgg("emerald_elder_guardian_spawn", ModEntities.EMERALD_ELDER_GUARDIAN, 0xCECE9A, 0x747693);
 
     /** Creative spawn eggs for the unleashed boss's vindictive minions. */
     public static final RegistryObject<Item> VINDICTIVE_GUARD_SPAWN =
