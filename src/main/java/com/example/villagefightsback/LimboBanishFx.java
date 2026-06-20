@@ -28,17 +28,28 @@ public final class LimboBanishFx {
     private static final int HEIGHT_STEPS = 8;
     private static final int MAX_ACTIVE = 16; // bound the particle load when many are banished at once
 
-    private record Fx(ServerLevel level, double cx, double bottom, double cz, double radius, double height, long end) {}
+    /** Lime spiral colour for the emerald-conversion variant (black smoke at the base -> lime up the column). */
+    private static final net.minecraft.core.particles.DustParticleOptions LIME_DUST =
+            new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.40F, 1.0F, 0.25F), 1.5F);
+
+    private record Fx(ServerLevel level, double cx, double bottom, double cz, double radius, double height, long end,
+                      boolean lime) {}
     private static final List<Fx> ACTIVE = new ArrayList<>();
 
-    /** Begin the swirl where {@code e}'s hitbox currently is. Call just BEFORE the creature is teleported away. */
-    public static void start(Entity e) {
+    /** Begin the (black) banishment swirl where {@code e}'s hitbox currently is. */
+    public static void start(Entity e) { add(e, false); }
+
+    /** The LIME variant played when an emerald infection CONVERTS a unit (v1.0.3): black smoke at the base rising
+     *  into lime, with happy-villager sparkles. Call just BEFORE the original creature is removed. */
+    public static void startLime(Entity e) { add(e, true); }
+
+    private static void add(Entity e, boolean lime) {
         if (!(e.level() instanceof ServerLevel sl) || ACTIVE.size() >= MAX_ACTIVE) return;
         AABB b = e.getBoundingBox();
         double radius = Math.max(0.6, Math.max(b.getXsize(), b.getZsize()) * 0.65);
         double height = Math.max(1.2, b.getYsize());
         ACTIVE.add(new Fx(sl, (b.minX + b.maxX) / 2.0, b.minY, (b.minZ + b.maxZ) / 2.0,
-                radius, height, sl.getGameTime() + DURATION));
+                radius, height, sl.getGameTime() + DURATION, lime));
     }
 
     @SubscribeEvent
@@ -67,16 +78,30 @@ public final class LimboBanishFx {
                 double x = fx.cx + r * Math.cos(ang);
                 double z = fx.cz + r * Math.sin(ang);
                 // count 0 -> one particle at exactly (x,y,z) with this velocity (gentle inward + upward swirl).
-                force(sl, ParticleTypes.LARGE_SMOKE, x, y, z, 0,
-                        -Math.cos(ang) * 0.02, 0.05, -Math.sin(ang) * 0.02, 1.0);
+                // Lime variant: black smoke at the base transitions to lime dust up the column.
+                if (fx.lime && frac > 0.45) {
+                    force(sl, LIME_DUST, x, y, z, 0,
+                            -Math.cos(ang) * 0.02, 0.05, -Math.sin(ang) * 0.02, 1.0);
+                } else {
+                    force(sl, ParticleTypes.LARGE_SMOKE, x, y, z, 0,
+                            -Math.cos(ang) * 0.02, 0.05, -Math.sin(ang) * 0.02, 1.0);
+                }
             }
         }
-        // 2. Soul particles rising through the hitbox volume.
-        force(sl, ParticleTypes.SOUL, fx.cx, fx.bottom + fx.height * 0.4, fx.cz,
-                4, fx.radius * 0.5, fx.height * 0.4, fx.radius * 0.5, 0.02);
-        // 3. Enderman-style teleport swirl (portal particles) around the column.
-        force(sl, ParticleTypes.PORTAL, fx.cx, fx.bottom + fx.height * 0.5, fx.cz,
-                8, fx.radius, fx.height * 0.5, fx.radius, 0.0);
+        if (fx.lime) {
+            // 2. Lime: happy-villager sparkles rising + a lime swirl ring.
+            force(sl, ParticleTypes.HAPPY_VILLAGER, fx.cx, fx.bottom + fx.height * 0.4, fx.cz,
+                    4, fx.radius * 0.5, fx.height * 0.4, fx.radius * 0.5, 0.02);
+            force(sl, LIME_DUST, fx.cx, fx.bottom + fx.height * 0.5, fx.cz,
+                    8, fx.radius, fx.height * 0.5, fx.radius, 0.0);
+        } else {
+            // 2. Soul particles rising through the hitbox volume.
+            force(sl, ParticleTypes.SOUL, fx.cx, fx.bottom + fx.height * 0.4, fx.cz,
+                    4, fx.radius * 0.5, fx.height * 0.4, fx.radius * 0.5, 0.02);
+            // 3. Enderman-style teleport swirl (portal particles) around the column.
+            force(sl, ParticleTypes.PORTAL, fx.cx, fx.bottom + fx.height * 0.5, fx.cz,
+                    8, fx.radius, fx.height * 0.5, fx.radius, 0.0);
+        }
     }
 
     /** Send a particle with long-distance ("force") visibility to every nearby player, so a banishment is

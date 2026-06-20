@@ -27,7 +27,8 @@ public final class EmeraldInfection {
         Entity src = event.getSource().getEntity(); // attacker / arrow shooter / creeper (explosion) / wither (skull)
         if (!Factions.isEmerald(src)) return;
         LivingEntity victim = event.getEntity();
-        if (Factions.isEmerald(victim)) return;     // never infect a fellow emerald unit
+        // Spared factions are never infected (so they never convert): fellow emeralds, the village, the vindictive.
+        if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return;
         apply(victim);
     }
 

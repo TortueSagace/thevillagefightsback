@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:entity",
+  "random_sequence": "minecraft:entities/bat",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:emerald"
+        }
+      ]
+    }
+  ]
+}

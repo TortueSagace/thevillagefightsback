@@ -259,6 +259,20 @@ public final class InfectionManager {
         InfectionData.get(level).addInfestedPath(pos.asLong());
     }
 
+    /** Infested path blocks within {@code radius} of {@code center} (from the tracked set, verified still present).
+     *  Used by emerald-unit death effects (v1.0.3). Cheap: scans the bounded infested set, not the world. */
+    public static java.util.List<BlockPos> infestedPathsWithin(ServerLevel level, BlockPos center, double radius) {
+        java.util.List<BlockPos> out = new java.util.ArrayList<>();
+        double r2 = radius * radius;
+        InfectionData inf = InfectionData.get(level);
+        for (long l : inf.infestedSnapshot()) {
+            BlockPos p = BlockPos.of(l);
+            if (p.distSqr(center) > r2 || !level.isLoaded(p)) continue;
+            if (level.getBlockState(p).is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) out.add(p);
+        }
+        return out;
+    }
+
     // --- seeding (one-time per village when it reaches level 2) -------------------------------------
     private static void seedVillage(ServerLevel level, InfectionData inf, GlobalPos gp, BrainNodeData data) {
         BlockPos center = gp.pos();
