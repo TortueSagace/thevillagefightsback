@@ -59,6 +59,86 @@ DEFAULT_DENSITY = 0.08
 # upcoming eyes step / the render layer). Everyone else gets the paired vertical eyes.
 ONE_EYE = {"emerald_endermite", "emerald_guardian", "emerald_elder_guardian"}
 
+# Bright emissive emerald eye colour (matches the Emeraldger eyes). Rendered fullbright by an EyesLayer.
+EYE = (90, 255, 130, 255)
+
+# Front-of-FACE eye-band rectangle per mob (x0,y0,x1,y1) on the vanilla texture. The detector recolours the
+# darkest/most-saturated pixels found here (the real eyes) -- so the glow always lands on the face. Tuned to the
+# eye ROW so it won't grab nostrils/mouths. Mobs omitted here get eyes added in the screenshot-verified pass.
+HEAD_RECT = {
+    "emerald_sheep":        (3, 9, 11, 12),
+    "emerald_cow":          (3, 9, 11, 13),
+    "emerald_pig":          (3, 9, 11, 12),
+    "emerald_chicken":      (2, 3, 9, 8),
+    "emerald_cat":          (0, 3, 10, 8),
+    "emerald_wolf":         (0, 3, 11, 8),
+    "emerald_horse":        (0, 13, 9, 19),
+    "emerald_bat":          (1, 1, 11, 6),
+    "emerald_zombie":       (8, 10, 16, 12),
+    "emerald_skeleton":     (8, 10, 16, 12),
+    "emerald_enderman":     (8, 10, 16, 12),
+    "emerald_creeper":      (8, 9, 16, 12),
+    "emerald_endermite":    (2, 2, 8, 5),      # 1 eye
+    "emerald_iron_golem":   (40, 22, 76, 34),
+    "emerald_phantom":      (4, 4, 20, 9),
+    "emerald_wither":       (8, 8, 16, 12),
+    "emerald_guardian":     (4, 4, 14, 12),    # 1 big central eye
+    "emerald_elder_guardian": (4, 4, 14, 12),  # 1 big central eye
+}
+
+def detect_eyes(vimg, rect, n):
+    """Return up to n eye pixel positions in `rect` of the VANILLA image: the darkest (or, for coloured eyes,
+    most-saturated) opaque pixels, merged into n clusters by x. Empty if the rect is too flat (no clear eyes)."""
+    x0, y0, x1, y1 = rect
+    px = vimg.convert("RGBA").load()
+    w, h = vimg.size
+    cands = []
+    for y in range(max(0, y0), min(h, y1)):
+        for x in range(max(0, x0), min(w, x1)):
+            r, g, b, a = px[x, y]
+            if a < 200:
+                continue
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            sat = max(r, g, b) - min(r, g, b)
+            cands.append((255 - lum + 0.6 * sat, x, y))
+    if not cands:
+        return []
+    cands.sort(reverse=True)
+    best = cands[0][0]
+    if best < 40:                 # nothing clearly eye-like in this rect -> skip rather than misplace
+        return []
+    keep = [c for c in cands if c[0] >= best * 0.72][:8]   # the eye cluster(s)
+    keep.sort(key=lambda c: c[1])                          # by x (left -> right)
+    if n == 1:
+        xs = [c[1] for c in keep]; ys = [c[2] for c in keep]
+        return [(round(sum(xs) / len(xs)), round(sum(ys) / len(ys)))]
+    # n==2: split into a left and right group on the x gap, take each group's darkest pixel
+    midx = (keep[0][1] + keep[-1][1]) / 2.0
+    left = [c for c in keep if c[1] <= midx] or [keep[0]]
+    right = [c for c in keep if c[1] > midx] or [keep[-1]]
+    return [(max(left)[1], max(left)[2]), (max(right)[1], max(right)[2])]
+
+def gen_eyes(zf, mob, subpath):
+    rect = HEAD_RECT.get(mob)
+    if rect is None:
+        return False
+    vimg = load_vanilla(zf, subpath, folder="entity")
+    n = 1 if mob in ONE_EYE else 2
+    eyes = detect_eyes(vimg, rect, n)
+    if not eyes:
+        print("  eyes:", mob, "-> none detected (left for screenshot pass)")
+        return False
+    overlay = Image.new("RGBA", vimg.size, (0, 0, 0, 0))
+    op = overlay.load()
+    for (x, y) in eyes:
+        op[x, y] = EYE
+        if y + 1 < vimg.size[1]:
+            op[x, y + 1] = EYE        # 1x2 vertical eye, like the Emeraldger
+    mkdir(ENT)
+    overlay.save(os.path.join(ENT, mob + "_eyes.png"))
+    print("  eyes:", mob, "->", eyes)
+    return True
+
 def gen_body(zf, mob, subpath):
     img = green_tint(load_vanilla(zf, subpath, folder="entity"))
     img = emerald_fleck(img, mob, density=FLECK_DENSITY.get(mob, DEFAULT_DENSITY))
@@ -78,12 +158,14 @@ def gen_sheep(zf):
 def main():
     with zipfile.ZipFile(JAR) as zf:
         gen_sheep(zf)
+        gen_eyes(zf, "emerald_sheep", "sheep/sheep")
         for mob, sub in MOB_TEXTURES.items():
             try:
                 gen_body(zf, mob, sub)
+                gen_eyes(zf, mob, sub)
             except KeyError as e:
                 print("  !! missing vanilla texture for", mob, "->", sub, e)
-    print("done. (eyes + animated emissive glow are added in the next step, per-mob.)")
+    print("done. (animated emissive glow layer comes next.)")
 
 if __name__ == "__main__":
     main()
