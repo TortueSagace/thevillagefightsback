@@ -934,6 +934,9 @@ public final class BrainNodeEvents {
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
 
+            // v1.0.3: every sunset each village also gets one emerald bat (a nightly emerald scout).
+            if (Config.mobInfectionEnabled()) spawnDefender(level, gp.pos(), ModEntities.EMERALD_BAT.get(), null);
+
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
 
             // Daily harvest = one emerald per nearby defender, increased by 10% for EACH node in the income
@@ -978,6 +981,12 @@ public final class BrainNodeEvents {
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
             for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
+            // v1.0.3: the brain settles 2 emerald cats alongside its villagers (emerald scouts that roam off to
+            // hunt threats). Capped so they don't pile up near the village; gated by enable_mob_infection.
+            if (Config.mobInfectionEnabled()
+                    && level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() < 10) {
+                for (int i = 0; i < 2; i++) spawnDefender(level, pos, ModEntities.EMERALD_CAT.get(), outside);
+            }
         }
 
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
