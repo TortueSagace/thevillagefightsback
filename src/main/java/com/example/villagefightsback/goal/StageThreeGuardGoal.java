@@ -276,10 +276,9 @@ public class StageThreeGuardGoal extends Goal {
 
     // --- SLASHER (low ceiling fallback) ---------------------------------------------------------
     private void slasher(LivingEntity t, double dist) {
-        // Stage-4 guards wield the Alien Eradicator (Virus II); vindictive guards keep the plain slasher (Virus I).
-        boolean eradicate = com.example.villagefightsback.UpgradeState.isStage4(guard)
-                && !(guard instanceof com.example.villagefightsback.VindictiveGuardEntity);
-        setMainhand(eradicate ? GuardWeapons.eradicator() : GuardWeapons.slasher());
+        // Guards ALWAYS melee with the plain Alien Slasher. The Alien Eradicator (Virus II) is a VILLAGER-only
+        // weapon and must never be equipped on a guard.
+        setMainhand(GuardWeapons.slasher());
         com.example.villagefightsback.NavThrottle.follow(guard, t, 1.15);
         if (guard.distanceToSqr(t) <= REACH_SQR && meleeCooldown <= 0) {
             guard.swing(InteractionHand.MAIN_HAND);

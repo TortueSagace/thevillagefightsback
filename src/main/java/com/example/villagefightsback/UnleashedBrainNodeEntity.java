@@ -28,7 +28,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.warden.Warden;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -374,8 +373,6 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
 
     // --- kill -> vindictive guard + 64-kill win -------------------------------------------------
     private static final int MAX_GUARDS = 20; // cap simultaneous vindictive guards in the boss's reach
-    /** On revert, EVERY vindictive unit within this radius of the reborn node turns back to normal. */
-    private static final double REVERT_RADIUS = 128.0;
 
     /** A small sculk-soul puff marking a vindictive unit snapping back to normal on the spirit's revert. */
     private static void revertPuff(ServerLevel sl, BlockPos p) {
@@ -450,35 +447,64 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         // when a player is near, walls/defenders/economy all rebuild off data.blocks()).
         sl.setBlock(at, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3);
 
-        // EVERY vindictive unit in the area reverts to a normal one (the spirit's hold is broken). Use a
-        // generous radius so none are missed: guards -> stage-3 villagers, gigachads -> normal gigachad golems.
-        net.minecraft.world.phys.AABB area = new net.minecraft.world.phys.AABB(at).inflate(REVERT_RADIUS);
-        for (VindictiveGuardEntity vg : sl.getEntitiesOfClass(VindictiveGuardEntity.class, area)) {
+        // EVERY vindictive unit in the dimension reverts to its village variant -- handled by the removal hook
+        // (remove() below) the moment this spirit is discarded, so the win path and a normal death behave the same.
+        sl.players().forEach(pl -> pl.displayClientMessage(
+                Component.literal("§5The Village Brain Node is reborn. The village rises again."), false));
+        bossBar.removeAllPlayers();
+        discard(); // -> remove(DISCARDED) -> revertAllVindictive(sl)
+    }
+
+    private static final net.minecraft.resources.ResourceLocation GUARD_ID =
+            new net.minecraft.resources.ResourceLocation("guardvillagers", "guard");
+
+    /**
+     * Revert EVERY vindictive unit currently loaded in {@code sl} to its village variant: vindictive guards
+     * become stage-3 guards, vindictive gigachads become gigachad golems. Called the instant the LAST Vindictive
+     * Village Spirit leaves the dimension (death, /kill, or the win-revert), since the faction's hold is broken.
+     */
+    public static void revertAllVindictive(ServerLevel sl) {
+        java.util.List<VindictiveGuardEntity> guards = new java.util.ArrayList<>();
+        java.util.List<VindictiveGigachadEntity> gigas = new java.util.ArrayList<>();
+        for (net.minecraft.world.entity.Entity e : sl.getAllEntities()) {
+            if (e instanceof VindictiveGuardEntity vg) guards.add(vg);
+            else if (e instanceof VindictiveGigachadEntity vgc) gigas.add(vgc);
+        }
+        net.minecraft.world.entity.EntityType<?> guardType =
+                net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        for (VindictiveGuardEntity vg : guards) {
             BlockPos p = vg.blockPosition();
+            float yaw = vg.getYRot();
             vg.discard();
-            Villager v = EntityType.VILLAGER.create(sl);
-            if (v == null) continue;
-            v.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, vg.getYRot(), 0.0F);
-            v.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
-            v.setBaby(false);
-            UpgradeState.setUpgraded(v);   // stage-3 villager (armed by VillageEvents#onEntityJoin)
-            sl.addFreshEntity(v);
+            if (guardType == null) continue; // Guard Villagers not installed -> the vindictive guard just leaves
+            if (!(guardType.create(sl) instanceof net.minecraft.world.entity.Mob guard)) continue;
+            guard.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, yaw, 0.0F);
+            UpgradeState.setUpgraded(guard); // stage 3 (armed by VillageEvents#onEntityJoin)
+            guard.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
+            sl.addFreshEntity(guard);
             revertPuff(sl, p);
         }
-        for (VindictiveGigachadEntity vgc : sl.getEntitiesOfClass(VindictiveGigachadEntity.class, area)) {
+        for (VindictiveGigachadEntity vgc : gigas) {
             BlockPos p = vgc.blockPosition();
+            float yaw = vgc.getYRot();
             vgc.discard();
             GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(sl);
             if (g == null) continue;
-            g.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, vgc.getYRot(), 0.0F);
+            g.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, yaw, 0.0F);
             g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
             sl.addFreshEntity(g);
             revertPuff(sl, p);
         }
-        sl.players().forEach(pl -> pl.displayClientMessage(
-                Component.literal("§5The Village Brain Node is reborn. The village rises again."), false));
-        bossBar.removeAllPlayers();
-        discard();
+    }
+
+    /** True when no OTHER Vindictive Village Spirit is still alive in {@code sl} (so this one was the last). */
+    private boolean isLastSpiritIn(ServerLevel sl) {
+        for (net.minecraft.world.entity.Entity e : sl.getAllEntities()) {
+            if (e != this && e instanceof UnleashedBrainNodeEntity other && other.isAlive() && !other.isRemoved()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // --- immunity (like an Emeraldger) + no fall damage -----------------------------------------
@@ -497,7 +523,15 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     public void stopSeenByPlayer(ServerPlayer player) { super.stopSeenByPlayer(player); bossBar.removePlayer(player); }
 
     @Override
-    public void remove(RemovalReason reason) { bossBar.removeAllPlayers(); super.remove(reason); }
+    public void remove(RemovalReason reason) {
+        bossBar.removeAllPlayers();
+        // The instant the LAST spirit truly leaves the dimension (killed / discarded / win-revert -- NOT a chunk
+        // unload or dimension change), its whole vindictive faction reverts to village units.
+        if (reason.shouldDestroy() && level() instanceof ServerLevel sl && isLastSpiritIn(sl)) {
+            revertAllVindictive(sl);
+        }
+        super.remove(reason);
+    }
 
     // --- persistence ----------------------------------------------------------------------------
     @Override

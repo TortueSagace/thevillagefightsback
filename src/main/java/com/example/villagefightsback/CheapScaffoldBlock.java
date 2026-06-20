@@ -1,14 +1,13 @@
 package com.example.villagefightsback;
 
-import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
@@ -19,9 +18,9 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 /**
  * A throwaway "cheap scaffold": identical to vanilla scaffolding to stand on / climb, but every cheap
- * scaffold auto-breaks ~30s after it is placed. Drop rule: it drops itself ONLY when a player mines it;
- * every other cause (the ~30s auto-break, loss of support, a builder clearing it, fire, or an explosion)
- * drops nothing -- see {@link #getDrops}.
+ * scaffold auto-breaks ~30s after it is placed. Drop rule: it drops itself ONLY when broken with a Silk
+ * Touch tool; every other cause (a plain/bare-hand break, the ~30s auto-break, loss of support, a builder
+ * clearing it, fire, or an explosion) drops nothing -- see {@link #getDrops}.
  * Placements are registered with {@link CheapScaffoldManager}, which batches scaffolds placed close
  * together onto one shared timer for efficiency.
  */
@@ -39,14 +38,15 @@ public class CheapScaffoldBlock extends ScaffoldingBlock {
     }
 
     /**
-     * Drop the scaffold item if and ONLY if a player broke it. Any other cause -- the ~30s auto-break, loss
-     * of support, a builder clearing it, fire, or an explosion -- yields nothing (the loot context has no
-     * THIS_ENTITY, or it isn't a player). This overrides the loot table entirely.
+     * Drop the scaffold item if and ONLY if it was broken with a Silk Touch tool. Any other cause -- a plain
+     * break, the ~30s auto-break, loss of support, a builder clearing it, fire, or an explosion -- yields
+     * nothing. This overrides the loot table entirely. Mirrors {@link VillageBrainNodeBlock#getDrops}.
      */
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
-        Entity breaker = params.getOptionalParameter(LootContextParams.THIS_ENTITY);
-        return breaker instanceof Player ? List.of(new ItemStack(this)) : Collections.emptyList();
+        ItemStack tool = params.getOptionalParameter(LootContextParams.TOOL);
+        int silk = tool == null ? 0 : EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool);
+        return silk > 0 ? List.of(new ItemStack(this)) : List.of();
     }
 
     @Override

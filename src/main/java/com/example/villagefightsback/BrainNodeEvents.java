@@ -82,6 +82,7 @@ public final class BrainNodeEvents {
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
         BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
         handleSunsetIncome(server, data);
+        collectLooseEmeralds(server, data); // brain vacuums up unpicked dropped emeralds near each node
         syncVisuals(server, data);
         checkStageBells(server, data);  // ring a bell whenever a brain node reaches a new stage
         pulseHeartbeats(server, data); // calm Warden heartbeat from every loaded brain node (~2s cadence)
@@ -1153,6 +1154,41 @@ public final class BrainNodeEvents {
     private static void broadcast(MinecraftServer server, String message) {
         server.getPlayerList().broadcastSystemMessage(Component.literal(message), false);
     }
+
+    /** Broadcast the §5 phase banner for {@code level} to all players. Used for the daily level-up announce and,
+     *  from {@link BrainNodeData.Econ#addEmeralds}, to re-show a phase (e.g. SETTLEMENT PHASE) when a node devolves. */
+    public static void broadcastPhaseBanner(MinecraftServer server, int level) {
+        broadcast(server, phaseBanner(level));
+    }
+
+    /** Collection sweep: each brain node vacuums up unpicked emerald item-entities near it (~1s after they land,
+     *  so players get first dibs). Efficient by construction -- it piggybacks the throttled {@value #TICK_INTERVAL}
+     *  -tick driver and scans only a small {@link #COLLECT_RADIUS} AABB per node (never a full-village sweep). */
+    private static void collectLooseEmeralds(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(gp.pos()).inflate(COLLECT_RADIUS);
+            java.util.List<net.minecraft.world.entity.item.ItemEntity> loose = level.getEntitiesOfClass(
+                    net.minecraft.world.entity.item.ItemEntity.class, box,
+                    e -> e.isAlive() && e.getAge() >= COLLECT_MIN_AGE
+                            && e.getItem().is(net.minecraft.world.item.Items.EMERALD));
+            if (loose.isEmpty()) continue;
+            int collected = 0;
+            for (net.minecraft.world.entity.item.ItemEntity ie : loose) {
+                collected += ie.getItem().getCount();
+                ie.discard();
+            }
+            if (collected > 0) {
+                data.econ(gp).addEmeralds(collected);
+                level.playSound(null, gp.pos(), net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
+                        net.minecraft.sounds.SoundSource.NEUTRAL, 0.5F, 1.6F);
+            }
+        }
+    }
+
+    private static final double COLLECT_RADIUS = 32.0; // brain vacuums unpicked emeralds within this of a node
+    private static final int COLLECT_MIN_AGE = 20;     // only after ~1s on the floor (players get first dibs)
 
     /** The short stage-transition banner shown when a brain node reaches {@code level}. All phases use the
      *  same purple as SETTLEMENT PHASE, so a level-up reads as the named phase, not a generic "evolved" line. */

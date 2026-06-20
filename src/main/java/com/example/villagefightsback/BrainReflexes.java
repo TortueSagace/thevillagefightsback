@@ -217,7 +217,7 @@ public final class BrainReflexes {
         // A-FIRE (all stages): for 1 gem on a 1-minute cooldown, douse ALL fire within the brain's radius -- but
         // only when fire is actually present (so it never wastes a gem). Vanilla fire + soul fire only (the mod
         // adds none of its own; other mods' custom fire is left untouched).
-        if (Config.brainExtinguishesFire() && now >= s.cdFireExtinguish && econ.getEmeralds() >= 1) {
+        if (Config.brainExtinguishesFire() && now >= s.cdFireExtinguish) {
             int doused = extinguishFire(level, brain, (int) RADIUS);
             if (doused > 0 && econ.spendEmeralds(1)) {
                 s.cdFireExtinguish = now + CD_1M;

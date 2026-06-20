@@ -182,7 +182,10 @@ public class MinerGoal extends Goal {
         if (brainNode == null) return; // nowhere to deliver yet; keep carrying (until the timeout above)
         Vec3 c = Vec3.atCenterOf(brainNode);
         villager.getLookControl().setLookAt(c.x, c.y, c.z);
-        if (villager.position().distanceToSqr(c) <= FEED_RANGE_SQR) {
+        // Reach check is HORIZONTAL only (ignore Y): a brain node can sit several blocks above ground, which a
+        // 3D distance would never satisfy from the floor -- the miner just needs to be under/next to it.
+        double dx = villager.getX() - c.x, dz = villager.getZ() - c.z;
+        if (dx * dx + dz * dz <= FEED_RANGE_SQR) {
             // Feed: +1 emerald to this village's economy, consume the held emerald.
             BrainNodeData data = BrainNodeData.get(sl.getServer());
             data.econ(GlobalPos.of(sl.dimension(), brainNode.immutable())).addEmeralds(1);

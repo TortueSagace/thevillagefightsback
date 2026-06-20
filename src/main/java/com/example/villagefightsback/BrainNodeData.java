@@ -31,6 +31,8 @@ public class BrainNodeData extends SavedData {
     private static final String NAME = "thevillagefightsback_brain_node";
 
     public static final int MAX_LEVEL = 4;
+    /** Emeralds may go this far into the red, but ONLY at level 1 (the village's max debt / last stand). */
+    public static final int MIN_EMERALDS_LEVEL1 = -32;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
     private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
@@ -80,28 +82,47 @@ public class BrainNodeData extends SavedData {
         public long getLastIncomeDay() { return lastIncomeDay; }
         public void setLastIncomeDay(long day) { lastIncomeDay = day; setDirty(); }
 
-        /** Add emeralds toward evolution; returns how many levels were gained. At max level there is no next
-         *  level, so the emeralds simply keep accumulating as a stored treasury count. */
+        /**
+         * Change the village's emerald balance. Positive {@code n}: accumulate and level UP while affordable
+         * (unchanged). Negative {@code n}: spend, and if the balance goes below 0 at level &gt; 1 the village
+         * DEVOLVES one stage at a time -- dropping a level and refunding the cost that bought it (so a small
+         * overspend cashes the stage in rather than going deep negative); e.g. level 2 @ 0, spend 10 -&gt; level 1
+         * @ 22 (=-10+32). At level 1 the balance simply floors at {@link #MIN_EMERALDS_LEVEL1}. On a devolve the
+         * lower phase banner (e.g. SETTLEMENT PHASE) is re-broadcast. Returns +levels gained, 0, or -levels lost.
+         */
         public int addEmeralds(int n) {
-            if (n <= 0) return 0;
+            if (n == 0) return 0;
             emeralds += n;
-            int gained = 0;
-            while (!isMaxLevel()) {
-                int cost = scaledCost(level);
-                if (emeralds < cost) break;
-                emeralds -= cost;
-                level++;
-                gained++;
+            int delta = 0;
+            if (n > 0) {
+                while (!isMaxLevel()) {
+                    int cost = scaledCost(level);
+                    if (emeralds < cost) break;
+                    emeralds -= cost;
+                    level++;
+                    delta++;
+                }
+            } else {
+                while (emeralds < 0 && level > 1) {
+                    level--;
+                    emeralds += scaledCost(level); // refund the cost that bought the stage we just left
+                    delta--;
+                }
+                if (level <= 1 && emeralds < MIN_EMERALDS_LEVEL1) emeralds = MIN_EMERALDS_LEVEL1; // floor at lvl 1
             }
             setDirty();
-            return gained;
+            if (delta < 0) { // a devolve happened -> re-show the (now lower) phase, e.g. "SETTLEMENT PHASE"
+                MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+                if (server != null) BrainNodeEvents.broadcastPhaseBanner(server, level);
+            }
+            return delta;
         }
 
-        /** Spend {@code n} accumulated gems on a reflex; returns false (and spends nothing) if there aren't enough. */
+        /** Spend {@code n} gems on a reflex. ALWAYS succeeds (n &gt; 0): the balance may go negative / devolve /
+         *  floor via {@link #addEmeralds}, so the village can defend itself on credit (and devolve under pressure). */
         public boolean spendEmeralds(int n) {
-            if (n <= 0 || emeralds < n) return false;
-            emeralds -= n;
-            setDirty();
+            if (n <= 0) return false;
+            addEmeralds(-n);
             return true;
         }
     }

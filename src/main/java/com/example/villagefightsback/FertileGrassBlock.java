@@ -1,6 +1,11 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.infection.BlockMatcher;
+import com.example.villagefightsback.infection.InfectionData;
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BushBlock;
@@ -12,7 +17,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Fertile Grass: the green, glowing PLANT (a short-grass-like bush, not a full block) that the infection
  * turns ordinary plants into as it spreads. Walk-through (no collision), cutout cross model, emissive so it
  * reads vividly green. It is an "alien" grass, so it takes root on practically any solid block below (incl.
- * our fertile ground), not just dirt. There is no rich variant.
+ * our fertile ground), not just dirt. There is no rich variant. As living alien grass it slowly FERTILIZES
+ * the soil under it: on a random tick it converts the block below into its Fertile variant (see {@link #randomTick}).
  */
 public class FertileGrassBlock extends BushBlock {
     private static final VoxelShape SHAPE = Block.box(2.0, 0.0, 2.0, 14.0, 13.0, 14.0);
@@ -30,5 +36,24 @@ public class FertileGrassBlock extends BushBlock {
     @Override
     protected boolean mayPlaceOn(BlockState soil, BlockGetter level, BlockPos pos) {
         return !soil.isAir();
+    }
+
+    @Override
+    public boolean isRandomlyTicking(BlockState state) {
+        return true; // so it can fertilize the soil beneath it over time
+    }
+
+    /** Convert the block directly below into its Fertile variant (the same rules the spreading infection uses),
+     *  so alien grass standing on ordinary ground slowly turns that ground fertile. Counts toward the infection
+     *  footprint so the brain-node UI tally stays accurate; no-ops once the soil is already infection/uneligible. */
+    @Override
+    public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        BlockPos below = pos.below();
+        BlockState soil = level.getBlockState(below);
+        if (!BlockMatcher.isCandidate(level, below, soil)) return;
+        BlockState converted = BlockMatcher.convertedState(soil, false); // fertile (not rich)
+        if (converted == null || converted.is(soil.getBlock())) return;
+        level.setBlock(below, converted, 3);
+        InfectionData.get(level).incConverted();
     }
 }
