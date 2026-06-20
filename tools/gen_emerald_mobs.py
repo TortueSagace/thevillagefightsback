@@ -43,14 +43,21 @@ MOB_TEXTURES = {
     "emerald_iron_golem": "iron_golem/iron_golem",
     "emerald_phantom":    "phantom",
     "emerald_wither":     "wither/wither",
+    "emerald_guardian":       "guardian",
+    "emerald_elder_guardian": "guardian_elder",
 }
 
 # Per-mob FLECK density (sparser on big/!humanoid skins so it reads as flecks, not noise).
 FLECK_DENSITY = {
     "emerald_iron_golem": 0.04, "emerald_wither": 0.04, "emerald_enderman": 0.05,
     "emerald_horse": 0.05, "emerald_phantom": 0.06,
+    "emerald_guardian": 0.05, "emerald_elder_guardian": 0.05,
 }
 DEFAULT_DENSITY = 0.08
+
+# Mobs that get a SINGLE central glowing eye instead of the Emeraldger's two vertical eyes (used by the
+# upcoming eyes step / the render layer). Everyone else gets the paired vertical eyes.
+ONE_EYE = {"emerald_endermite", "emerald_guardian", "emerald_elder_guardian"}
 
 def gen_body(zf, mob, subpath):
     img = green_tint(load_vanilla(zf, subpath, folder="entity"))
