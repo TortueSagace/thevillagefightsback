@@ -27,10 +27,12 @@ public class EmeraldCat extends Cat implements EmeraldUnit {
     protected void registerGoals() {
         super.registerGoals();
         EmeraldMobs.addEmeraldGoals(this, true);
+        EmeraldMobs.addExplorer(this); // brain-summoned scout: roam to seek out infection sources
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Cat.createAttributes().add(Attributes.ATTACK_DAMAGE, 5.0D);
+        // Large follow range so it detects infectable mobs from afar and goes hunting them.
+        return Cat.createAttributes().add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.FOLLOW_RANGE, 48.0D);
     }
 
     @Override

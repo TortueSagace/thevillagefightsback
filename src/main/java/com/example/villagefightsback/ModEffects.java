@@ -40,6 +40,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> KARATS_WILL =
             EFFECTS.register("karats_will", KaratsWillEffect::new);
 
+    /** "Emerald Infection": any hit from an emerald-faction unit inflicts it; Wither I, no particles; a unit that
+     *  dies carrying it is converted into an emerald unit (see {@link EmeraldInfectionEffect} / {@link EmeraldInfection}). */
+    public static final RegistryObject<MobEffect> EMERALD_INFECTION =
+            EFFECTS.register("emerald_infection", EmeraldInfectionEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }

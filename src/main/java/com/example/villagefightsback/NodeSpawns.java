@@ -53,6 +53,19 @@ public final class NodeSpawns {
         BlockPos spot = belowOrAbove(level, node, 3);
         if (spot == null) return;
         float yaw = level.getRandom().nextFloat() * 360.0F;
+        // At ANY stage, a 10% chance to also forge a stray EMERALD iron golem alongside the normal one.
+        if (level.getRandom().nextFloat() < 0.10F) {
+            EmeraldIronGolem eg = ModEntities.EMERALD_IRON_GOLEM.get().create(level);
+            if (eg != null) {
+                BlockPos espot = belowOrAbove(level, node, 3);
+                if (espot != null) {
+                    eg.moveTo(espot.getX() + 0.5, espot.getY(), espot.getZ() + 0.5,
+                            level.getRandom().nextFloat() * 360.0F, 0.0F);
+                    eg.finalizeSpawn(level, level.getCurrentDifficultyAt(espot), MobSpawnType.EVENT, null, null);
+                    level.addFreshEntity(eg);
+                }
+            }
+        }
         if (stage >= 4) {
             GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(level);
             if (g == null) return;

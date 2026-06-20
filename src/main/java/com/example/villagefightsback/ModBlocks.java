@@ -650,6 +650,26 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
                 for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
 
+                // === Emerald faction (v1.0.3 mob infection) spawn eggs ===
+                output.accept(ModItems.EMERALD_COW_SPAWN.get());
+                output.accept(ModItems.EMERALD_CHICKEN_SPAWN.get());
+                output.accept(ModItems.EMERALD_CAT_SPAWN.get());
+                output.accept(ModItems.EMERALD_ENDERMITE_SPAWN.get());
+                output.accept(ModItems.EMERALD_WOLF_SPAWN.get());
+                output.accept(ModItems.EMERALD_HORSE_SPAWN.get());
+                output.accept(ModItems.EMERALD_PIG_SPAWN.get());
+                output.accept(ModItems.EMERALD_SALMON_SPAWN.get());
+                output.accept(ModItems.EMERALD_BAT_SPAWN.get());
+                output.accept(ModItems.EMERALD_ZOMBIE_SPAWN.get());
+                output.accept(ModItems.EMERALD_SKELETON_SPAWN.get());
+                output.accept(ModItems.EMERALD_CREEPER_SPAWN.get());
+                output.accept(ModItems.EMERALD_ENDERMAN_SPAWN.get());
+                output.accept(ModItems.EMERALD_IRON_GOLEM_SPAWN.get());
+                output.accept(ModItems.EMERALD_PHANTOM_SPAWN.get());
+                output.accept(ModItems.EMERALD_WITHER_SPAWN.get());
+                output.accept(ModItems.EMERALD_GUARDIAN_SPAWN.get());
+                output.accept(ModItems.EMERALD_ELDER_GUARDIAN_SPAWN.get());
+
                 // === Limbo cluster (the end): blocks -> materials -> potions -> armour -> tools ===
                 output.accept(LIMBO_BLOCK_ITEM.get());
                 output.accept(LIMBO_BED_ITEM.get());

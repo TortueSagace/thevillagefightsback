@@ -53,4 +53,10 @@ public final class EmeraldMobs {
     public static double passiveAttackDamage(double maxHealth) {
         return Math.max(1.0, maxHealth * 0.5);
     }
+
+    /** Make a unit a SCOUT: roam widely when it has no target so it actively goes looking for infection sources
+     *  (the brain-summoned emerald cats + bats). Pair with a large FOLLOW_RANGE so it detects targets from afar. */
+    public static void addExplorer(PathfinderMob mob) {
+        mob.goalSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal(mob, 1.2D));
+    }
 }

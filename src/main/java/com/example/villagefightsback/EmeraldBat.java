@@ -32,7 +32,8 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 6.0D);
+        // Large follow range so the flitting bat detects (and homes in on) infectable mobs from afar.
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.FOLLOW_RANGE, 48.0D);
     }
 
     @Override
