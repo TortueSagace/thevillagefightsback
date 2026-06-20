@@ -29,6 +29,7 @@ public class EmeraldWitherRenderer extends WitherBossRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_wither"));
     }
 
     @Override

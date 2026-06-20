@@ -29,6 +29,7 @@ public class EmeraldIronGolemRenderer extends IronGolemRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_iron_golem"));
     }
 
     @Override

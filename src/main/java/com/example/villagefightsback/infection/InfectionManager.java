@@ -108,10 +108,12 @@ public final class InfectionManager {
                 long now = level.getGameTime();
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
-                double[][] ranges = brainNodeRanges(gdata, level); // {cx, cz, rangeSqr} per in-range brainNode
-                if (ranges.length == 0) continue;                  // no active brainNode here -> nothing to infect
-                // Constant base speed (no first-seconds buff); only a local "fighting back" boost speeds things up.
-                growPaths(level, inf, now, ranges);
+                double[][] brain = brainNodeRanges(gdata, level);  // {cx, cz, rangeSqr, speed=1.0} per brainNode
+                double[][] ranges = concat(brain, infestedRanges(inf)); // + slow emerald infested-path sources (0.2)
+                if (ranges.length == 0) continue;                  // nothing active here -> nothing to infect
+                // Dirt paths still grow only within brain ranges; conversion spreads across both, but the convert
+                // chance is scaled by speedAt() so infested-only ground proliferates at 1/5 the brain rate.
+                growPaths(level, inf, now, brain);
                 convert(level, inf, now, ranges);
             }
         }
@@ -131,9 +133,49 @@ public final class InfectionManager {
             // per-stage factor still applies on top.
             double r = INFECT_RANGE_FULL * com.example.villagefightsback.Config.brainRadiusMult()
                     * com.example.villagefightsback.Config.infectionReachMult() * factor;
-            out.add(new double[]{gp.pos().getX() + 0.5, gp.pos().getZ() + 0.5, r * r});
+            out.add(new double[]{gp.pos().getX() + 0.5, gp.pos().getZ() + 0.5, r * r, 1.0}); // speed 1.0 = full
         }
         return out.toArray(new double[0][]);
+    }
+
+    private static final double INFESTED_SPEED = 0.2; // emerald infested paths proliferate 5x slower than a brain
+
+    /** Per-infested-path proliferation reach: a full stage-4 radius around each tracked infested path block, but at
+     *  the slow speed factor -- so the emerald faction's blocks spread on their own (away from any village) at 1/5
+     *  the rate, reusing the same growth/conversion engine. */
+    private static double[][] infestedRanges(InfectionData inf) {
+        List<double[]> out = new ArrayList<>();
+        double r = INFECT_RANGE_FULL * com.example.villagefightsback.Config.brainRadiusMult()
+                * com.example.villagefightsback.Config.infectionReachMult();
+        double rr = r * r;
+        for (long l : inf.infestedSnapshot()) {
+            BlockPos p = BlockPos.of(l);
+            out.add(new double[]{p.getX() + 0.5, p.getZ() + 0.5, rr, INFESTED_SPEED});
+        }
+        return out.toArray(new double[0][]);
+    }
+
+    private static double[][] concat(double[][] a, double[][] b) {
+        if (a.length == 0) return b;
+        if (b.length == 0) return a;
+        double[][] out = new double[a.length + b.length][];
+        System.arraycopy(a, 0, out, 0, a.length);
+        System.arraycopy(b, 0, out, a.length, b.length);
+        return out;
+    }
+
+    /** The fastest proliferation speed factor covering (x,z): a brain node (1.0) beats an infested path (0.2);
+     *  0 if no source covers it. Used to slow conversion in infested-only territory to 1/5 the brain rate. */
+    private static double speedAt(double x, double z, double[][] ranges) {
+        double best = 0.0;
+        for (double[] g : ranges) {
+            double dx = x - g[0], dz = z - g[1];
+            if (dx * dx + dz * dz <= g[2]) {
+                double sp = g.length > 3 ? g[3] : 1.0;
+                if (sp > best) best = sp;
+            }
+        }
+        return best;
     }
 
     /** True if (x,z) lies within any brain node's (stage-scaled) infection range. */
@@ -200,6 +242,21 @@ public final class InfectionManager {
         if (!(event.getEntity() instanceof Villager)) inf.addBoost(key, now + BOOST_DURATION);
         inf.retire(key);
         reactivateNeighbours(inf, sl, event.getPos());
+    }
+
+    /**
+     * Lay an infested path at {@code pos} (the block right below an emerald-converted unit), if block infection is
+     * enabled and that block is softer than ancient debris. Registers it as a slow, full-radius proliferation source
+     * (5x slower than a brain node). Safe to call on any thread-confined server context. (v1.0.3 mob infection.)
+     */
+    public static void placeInfestedPath(ServerLevel level, BlockPos pos) {
+        if (!com.example.villagefightsback.Config.blockInfectionEnabled()) return;
+        if (!level.isLoaded(pos)) return;
+        BlockState cur = level.getBlockState(pos);
+        if (cur.is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) return;        // already ours
+        if (cur.getBlock().getExplosionResistance() >= Blocks.ANCIENT_DEBRIS.getExplosionResistance()) return; // too tough
+        level.setBlock(pos, com.example.villagefightsback.ModBlocks.INFESTED_PATH.get().defaultBlockState(), 3);
+        InfectionData.get(level).addInfestedPath(pos.asLong());
     }
 
     // --- seeding (one-time per village when it reaches level 2) -------------------------------------
@@ -391,7 +448,9 @@ public final class InfectionManager {
 
             double mult = inf.multiplierAt(pos, now);
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR;            // not slowed while fighting back
-            double chance = Math.min(1.0, CONV_CHANCE * mult * slow * com.example.villagefightsback.Config.infectionSpeedMult());
+            double speed = speedAt(pos.getX() + 0.5, pos.getZ() + 0.5, ranges); // 1.0 near a brain, 0.2 infested-only
+            double chance = Math.min(1.0, CONV_CHANCE * mult * slow * speed
+                    * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() < chance) {
                 BlockState src = level.getBlockState(cand);
                 if (BlockMatcher.isWoodenDoor(src)) {                   // doors: replace BOTH halves at once

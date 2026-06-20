@@ -31,6 +31,7 @@ public class EmeraldHorseRenderer extends AbstractHorseRenderer<Horse, HorseMode
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_horse"));
     }
 
     @Override

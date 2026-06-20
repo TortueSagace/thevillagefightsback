@@ -27,6 +27,7 @@ public class EmeraldCatRenderer extends CatRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_cat"));
     }
 
     @Override

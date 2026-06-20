@@ -28,6 +28,7 @@ public class EmeraldZombieRenderer extends ZombieRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_zombie"));
     }
 
     @Override

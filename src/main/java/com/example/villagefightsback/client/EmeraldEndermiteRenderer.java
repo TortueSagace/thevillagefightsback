@@ -27,6 +27,7 @@ public class EmeraldEndermiteRenderer extends EndermiteRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_endermite"));
     }
 
     @Override

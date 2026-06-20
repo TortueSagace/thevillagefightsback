@@ -31,6 +31,12 @@ public class EmeraldSalmon extends Salmon implements EmeraldUnit {
         EmeraldMobs.addEmeraldGoals(this, true);
     }
 
+    /** The emerald salmon never suffocates out of water -- it hunts on dry land like the rest of the faction. */
+    @Override
+    protected void handleAirSupply(int airSupply) {
+        this.setAirSupply(300);
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 3.0D)

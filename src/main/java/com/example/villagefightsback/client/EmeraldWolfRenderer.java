@@ -28,6 +28,7 @@ public class EmeraldWolfRenderer extends WolfRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_wolf"));
     }
 
     @Override

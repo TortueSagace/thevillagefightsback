@@ -28,6 +28,7 @@ public class EmeraldBatRenderer extends BatRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_bat"));
     }
 
     @Override

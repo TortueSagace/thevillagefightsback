@@ -29,6 +29,7 @@ public class EmeraldCowRenderer extends CowRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_cow"));
     }
 
     @Override

@@ -27,6 +27,7 @@ public class EmeraldPhantomRenderer extends PhantomRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_phantom"));
     }
 
     @Override

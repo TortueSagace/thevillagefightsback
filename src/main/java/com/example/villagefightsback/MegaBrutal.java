@@ -61,6 +61,19 @@ public final class MegaBrutal {
         }
     }
 
+    /** The EMERALD faction is buffed too while mega_brutal_mode is on. They roam the whole world (far from any
+     *  brain node), so rather than a brain-node sweep this is a distributed per-entity tick: every loaded emerald
+     *  unit refreshes the same Strength/Regen/Resistance/Speed III buff, and emerald golems gain the blink. The
+     *  effects are short, so turning the switch off lets them lapse on their own. */
+    @SubscribeEvent
+    public static void onEmeraldTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent event) {
+        if (!Config.megaBrutalMode()) return;
+        LivingEntity e = event.getEntity();
+        if (e.level().isClientSide() || !(e instanceof EmeraldUnit) || e.tickCount % INTERVAL != 0) return;
+        buff(e);
+        if (e instanceof IronGolem golem) teleportToTarget(golem);
+    }
+
     /** Village units that should get the buffs (matches the village ally set; emeraldgers are effect-immune anyway). */
     private static boolean isBuffable(LivingEntity e) {
         if (!e.isAlive() || e instanceof EmeraldgerEntity) return false;

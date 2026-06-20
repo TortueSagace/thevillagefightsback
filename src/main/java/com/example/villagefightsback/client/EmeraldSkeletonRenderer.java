@@ -27,6 +27,7 @@ public class EmeraldSkeletonRenderer extends SkeletonRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_skeleton"));
     }
 
     @Override

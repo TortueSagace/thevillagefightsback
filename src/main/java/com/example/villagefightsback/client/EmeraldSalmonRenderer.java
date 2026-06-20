@@ -29,6 +29,7 @@ public class EmeraldSalmonRenderer extends SalmonRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_salmon"));
     }
 
     @Override

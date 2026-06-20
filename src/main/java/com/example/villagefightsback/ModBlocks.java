@@ -376,6 +376,15 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_GRASS_ITEM = ITEMS.register("fertile_grass",
             () -> new BlockItem(FERTILE_GRASS.get(), new Item.Properties()));
 
+    /** Infested Path (v1.0.3 mob infection): a lime, glowing path laid below an emerald-converted unit. Spreads
+     *  fertile/rich blocks like a village path -- to a stage-4 brain radius but 5x slower. See {@link InfestedPathBlock}
+     *  + {@link com.example.villagefightsback.infection.InfectionManager}. */
+    public static final RegistryObject<Block> INFESTED_PATH = BLOCKS.register("infested_path",
+            () -> new InfestedPathBlock(BlockBehaviour.Properties.copy(Blocks.DIRT_PATH)
+                    .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final RegistryObject<Item> INFESTED_PATH_ITEM = ITEMS.register("infested_path",
+            () -> new BlockItem(INFESTED_PATH.get(), new Item.Properties()));
+
     // Craftable fertile wood + cobble: fertile_planks (from fertile logs) -> stairs/slabs; fertile_cobblestone
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
     // materials) -- no tint on the crafted output.
@@ -669,6 +678,7 @@ public final class ModBlocks {
                 output.accept(ModItems.EMERALD_WITHER_SPAWN.get());
                 output.accept(ModItems.EMERALD_GUARDIAN_SPAWN.get());
                 output.accept(ModItems.EMERALD_ELDER_GUARDIAN_SPAWN.get());
+                output.accept(INFESTED_PATH_ITEM.get());
 
                 // === Limbo cluster (the end): blocks -> materials -> potions -> armour -> tools ===
                 output.accept(LIMBO_BLOCK_ITEM.get());

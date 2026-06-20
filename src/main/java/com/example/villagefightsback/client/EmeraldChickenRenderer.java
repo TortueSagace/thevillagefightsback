@@ -28,6 +28,7 @@ public class EmeraldChickenRenderer extends ChickenRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_chicken"));
     }
 
     @Override

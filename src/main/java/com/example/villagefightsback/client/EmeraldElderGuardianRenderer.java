@@ -29,6 +29,7 @@ public class EmeraldElderGuardianRenderer extends ElderGuardianRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_elder_guardian"));
     }
 
     @Override

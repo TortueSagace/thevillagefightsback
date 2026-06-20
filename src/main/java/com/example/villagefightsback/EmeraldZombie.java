@@ -28,6 +28,12 @@ public class EmeraldZombie extends Zombie implements EmeraldUnit {
         EmeraldMobs.addEmeraldGoals(this, false);
     }
 
+    /** Emerald undead don't burn in daylight. */
+    @Override
+    protected boolean isSunBurnTick() {
+        return false;
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return Zombie.createAttributes();
     }

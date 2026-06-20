@@ -27,6 +27,7 @@ public class EmeraldEndermanRenderer extends EndermanRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_enderman"));
     }
 
     @Override

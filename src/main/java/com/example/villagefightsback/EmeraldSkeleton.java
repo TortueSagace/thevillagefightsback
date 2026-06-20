@@ -29,6 +29,12 @@ public class EmeraldSkeleton extends Skeleton implements EmeraldUnit {
         EmeraldMobs.addEmeraldGoals(this, false);
     }
 
+    /** Emerald undead don't burn in daylight. */
+    @Override
+    protected boolean isSunBurnTick() {
+        return false;
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return AbstractSkeleton.createAttributes();
     }

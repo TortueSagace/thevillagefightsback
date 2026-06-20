@@ -29,6 +29,12 @@ public class EmeraldPhantom extends Phantom implements EmeraldUnit {
         EmeraldMobs.addEmeraldGoals(this, false);
     }
 
+    /** Emerald phantoms don't burn in daylight. */
+    @Override
+    protected boolean isSunBurnTick() {
+        return false;
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         // Phantom has no public createAttributes(); build from Monster's base.
         return net.minecraft.world.entity.monster.Monster.createMonsterAttributes()

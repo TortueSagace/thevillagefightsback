@@ -93,6 +93,7 @@ public final class BlockMatcher {
             if (f != null && r != null) upgradableFertile.add(f); // this fertile block can ripen into its rich form
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
+        if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
 
         // Villager job-site workstations + the meeting bell: never infected, so a village keeps its jobs.
         jobSites = new HashSet<>();
@@ -158,7 +159,9 @@ public final class BlockMatcher {
      *  a dirt-path vector (paths are just spread routes -- and plain dirt paths also occur naturally). */
     public static boolean isConverted(BlockState s) {
         init();
-        return infectionBlocks.contains(s.getBlock()) && !s.is(Blocks.DIRT_PATH);
+        if (!infectionBlocks.contains(s.getBlock())) return false;
+        if (s.is(Blocks.DIRT_PATH)) return false;
+        return !(ModBlocks.INFESTED_PATH.isPresent() && s.is(ModBlocks.INFESTED_PATH.get())); // path vector, not a tally block
     }
 
     public static boolean isRich(BlockState s) {

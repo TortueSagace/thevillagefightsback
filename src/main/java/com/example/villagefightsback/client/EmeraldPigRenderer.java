@@ -28,6 +28,7 @@ public class EmeraldPigRenderer extends PigRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_pig"));
     }
 
     @Override

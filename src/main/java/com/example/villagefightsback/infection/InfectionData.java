@@ -48,6 +48,13 @@ public class InfectionData extends SavedData {
     // --- which brainNodes have already been seeded (so we seed once per village) ---
     private final Set<Long> seeded = new HashSet<>();
 
+    // --- infested path blocks (v1.0.3): slow, full-radius proliferation sources placed by emerald conversion.
+    // Bounded FIFO: an evicted entry stays in the world (and its already-spread fertile ground remains), it just
+    // stops contributing a fresh proliferation radius, which keeps the per-pass range scan cheap. ---
+    public static final int INFESTED_CAP = 256;
+    private final ArrayDeque<Long> infested = new ArrayDeque<>();
+    private final Set<Long> infestedSet = new HashSet<>();
+
     private long fastUntil = Long.MIN_VALUE; // gametime until which infection runs at 5x (first 10s)
 
     // Running tally of "fertilized" blocks (our fertile/rich/shaped/door blocks only -- NOT dirt paths), shown
@@ -89,6 +96,25 @@ public class InfectionData extends SavedData {
 
     public void dropPathHead(long pos) {
         if (pathHeadSet.remove(pos)) { pathHeads.remove(pos); setDirty(); }
+    }
+
+    // --- infested path proliferation sources ---
+    /** Register a freshly-placed infested path block: it becomes a slow proliferation centre and seeds the
+     *  conversion frontier so fertile/rich blocks start spreading from it. */
+    public void addInfestedPath(long pos) {
+        if (infestedSet.add(pos)) {
+            infested.addLast(pos);
+            while (infested.size() > INFESTED_CAP) {
+                Long old = infested.pollFirst();
+                if (old != null) infestedSet.remove(old);
+            }
+            setDirty();
+        }
+        addFrontier(pos); // start converting the ground around it
+    }
+
+    public Iterable<Long> infestedSnapshot() {
+        return new ArrayDeque<>(infested); // copy so callers can iterate safely
     }
 
     // --- frontier ---
@@ -193,6 +219,7 @@ public class InfectionData extends SavedData {
         tag.putLongArray("frontier", toArray(frontier));
         tag.putLongArray("rich", toArray(rich));
         tag.putLongArray("seeded", toArray(seeded));
+        tag.putLongArray("infested", toArray(infested));
         tag.putLong("fastUntil", fastUntil);
         tag.putInt("convertedV3", converted); // V3: fertilized-only tally; older keys (path-inflated / stuck) ignored
         long[] bc = new long[boosts.size()], be = new long[boosts.size()];
@@ -209,6 +236,7 @@ public class InfectionData extends SavedData {
         for (long l : tag.getLongArray("frontier")) { d.frontier.addLast(l); d.frontierSet.add(l); }
         for (long l : tag.getLongArray("rich")) d.rich.add(l);
         for (long l : tag.getLongArray("seeded")) d.seeded.add(l);
+        for (long l : tag.getLongArray("infested")) { d.infested.addLast(l); d.infestedSet.add(l); }
         d.fastUntil = tag.getLong("fastUntil");
         d.converted = tag.getInt("convertedV3"); // missing in old saves -> 0, so the stuck/inflated count resets
         long[] bc = tag.getLongArray("boostC"), be = tag.getLongArray("boostE");

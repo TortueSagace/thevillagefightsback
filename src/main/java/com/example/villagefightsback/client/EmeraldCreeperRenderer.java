@@ -29,6 +29,7 @@ public class EmeraldCreeperRenderer extends CreeperRenderer {
                 return eyes;
             }
         });
+        this.addLayer(new EmeraldGlowLayer<>(this, "emerald_creeper"));
     }
 
     @Override
