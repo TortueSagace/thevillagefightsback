@@ -284,7 +284,7 @@ public final class ModEntities {
         event.put(LIMBO_RAVAGER.get(), LimboRavagerEntity.createAttributes().build());
         event.put(LIMBO_VEX.get(), LimboVexEntity.createAttributes().build());
         event.put(LIMBO_WITCH.get(), LimboWitchEntity.createAttributes().build());
-        event.put(RICH_SHEEP.get(), net.minecraft.world.entity.animal.Sheep.createAttributes().build());
+        event.put(RICH_SHEEP.get(), RichSheepEntity.createAttributes().build());
         // --- emerald faction ---
         event.put(EMERALD_COW.get(), EmeraldCow.createAttributes().build());
         event.put(EMERALD_CHICKEN.get(), EmeraldChicken.createAttributes().build());

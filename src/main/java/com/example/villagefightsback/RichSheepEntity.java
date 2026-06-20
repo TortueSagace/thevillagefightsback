@@ -17,14 +17,32 @@ import net.minecraft.world.level.Level;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The Rich Sheep: a sheep reskinned with the fertile/rich look (green body, emerald-flecked wool). Always
- * lime-coloured, so it drops lime wool + mutton on death; it also drops an emerald, and shearing yields
- * lime wool + an emerald. Spawned when a fertile tree generates (see {@link #trySpawn}).
+ * The Emerald Sheep (registry id {@code emerald_sheep}; class kept as RichSheepEntity): a sheep reskinned with the
+ * fertile/rich look (green body, emerald-flecked wool) and folded into the EMERALD faction (v1.0.3). Always
+ * lime-coloured, so it drops lime wool + mutton on death; it also drops an emerald, and shearing yields lime wool +
+ * an emerald. As a passive emerald unit it gains a melee attack (50% of its max HP) and hunts every non-spared
+ * target. Spawned when a fertile tree generates (see {@link #trySpawn}).
  */
-public class RichSheepEntity extends Sheep {
+public class RichSheepEntity extends Sheep implements EmeraldUnit {
     public RichSheepEntity(EntityType<? extends Sheep> type, Level level) {
         super(type, level);
         this.setColor(DyeColor.LIME);
+    }
+
+    @Override
+    public boolean emeraldPassive() {
+        return true;
+    }
+
+    @Override
+    protected void registerGoals() {
+        super.registerGoals();
+        EmeraldMobs.addEmeraldGoals(this, true);
+    }
+
+    public static net.minecraft.world.entity.ai.attributes.AttributeSupplier.Builder createAttributes() {
+        return Sheep.createAttributes()
+                .add(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE, 4.0D);
     }
 
     @Override

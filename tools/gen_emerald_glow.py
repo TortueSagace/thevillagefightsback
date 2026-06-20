@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENT = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefightsback", "textures", "entity")
 
 MOBS = ["cow", "chicken", "cat", "endermite", "wolf", "horse", "pig", "salmon", "bat", "zombie", "skeleton",
-        "creeper", "enderman", "iron_golem", "phantom", "wither", "guardian", "elder_guardian"]
+        "creeper", "enderman", "iron_golem", "phantom", "wither", "guardian", "elder_guardian", "sheep"]
 
 FRAMES = 8
 DENSITY = 0.06                 # fraction of opaque body pixels that become twinkling salt specks

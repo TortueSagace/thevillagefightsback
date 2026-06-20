@@ -57,6 +57,7 @@ public final class EmeraldConversion {
     private static void initDirect() {
         if (direct != null) return;
         Map<EntityType<?>, EntityType<?>> m = new HashMap<>();
+        m.put(EntityType.SHEEP, ModEntities.RICH_SHEEP.get());       // the emerald sheep (kept registry id rich_sheep)
         m.put(EntityType.COW, ModEntities.EMERALD_COW.get());
         m.put(EntityType.CHICKEN, ModEntities.EMERALD_CHICKEN.get());
         m.put(EntityType.CAT, ModEntities.EMERALD_CAT.get());
