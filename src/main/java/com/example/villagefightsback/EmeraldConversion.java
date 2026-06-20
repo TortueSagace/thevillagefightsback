@@ -23,6 +23,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -118,6 +119,24 @@ public final class EmeraldConversion {
         EntityType<?> t = roster[best].type;
         if (t == null) return rnd.nextBoolean() ? ModEntities.EMERALD_SKELETON.get() : ModEntities.EMERALD_PHANTOM.get();
         return t;
+    }
+
+    /**
+     * Faction sparing (v1.0.3): the VILLAGE faction and the Vindictive Village Spirit
+     * ({@link UnleashedBrainNodeEntity}) never target emerald units (so air strikes, golems, guards, wall defenders
+     * and Darius all leave them alone), and emerald units never target the village back (not even when provoked).
+     * Other vindictive units (guards / gigachads) are deliberately NOT excluded -- they DO hunt emerald units.
+     */
+    @SubscribeEvent
+    public static void onChangeTarget(LivingChangeTargetEvent event) {
+        LivingEntity target = event.getNewTarget();
+        if (target == null) return;
+        LivingEntity me = event.getEntity();
+        if (Factions.isEmerald(target) && (Factions.isVillage(me) || me instanceof UnleashedBrainNodeEntity)) {
+            event.setCanceled(true);     // village + the Vindictive Village Spirit spare emerald units
+        } else if (Factions.isEmerald(me) && Factions.isVillage(target)) {
+            event.setCanceled(true);     // emerald never attacks the village faction, even when provoked
+        }
     }
 
     @SubscribeEvent

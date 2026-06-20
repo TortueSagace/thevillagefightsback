@@ -276,6 +276,7 @@ public final class BrainNodeEvents {
     /** Air-strike target: a hostile mob, or a player flagged as a village enemy. Never an ally or the boss. */
     private static boolean isAirStrikeEnemy(LivingEntity e, BrainNodeData data) {
         if (!e.isAlive()) return false;
+        if (Factions.isEmerald(e)) return false;                       // the village spares emerald units (v1.0.3)
         if (e instanceof net.minecraft.world.entity.player.Player p) {
             return !p.isCreative() && !p.isSpectator() && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
