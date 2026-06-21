@@ -71,6 +71,7 @@ public final class BrainNodeEvents {
 
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);
+        processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node
         spawnInVillages(server, data);
         announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
         driveWalls(server, data);
@@ -969,6 +970,30 @@ public final class BrainNodeEvents {
      * worker population can't endlessly overpopulate). Guards and iron golems are military -- they don't use
      * beds, so they always arrive. The spawned mobs auto-arm through the normal entity-join handler.
      */
+    // Emerald cats the brain has settled but not yet spawned: they appear 2s after the settlers, materialising
+    // just above the brain node. A tiny pending queue, drained each driver pass (onServerTick).
+    private static final List<PendingCats> PENDING_CATS = new ArrayList<>();
+    private record PendingCats(GlobalPos at, long dueTick, int count) {}
+
+    private static void processPendingCats(MinecraftServer server) {
+        if (PENDING_CATS.isEmpty()) return;
+        java.util.Iterator<PendingCats> it = PENDING_CATS.iterator();
+        while (it.hasNext()) {
+            PendingCats pc = it.next();
+            ServerLevel level = server.getLevel(pc.at().dimension());
+            if (level == null) { it.remove(); continue; }
+            if (level.getGameTime() < pc.dueTick()) continue;     // not yet -- wait until 2s after the settlers
+            it.remove();
+            BlockPos pos = pc.at().pos();
+            if (!level.isLoaded(pos)) continue;                   // node unloaded -> give up on these cats
+            AABB box = new AABB(pos).inflate(INCOME_RADIUS);
+            if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
+            for (int i = 0; i < pc.count(); i++) {
+                ModEntities.EMERALD_CAT.get().spawn(level, pos.above(), MobSpawnType.EVENT); // materialise on the node
+            }
+        }
+    }
+
     private static void reinforceVillage(ServerLevel level, WallPlan innerWall, BlockPos pos, int stage) {
         int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
         int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
@@ -986,12 +1011,12 @@ public final class BrainNodeEvents {
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
             for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
-            // v1.0.3: the brain settles emerald cats alongside its villagers (emerald scouts that roam off to hunt
-            // threats). Count = 2 x multiplier_emerald_mobs_spawned_by_brain; capped so they don't pile up.
+            // v1.0.3: the brain settles emerald cats too (scouts that roam off to hunt threats). They appear 2s
+            // AFTER the settlers, materialising just above the brain node itself (queued + drained each pass).
+            // Count = 2 x multiplier_emerald_mobs_spawned_by_brain.
             int cats = Math.max(0, (int) Math.round(2.0 * Config.emeraldBrainSpawnMult()));
-            if (Config.mobInfectionEnabled() && cats > 0
-                    && level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() < cats * 5) {
-                for (int i = 0; i < cats; i++) spawnDefender(level, pos, ModEntities.EMERALD_CAT.get(), outside);
+            if (Config.mobInfectionEnabled() && cats > 0) {
+                PENDING_CATS.add(new PendingCats(GlobalPos.of(level.dimension(), pos), level.getGameTime() + 40L, cats));
             }
         }
 

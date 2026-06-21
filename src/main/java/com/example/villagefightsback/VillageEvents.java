@@ -90,7 +90,7 @@ public final class VillageEvents {
         // Let village defenders (and all iron golems) PATH through fake-cobblestone "doors": flip our
         // custom passable type's malus to 0 for them only (others keep the -1 default = blocked). This
         // mirrors FakeCobblestoneBlock.isPhaser, which lets the same set physically walk through.
-        if (mob instanceof IronGolem || mob instanceof Villager || isGuard(mob)) {
+        if (mob instanceof IronGolem || mob instanceof Villager || isGuard(mob) || Factions.isEmerald(mob)) {
             mob.setPathfindingMalus(ModPathTypes.ALLY_PASSABLE, 0.0F);
         }
 

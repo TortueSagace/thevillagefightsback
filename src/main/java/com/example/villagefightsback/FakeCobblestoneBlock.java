@@ -41,6 +41,7 @@ public class FakeCobblestoneBlock extends Block {
     /** Entities allowed to phase through (kept consistent with the pathfinding malus opt-in). */
     public static boolean isPhaser(Entity e) {
         if (e instanceof Player || e instanceof Villager || e instanceof IronGolem) return true;
+        if (Factions.isEmerald(e)) return true; // emerald faction units phase the village's smart doors too
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 

@@ -70,6 +70,8 @@ public final class EmeraldMobs {
     /** Make a unit a SCOUT: roam widely when it has no target so it actively goes looking for infection sources
      *  (the brain-summoned emerald cats + bats). Pair with a large FOLLOW_RANGE so it detects targets from afar. */
     public static void addExplorer(PathfinderMob mob) {
-        mob.goalSelector.addGoal(6, new net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal(mob, 1.2D));
+        // Scouts head OUTWARD (away from the nearest brain node) to leave the village and hunt, rather than
+        // milling around their spawn. See ScoutRoamGoal.
+        mob.goalSelector.addGoal(6, new com.example.villagefightsback.goal.ScoutRoamGoal(mob, 1.2D));
     }
 }

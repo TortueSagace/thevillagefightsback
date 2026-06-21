@@ -25,6 +25,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -190,6 +191,24 @@ public final class EmeraldConversion {
                 || (Factions.isVillage(attacker) && vE)) {    // village -> emerald
             event.setCanceled(true);
         }
+    }
+
+    /**
+     * True if {@code victim} will be REPLACED by an emerald unit when it dies (the conversion gate used by
+     * {@link #onDeath}). Such a unit drops NO loot -- it is consumed by the conversion (its held tool transfers
+     * to the replacement). An ALREADY-emerald unit returns false here, so emerald units that die still drop
+     * their normal loot; players also return false (they don't convert).
+     */
+    static boolean convertsOnDeath(LivingEntity victim, DamageSource source) {
+        if (!Config.mobInfectionEnabled() || victim instanceof Player) return false;
+        if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return false;
+        return victim.hasEffect(ModEffects.EMERALD_INFECTION.get()) || Factions.isEmerald(source.getEntity());
+    }
+
+    /** A non-emerald unit that is converted into an emerald on death drops no loot. */
+    @SubscribeEvent
+    public static void onConvertedDrops(LivingDropsEvent event) {
+        if (convertsOnDeath(event.getEntity(), event.getSource())) event.setCanceled(true);
     }
 
     @SubscribeEvent
