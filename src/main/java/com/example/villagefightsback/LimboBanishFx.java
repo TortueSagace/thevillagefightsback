@@ -43,6 +43,12 @@ public final class LimboBanishFx {
      *  into lime, with happy-villager sparkles. Call just BEFORE the original creature is removed. */
     public static void startLime(Entity e) { add(e, true); }
 
+    /** The LIME swirl at a fixed spot (no entity hitbox) -- e.g. on the brain node when it spawns a unit. */
+    public static void startLimeAt(ServerLevel sl, double cx, double bottom, double cz) {
+        if (ACTIVE.size() >= MAX_ACTIVE) return;
+        ACTIVE.add(new Fx(sl, cx, bottom, cz, 0.7, 1.6, sl.getGameTime() + DURATION, true));
+    }
+
     private static void add(Entity e, boolean lime) {
         if (!(e.level() instanceof ServerLevel sl) || ACTIVE.size() >= MAX_ACTIVE) return;
         AABB b = e.getBoundingBox();

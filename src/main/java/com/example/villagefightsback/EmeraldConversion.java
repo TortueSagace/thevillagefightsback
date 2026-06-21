@@ -243,6 +243,7 @@ public final class EmeraldConversion {
             // banks the victim's max HP as organic mass on the nearest brain (spent later by OrganicMass). Loot
             // drops normally; player-/environment-caused deaths do nothing; no emerald spawns from a death here.
             if (killedByEmerald) {
+                LimboBanishFx.startLime(victim); // the green conversion-style swirl as the kill feeds organic mass
                 placeInfestedPathUnder(level, victim);
                 OrganicMass.addToNearestBrain(level, victim.blockPosition(), Math.round(victim.getMaxHealth()));
             }

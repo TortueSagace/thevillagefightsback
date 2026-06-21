@@ -7,8 +7,6 @@ import java.util.Map;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -194,7 +192,10 @@ public final class OrganicMass {
         }
 
         String summary = deploy(level, econ, leaf, budget, maxSpawns, prey, anchors, waterAnchors, node, field, C);
-        if (!summary.isEmpty()) log(level, gp, leafName(leaf) + ": " + summary);
+        if (!summary.isEmpty()) {
+            LimboBanishFx.startLimeAt(level, node.getX() + 0.5, node.getY(), node.getZ() + 0.5); // the brain itself pulses green when it deploys
+            log(level, gp, leafName(leaf) + ": " + summary);
+        }
     }
 
     private static int budget(int base, double frac, double mult) {
@@ -303,10 +304,7 @@ public final class OrganicMass {
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(mob);
-        double x = at.getX() + 0.5, y = at.getY() + 0.4, z = at.getZ() + 0.5;
-        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, x, y, z, 12, 0.4, 0.6, 0.4, 0.0);
-        level.sendParticles(new DustParticleOptions(new org.joml.Vector3f(0.40F, 1.0F, 0.25F), 1.4F),
-                x, y, z, 18, 0.45, 0.7, 0.45, 0.0);
+        LimboBanishFx.startLime(mob); // the lime emergence swirl (the conversion/limbo-throw animation) on the new unit
     }
 
     // ============================ catalog + leaves (WHAT + variety) ============================
