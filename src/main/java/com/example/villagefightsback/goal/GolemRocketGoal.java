@@ -99,8 +99,9 @@ public class GolemRocketGoal extends Goal {
 
     /** The golem "knows" ally positions around the target even without seeing them. Throttled. */
     private boolean noAllyNearTarget(LivingEntity t) {
-        if (com.example.villagefightsback.Factions.isInfected(golem)
-                || com.example.villagefightsback.Factions.isEmerald(golem)) return true; // boss/emerald golem spares no one
+        if (com.example.villagefightsback.Factions.isInfected(golem)) return true; // a vindictive gigachad spares no one
+        // (an emerald golem still runs the scan: it holds fire when a villager/golem is near its target, so it stays
+        //  passive toward the village -- no blast splash on them.)
         int now = golem.tickCount;
         if (allyScanTick < 0 || now - allyScanTick >= ALLY_SCAN_INTERVAL) {
             allyScanTick = now;

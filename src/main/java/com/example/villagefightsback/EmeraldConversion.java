@@ -26,6 +26,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -157,6 +158,22 @@ public final class EmeraldConversion {
         // hostile" means neutral (don't start fights), not passive. The config only gates PROACTIVE player targeting
         // (in EmeraldMobs.isHostileTarget); a neutral emerald still fights back when the player strikes first.
         if (mob.getTarget() == null || !mob.getTarget().isAlive()) mob.setTarget(attacker);
+    }
+
+    /**
+     * Emerald and the village are PASSIVE to each other: on top of never targeting one another (see
+     * {@link #onChangeTarget}), neither can DAMAGE the other -- direct hits, projectiles, or blast splash are all
+     * cancelled both ways. Highest priority + cancel, so virus/effect handlers downstream are skipped too. Player
+     * and every other faction are unaffected, so the player can still fight either side.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onEmeraldVillageImmunity(LivingHurtEvent event) {
+        if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
+        LivingEntity victim = event.getEntity();
+        if ((Factions.isEmerald(attacker) && Factions.isVillage(victim))
+                || (Factions.isVillage(attacker) && Factions.isEmerald(victim))) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent
