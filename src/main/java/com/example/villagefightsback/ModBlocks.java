@@ -338,9 +338,9 @@ public final class ModBlocks {
             if (kind == FertileKind.FALLING) return new FallingBlock(p);
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
             if (kind == FertileKind.LEAVES) {
-                // A plain (non-LeavesBlock) block so infected leaves NEVER decay; copy() carries leaves'
-                // non-occlusion. The model is cutout_mipped so the leaf gaps show.
-                return new Block(p.noOcclusion());
+                // A real LeavesBlock (so heightmaps / the wall planner treat it as foliage and render is correct),
+                // but one that NEVER decays -- see FertileLeavesBlock. The model is cutout_mipped so the gaps show.
+                return new FertileLeavesBlock(p.noOcclusion());
             }
             return new Block(p);
         });

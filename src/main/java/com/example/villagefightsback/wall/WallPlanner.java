@@ -228,10 +228,24 @@ public final class WallPlanner {
      */
     private static boolean isSurface(LevelReader level, int x, int y, int z) {
         BlockState s = level.getBlockState(new BlockPos(x, y, z));
-        // Trees are NOT ground: a wall column ignores logs and leaves and sits on the real ground below
-        // them, then rises straight through the trunk/canopy (builders replace those blocks).
-        if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES)) return false;
+        // Trees are NOT ground: a wall column ignores logs and leaves -- vanilla AND the counter-infection's
+        // fertile/rich variants of them -- and sits on the real ground below, then rises straight through the
+        // trunk/canopy (builders replace those blocks). Without the fertile/rich check a wall could land on a
+        // fertile tree's canopy, leaving a hole beneath it.
+        if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES)
+                || isFertileFoliage(s)) return false;
         return s.blocksMotion() || !s.getFluidState().isEmpty();
+    }
+
+    /** True for our fertile/rich LOG or LEAVES blocks (which aren't in the vanilla #logs/#leaves tags). */
+    private static boolean isFertileFoliage(BlockState s) {
+        net.minecraft.resources.ResourceLocation id =
+                net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock());
+        if (id == null || !id.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID)) {
+            return false;
+        }
+        String p = id.getPath();
+        return p.endsWith("_log") || p.endsWith("_leaves");
     }
 
     // --- 2D footprint helpers ---
