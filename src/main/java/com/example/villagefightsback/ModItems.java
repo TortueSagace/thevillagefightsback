@@ -194,7 +194,7 @@ public final class ModItems {
     private static RegistryObject<Item> emeraldEgg(String name,
             java.util.function.Supplier<? extends net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob>> type,
             int vanillaBase, int vanillaSpots) {
-        return ITEMS.register(name, () -> new net.minecraftforge.common.ForgeSpawnEggItem(
+        return ITEMS.register(name, () -> new EmeraldSpawnEggItem(
                 type, greenify(vanillaBase), greenify(vanillaSpots), new Item.Properties()));
     }
     public static final RegistryObject<Item> EMERALD_COW_SPAWN = emeraldEgg("emerald_cow_spawn", ModEntities.EMERALD_COW, 0x443626, 0xA1A1A1);
