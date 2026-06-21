@@ -201,12 +201,12 @@ public final class EmeraldVirusEvents {
 
         if (!(e.level() instanceof ServerLevel sl)) return;
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
-        // An Emeraldger rises from the corpse if EITHER the virus has globally evolved (stage 4) OR the host
-        // carried Emerald Virus II (amplifier >= 1). So any Virus-II kill evolves a host even before stage 4.
+        // An Emeraldger rises ONLY from a host that died carrying Emerald Virus II (amplifier >= 1). Virus II is
+        // dealt solely by the Alien Eradicator and a stage-4 guard's crossbow (and by Emeraldgers themselves), so
+        // emeraldgers only ever appear at stage 4. A Virus-I death (Alien Slasher / stage-3 crossbow) never spawns one.
         net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS.get());
         boolean virusII = vinst != null && vinst.getAmplifier() >= 1;
-        boolean spawnEmeraldger = !(e instanceof EmeraldgerEntity)
-                && (EmeraldVirus.isEvolved(sl.getServer()) || virusII);
+        boolean spawnEmeraldger = !(e instanceof EmeraldgerEntity) && virusII;
         PENDING.add(new Pending(sl, e, sl.getGameTime() + CORPSE_DELAY, e.getMaxHealth(), spawnEmeraldger));
     }
 

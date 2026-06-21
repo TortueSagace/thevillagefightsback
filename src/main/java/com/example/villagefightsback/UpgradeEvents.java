@@ -46,7 +46,8 @@ public final class UpgradeEvents {
             int stage = data.econ(gp).getLevel();
             if (stage < DEFENDER_LEVEL) continue; // nothing happens below stage 2 (golems evolve from stage 2)
             AABB box = new AABB(gp.pos()).inflate(RADIUS);
-            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, UpgradeEvents::needsProcessing)) {
+            final int s = stage;
+            for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, x -> needsProcessing(x, s))) {
                 if (e instanceof IronGolem golem) {
                     // Golems have THREE forms: iron (s1) -> Defender Golem (s2-3) -> Gigachad Golem (s4).
                     if (stage >= GIGACHAD_LEVEL) {
@@ -57,6 +58,9 @@ public final class UpgradeEvents {
                     // else: already a Defender Golem at stage 2-3 -> leave it as-is
                 } else if (stage >= REQUIRED_LEVEL) {
                     UpgradeState.setUpgraded(e);                          // villagers/guards: full kit at stage 3+
+                    // At stage 4 the village goes Virus II: villagers wield the Alien Eradicator and guards' crossbows
+                    // inflict Virus II (both keyed off this flag). This is what makes emeraldgers a stage-4-only thing.
+                    if (stage >= GIGACHAD_LEVEL) UpgradeState.setStage4(e);
                     VillageEvents.applyUpgrade(e);
                 }
             }
@@ -64,15 +68,17 @@ public final class UpgradeEvents {
         ModProfiler.add("upgrades", _p);
     }
 
-    /** What the upgrade scan acts on: any plain village golem (-> converted to a gigachad creature type), or a
-     *  not-yet-upgraded villager/guard (-> armed in place). */
-    private static boolean needsProcessing(LivingEntity e) {
+    /** What the upgrade scan acts on: any plain village golem (-> converted to a gigachad creature type), a
+     *  not-yet-upgraded villager/guard (-> armed in place), or -- once the brain is stage 4 -- an already-upgraded
+     *  villager/guard that hasn't yet had its one-time stage-4 (Virus II) bump. */
+    private static boolean needsProcessing(LivingEntity e, int stage) {
         if (!e.isAlive()) return false;
         if (Factions.isEmerald(e)) return false; // emerald golems are the ENEMY -> never village-upgraded/converted
         if (e instanceof IronGolem golem) {
             return !golem.isPlayerCreated() && !(golem instanceof GigachadGolemEntity);
         }
-        return !UpgradeState.isUpgraded(e) && isUpgradable(e);
+        if (!isUpgradable(e)) return false;
+        return !UpgradeState.isUpgraded(e) || (stage >= GIGACHAD_LEVEL && !UpgradeState.isStage4(e));
     }
 
     private static boolean isUpgradable(LivingEntity e) {
