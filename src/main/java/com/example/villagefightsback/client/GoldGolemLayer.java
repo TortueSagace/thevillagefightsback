@@ -25,18 +25,10 @@ import net.minecraft.world.entity.animal.IronGolem;
 public class GoldGolemLayer extends RenderLayer<IronGolem, IronGolemModel<IronGolem>> {
     private static final ResourceLocation GOLD =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/gold_golem.png");
-    private static final float GROW = 1.02F; // 2% larger -> opaque shell covers the iron underneath
-
-    private final ResourceLocation shell;
+    private static final float GROW = 1.02F; // 2% larger -> opaque gold shell covers the iron underneath
 
     public GoldGolemLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent) {
-        this(parent, GOLD);
-    }
-
-    /** Shell-skin variant: the emerald gigachad passes its emerald-gold texture here. */
-    public GoldGolemLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent, ResourceLocation shell) {
         super(parent);
-        this.shell = shell;
     }
 
     @Override
@@ -46,7 +38,7 @@ public class GoldGolemLayer extends RenderLayer<IronGolem, IronGolemModel<IronGo
         if (golem.isInvisible()) return;
         if (golem.getMainHandItem().getItem() != ModItems.ROCKET_LAUNCHER.get()) return; // only upgraded golems
 
-        VertexConsumer vc = buffer.getBuffer(getParentModel().renderType(shell));
+        VertexConsumer vc = buffer.getBuffer(getParentModel().renderType(GOLD));
         pose.pushPose();
         pose.scale(GROW, GROW, GROW);
         // The parent model is already in this tick's animation pose, so just re-draw it in gold.
