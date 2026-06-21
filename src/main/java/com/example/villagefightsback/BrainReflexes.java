@@ -214,14 +214,13 @@ public final class BrainReflexes {
         WallPlan inner = data.getWallPlan(gp);
         long beds = level.getPoiManager().getCountInRange(h -> h.is(PoiTypes.HOME), brain, (int) RADIUS, PoiManager.Occupancy.ANY);
 
-        // A-FIRE (all stages): for 1 gem on a 1-minute cooldown, douse ALL fire within the brain's radius -- but
-        // only when fire is actually present (so it never wastes a gem). Vanilla fire + soul fire only (the mod
-        // adds none of its own; other mods' custom fire is left untouched).
+        // A-FIRE (all stages): on a 1-minute cooldown, douse ALL fire within the brain's radius -- free (no gem
+        // cost) and not logged. Only runs when fire is actually present, so the cooldown resets only after a real
+        // douse. Vanilla fire + soul fire only (the mod adds none of its own; other mods' custom fire is untouched).
         if (Config.brainExtinguishesFire() && now >= s.cdFireExtinguish) {
             int doused = extinguishFire(level, brain, (int) RADIUS);
-            if (doused > 0 && econ.spendEmeralds(1)) {
+            if (doused > 0) {
                 s.cdFireExtinguish = now + CD_1M;
-                log(s, level, "Fire doused (" + doused + ", -1)");
             }
         }
 

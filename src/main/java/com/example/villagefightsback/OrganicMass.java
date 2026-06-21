@@ -54,6 +54,8 @@ public final class OrganicMass {
     private static final int EXPLORER_TARGET = 3;         // early game: keep this many scouts (cat/mite) roaming
     private static final double SCOUT_FRAC = 0.5;         // exploration spend fraction
     private static final double MARK_MIN_DIST = 24.0;     // only Emerald-Marker prey at least this far from the node
+    private static final double MARK_MAX_BELOW = 5.0;     // never scent prey more than this far BELOW the node (skip caves)
+    private static final float MARK_CHANCE = 0.25F;       // chance to even attempt a scent on an eligible decision
     private static final float THREAT_BUMP = 1.0F;
     private static final float THREAT_MAX = 8.0F;
     private static final double THREAT_HALFLIFE = 1200.0; // 60s
@@ -143,12 +145,16 @@ public final class OrganicMass {
         // Rally: paint a DISTANT prey with the Emerald Marker so idle units converge on prey they'd never find on
         // their own (used sparingly -- at most EmeraldMarker.MAX_ACTIVE live at once). Runs regardless of the spawn
         // decision below.
-        if (field > 0 && !prey.isEmpty() && EmeraldMarker.activeCount(level) < EmeraldMarker.MAX_ACTIVE) {
+        if (field > 0 && !prey.isEmpty() && level.getRandom().nextFloat() < MARK_CHANCE
+                && EmeraldMarker.activeCount(level) < EmeraldMarker.MAX_ACTIVE) {
             LivingEntity far = null;
             double bestD = Double.MAX_VALUE;
             double minD2 = MARK_MIN_DIST * MARK_MIN_DIST;
+            double minY = node.getY() - MARK_MAX_BELOW;
             for (LivingEntity p : prey) {
                 if (EmeraldMarker.isMarked(p)) continue;
+                if (p.getY() < minY) continue;  // skip cave / deep-underground prey (more than 5 below the node)
+                if (isFlyer(p)) continue;       // skip flying units (ghast/phantom/bee/parrot/bat/...)
                 double d = p.blockPosition().distSqr(node);
                 if (d >= minD2 && d < bestD) { bestD = d; far = p; } // nearest prey beyond MARK_MIN_DIST
             }
@@ -200,6 +206,15 @@ public final class OrganicMass {
 
     private static int budget(int base, double frac, double mult) {
         return Math.max(MIN_SPAWN_COST, (int) Math.round(base * frac * mult));
+    }
+
+    /** A flying creature -- never scented (the ground swarm can't chase it). Covers ghast/phantom, bee/parrot,
+     *  bats, and anything else moving gravity-free. */
+    private static boolean isFlyer(LivingEntity e) {
+        return e instanceof net.minecraft.world.entity.FlyingMob
+                || e instanceof net.minecraft.world.entity.animal.FlyingAnimal
+                || e instanceof net.minecraft.world.entity.ambient.AmbientCreature
+                || e.isNoGravity();
     }
 
     private static int fieldCap() {
