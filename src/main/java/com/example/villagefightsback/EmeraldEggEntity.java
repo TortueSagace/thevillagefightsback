@@ -39,6 +39,9 @@ public class EmeraldEggEntity extends ThrowableItemProjectile {
         super.onHitEntity(result);
         if (!level().isClientSide() && result.getEntity() instanceof LivingEntity victim) {
             EmeraldInfection.apply(victim); // Emerald Infection -> converts on death (gated by enable_mob_infection)
+            if (getOwner() instanceof net.minecraft.server.level.ServerPlayer thrower) {
+                Achievements.award(thrower, "brain_node/a_very_bad_speech"); // landed an emerald egg on a target
+            }
         }
     }
 

@@ -1,8 +1,14 @@
 package com.example.villagefightsback;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -20,6 +26,8 @@ public final class BrainNodeAchievementEvents {
 
     private static final double RANGE = 96.0;
     private static final double RANGE_SQR = RANGE * RANGE;
+    private static final int PARTY_COUNT = 10;          // "Emerald party"
+    private static final int OVERPOPULATION_COUNT = 50; // "Overpopulation" (the default army cap)
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -30,21 +38,32 @@ public final class BrainNodeAchievementEvents {
         if (data.blocks().isEmpty()) return;
 
         long _p = ModProfiler.now();
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            int best = maxNearbyStage(data, player);
-            if (best > 0) ModTriggers.BRAIN_NODE_STAGE.trigger(player, best);
+        for (GlobalPos gp : data.blocks()) {
+            // Players near THIS brain (same dimension, within range).
+            List<ServerPlayer> near = new ArrayList<>();
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                if (!gp.dimension().equals(player.level().dimension())) continue;
+                if (gp.pos().distToCenterSqr(player.getX(), player.getY(), player.getZ()) > RANGE_SQR) continue;
+                near.add(player);
+            }
+            if (near.isEmpty()) continue; // nobody to award -> skip the entity scan entirely
+
+            int stage = data.econ(gp).getLevel();
+            int emeralds = countEmeraldUnits(server, gp); // emerald units around this village
+            for (ServerPlayer player : near) {
+                if (stage > 0) ModTriggers.BRAIN_NODE_STAGE.trigger(player, stage); // dedupes; highest nearby satisfies
+                if (emeralds >= PARTY_COUNT) Achievements.award(player, "brain_node/emerald_party");
+                if (emeralds >= OVERPOPULATION_COUNT) Achievements.award(player, "brain_node/overpopulation");
+            }
         }
         ModProfiler.add("brain_node.advancements", _p);
     }
 
-    /** The HIGHEST stage among brainNodes near the player (same dimension, within range), or 0 if none. */
-    private static int maxNearbyStage(BrainNodeData data, ServerPlayer player) {
-        int max = 0;
-        for (GlobalPos gp : data.blocks()) {
-            if (!gp.dimension().equals(player.level().dimension())) continue;
-            if (gp.pos().distToCenterSqr(player.getX(), player.getY(), player.getZ()) > RANGE_SQR) continue;
-            max = Math.max(max, data.econ(gp).getLevel());
-        }
-        return max;
+    /** Count the emerald-faction units within {@link #RANGE} of a brain node (0 if its dimension is not loaded). */
+    private static int countEmeraldUnits(MinecraftServer server, GlobalPos gp) {
+        ServerLevel level = server.getLevel(gp.dimension());
+        if (level == null) return 0;
+        AABB box = new AABB(gp.pos()).inflate(RANGE);
+        return level.getEntitiesOfClass(Mob.class, box, Factions::isEmerald).size();
     }
 }

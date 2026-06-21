@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:nether_star"
+    },
+    "title": "I'm not kidding anymore",
+    "description": "Witness the birth of an emerald wither.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "got_it": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "got_it"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/overpopulation"
+}

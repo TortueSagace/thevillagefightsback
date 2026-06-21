@@ -305,6 +305,9 @@ public final class OrganicMass {
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(mob);
         LimboBanishFx.startLime(mob); // the lime emergence swirl (the conversion/limbo-throw animation) on the new unit
+        if (type == ModEntities.EMERALD_WITHER.get()) { // everyone nearby "witnesses the birth of an emerald wither"
+            Achievements.awardNearby(level, mob.getX(), mob.getY(), mob.getZ(), 64.0, "brain_node/im_not_kidding");
+        }
     }
 
     // ============================ catalog + leaves (WHAT + variety) ============================

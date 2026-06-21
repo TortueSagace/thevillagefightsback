@@ -26,6 +26,9 @@ at the bottom.
 - **Emerald knights** (stage-3 guards): mace / crossbow / Alien Slasher; death explosion.
 - **Gigachad golems**: gold re-skin, 200 HP, rockets.
 - **Immunity** effect/potion + a brain node immunity aura covering villagers, guards, and golems.
+- **Advancements** (Brain Node tab): **A very bad speech** (land an emerald egg on a target), plus an organic
+  branch -- **Emerald party** (10 emerald units around a village), **Overpopulation** (reach 50), and
+  **I'm not kidding anymore** (witness the birth of an emerald wither).
 
 ### 3. Walls & defensive structures
 - Deterministic wall planner that follows the village footprint (concave), with builders, gates, loopholes,
