@@ -139,7 +139,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
 - `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
 - `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
-- `emerald_mobs_max_number`: soft per-dimension cap on emerald units to limit lag (over the cap, a new unit's health is poured into the nearest emerald instead of spawning)
+- `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
 - `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire`: whether each kind of explosion breaks blocks or starts fires (it always still hits units)
 - `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
 - `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald

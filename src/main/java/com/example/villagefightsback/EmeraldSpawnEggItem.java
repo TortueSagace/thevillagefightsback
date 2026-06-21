@@ -26,12 +26,11 @@ public class EmeraldSpawnEggItem extends ForgeSpawnEggItem {
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
-        if (!level.isClientSide() && level instanceof ServerLevel sl && EmeraldPopulation.atCap(sl)) {
+        if (!level.isClientSide() && level instanceof ServerLevel sl && EmeraldPopulation.atCap(sl, ctx.getClickLocation())) {
             Player p = ctx.getPlayer();
             if (p != null) {
-                p.displayClientMessage(Component.literal(
-                        "Emerald population cap reached (" + Config.emeraldMobsMaxNumber()
-                                + ") in loaded chunks -- no emerald unit spawned."), true);
+                p.displayClientMessage(Component.literal("Too many emerald units nearby (cap "
+                        + Config.emeraldMobsMaxNumber() + "). No emerald unit was spawned."), true);
             }
             return InteractionResult.FAIL; // do not spawn, do not consume the egg
         }

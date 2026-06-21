@@ -167,9 +167,10 @@ public final class Config {
                 "Scales the emerald scouts the brain summons: base 2 cats per settlement + 1 bat per sunset, times this.",
                 "e.g. 2 -> 4 cats and 2 bats. Default: 1.");
         EMERALD_MOBS_MAX_NUMBER = b
-                .comment("Soft cap (per dimension) on loaded NON-mite emerald units, to limit lag. When reached, a new emerald",
-                        "unit does NOT spawn; instead the nearest non-mite emerald gains that unit's max HP (a conversion's",
-                        "victim just dies, and its infested path still appears). Mites are exempt. Default: 50.")
+                .comment("Soft LOCAL cap on emerald units (mites included) within a player's active range of a spawn, to limit",
+                        "lag. Emeralds far from any player don't count. When an automatic spawn would exceed it the unit does",
+                        "NOT appear; instead the nearest non-mite emerald gains its max HP (a conversion's victim just dies, and",
+                        "its infested path still appears). A spawn egg / summon at the cap tells the player. 0 = unlimited. Default: 50.")
                 .defineInRange("emerald_mobs_max_number", 50, 0, 100000);
         GUARDS_DROP_FIRE_GRENADE_UPON_DEATH = b
                 .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
