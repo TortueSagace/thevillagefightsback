@@ -51,8 +51,7 @@ public final class EmeraldConversion {
 
     private static final double DEATH_RADIUS = 20.0;       // emerald-death effect reach (spec 8)
     private static final int BUFF_TICKS = 20 * 20;         // 20s death buff
-    private static final float ELDER_CHANCE = 0.01F;       // 1% emerald elder guardian, else emerald mite (99%)
-    private static final int MAX_DEATH_SPAWNS = 8;         // cap mite/elder spawns per emerald death (anti-amplify)
+    private static final int MAX_DEATH_SPAWNS = 8;         // cap mite spawns per emerald death (anti-amplify)
 
     // --- direct correspondence (vanilla type -> emerald type), built lazily after registration ---
     private static Map<EntityType<?>, EntityType<?>> direct;
@@ -235,16 +234,13 @@ public final class EmeraldConversion {
     // --- emerald-unit death effects (spec 8) -------------------------------------------------------
     private static void onEmeraldDeath(ServerLevel level, LivingEntity dead) {
         BlockPos center = dead.blockPosition();
-        RandomSource rnd = level.getRandom();
 
-        // 1. Each infested path within 20 blocks erupts: 99% emerald mite, 1% EMERALD elder guardian. Capped per
-        //    death so a mass AoE wipe near a dense infested field can't spawn (and amplify) dozens at once.
+        // 1. Each infested path within 20 blocks erupts with an emerald mite. Capped per death so a mass AoE wipe
+        //    near a dense infested field can't spawn (and amplify) dozens at once.
         java.util.List<BlockPos> paths = InfectionManager.infestedPathsWithin(level, center, DEATH_RADIUS);
         int spawns = Math.min(paths.size(), MAX_DEATH_SPAWNS);
         for (int i = 0; i < spawns; i++) {
-            EntityType<?> type = rnd.nextFloat() < ELDER_CHANCE
-                    ? ModEntities.EMERALD_ELDER_GUARDIAN.get() : ModEntities.EMERALD_ENDERMITE.get();
-            spawnAt(level, paths.get(i).above(), type, null);
+            spawnAt(level, paths.get(i).above(), ModEntities.EMERALD_ENDERMITE.get(), null);
         }
 
         // 2. Every living emerald unit within 20 blocks gets a Str/Res/Regen buff that ramps I->II->III.

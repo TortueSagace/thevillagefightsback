@@ -39,10 +39,12 @@ public final class Factions {
      *   <li>General Darius -- the village's own summoned champion;</li>
      *   <li>the Vindictive Village Spirit ({@link UnleashedBrainNodeEntity}) -- it is friendly toward villagers.
      *       Its TWO minions (vindictive guards + gigachads) are NOT spared: the village still fights those.</li>
+     *   <li>every EMERALD unit ({@link #isEmerald}) -- the emerald faction and the village leave each other alone
+     *       (v1.0.3). This covers the village's custom turret/beam targeting too, not just the AI goals.</li>
      * </ul>
      */
     public static boolean isSparedByVillage(Entity e) {
-        return e instanceof GeneralDariusEntity || e instanceof UnleashedBrainNodeEntity;
+        return e instanceof GeneralDariusEntity || e instanceof UnleashedBrainNodeEntity || isEmerald(e);
     }
 
     /** The Crackers' Wither Storm boss entity id ({@code witherstormmod:wither_storm}); an optional soft dep. */
