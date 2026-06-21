@@ -53,6 +53,9 @@ public final class OrganicMass {
     private static final double DEFEND_FRAC = 0.75;
     private static final double HARVEST_FRAC = 0.30;
     private static final int MIN_SPAWN_COST = 3;          // cheapest unit (salmon)
+    private static final int EXPLORER_TARGET = 3;         // early game: keep this many scouts (cat/mite) roaming
+    private static final double SCOUT_FRAC = 0.5;         // exploration spend fraction
+    private static final double MARK_MIN_DIST = 24.0;     // only Emerald-Marker prey at least this far from the node
     private static final float THREAT_BUMP = 1.0F;
     private static final float THREAT_MAX = 8.0F;
     private static final double THREAT_HALFLIFE = 1200.0; // 60s
@@ -123,23 +126,41 @@ public final class OrganicMass {
         int C = fieldCap();
         BlockPos node = gp.pos();
 
-        // ONE entity scan, partitioned: field size F, explorer-out, and prey (passive vs hostile).
+        // ONE entity scan, partitioned: field size F, explorer count, and prey (passive vs hostile).
         AABB box = new AABB(node).inflate(BrainNodeEvents.INCOME_RADIUS);
         List<LivingEntity> prey = new ArrayList<>();
-        int passive = 0, hostile = 0, field = 0;
-        boolean explorerOut = false;
+        int passive = 0, hostile = 0, field = 0, explorers = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (Factions.isEmerald(e)) {
                 field++;
-                if (e instanceof EmeraldCat) explorerOut = true;
+                if (e instanceof EmeraldCat || e instanceof EmeraldEndermite) explorers++; // the roaming scouts
             } else if (EmeraldMobs.isHostileTarget(e)) {
                 if (prey.size() < PREY_SCAN_CAP) prey.add(e);
                 if (e instanceof Enemy) hostile++; else passive++;
             }
         }
-        if (field >= C) return; // army full -> BANK (points keep accruing for a later burst)
 
         double threat = readThreat(gp, now);
+
+        // Rally: paint a DISTANT prey with the Emerald Marker so idle units converge on prey they'd never find on
+        // their own (used sparingly -- at most EmeraldMarker.MAX_ACTIVE live at once). Runs regardless of the spawn
+        // decision below.
+        if (field > 0 && !prey.isEmpty() && EmeraldMarker.activeCount(level) < EmeraldMarker.MAX_ACTIVE) {
+            LivingEntity far = null;
+            double bestD = Double.MAX_VALUE;
+            double minD2 = MARK_MIN_DIST * MARK_MIN_DIST;
+            for (LivingEntity p : prey) {
+                if (EmeraldMarker.isMarked(p)) continue;
+                double d = p.blockPosition().distSqr(node);
+                if (d >= minD2 && d < bestD) { bestD = d; far = p; } // nearest prey beyond MARK_MIN_DIST
+            }
+            if (far != null) {
+                EmeraldMarker.mark(level, far);
+                log(level, gp, "Marked a distant " + shortName(far.getType()) + " to rally the swarm");
+            }
+        }
+
+        if (field >= C) return; // army full -> BANK (points keep accruing for a later burst)
 
         // Spawn anchors: infested blocks within radius + the brain node itself (always valid).
         List<BlockPos> anchors = InfectionManager.infestedPathsWithin(level, node, BrainNodeEvents.INCOME_RADIUS);
@@ -160,10 +181,13 @@ public final class OrganicMass {
             leaf = (passive >= hostile) ? CHEAP_CONVERTER : HUNTER;
             budget = budget(spendable, HARVEST_FRAC, mult);
             maxSpawns = K;
-        } else if (!explorerOut) {
-            leaf = SCOUT; budget = spendable; maxSpawns = 1; // one explorer to go find food
+        } else if (explorers < EXPLORER_TARGET) {
+            // Early game / no prey detected: focus on EXPLORATION -- field scouts (cat/mite) until some are out.
+            leaf = SCOUT;
+            budget = budget(spendable, SCOUT_FRAC, mult);
+            maxSpawns = Math.min(K, EXPLORER_TARGET - explorers);
         } else {
-            return; // idle with a scout already out -> BANK (points keep accruing).
+            return; // enough scouts out, no prey, no threat -> BANK (points keep accruing).
         }
 
         String summary = deploy(level, econ, leaf, budget, maxSpawns, prey, anchors, waterAnchors, node, field, C);
@@ -297,7 +321,8 @@ public final class OrganicMass {
             leaves = new List[6];
             // SCOUT: a cat (explorer) to find new prey; bat as a cheap flying fallback.
             leaves[SCOUT] = List.of(
-                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),
+                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),       // the roaming explorer
+                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 4.0, false),  // cheap roaming combat scout
                     new Cand(ModEntities.EMERALD_BAT.get(), 6, 1.5, false));
             // CHEAP_CONVERTER: harvest passive food cheaply. Mite dominates; animals are deliberately rare.
             leaves[CHEAP_CONVERTER] = List.of(

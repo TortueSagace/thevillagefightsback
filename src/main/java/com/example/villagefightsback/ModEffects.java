@@ -45,6 +45,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_INFECTION =
             EFFECTS.register("emerald_infection", EmeraldInfectionEffect::new);
 
+    /** "Emerald Marker": a brain node beacon that rallies every emerald unit within 100 blocks onto the marked
+     *  target. Applied with VISIBLE particles, unlike the mod's other effects (see {@link EmeraldMarkerEffect}). */
+    public static final RegistryObject<MobEffect> EMERALD_MARKER =
+            EFFECTS.register("emerald_marker", EmeraldMarkerEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }

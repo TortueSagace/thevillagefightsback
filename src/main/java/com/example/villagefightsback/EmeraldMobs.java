@@ -53,6 +53,9 @@ public final class EmeraldMobs {
         mob.targetSelector.removeAllGoals(g -> true); // replace vanilla targeting with the emerald-faction rules
         mob.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(
                 mob, LivingEntity.class, 10, true, false, t -> isHostileTarget(t)));
+        // Low-priority rally: an IDLE unit runs at the brain's nearest Emerald Marker (below real combat goals,
+        // so a unit already fighting/retaliating ignores it).
+        mob.targetSelector.addGoal(3, new com.example.villagefightsback.goal.RallyToMarkedGoal(mob));
         // Goals that need a PathfinderMob (a Bat/Phantom is a plain Mob; they retaliate via the central
         // EmeraldConversion.onEmeraldHurt handler instead, and attack through their own flight goals).
         if (mob instanceof PathfinderMob pm) {
