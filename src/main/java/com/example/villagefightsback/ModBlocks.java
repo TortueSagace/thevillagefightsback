@@ -612,6 +612,7 @@ public final class ModBlocks {
                 output.accept(ModArmor.EMERALD_BOOTS.get());
                 for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
                 output.accept(ModItems.EMERALD_APPLE.get());
+                output.accept(ModItems.EMERALD_EGG.get());
 
                 // === Potions ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(

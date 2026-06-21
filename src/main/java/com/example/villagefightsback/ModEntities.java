@@ -157,6 +157,15 @@ public final class ModEntities {
                     .updateInterval(10)
                     .build("fire_grenade"));
 
+    /** The Emerald Egg's thrown projectile (inflicts Emerald Infection on hit). See {@link EmeraldEggEntity}. */
+    public static final RegistryObject<EntityType<EmeraldEggEntity>> EMERALD_EGG = ENTITIES.register(
+            "emerald_egg",
+            () -> EntityType.Builder.<EmeraldEggEntity>of(EmeraldEggEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(4)
+                    .updateInterval(10)
+                    .build("emerald_egg"));
+
     /** The Limbo Phantom: a 3x black-and-white phantom that phases through bedrock. See {@link LimboPhantomEntity}. */
     public static final RegistryObject<EntityType<LimboPhantomEntity>> LIMBO_PHANTOM = ENTITIES.register(
             "limbo_phantom",

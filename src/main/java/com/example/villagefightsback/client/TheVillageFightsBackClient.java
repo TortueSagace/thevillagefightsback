@@ -166,6 +166,9 @@ public final class TheVillageFightsBackClient {
         // Wind charge: billboard its item sprite as it flies.
         event.registerEntityRenderer(ModEntities.WIND_CHARGE.get(),
                 ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
+        // Emerald egg: billboard its item sprite as it flies.
+        event.registerEntityRenderer(ModEntities.EMERALD_EGG.get(),
+                ctx -> new net.minecraft.client.renderer.entity.ThrownItemRenderer<>(ctx));
     }
 
     /** The Guard Villagers guard entity type id. The mod is a RUNTIME soft-dep, so this may resolve to null. */

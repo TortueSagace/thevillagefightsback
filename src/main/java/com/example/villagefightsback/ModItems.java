@@ -94,6 +94,11 @@ public final class ModItems {
     public static final RegistryObject<Item> FIRE_GRENADE =
             ITEMS.register("fire_grenade", () -> new FireGrenadeItem(new Item.Properties().stacksTo(16)));
 
+    /** Emerald Egg: a throwable egg that inflicts the Emerald Infection on the creature it hits. Emerald chickens
+     *  lay it. See {@link EmeraldEggItem} / {@link EmeraldEggEntity}. */
+    public static final RegistryObject<Item> EMERALD_EGG =
+            ITEMS.register("emerald_egg", () -> new EmeraldEggItem(new Item.Properties().stacksTo(16)));
+
     /** Emerald Apple: edible, but eating it inflicts the Emerald Virus. The base brewing component for the
      *  Emerald Virus potion (and, via that potion's tipped arrows, the Emerald Virus arrows). Drops rarely
      *  from fertile leaves. */
