@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.model.IronGolemModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
@@ -41,12 +42,19 @@ public class DefenderGolemHeadLayer extends RenderLayer<IronGolem, IronGolemMode
 
     private final WallDefenderModel core;
     private final BlockRenderDispatcher blocks;
+    private final boolean emerald; // emerald defender golem: tint the head green + render it full-bright (glows in dark)
 
     public DefenderGolemHeadLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent,
                                   ModelPart wallDefenderRoot, BlockRenderDispatcher blocks) {
+        this(parent, wallDefenderRoot, blocks, false);
+    }
+
+    public DefenderGolemHeadLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent,
+                                  ModelPart wallDefenderRoot, BlockRenderDispatcher blocks, boolean emerald) {
         super(parent);
         this.core = new WallDefenderModel(wallDefenderRoot);
         this.blocks = blocks;
+        this.emerald = emerald;
     }
 
     @Override
@@ -64,7 +72,10 @@ public class DefenderGolemHeadLayer extends RenderLayer<IronGolem, IronGolemMode
         pose.scale(CORE_SCALE, CORE_SCALE, CORE_SCALE);
         core.setupHeadAnim(ageInTicks);
         VertexConsumer vc = buffer.getBuffer(core.renderType(WALL_DEFENDER_TEX));
-        core.renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        // Emerald defender golem: tint the conduit core green and draw it full-bright so the head glows in the dark.
+        int coreLight = emerald ? LightTexture.FULL_BRIGHT : light;
+        core.renderToBuffer(pose, vc, coreLight, OverlayTexture.NO_OVERLAY,
+                emerald ? 0.42F : 1.0F, 1.0F, emerald ? 0.52F : 1.0F, 1.0F);
         pose.popPose();
 
         // The protecting-glass cocoon around it: flip y/z back upright, scale to cocoon size, centre on the bone.
