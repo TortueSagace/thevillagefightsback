@@ -53,15 +53,20 @@ public final class NodeSpawns {
         BlockPos spot = belowOrAbove(level, node, 3);
         if (spot == null) return;
         float yaw = level.getRandom().nextFloat() * 360.0F;
-        // At ANY stage, a 10% chance to also forge a stray EMERALD iron golem alongside the normal one.
+        // 10% chance to also forge a stray EMERALD golem alongside the normal one, in the SAME stage-appropriate
+        // form: emerald iron golem (stage 1), emerald Defender Golem (stage 2-3), emerald Gigachad Golem (stage 4+).
         if (level.getRandom().nextFloat() < 0.10F) {
-            EmeraldIronGolem eg = ModEntities.EMERALD_IRON_GOLEM.get().create(level);
-            if (eg != null) {
-                BlockPos espot = belowOrAbove(level, node, 3);
-                if (espot != null) {
+            BlockPos espot = belowOrAbove(level, node, 3);
+            if (espot != null) {
+                EntityType<? extends net.minecraft.world.entity.Mob> etype = stage >= 4 ? ModEntities.EMERALD_GIGACHAD_GOLEM.get()
+                        : stage >= 2 ? ModEntities.EMERALD_DEFENDER_GOLEM.get()
+                        : ModEntities.EMERALD_IRON_GOLEM.get();
+                net.minecraft.world.entity.Mob eg = etype.create(level);
+                if (eg != null) {
                     eg.moveTo(espot.getX() + 0.5, espot.getY(), espot.getZ() + 0.5,
                             level.getRandom().nextFloat() * 360.0F, 0.0F);
                     eg.finalizeSpawn(level, level.getCurrentDifficultyAt(espot), MobSpawnType.EVENT, null, null);
+                    if (eg instanceof EmeraldGigachadGolemEntity) UpgradeState.setUpgraded(eg); // born fully upgraded
                     level.addFreshEntity(eg);
                 }
             }
