@@ -32,7 +32,17 @@ public final class EmeraldMobs {
                     && !p.isCreative() && !p.isSpectator()
                     && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
+        if (isPlayerCompanion(target)) return false;         // (v) the player's potential mounts/pets are not hunted
         return true;                                         // everything else (hostiles + peaceful animals)
+    }
+
+    /** Animals the player tames, rides or keeps as pets -- horses (and donkeys/mules/etc.), dogs (wolves) and
+     *  cats. The emerald faction never PROACTIVELY hunts these (tamed or not) so it can't kill the player's
+     *  mounts/pets -- but it still counter-attacks one that strikes it first (handled in the hurt handler). */
+    public static boolean isPlayerCompanion(LivingEntity e) {
+        return e instanceof net.minecraft.world.entity.animal.horse.AbstractHorse
+                || e instanceof net.minecraft.world.entity.animal.Wolf
+                || e instanceof net.minecraft.world.entity.animal.Cat;
     }
 
     /** Wire an emerald unit's goals: drop the vanilla targeting (a zombie's hunt-villagers/players is wrong for
