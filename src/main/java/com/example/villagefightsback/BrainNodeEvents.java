@@ -943,7 +943,7 @@ public final class BrainNodeEvents {
             // brain spawn) so it reliably appears even in a crowded area.
             int scouts = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
             if (Config.mobInfectionEnabled()) {
-                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), findSpawnSpot(level, gp.pos()));
+                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, gp.pos()));
             }
 
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
@@ -1003,7 +1003,7 @@ public final class BrainNodeEvents {
             AABB box = new AABB(pos).inflate(INCOME_RADIUS);
             if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
             for (int i = 0; i < pc.count(); i++) {
-                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), pos.above()); // materialise just above the node
+                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, pos)); // on the ground below an elevated node
             }
         }
     }
@@ -1053,6 +1053,21 @@ public final class BrainNodeEvents {
         if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
+    }
+
+    /** Where a brain-summoned emerald unit should appear. If the brain node is MORE THAN ONE BLOCK above the
+     *  nearest solid ground (it floats, or sits on a thin perch), the unit spawns down on that ground so it isn't
+     *  stranded on top of the node with no way down; otherwise it uses the normal nearby-surface spot. */
+    private static BlockPos emeraldSpawnPos(ServerLevel level, BlockPos node) {
+        BlockPos.MutableBlockPos m = node.mutable().move(Direction.DOWN);
+        int floor = level.getMinBuildHeight();
+        int scanned = 0;
+        while (m.getY() > floor && scanned < 160 && !level.getBlockState(m).blocksMotion()) {
+            m.move(Direction.DOWN);
+            scanned++;
+        }
+        BlockPos ground = m.above(); // the open cell on top of the first solid block below the node
+        return (node.getY() - ground.getY() > 1) ? ground : findSpawnSpot(level, node);
     }
 
     private static BlockPos findSpawnSpot(ServerLevel level, BlockPos center) {

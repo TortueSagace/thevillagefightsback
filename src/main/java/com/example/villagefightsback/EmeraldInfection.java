@@ -3,7 +3,7 @@ package com.example.villagefightsback;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -13,6 +13,10 @@ import net.minecraftforge.fml.common.Mod;
  * entity ({@link net.minecraft.world.damagesource.DamageSource#getEntity()}), this single check covers melee
  * hits, skeleton arrows, the creeper's explosion, and the wither's skulls (all attribute back to the emerald
  * unit). Conversion of a unit that DIES while infected (or is one-shot by an emerald unit) is handled separately.
+ *
+ * <p>We hook {@link LivingAttackEvent} (the attack ATTEMPT) rather than LivingHurtEvent so the infection lands on
+ * EVERY emerald hit -- even one that deals no final damage because the target is in its invulnerability frames or
+ * the blow is otherwise reduced/blocked (LivingHurtEvent is skipped in those cases).
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class EmeraldInfection {
@@ -21,7 +25,7 @@ public final class EmeraldInfection {
     public static final int INFECT_TICKS = 20 * 20; // 20 seconds
 
     @SubscribeEvent
-    public static void onHurt(LivingHurtEvent event) {
+    public static void onAttack(LivingAttackEvent event) {
         if (event.getEntity().level().isClientSide()) return;
         if (!Config.mobInfectionEnabled()) return;  // mob infection disabled -> never infect anything
         Entity src = event.getSource().getEntity(); // attacker / arrow shooter / creeper (explosion) / wither (skull)
