@@ -56,6 +56,9 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN;
     public static final ForgeConfigSpec.IntValue EMERALD_MOBS_MAX_NUMBER;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ORGANIC_MASS_SYSTEM;
+    public static final ForgeConfigSpec.DoubleValue ORGANIC_ARMY_MULTIPLIER;
+    public static final ForgeConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
@@ -172,6 +175,22 @@ public final class Config {
                         "NOT appear; instead the nearest non-mite emerald gains its max HP (a conversion's victim just dies, and",
                         "its infested path still appears). A spawn egg / summon at the cap tells the player. 0 = unlimited. Default: 50.")
                 .defineInRange("emerald_mobs_max_number", 50, 0, 100000);
+        ENABLE_ORGANIC_MASS_SYSTEM = b
+                .comment("ORGANIC MASS system (alternative to convert-on-kill). If true: an emerald unit's kills do NOT convert",
+                        "the victim into an emerald unit. Instead an infested path is laid below the victim and the victim's max",
+                        "HP is added as 'organic mass' to the nearest brain node, which banks it and spends it to spawn its own",
+                        "emerald army at infested blocks (a decision tree picks when/what). Organic mass is shown next to the brain's",
+                        "emerald count and NEVER affects the brain's level/emerald economy. If false: keep the classic 1.1.1",
+                        "convert-on-kill behavior. Default: false.")
+                .define("enable_organic_mass_system", false);
+        ORGANIC_ARMY_MULTIPLIER = mult(b,
+                "organic_army_multiplier",
+                "Scales the standing organic army a brain may field: cap = emerald_mobs_max_number x this (default 50).",
+                "e.g. 2 -> up to 100 emerald units. Default: 1.");
+        ORGANIC_SPAWN_BUDGET_MULTIPLIER = mult(b,
+                "organic_spawn_budget_multiplier",
+                "Scales how much of its banked organic mass a brain spends per decision (more = more aggressive bursts).",
+                "Default: 1.");
         GUARDS_DROP_FIRE_GRENADE_UPON_DEATH = b
                 .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
                         "blast (a 'fire grenade'). If false, guards die quietly. Default: true.")
@@ -251,6 +270,9 @@ public final class Config {
         INDEX.put("emerald_mobs_are_hostile_to_player", EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER);
         INDEX.put("multiplier_emerald_mobs_spawned_by_brain", MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN);
         INDEX.put("emerald_mobs_max_number", EMERALD_MOBS_MAX_NUMBER);
+        INDEX.put("enable_organic_mass_system", ENABLE_ORGANIC_MASS_SYSTEM);
+        INDEX.put("organic_army_multiplier", ORGANIC_ARMY_MULTIPLIER);
+        INDEX.put("organic_spawn_budget_multiplier", ORGANIC_SPAWN_BUDGET_MULTIPLIER);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
@@ -308,6 +330,9 @@ public final class Config {
     public static boolean emeraldMobsHostileToPlayer()    { return EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER.get(); }
     public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
     public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }
+    public static boolean organicMassEnabled()            { return ENABLE_ORGANIC_MASS_SYSTEM.get(); }
+    public static double organicArmyMultiplier()          { return ORGANIC_ARMY_MULTIPLIER.get(); }
+    public static double organicSpawnBudgetMultiplier()   { return ORGANIC_SPAWN_BUDGET_MULTIPLIER.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }
 
     public static double levelUpThresholdMult()  { return MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD.get(); }

@@ -21,10 +21,12 @@ public class OpenBrainNodeScreenPacket {
     public final int guards;
     public final int golems;
     public final int fertilized; // count of fertilized (fertile/rich) blocks in this dimension
+    public final int organic; // banked organic mass (1.1.2 organic system; 0 / hidden when that mode is off)
     public final List<String> reflexLog; // the brain's last (up to 10) reflex log lines, oldest first
 
     public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
-                                     int villagers, int guards, int golems, int fertilized, List<String> reflexLog) {
+                                     int villagers, int guards, int golems, int fertilized, int organic,
+                                     List<String> reflexLog) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -33,6 +35,7 @@ public class OpenBrainNodeScreenPacket {
         this.guards = guards;
         this.golems = golems;
         this.fertilized = fertilized;
+        this.organic = organic;
         this.reflexLog = reflexLog;
     }
 
@@ -45,12 +48,13 @@ public class OpenBrainNodeScreenPacket {
         buf.writeVarInt(msg.guards);
         buf.writeVarInt(msg.golems);
         buf.writeVarInt(msg.fertilized);
+        buf.writeVarInt(msg.organic);
         buf.writeCollection(msg.reflexLog, FriendlyByteBuf::writeUtf);
     }
 
     public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
         return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readList(FriendlyByteBuf::readUtf));
     }
 

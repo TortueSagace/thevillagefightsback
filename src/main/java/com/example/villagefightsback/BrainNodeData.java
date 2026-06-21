@@ -72,9 +72,20 @@ public class BrainNodeData extends SavedData {
         private int level = 1;
         private int emeralds = 0;
         private long lastIncomeDay = Long.MIN_VALUE;
+        private int organicPoints = 0; // ORGANIC MASS: a SEPARATE spawn-only currency (never touches level/emeralds)
 
         public int getLevel() { return level; }
         public int getEmeralds() { return emeralds; }
+
+        /** Organic mass: the brain's unit-spawn budget (1.1.2 organic system). Fully independent of emeralds/level. */
+        public int getOrganicPoints() { return organicPoints; }
+        public void addOrganicPoints(int n) { organicPoints = Math.max(0, organicPoints + n); setDirty(); }
+        /** Spend up to {@code n} organic points; returns the amount actually spent (never goes negative). */
+        public int spendOrganicPoints(int n) {
+            int spent = Math.max(0, Math.min(organicPoints, n));
+            if (spent > 0) { organicPoints -= spent; setDirty(); }
+            return spent;
+        }
         /** Force the village stage (1..{@value #MAX_LEVEL}); clears the pending emeralds so it doesn't re-promote. */
         public void setLevel(int lvl) { level = Math.max(1, Math.min(MAX_LEVEL, lvl)); emeralds = 0; setDirty(); }
         public boolean isMaxLevel() { return level >= MAX_LEVEL; }
@@ -247,6 +258,7 @@ public class BrainNodeData extends SavedData {
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
             e.emeralds = c.getInt("emeralds");
+            e.organicPoints = c.getInt("organic");
             e.lastIncomeDay = c.contains("income") ? c.getLong("income") : Long.MIN_VALUE;
             d.econs.put(key, e);
         }
@@ -294,6 +306,7 @@ public class BrainNodeData extends SavedData {
             c.putLong("pos", e.getKey().pos().asLong());
             c.putInt("level", e.getValue().level);
             c.putInt("emeralds", e.getValue().emeralds);
+            c.putInt("organic", e.getValue().organicPoints);
             c.putLong("income", e.getValue().lastIncomeDay);
             econList.add(c);
         }

@@ -82,6 +82,7 @@ public final class BrainNodeEvents {
         manageDome(server, data);      // level-4 protective glass dome
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
         BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
+        OrganicMass.tick(server, data); // v1.1.2: organic-mass army commander (no-op unless the config is on)
         handleSunsetIncome(server, data);
         collectLooseEmeralds(server, data); // brain vacuums up unpicked dropped emeralds near each node
         syncVisuals(server, data);

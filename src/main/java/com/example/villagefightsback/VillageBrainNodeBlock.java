@@ -87,7 +87,7 @@ public class VillageBrainNodeBlock extends Block {
             com.example.villagefightsback.network.ModNetwork.sendTo(sp,
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
-                            defenders[0], defenders[1], defenders[2], fertilized, reflexLog));
+                            defenders[0], defenders[1], defenders[2], fertilized, econ.getOrganicPoints(), reflexLog));
         }
         return InteractionResult.CONSUME;
     }

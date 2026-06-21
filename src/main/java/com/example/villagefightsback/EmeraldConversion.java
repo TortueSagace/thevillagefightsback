@@ -214,6 +214,7 @@ public final class EmeraldConversion {
      * their normal loot; players also return false (they don't convert).
      */
     static boolean convertsOnDeath(LivingEntity victim, DamageSource source) {
+        if (Config.organicMassEnabled()) return false; // organic mode: nothing converts, so loot is never suppressed
         if (!Config.mobInfectionEnabled() || victim instanceof Player) return false;
         if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return false;
         if (victim instanceof net.minecraft.world.entity.monster.Slime) return false; // slimes/magma cubes never convert
@@ -236,8 +237,19 @@ public final class EmeraldConversion {
         if (Factions.isVillage(victim) || Factions.isInfected(victim)) return; // spared factions never convert
         if (victim instanceof net.minecraft.world.entity.monster.Slime) return; // slimes/magma cubes: targets, never convert
 
-        boolean infected = victim.hasEffect(ModEffects.EMERALD_INFECTION.get());
         boolean killedByEmerald = Factions.isEmerald(event.getSource().getEntity());
+        if (Config.organicMassEnabled()) {
+            // ORGANIC MASS mode: an emerald unit's kill does NOT convert the victim -- it lays infested ground and
+            // banks the victim's max HP as organic mass on the nearest brain (spent later by OrganicMass). Loot
+            // drops normally; player-/environment-caused deaths do nothing; no emerald spawns from a death here.
+            if (killedByEmerald) {
+                placeInfestedPathUnder(level, victim);
+                OrganicMass.addToNearestBrain(level, victim.blockPosition(), Math.round(victim.getMaxHealth()));
+            }
+            return;
+        }
+
+        boolean infected = victim.hasEffect(ModEffects.EMERALD_INFECTION.get());
         if (!infected && !killedByEmerald) return;
         // The brain is fed by INFECTION deaths only -- an emerald unit's OWN kills don't feed it (too OP a loop).
         boolean feedBrain = !killedByEmerald;
@@ -302,6 +314,7 @@ public final class EmeraldConversion {
     // --- emerald-unit death effects (spec 8) -------------------------------------------------------
     private static void onEmeraldDeath(ServerLevel level, LivingEntity dead) {
         BlockPos center = dead.blockPosition();
+        if (Config.organicMassEnabled()) OrganicMass.bumpThreatNearest(level, center); // an emerald died -> brain is under threat
 
         // 1. Each infested path within 20 blocks erupts with an emerald mite -- but globally rate-limited to
         //    MITE_BUDGET per 30s window (resets each window), so a mass AoE wipe near a dense infested field can't

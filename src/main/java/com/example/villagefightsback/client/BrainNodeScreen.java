@@ -34,6 +34,7 @@ public class BrainNodeScreen extends Screen {
     private final int guards;
     private final int golems;
     private final int fertilized;
+    private final int organic;
     private final List<String> reflexLog;
 
     private int leftPos;
@@ -42,7 +43,7 @@ public class BrainNodeScreen extends Screen {
     private boolean showLogs; // false = upgrade tree, true = reflex log
 
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
-                           int villagers, int guards, int golems, int fertilized, List<String> reflexLog) {
+                           int villagers, int guards, int golems, int fertilized, int organic, List<String> reflexLog) {
         super(Component.literal("Village Brain Node"));
         this.level = level;
         this.maxLevel = maxLevel;
@@ -52,6 +53,7 @@ public class BrainNodeScreen extends Screen {
         this.guards = guards;
         this.golems = golems;
         this.fertilized = fertilized;
+        this.organic = organic;
         this.reflexLog = reflexLog;
     }
 
@@ -138,6 +140,12 @@ public class BrainNodeScreen extends Screen {
                     .withStyle(ChatFormatting.GREEN);
         }
         g.drawString(font, progress, leftPos + 8, footerY, 0xFFFFFFFF, false);
+
+        // Organic mass (1.1.2): shown right under the emerald line when the organic system is on.
+        if (com.example.villagefightsback.Config.organicMassEnabled()) {
+            g.drawString(font, Component.literal(organic + " organic mass").withStyle(ChatFormatting.GREEN),
+                    leftPos + 8, footerY + 10, 0xFFFFFFFF, false);
+        }
 
         // Defenders currently within the brain node's radius, by type.
         Component counts = Component.literal("Villagers: ").withStyle(ChatFormatting.GRAY)
