@@ -189,6 +189,19 @@ public final class EmeraldConversion {
     }
 
     /**
+     * Track when an emerald unit DEALS damage to a valid target, so {@link OrganicMass}'s idle-reclaim timer can
+     * cull (and refund) units that have been useless (e.g. stuck) for 5 minutes. Only relevant in organic mode.
+     */
+    @SubscribeEvent
+    public static void onEmeraldDealtDamage(LivingHurtEvent event) {
+        if (!Config.organicMassEnabled()) return;
+        if (event.getSource().getEntity() instanceof LivingEntity attacker && Factions.isEmerald(attacker)
+                && !Factions.isEmerald(event.getEntity()) && !Factions.isVillage(event.getEntity())) {
+            OrganicMass.noteDamageDealt(attacker);
+        }
+    }
+
+    /**
      * Emerald units are PASSIVE toward both the village AND each other: on top of never targeting one another
      * (see {@link #onChangeTarget}), neither can DAMAGE the other -- direct hits, projectiles (e.g. an emerald
      * wither's skull catching a fellow emerald), or blast splash are all cancelled. Highest priority + cancel,

@@ -56,6 +56,10 @@ public final class OrganicMass {
     private static final double MARK_MIN_DIST = 24.0;     // only Emerald-Marker prey at least this far from the node
     private static final double MARK_MAX_BELOW = 5.0;     // never scent prey more than this far BELOW the node (skip caves)
     private static final float MARK_CHANCE = 0.25F;       // chance to even attempt a scent on an eligible decision
+    private static final double UNDERGROUND_BELOW = 8.0;  // ignore prey + spawn anchors this far below the node (caves)
+    private static final String LAST_DMG_TAG = "OrganicLastDmg"; // game-time a unit last dealt damage
+    private static final long IDLE_RECLAIM_TICKS = 6000L; // 5 in-game minutes dealing no damage -> reclaim the unit
+    private static final float RECLAIM_MAX_HP = 100.0F;   // only units below this max HP are auto-reclaimed
     private static final float THREAT_BUMP = 1.0F;
     private static final float THREAT_MAX = 8.0F;
     private static final double THREAT_HALFLIFE = 1200.0; // 60s
@@ -120,25 +124,32 @@ public final class OrganicMass {
 
     private static void decide(ServerLevel level, BrainNodeData data, GlobalPos gp, long now) {
         BrainNodeData.Econ econ = data.econ(gp);
-        int P = econ.getOrganicPoints();
-        if (P - BrainNodeData.ORGANIC_FLOOR < MIN_SPAWN_COST) return; // even on credit nothing is affordable -> BANK
-
         int C = fieldCap();
         BlockPos node = gp.pos();
+        long gameTime = level.getGameTime();
 
-        // ONE entity scan, partitioned: field size F, explorer count, and prey (passive vs hostile).
+        // ONE entity scan, partitioned: field size F, explorer count, prey (passive vs hostile) -- and reclaim any
+        // idle, stuck unit (refunding its organic mass) so the field self-heals (e.g. units stranded in a hole).
         AABB box = new AABB(node).inflate(BrainNodeEvents.INCOME_RADIUS);
         List<LivingEntity> prey = new ArrayList<>();
-        int passive = 0, hostile = 0, field = 0, explorers = 0;
+        int passive = 0, hostile = 0, field = 0, explorers = 0, reclaimed = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (Factions.isEmerald(e)) {
+                if (e instanceof Mob m && reclaimIfIdle(econ, m, gameTime)) { reclaimed++; continue; }
                 field++;
                 if (e instanceof EmeraldCat || e instanceof EmeraldEndermite) explorers++; // the roaming scouts
             } else if (EmeraldMobs.isHostileTarget(e)) {
+                // Ignore prey the ground swarm can't reach: deep in caves (more than UNDERGROUND_BELOW under the
+                // node) or flying. This keeps the brain hunting the threat OUTSIDE the village, not chasing cave mobs.
+                if (e.getY() < node.getY() - UNDERGROUND_BELOW || isFlyer(e)) continue;
                 if (prey.size() < PREY_SCAN_CAP) prey.add(e);
                 if (e instanceof Enemy) hostile++; else passive++;
             }
         }
+        if (reclaimed > 0) log(level, gp, "Reclaimed " + reclaimed + " idle unit" + (reclaimed > 1 ? "s" : ""));
+
+        int P = econ.getOrganicPoints(); // read AFTER reclaim, which refunds points
+        if (P - BrainNodeData.ORGANIC_FLOOR < MIN_SPAWN_COST) return; // even on credit nothing is affordable -> BANK
 
         double threat = readThreat(gp, now);
 
@@ -153,8 +164,7 @@ public final class OrganicMass {
             double minY = node.getY() - MARK_MAX_BELOW;
             for (LivingEntity p : prey) {
                 if (EmeraldMarker.isMarked(p)) continue;
-                if (p.getY() < minY) continue;  // skip cave / deep-underground prey (more than 5 below the node)
-                if (isFlyer(p)) continue;       // skip flying units (ghast/phantom/bee/parrot/bat/...)
+                if (p.getY() < minY) continue;  // scent only prey within 5 below the node (the prey list already dropped caves/flyers)
                 double d = p.blockPosition().distSqr(node);
                 if (d >= minD2 && d < bestD) { bestD = d; far = p; } // nearest prey beyond MARK_MIN_DIST
             }
@@ -169,8 +179,10 @@ public final class OrganicMass {
 
         if (field >= C) return; // army full -> BANK (points keep accruing for a later burst)
 
-        // Spawn anchors: infested blocks within radius + the brain node itself (always valid).
+        // Spawn anchors: infested blocks within radius + the brain node itself (always valid). Drop deep-underground
+        // anchors so units never spawn stranded in a cave; the node is always a valid surface anchor.
         List<BlockPos> anchors = InfectionManager.infestedPathsWithin(level, node, BrainNodeEvents.INCOME_RADIUS);
+        anchors.removeIf(a -> a.getY() < node.getY() - UNDERGROUND_BELOW);
         anchors.add(node);
         List<BlockPos> waterAnchors = new ArrayList<>();
         for (BlockPos a : anchors) if (waterAdjacent(level, a)) waterAnchors.add(a);
@@ -206,6 +218,27 @@ public final class OrganicMass {
 
     private static int budget(int base, double frac, double mult) {
         return Math.max(MIN_SPAWN_COST, (int) Math.round(base * frac * mult));
+    }
+
+    /** Reclaim a small, idle emerald unit: if {@code m}'s max HP is below {@link #RECLAIM_MAX_HP} and it has dealt
+     *  no damage for {@link #IDLE_RECLAIM_TICKS} (5 min), refund its organic mass to {@code econ} and despawn it.
+     *  This frees units that got stuck (e.g. in a hole). Returns true if it was reclaimed. */
+    private static boolean reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
+        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return false; // golems / elites / withers are never auto-culled
+        net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
+        if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return false; } // start its idle clock
+        if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return false;
+        econ.addOrganicPoints(Math.round(m.getMaxHealth())); // give the mass back to the brain
+        LimboBanishFx.startLime(m);
+        m.discard();
+        return true;
+    }
+
+    /** Record that an emerald unit just dealt damage (resets its idle-reclaim clock). Called from the damage hook. */
+    public static void noteDamageDealt(LivingEntity attacker) {
+        if (attacker.level() instanceof ServerLevel sl) {
+            attacker.getPersistentData().putLong(LAST_DMG_TAG, sl.getGameTime());
+        }
     }
 
     /** A flying creature -- never scented (the ground swarm can't chase it). Covers ghast/phantom, bee/parrot,
@@ -317,6 +350,7 @@ public final class OrganicMass {
         BlockPos at = anchor.above();
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
+        mob.getPersistentData().putLong(LAST_DMG_TAG, level.getGameTime()); // start its idle-reclaim clock at spawn
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(mob);
         LimboBanishFx.startLime(mob); // the lime emergence swirl (the conversion/limbo-throw animation) on the new unit
