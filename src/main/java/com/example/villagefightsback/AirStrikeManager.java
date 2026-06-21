@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
@@ -91,7 +90,7 @@ public final class AirStrikeManager {
 
         ACTIVE.add(new Strike(level, target, target.getDisplayName().getString(),
                 cx, cy, cz, spawnY, level.getGameTime(), verdictAge, forced));
-        broadcast(level.getServer(), "§fSomething is falling from the sky...");
+        announce(level, cx + 0.5, cy + 0.5, cz + 0.5, "§fSomething is falling from the sky...");
         // Record the strike in the nearest brain node's reflex log (so it shows in the Logs tab).
         BrainReflexes.logExternal(level, target.blockPosition(),
                 "Air strike on " + target.getDisplayName().getString());
@@ -105,13 +104,13 @@ public final class AirStrikeManager {
             Strike s = it.next();
             long age = s.level.getGameTime() - s.start;
             if (age == T_LINE2) {
-                broadcast(s.level.getServer(), "§f... and " + s.name + " is not gonna like it!");
+                announce(s.level, s.cx + 0.5, s.cy + 0.5, s.cz + 0.5, "§f... and " + s.name + " is not gonna like it!");
                 fireWave(s);
             } else if (s.wavesFired > 0 && s.wavesFired < WAVES && age == T_LINE2 + (long) s.wavesFired * WAVE_GAP) {
                 fireWave(s);
             } else if (age >= s.verdictAge) {
                 boolean survived = s.target.isAlive() && !s.target.isRemoved();
-                broadcast(s.level.getServer(), survived
+                announce(s.level, s.cx + 0.5, s.cy + 0.5, s.cz + 0.5, survived
                         ? "§e" + s.name + " somehow survived the air strike."
                         : "§a" + s.name + " did not survive the air strike.");
                 for (ChunkPos cp : s.forced) s.level.setChunkForced(cp.x, cp.z, false);
@@ -144,9 +143,15 @@ public final class AirStrikeManager {
         s.wavesFired++;
     }
 
-    private static void broadcast(MinecraftServer server, String msg) {
-        if (server == null) return;
+    /** Announce a strike line ONLY to players near the impact, so a stage-4 village's strike never appears to a
+     *  player standing at an unrelated (e.g. stage-3) village far away. */
+    private static final double ANNOUNCE_RADIUS = 256.0;
+
+    private static void announce(ServerLevel level, double x, double y, double z, String msg) {
         Component c = Component.literal(msg);
-        server.getPlayerList().getPlayers().forEach(p -> p.sendSystemMessage(c));
+        double r2 = ANNOUNCE_RADIUS * ANNOUNCE_RADIUS;
+        for (net.minecraft.server.level.ServerPlayer p : level.players()) {
+            if (p.distanceToSqr(x, y, z) <= r2) p.sendSystemMessage(c);
+        }
     }
 }
