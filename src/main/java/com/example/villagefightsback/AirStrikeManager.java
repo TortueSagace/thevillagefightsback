@@ -120,6 +120,18 @@ public final class AirStrikeManager {
         }
     }
 
+    /** Free the chunks of any strike still in flight when the server stops, so a quit/shutdown mid-strike never
+     *  orphans a force-loaded chunk (setChunkForced persists to disk -- an orphan would keep that area, and any
+     *  village in it, ticking forever). Completed strikes already released their chunks in {@link #onServerTick}. */
+    @SubscribeEvent
+    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        for (Strike s : ACTIVE) {
+            if (s.level == null) continue;
+            for (ChunkPos cp : s.forced) s.level.setChunkForced(cp.x, cp.z, false);
+        }
+        ACTIVE.clear();
+    }
+
     /** One 3x3 wave: nine rockets dropped from the sky, GRID_SPACING apart, centred on the target's launch spot. */
     private static void fireWave(Strike s) {
         for (int gx = -1; gx <= 1; gx++) {

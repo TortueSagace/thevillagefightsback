@@ -58,6 +58,12 @@ public final class ModCommands {
         root.then(Commands.literal("tp_to_nearest_node").requires(s -> s.hasPermission(OP))
                 .executes(c -> tpToNearestNode(c.getSource())));
 
+        // --- clear_forced_chunks: release every force-loaded chunk in the current dimension. Cleans up chunks
+        //     orphaned by air strikes that were interrupted before they could free their force-load (those kept
+        //     villages/guards ticking forever). NOTE: also clears any chunks you set with vanilla /forceload. ---
+        root.then(Commands.literal("clear_forced_chunks").requires(s -> s.hasPermission(OP))
+                .executes(c -> clearForcedChunks(c.getSource())));
+
         event.getDispatcher().register(root);
     }
 
@@ -139,6 +145,19 @@ public final class ModCommands {
         if (brain == null) { src.sendFailure(Component.literal("No Village Brain Node found in this dimension.")); return 0; }
         BrainNodeData.get(player.getServer()).econ(brain).setLevel(stage);
         src.sendSuccess(() -> Component.literal("§aNearest brain node stage set to §e" + stage), true);
+        return 1;
+    }
+
+    private static int clearForcedChunks(CommandSourceStack src) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        net.minecraft.server.level.ServerLevel level = src.getPlayerOrException().serverLevel();
+        java.util.List<Long> forced = new java.util.ArrayList<>(level.getForcedChunks());
+        for (long key : forced) {
+            net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(key);
+            level.setChunkForced(cp.x, cp.z, false);
+        }
+        int count = forced.size();
+        src.sendSuccess(() -> Component.literal("§aReleased §e" + count
+                + "§a force-loaded chunk(s) in this dimension."), true);
         return 1;
     }
 
