@@ -32,6 +32,9 @@ public final class EmeraldPopulation {
     /** The player's active entity range: emeralds within this of a spawn count toward the local cap, the rest do not. */
     private static final double RANGE = 128.0;
 
+    /** Persistent-data flag marking a DELIBERATE spawn (e.g. the brain's scout cats) that bypasses the lag cap. */
+    public static final String UNCAPPED_TAG = "tvfb_uncapped";
+
     /** Every emerald unit counts toward the cap (mites included) -- the cap is about loaded/ticking-entity lag. */
     private static boolean isCapped(Entity e) {
         return Factions.isEmerald(e);
@@ -54,6 +57,7 @@ public final class EmeraldPopulation {
     public static void onJoin(EntityJoinLevelEvent event) {
         if (event.isCanceled() || event.getLevel().isClientSide() || event.loadedFromDisk()) return;
         if (!(event.getLevel() instanceof ServerLevel level) || !isCapped(event.getEntity())) return;
+        if (event.getEntity().getPersistentData().getBoolean(UNCAPPED_TAG)) return; // deliberate spawn -> never capped
         if (atCap(level, event.getEntity().position())) {
             if (event.getEntity() instanceof LivingEntity wouldBe) absorbInto(level, wouldBe);
             event.setCanceled(true);

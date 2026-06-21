@@ -989,7 +989,13 @@ public final class BrainNodeEvents {
             AABB box = new AABB(pos).inflate(INCOME_RADIUS);
             if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
             for (int i = 0; i < pc.count(); i++) {
-                ModEntities.EMERALD_CAT.get().spawn(level, pos.above(), MobSpawnType.EVENT); // materialise on the node
+                EmeraldCat cat = ModEntities.EMERALD_CAT.get().create(level);
+                if (cat == null) continue;
+                cat.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+                // Deliberate brain spawn: bypass the emerald LAG cap (set BEFORE the join event fires).
+                cat.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
+                cat.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+                level.addFreshEntity(cat); // materialise just above the brain node
             }
         }
     }
