@@ -258,6 +258,7 @@ public final class InfectionManager {
         BlockState cur = level.getBlockState(pos);
         if (cur.is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) return;        // already ours
         if (cur.getBlock().getExplosionResistance() >= Blocks.ANCIENT_DEBRIS.getExplosionResistance()) return; // too tough
+        if (cur.hasBlockEntity()) return;   // never convert chests / containers / other block entities
         level.setBlock(pos, com.example.villagefightsback.ModBlocks.INFESTED_PATH.get().defaultBlockState(), 3);
         InfectionData.get(level).addInfestedPath(pos.asLong());
     }

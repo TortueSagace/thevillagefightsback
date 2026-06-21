@@ -218,30 +218,30 @@ public final class ModEntities {
     /** The Rich Sheep: a fertile/rich-looking sheep ({@link RichSheepEntity}) that drops lime wool + an emerald. */
     public static final RegistryObject<EntityType<RichSheepEntity>> RICH_SHEEP = ENTITIES.register(
             "rich_sheep",
-            () -> EntityType.Builder.<RichSheepEntity>of(RichSheepEntity::new, MobCategory.CREATURE)
+            () -> EntityType.Builder.<RichSheepEntity>of(RichSheepEntity::new, MobCategory.MONSTER)
                     .sized(0.9F, 1.3F)
                     .clientTrackingRange(10)
                     .build("rich_sheep"));
 
     // --- v1.0.3 EMERALD faction ("mob infection"): vanilla mobs reskinned + emerald-faction AI ---
     public static final RegistryObject<EntityType<EmeraldCow>> EMERALD_COW = ENTITIES.register("emerald_cow",
-            () -> EntityType.Builder.<EmeraldCow>of(EmeraldCow::new, MobCategory.CREATURE).sized(0.9F, 1.4F).clientTrackingRange(10).build("emerald_cow"));
+            () -> EntityType.Builder.<EmeraldCow>of(EmeraldCow::new, MobCategory.MONSTER).sized(0.9F, 1.4F).clientTrackingRange(10).build("emerald_cow"));
     public static final RegistryObject<EntityType<EmeraldChicken>> EMERALD_CHICKEN = ENTITIES.register("emerald_chicken",
-            () -> EntityType.Builder.<EmeraldChicken>of(EmeraldChicken::new, MobCategory.CREATURE).sized(0.4F, 0.7F).clientTrackingRange(10).build("emerald_chicken"));
+            () -> EntityType.Builder.<EmeraldChicken>of(EmeraldChicken::new, MobCategory.MONSTER).sized(0.4F, 0.7F).clientTrackingRange(10).build("emerald_chicken"));
     public static final RegistryObject<EntityType<EmeraldCat>> EMERALD_CAT = ENTITIES.register("emerald_cat",
-            () -> EntityType.Builder.<EmeraldCat>of(EmeraldCat::new, MobCategory.CREATURE).sized(0.6F, 0.7F).clientTrackingRange(10).build("emerald_cat"));
+            () -> EntityType.Builder.<EmeraldCat>of(EmeraldCat::new, MobCategory.MONSTER).sized(0.6F, 0.7F).clientTrackingRange(10).build("emerald_cat"));
     public static final RegistryObject<EntityType<EmeraldEndermite>> EMERALD_ENDERMITE = ENTITIES.register("emerald_endermite",
             () -> EntityType.Builder.<EmeraldEndermite>of(EmeraldEndermite::new, MobCategory.MONSTER).sized(0.4F, 0.3F).clientTrackingRange(8).build("emerald_endermite"));
     public static final RegistryObject<EntityType<EmeraldWolf>> EMERALD_WOLF = ENTITIES.register("emerald_wolf",
-            () -> EntityType.Builder.<EmeraldWolf>of(EmeraldWolf::new, MobCategory.CREATURE).sized(0.6F, 0.85F).clientTrackingRange(10).build("emerald_wolf"));
+            () -> EntityType.Builder.<EmeraldWolf>of(EmeraldWolf::new, MobCategory.MONSTER).sized(0.6F, 0.85F).clientTrackingRange(10).build("emerald_wolf"));
     public static final RegistryObject<EntityType<EmeraldHorse>> EMERALD_HORSE = ENTITIES.register("emerald_horse",
-            () -> EntityType.Builder.<EmeraldHorse>of(EmeraldHorse::new, MobCategory.CREATURE).sized(1.396F, 1.6F).clientTrackingRange(10).build("emerald_horse"));
+            () -> EntityType.Builder.<EmeraldHorse>of(EmeraldHorse::new, MobCategory.MONSTER).sized(1.396F, 1.6F).clientTrackingRange(10).build("emerald_horse"));
     public static final RegistryObject<EntityType<EmeraldPig>> EMERALD_PIG = ENTITIES.register("emerald_pig",
-            () -> EntityType.Builder.<EmeraldPig>of(EmeraldPig::new, MobCategory.CREATURE).sized(0.9F, 0.9F).clientTrackingRange(10).build("emerald_pig"));
+            () -> EntityType.Builder.<EmeraldPig>of(EmeraldPig::new, MobCategory.MONSTER).sized(0.9F, 0.9F).clientTrackingRange(10).build("emerald_pig"));
     public static final RegistryObject<EntityType<EmeraldSalmon>> EMERALD_SALMON = ENTITIES.register("emerald_salmon",
-            () -> EntityType.Builder.<EmeraldSalmon>of(EmeraldSalmon::new, MobCategory.WATER_CREATURE).sized(0.7F, 0.4F).clientTrackingRange(8).build("emerald_salmon"));
+            () -> EntityType.Builder.<EmeraldSalmon>of(EmeraldSalmon::new, MobCategory.MONSTER).sized(0.7F, 0.4F).clientTrackingRange(8).build("emerald_salmon"));
     public static final RegistryObject<EntityType<EmeraldBat>> EMERALD_BAT = ENTITIES.register("emerald_bat",
-            () -> EntityType.Builder.<EmeraldBat>of(EmeraldBat::new, MobCategory.AMBIENT).sized(0.5F, 0.9F).clientTrackingRange(8).build("emerald_bat"));
+            () -> EntityType.Builder.<EmeraldBat>of(EmeraldBat::new, MobCategory.MONSTER).sized(0.5F, 0.9F).clientTrackingRange(8).build("emerald_bat"));
     public static final RegistryObject<EntityType<EmeraldZombie>> EMERALD_ZOMBIE = ENTITIES.register("emerald_zombie",
             () -> EntityType.Builder.<EmeraldZombie>of(EmeraldZombie::new, MobCategory.MONSTER).sized(0.6F, 1.95F).clientTrackingRange(8).build("emerald_zombie"));
     public static final RegistryObject<EntityType<EmeraldSkeleton>> EMERALD_SKELETON = ENTITIES.register("emerald_skeleton",

@@ -145,6 +145,7 @@ public class VillageBrainNodeBlock extends Block {
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos gp = GlobalPos.of(level.dimension(), pos.immutable());
         data.addBlock(gp);
+        BrainNodeEvents.scheduleBirthScouts(sl, pos); // one-time scout cats appear ~2s later, just above the node
         int target = chargesForLevel(data.econ(gp).getLevel());
         if (state.getValue(CHARGES) != target) {
             sl.setBlock(pos, state.setValue(CHARGES, target), 3);

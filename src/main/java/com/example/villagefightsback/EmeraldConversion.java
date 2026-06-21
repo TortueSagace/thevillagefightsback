@@ -90,48 +90,62 @@ public final class EmeraldConversion {
     }
 
     // --- closest-HP fallback roster: each representative max HP maps to a CLUSTER of one or more emerald types.
-    //     When a cluster holds several types, the converted unit is a RANDOM one of them (so e.g. the 20-HP cluster
-    //     resolves 50/50 to skeleton/phantom, and the 10-HP cluster 50/50 to cow/horse). ---
-    private record HpEntry(double hp, EntityType<?>[] types) {}
+    //     When a cluster holds several types, the converted unit is a RANDOM one of them (e.g. the 10-HP cluster
+    //     resolves 50/50 to cow/horse). Clusters are AQUATIC or TERRESTRIAL: an aquatic victim draws ONLY from the
+    //     aquatic clusters (salmon / guardian / elder guardian), a land victim only from the rest. ---
+    private record HpEntry(double hp, boolean aquatic, EntityType<?>[] types) {}
     private static HpEntry[] roster;
 
+    /** A TERRESTRIAL cluster -- candidates for a land victim only. */
     private static HpEntry cluster(double hp, EntityType<?>... types) {
-        return new HpEntry(hp, types);
+        return new HpEntry(hp, false, types);
+    }
+
+    /** An AQUATIC cluster (salmon / guardian / elder guardian) -- candidates for a water victim only. */
+    private static HpEntry aquaticCluster(double hp, EntityType<?>... types) {
+        return new HpEntry(hp, true, types);
     }
 
     private static void initRoster() {
         if (roster != null) return;
         roster = new HpEntry[]{
-                cluster(3, ModEntities.EMERALD_SALMON.get()),
+                aquaticCluster(3, ModEntities.EMERALD_SALMON.get()),
                 cluster(4, ModEntities.EMERALD_CHICKEN.get()),
                 cluster(6, ModEntities.EMERALD_BAT.get()),
                 cluster(8, ModEntities.EMERALD_WOLF.get()),
                 // 10-HP cluster: cow OR horse. The horse lives HERE (not on its own 15-HP slot) so the very common
                 // ~15-HP mobs (spiders are 16) no longer ALL deterministically become horses.
                 cluster(10, ModEntities.EMERALD_COW.get(), ModEntities.EMERALD_HORSE.get()),
-                // 20-HP cluster: skeleton OR phantom.
-                cluster(20, ModEntities.EMERALD_SKELETON.get(), ModEntities.EMERALD_PHANTOM.get()),
-                cluster(30, ModEntities.EMERALD_GUARDIAN.get()),
+                cluster(20, ModEntities.EMERALD_SKELETON.get()), // 20-HP -> skeleton (phantom only via direct conversion)
+                aquaticCluster(30, ModEntities.EMERALD_GUARDIAN.get()),
                 cluster(40, ModEntities.EMERALD_ENDERMAN.get()),
-                cluster(80, ModEntities.EMERALD_ELDER_GUARDIAN.get()),
+                aquaticCluster(80, ModEntities.EMERALD_ELDER_GUARDIAN.get()),
                 cluster(100, ModEntities.EMERALD_IRON_GOLEM.get()),
                 cluster(300, ModEntities.EMERALD_WITHER.get()),
         };
     }
 
-    /** The emerald type a dying unit converts into: direct counterpart, else closest max HP. */
+    /** The emerald type a dying unit converts into: direct counterpart, else closest max HP within its element. */
     private static EntityType<?> pick(LivingEntity victim, RandomSource rnd) {
         initDirect();
         EntityType<?> d = direct.get(victim.getType());
         if (d != null) return d;
-        return pickByHp(victim.getMaxHealth(), rnd);
+        return pickByHp(victim.getMaxHealth(), rnd, isAquatic(victim));
     }
 
-    private static EntityType<?> pickByHp(double hp, RandomSource rnd) {
+    /** Aquatic victims convert only into salmon/guardian/elder guardian; everyone else only into land units. */
+    private static boolean isAquatic(LivingEntity e) {
+        return e.getMobType() == net.minecraft.world.entity.MobType.WATER
+                || e instanceof net.minecraft.world.entity.animal.WaterAnimal;
+    }
+
+    private static EntityType<?> pickByHp(double hp, RandomSource rnd, boolean aquatic) {
         initRoster();
-        int best = 0;
+        int best = -1;
         double bestD = Double.MAX_VALUE;
         for (int i = 0; i < roster.length; i++) {
+            // A fish never becomes a cow, and a cow never becomes a fish: only consider this victim's element.
+            if (roster[i].aquatic() != aquatic) continue;
             double d = Math.abs(roster[i].hp - hp);
             if (d < bestD) { bestD = d; best = i; }
         }
@@ -202,6 +216,7 @@ public final class EmeraldConversion {
     static boolean convertsOnDeath(LivingEntity victim, DamageSource source) {
         if (!Config.mobInfectionEnabled() || victim instanceof Player) return false;
         if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return false;
+        if (victim instanceof net.minecraft.world.entity.monster.Slime) return false; // slimes/magma cubes never convert
         return victim.hasEffect(ModEffects.EMERALD_INFECTION.get()) || Factions.isEmerald(source.getEntity());
     }
 
@@ -219,30 +234,47 @@ public final class EmeraldConversion {
 
         if (Factions.isEmerald(victim)) { onEmeraldDeath(level, victim); return; }
         if (Factions.isVillage(victim) || Factions.isInfected(victim)) return; // spared factions never convert
+        if (victim instanceof net.minecraft.world.entity.monster.Slime) return; // slimes/magma cubes: targets, never convert
 
         boolean infected = victim.hasEffect(ModEffects.EMERALD_INFECTION.get());
         boolean killedByEmerald = Factions.isEmerald(event.getSource().getEntity());
         if (!infected && !killedByEmerald) return;
+        // The brain is fed by INFECTION deaths only -- an emerald unit's OWN kills don't feed it (too OP a loop).
+        boolean feedBrain = !killedByEmerald;
 
         if (victim instanceof Player) {
             // A player doesn't turn -- an emerald mob spawns in their place (closest to the player's max HP).
-            spawnAt(level, victim.blockPosition(), pickByHp(victim.getMaxHealth(), level.getRandom()), null);
+            spawnAt(level, victim.blockPosition(), pickByHp(victim.getMaxHealth(), level.getRandom(), false), null);
             LimboBanishFx.startLime(victim);
-            grantEmeraldsToBrains(level, victim.blockPosition());
-            InfectionManager.placeInfestedPath(level, victim.blockPosition().below());
+            if (feedBrain) grantEmeraldsToBrains(level, victim.blockPosition());
+            placeInfestedPathUnder(level, victim);
             return;
         }
-        convert(level, victim);
+        convert(level, victim, feedBrain);
     }
 
     /** Replace the dying {@code victim} with an emerald unit at the same spot (keeping its held tool). */
-    private static void convert(ServerLevel level, LivingEntity victim) {
+    private static void convert(ServerLevel level, LivingEntity victim, boolean feedBrain) {
         EntityType<?> type = pick(victim, level.getRandom());
         LimboBanishFx.startLime(victim);                              // lime banishment swirl on the original
         ItemStack held = victim.getMainHandItem();
         spawnAt(level, victim.blockPosition(), type, held.isEmpty() ? null : held.copy());
-        grantEmeraldsToBrains(level, victim.blockPosition());
-        InfectionManager.placeInfestedPath(level, victim.blockPosition().below());
+        if (feedBrain) grantEmeraldsToBrains(level, victim.blockPosition());
+        placeInfestedPathUnder(level, victim);
+    }
+
+    /** Infest the nearest solid block at/under the victim's feet, so a unit that died in MID-AIR leaves no
+     *  floating infested path. Chests / too-tough blocks are rejected inside {@link InfectionManager#placeInfestedPath}. */
+    private static void placeInfestedPathUnder(ServerLevel level, LivingEntity victim) {
+        net.minecraft.core.BlockPos.MutableBlockPos p = victim.blockPosition().mutable().move(0, -1, 0);
+        for (int i = 0; i < 16 && level.isLoaded(p); i++) {
+            net.minecraft.world.level.block.state.BlockState s = level.getBlockState(p);
+            if (!s.isAir() && !s.canBeReplaced() && !s.getCollisionShape(level, p).isEmpty()) {
+                InfectionManager.placeInfestedPath(level, p.immutable());
+                return;
+            }
+            p.move(0, -1, 0);
+        }
     }
 
     /** Spawn an emerald unit of {@code type} at {@code pos}, optionally placing {@code tool} in its main hand. */

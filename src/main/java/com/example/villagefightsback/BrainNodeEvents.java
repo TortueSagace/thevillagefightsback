@@ -938,9 +938,10 @@ public final class BrainNodeEvents {
             econ.setLastIncomeDay(day);
 
             // v1.0.3: every sunset each village gets emerald bats (nightly scouts). Count = 1 x the brain-spawn mult.
+            // Uncapped (a deliberate brain spawn) so the sunset bat reliably appears even in a crowded area.
             int bats = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
             if (Config.mobInfectionEnabled()) {
-                for (int i = 0; i < bats; i++) spawnDefender(level, gp.pos(), ModEntities.EMERALD_BAT.get(), null);
+                for (int i = 0; i < bats; i++) spawnUncappedScout(level, ModEntities.EMERALD_BAT.get(), findSpawnSpot(level, gp.pos()));
             }
 
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
@@ -970,10 +971,21 @@ public final class BrainNodeEvents {
      * worker population can't endlessly overpopulate). Guards and iron golems are military -- they don't use
      * beds, so they always arrive. The spawned mobs auto-arm through the normal entity-join handler.
      */
-    // Emerald cats the brain has settled but not yet spawned: they appear 2s after the settlers, materialising
-    // just above the brain node. A tiny pending queue, drained each driver pass (onServerTick).
+    // A brand-new brain node's ONE-TIME scout cats: they appear ~2s after the node is born, just above it.
+    // A tiny pending queue, drained each driver pass (onServerTick).
     private static final List<PendingCats> PENDING_CATS = new ArrayList<>();
     private record PendingCats(GlobalPos at, long dueTick, int count) {}
+
+    /** A brain node was just BORN (freshly placed OR a bell that rose into one -- both fire onPlace): queue its
+     *  one-time scout cats to materialise ~2s later, just above the node. */
+    public static void scheduleBirthScouts(ServerLevel level, BlockPos pos) {
+        if (!Config.mobInfectionEnabled()) return;
+        int cats = Math.max(0, (int) Math.round(2.0 * Config.emeraldBrainSpawnMult()));
+        if (cats > 0) {
+            PENDING_CATS.add(new PendingCats(GlobalPos.of(level.dimension(), pos.immutable()),
+                    level.getGameTime() + 40L, cats));
+        }
+    }
 
     private static void processPendingCats(MinecraftServer server) {
         if (PENDING_CATS.isEmpty()) return;
@@ -982,22 +994,26 @@ public final class BrainNodeEvents {
             PendingCats pc = it.next();
             ServerLevel level = server.getLevel(pc.at().dimension());
             if (level == null) { it.remove(); continue; }
-            if (level.getGameTime() < pc.dueTick()) continue;     // not yet -- wait until 2s after the settlers
+            if (level.getGameTime() < pc.dueTick()) continue;     // not yet -- wait ~2s after the node is born
             it.remove();
             BlockPos pos = pc.at().pos();
             if (!level.isLoaded(pos)) continue;                   // node unloaded -> give up on these cats
             AABB box = new AABB(pos).inflate(INCOME_RADIUS);
             if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
             for (int i = 0; i < pc.count(); i++) {
-                EmeraldCat cat = ModEntities.EMERALD_CAT.get().create(level);
-                if (cat == null) continue;
-                cat.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
-                // Deliberate brain spawn: bypass the emerald LAG cap (set BEFORE the join event fires).
-                cat.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
-                cat.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
-                level.addFreshEntity(cat); // materialise just above the brain node
+                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), pos.above()); // materialise just above the node
             }
         }
+    }
+
+    /** Spawn one emerald scout of {@code type} at {@code at}, bypassing the emerald LAG cap (it is a DELIBERATE
+     *  brain spawn -- the flag is set before the join event fires). */
+    private static void spawnUncappedScout(ServerLevel level, net.minecraft.world.entity.EntityType<?> type, BlockPos at) {
+        if (!(type.create(level) instanceof net.minecraft.world.entity.Mob mob)) return;
+        mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+        mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
+        level.addFreshEntity(mob);
     }
 
     private static void reinforceVillage(ServerLevel level, WallPlan innerWall, BlockPos pos, int stage) {
@@ -1017,13 +1033,8 @@ public final class BrainNodeEvents {
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
             for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
-            // v1.0.3: the brain settles emerald cats too (scouts that roam off to hunt threats). They appear 2s
-            // AFTER the settlers, materialising just above the brain node itself (queued + drained each pass).
-            // Count = 2 x multiplier_emerald_mobs_spawned_by_brain.
-            int cats = Math.max(0, (int) Math.round(2.0 * Config.emeraldBrainSpawnMult()));
-            if (Config.mobInfectionEnabled() && cats > 0) {
-                PENDING_CATS.add(new PendingCats(GlobalPos.of(level.dimension(), pos), level.getGameTime() + 40L, cats));
-            }
+            // (Emerald cats are NOT a sunset reinforcement -- they spawn once when the brain node is BORN, see
+            //  scheduleBirthScouts. The recurring sunset emerald scout is the BAT, in handleSunsetIncome.)
         }
 
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
