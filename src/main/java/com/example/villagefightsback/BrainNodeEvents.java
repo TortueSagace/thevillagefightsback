@@ -282,6 +282,7 @@ public final class BrainNodeEvents {
         }
         if (e instanceof UnleashedBrainNodeEntity) return false;        // the boss has its own arc
         if (isVillageAlly(e) || e instanceof EmeraldgerEntity || e instanceof WallDefenderEntity) return false;
+        if (e.getMaxHealth() < 50.0F) return false;                    // weak mobs aren't worth a rocket (overkill)
         return e instanceof net.minecraft.world.entity.monster.Enemy;
     }
 
