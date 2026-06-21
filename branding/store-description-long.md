@@ -79,9 +79,11 @@ At its peak the virus produces the **Emeraldger**, a stage-4 virus warrior whose
 
 ## The Emerald faction
 
-A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Almost every creature has an emerald-touched form, from cows, pigs, wolves and cats to zombies, skeletons, creepers, endermen, guardians and even the Wither, each one tinted green, flecked with emerald, and watching through glowing vertical eyes that shimmer with a living "salt and pepper" glow (the tougher the creature, the more eyes open across its body). **Any hit from an emerald unit infects its victim**, and a creature that **dies while infected**, or is struck down by an emerald outright, is **reborn as its emerald counterpart**, keeping whatever weapon it held; a player who dies infected leaves an emerald creature in their place.
+![The Emerald faction](https://cdn.modrinth.com/data/cached_images/883eba69ef77ba77ca298afcfb084538043b7adc_0.webp)
 
-The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you switch it on, you, though by default they stay **neutral toward the player** and fight back only when struck. The Brain Node quietly **settles emerald cats** with its villagers and sends out **an emerald bat each sunset** to carry the infection outward. Where an emerald creature is born the ground below turns to an **infested path** that slowly grows the fertile zone on its own, and when an emerald unit dies those paths **erupt with emerald mites** while the survivors nearby grow stronger. Emerald units drop their normal loot plus an emerald. The whole faction can be tuned, capped, or turned off in the configs.
+A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected is **reborn as its emerald counterpart**, keeping whatever weapon it held; a player who dies infected leaves an emerald creature in their place.
+
+The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Ennemy of the Village, you, though by default they stay neutral toward the player. The Brain Node quietly settles emerald cats with its villagers and sends out an emerald bat each sunset to carry the infection outward. Where an emerald creature is born the ground below turns to an **infested path** that slowly grows the fertile zone on its own, and when an emerald unit dies those paths erupt with emerald mites while the survivors nearby grow stronger. Emerald units drop their normal loot plus an emerald. The whole faction can be tuned, capped, or turned off in the configs.
 
 ## Bosses and the Infected faction
 
@@ -141,6 +143,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
 - `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
 - `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire`: whether each kind of explosion breaks blocks or starts fires (it always still hits units)
+- `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
 - `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
 - `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald
 - `air_strikes_appear_at_stage` (1-4): the stage air strikes unlock at

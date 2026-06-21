@@ -245,7 +245,7 @@ public final class EmeraldVirusEvents {
             // Explode where the CORPSE ended up (it kept sliding from the knockback during its death
             // animation), not where it died. After removal the entity still reports its last position.
             double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
-            explodeWithFire(p.level, x, y, z);
+            if (Config.emeraldVirusExplosion()) explodeWithFire(p.level, x, y, z); // master switch (no boom if off)
             if (p.spawnEmeraldger) spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
         }
         ModProfiler.add("virus.explode", _p);

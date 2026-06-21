@@ -39,6 +39,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS;
     public static final ForgeConfigSpec.BooleanValue AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE;
     // --- explosions: emerald virus ---
+    public static final ForgeConfigSpec.BooleanValue ENABLE_EMERALD_VIRUS_EXPLOSION;
     public static final ForgeConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS;
     public static final ForgeConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE;
     // --- feature switches ---
@@ -105,6 +106,11 @@ public final class Config {
         AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE = b
                 .comment("If true, an air-strike rocket's explosion can set blocks on fire.")
                 .define("air_strike_rocket_set_blocks_on_fire", true);
+        ENABLE_EMERALD_VIRUS_EXPLOSION = b
+                .comment("Master switch for the emerald-virus death explosion. If false, a creature that dies carrying the",
+                        "emerald virus does NOT explode at all (no blast, no entity damage, no fire) -- the two options below",
+                        "then have no effect. The emeraldger spawn and emerald loot still happen. Default: true.")
+                .define("enable_emerald_virus_explosion", true);
         EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS = b
                 .comment("If true, the explosion of a creature that dies carrying the emerald virus breaks blocks.",
                         "The blast still hurts units either way. Default: false.")
@@ -254,6 +260,7 @@ public final class Config {
         INDEX.put("creature_rocket_set_blocks_on_fire", CREATURE_ROCKET_SET_BLOCKS_ON_FIRE);
         INDEX.put("air_strike_rocket_explosion_destroy_blocks", AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS);
         INDEX.put("air_strike_rocket_set_blocks_on_fire", AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE);
+        INDEX.put("enable_emerald_virus_explosion", ENABLE_EMERALD_VIRUS_EXPLOSION);
         INDEX.put("emerald_virus_explosion_destroy_blocks", EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS);
         INDEX.put("emerald_virus_explosion_set_blocks_on_fire", EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE);
         INDEX.put("brain_node_extinguishes_fire", BRAIN_NODE_EXTINGUISHES_FIRE);
@@ -314,6 +321,7 @@ public final class Config {
     public static boolean creatureRocketSetsFire()        { return CREATURE_ROCKET_SET_BLOCKS_ON_FIRE.get(); }
     public static boolean airStrikeDestroysBlocks()       { return AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS.get(); }
     public static boolean airStrikeSetsFire()             { return AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE.get(); }
+    public static boolean emeraldVirusExplosion()         { return ENABLE_EMERALD_VIRUS_EXPLOSION.get(); }
     public static boolean emeraldVirusDestroysBlocks()    { return EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS.get(); }
     public static boolean emeraldVirusSetsFire()          { return EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE.get(); }
     public static boolean brainExtinguishesFire()         { return BRAIN_NODE_EXTINGUISHES_FIRE.get(); }
