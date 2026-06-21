@@ -20,9 +20,28 @@ from PIL import Image
 
 # Reuse the trusted recipe functions + constants from the fertile-block generator (no main() runs on import).
 from gen_fertile_blocks import (green_tint, emerald_fleck, animate_specks, load_vanilla, JAR, ASSETS, mkdir,
-                                 SALT, SALT_DIM, PEPPER)
+                                 SALT, SALT_DIM, PEPPER, gem_overlay)
 
 ENT = os.path.join(ASSETS, "textures", "entity")
+
+
+def overlay_gems(img, gems16):
+    """Stud img with the EXACT rich-block emerald-gem texture: the 16x16 emerald-ore crystal overlay tiled
+    across img, keeping a gem pixel ONLY where img is opaque (so gems never bleed off the model). Baked into the
+    body, so the emissive eyes/glow layers always draw on top -- i.e. the gems sit BELOW the eyes layer."""
+    out = img.convert("RGBA").copy()
+    px = out.load()
+    gp = gems16.load()
+    gw, gh = gems16.size
+    w, h = out.size
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] < 250:
+                continue
+            gr, gg, gb, ga = gp[x % gw, y % gh]
+            if ga > 0:
+                px[x, y] = (gr, gg, gb, px[x, y][3])
+    return out
 
 # mob id -> vanilla entity texture sub-path under assets/minecraft/textures/entity/ (1.20.1).
 # Order/keys are the v1.0.3 emerald roster (sheep handled separately: it has body + fur).
@@ -139,17 +158,18 @@ def gen_eyes(zf, mob, subpath):
     print("  eyes:", mob, "->", eyes)
     return True
 
-def gen_body(zf, mob, subpath):
+def gen_body(zf, mob, subpath, gems16):
     img = green_tint(load_vanilla(zf, subpath, folder="entity"))
     img = emerald_fleck(img, mob, density=FLECK_DENSITY.get(mob, DEFAULT_DENSITY))
+    img = overlay_gems(img, gems16)  # stud with the rich-block emerald-gem texture (below the eyes overlay)
     mkdir(ENT)
     img.save(os.path.join(ENT, mob + ".png"))
     print("  body:", mob, img.size)
 
-def gen_sheep(zf):
-    """Rename rich sheep -> emerald sheep: green body + green emerald-flecked fur (as before)."""
-    body = emerald_fleck(green_tint(load_vanilla(zf, "sheep/sheep", folder="entity")), "emerald_sheep_body", 0.04)
-    fur = emerald_fleck(green_tint(load_vanilla(zf, "sheep/sheep_fur", folder="entity")), "emerald_sheep_fur", 0.11)
+def gen_sheep(zf, gems16):
+    """Rename rich sheep -> emerald sheep: green body + green emerald-flecked, gem-studded fur (as before)."""
+    body = overlay_gems(emerald_fleck(green_tint(load_vanilla(zf, "sheep/sheep", folder="entity")), "emerald_sheep_body", 0.04), gems16)
+    fur = overlay_gems(emerald_fleck(green_tint(load_vanilla(zf, "sheep/sheep_fur", folder="entity")), "emerald_sheep_fur", 0.11), gems16)
     mkdir(ENT)
     body.save(os.path.join(ENT, "emerald_sheep.png"))
     fur.save(os.path.join(ENT, "emerald_sheep_fur.png"))
@@ -157,11 +177,12 @@ def gen_sheep(zf):
 
 def main():
     with zipfile.ZipFile(JAR) as zf:
-        gen_sheep(zf)
+        gems16 = gem_overlay(zf)  # the rich-block emerald-gem crystals (emerald_ore minus stone)
+        gen_sheep(zf, gems16)
         gen_eyes(zf, "emerald_sheep", "sheep/sheep")
         for mob, sub in MOB_TEXTURES.items():
             try:
-                gen_body(zf, mob, sub)
+                gen_body(zf, mob, sub, gems16)
                 gen_eyes(zf, mob, sub)
             except KeyError as e:
                 print("  !! missing vanilla texture for", mob, "->", sub, e)
