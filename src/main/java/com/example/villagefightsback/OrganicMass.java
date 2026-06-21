@@ -321,9 +321,9 @@ public final class OrganicMass {
             leaves = new List[6];
             // SCOUT: a cat (explorer) to find new prey; bat as a cheap flying fallback.
             leaves[SCOUT] = List.of(
-                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),       // the roaming explorer
-                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 4.0, false),  // cheap roaming combat scout
-                    new Cand(ModEntities.EMERALD_BAT.get(), 6, 1.5, false));
+                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),        // the roaming explorer
+                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 4.0, false));  // cheap roaming combat scout
+                    // (bat dropped: it can't roam-explore -- it just flutters. It still appears as a CHEAP_CONVERTER.)
             // CHEAP_CONVERTER: harvest passive food cheaply. Mite dominates; animals are deliberately rare.
             leaves[CHEAP_CONVERTER] = List.of(
                     new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 5.0, false),

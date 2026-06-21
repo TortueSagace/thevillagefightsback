@@ -938,11 +938,12 @@ public final class BrainNodeEvents {
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
 
-            // v1.0.3: every sunset each village gets emerald bats (nightly scouts). Count = 1 x the brain-spawn mult.
-            // Uncapped (a deliberate brain spawn) so the sunset bat reliably appears even in a crowded area.
-            int bats = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
+            // Every sunset each village gets an emerald CAT -- a nightly scout that roams out to find prey (cats
+            // and mites are the only real explorers). Count = 1 x the brain-spawn mult. Uncapped (a deliberate
+            // brain spawn) so it reliably appears even in a crowded area.
+            int scouts = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
             if (Config.mobInfectionEnabled()) {
-                for (int i = 0; i < bats; i++) spawnUncappedScout(level, ModEntities.EMERALD_BAT.get(), findSpawnSpot(level, gp.pos()));
+                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), findSpawnSpot(level, gp.pos()));
             }
 
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
