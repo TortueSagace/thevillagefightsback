@@ -47,7 +47,12 @@ public final class EmeraldMobs {
         // EmeraldConversion.onEmeraldHurt handler instead, and attack through their own flight goals).
         if (mob instanceof PathfinderMob pm) {
             pm.targetSelector.addGoal(1, new HurtByTargetGoal(pm));
-            if (passive) pm.goalSelector.addGoal(2, new MeleeAttackGoal(pm, 1.25D, true));
+            if (passive) {
+                // An infected passive species is an AGGRESSOR, not prey: drop its flee-when-hurt goal and give the
+                // melee a HIGH priority so it commits to the kill instead of wandering/breeding/fleeing.
+                pm.goalSelector.removeAllGoals(g -> g instanceof net.minecraft.world.entity.ai.goal.PanicGoal);
+                pm.goalSelector.addGoal(1, new MeleeAttackGoal(pm, 1.25D, true));
+            }
         }
         // A passive species deals 50% of its max health as melee (rule 4), set on its live attribute so it tracks
         // the actual max HP rather than a hardcoded literal. Requires the entity to register an ATTACK_DAMAGE attr.

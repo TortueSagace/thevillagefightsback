@@ -151,8 +151,8 @@ public final class EmeraldConversion {
         LivingEntity me = event.getEntity();
         if (Factions.isEmerald(target) && (Factions.isVillage(me) || me instanceof UnleashedBrainNodeEntity)) {
             event.setCanceled(true);     // village + the Vindictive Village Spirit spare emerald units
-        } else if (Factions.isEmerald(me) && Factions.isVillage(target)) {
-            event.setCanceled(true);     // emerald never attacks the village faction, even when provoked
+        } else if (Factions.isEmerald(me) && (Factions.isVillage(target) || Factions.isEmerald(target))) {
+            event.setCanceled(true);     // emerald never targets the village OR a fellow emerald, even when provoked
         }
     }
 
@@ -174,17 +174,20 @@ public final class EmeraldConversion {
     }
 
     /**
-     * Emerald and the village are PASSIVE to each other: on top of never targeting one another (see
-     * {@link #onChangeTarget}), neither can DAMAGE the other -- direct hits, projectiles, or blast splash are all
-     * cancelled both ways. Highest priority + cancel, so virus/effect handlers downstream are skipped too. Player
-     * and every other faction are unaffected, so the player can still fight either side.
+     * Emerald units are PASSIVE toward both the village AND each other: on top of never targeting one another
+     * (see {@link #onChangeTarget}), neither can DAMAGE the other -- direct hits, projectiles (e.g. an emerald
+     * wither's skull catching a fellow emerald), or blast splash are all cancelled. Highest priority + cancel,
+     * so virus/effect handlers downstream are skipped too. Player and every other faction are unaffected, so the
+     * player can still fight either side, and emeralds still hurt non-emerald/non-village mobs they hunt.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onEmeraldVillageImmunity(LivingHurtEvent event) {
+    public static void onFactionImmunity(LivingHurtEvent event) {
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
         LivingEntity victim = event.getEntity();
-        if ((Factions.isEmerald(attacker) && Factions.isVillage(victim))
-                || (Factions.isVillage(attacker) && Factions.isEmerald(victim))) {
+        boolean aE = Factions.isEmerald(attacker), vE = Factions.isEmerald(victim);
+        if ((aE && vE)                                        // emerald <-> emerald
+                || (aE && Factions.isVillage(victim))         // emerald -> village
+                || (Factions.isVillage(attacker) && vE)) {    // village -> emerald
             event.setCanceled(true);
         }
     }
