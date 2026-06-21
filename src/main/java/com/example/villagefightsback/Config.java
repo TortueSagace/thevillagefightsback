@@ -181,8 +181,8 @@ public final class Config {
                         "HP is added as 'organic mass' to the nearest brain node, which banks it and spends it to spawn its own",
                         "emerald army at infested blocks (a decision tree picks when/what). Organic mass is shown next to the brain's",
                         "emerald count and NEVER affects the brain's level/emerald economy. If false: keep the classic 1.1.1",
-                        "convert-on-kill behavior. Default: false.")
-                .define("enable_organic_mass_system", false);
+                        "convert-on-kill behavior. Default: true.")
+                .define("enable_organic_mass_system", true);
         ORGANIC_ARMY_MULTIPLIER = mult(b,
                 "organic_army_multiplier",
                 "Scales the standing organic army a brain may field: cap = emerald_mobs_max_number x this (default 50).",
