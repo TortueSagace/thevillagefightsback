@@ -27,8 +27,9 @@ public final class EmeraldMobs {
         if (Factions.isEmerald(target)) return false;        // (i) fellow emerald unit
         if (Factions.isVillage(target)) return false;        // (iii) villager/guard/golem/wall defender/Darius
         if (Factions.isInfected(target)) return false;       // (iv) vindictive faction
-        if (target instanceof Player p) {                    // (ii) a player only if Enemy of the Village
-            return !p.isCreative() && !p.isSpectator()
+        if (target instanceof Player p) {                    // (ii) a player only if the config opts in + Enemy of the Village
+            return Config.emeraldMobsHostileToPlayer()
+                    && !p.isCreative() && !p.isSpectator()
                     && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
         return true;                                         // everything else (hostiles + peaceful animals)

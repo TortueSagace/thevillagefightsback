@@ -52,6 +52,10 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
     public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_INFECTION;
     public static final ForgeConfigSpec.BooleanValue ENABLE_MOB_INFECTION;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_EMERALD_INFESTATION;
+    public static final ForgeConfigSpec.BooleanValue EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER;
+    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN;
+    public static final ForgeConfigSpec.IntValue EMERALD_MOBS_MAX_NUMBER;
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
@@ -148,6 +152,25 @@ public final class Config {
                 .comment("Master switch for MOB infection (the 18 emerald units). If false, NO emerald unit can ever spawn:",
                         "no infection-conversion of a slain mob, no brain summon, not even a spawn egg. Default: true.")
                 .define("enable_mob_infection", true);
+        ENABLE_EMERALD_INFESTATION = b
+                .comment("Switch for the EMERALD faction's block infestation: the lime 'infested path' laid below a converted",
+                        "unit and its slow fertile/rich spread. This is the emerald-faction counterpart of enable_block_infection",
+                        "(which is the VILLAGE brain node's own fertile spread) and is fully independent of it: turn this off to",
+                        "keep emerald mobs but stop them altering the world. Default: true.")
+                .define("enable_emerald_infestation", true);
+        EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER = b
+                .comment("If true, emerald units treat the player as a target (a non-creative/spectator player who is an Enemy",
+                        "of the Village). If false, emerald units never attack the player at all. Default: false.")
+                .define("emerald_mobs_are_hostile_to_player", false);
+        MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN = mult(b,
+                "multiplier_emerald_mobs_spawned_by_brain",
+                "Scales the emerald scouts the brain summons: base 2 cats per settlement + 1 bat per sunset, times this.",
+                "e.g. 2 -> 4 cats and 2 bats. Default: 1.");
+        EMERALD_MOBS_MAX_NUMBER = b
+                .comment("Soft cap (per dimension) on loaded NON-mite emerald units, to limit lag. When reached, a new emerald",
+                        "unit does NOT spawn; instead the nearest non-mite emerald gains that unit's max HP (a conversion's",
+                        "victim just dies, and its infested path still appears). Mites are exempt. Default: 50.")
+                .defineInRange("emerald_mobs_max_number", 50, 0, 100000);
         GUARDS_DROP_FIRE_GRENADE_UPON_DEATH = b
                 .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
                         "blast (a 'fire grenade'). If false, guards die quietly. Default: true.")
@@ -223,6 +246,10 @@ public final class Config {
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
         INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
+        INDEX.put("enable_emerald_infestation", ENABLE_EMERALD_INFESTATION);
+        INDEX.put("emerald_mobs_are_hostile_to_player", EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER);
+        INDEX.put("multiplier_emerald_mobs_spawned_by_brain", MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN);
+        INDEX.put("emerald_mobs_max_number", EMERALD_MOBS_MAX_NUMBER);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
@@ -276,6 +303,10 @@ public final class Config {
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
+    public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }
+    public static boolean emeraldMobsHostileToPlayer()    { return EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER.get(); }
+    public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
+    public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }
 
     public static double levelUpThresholdMult()  { return MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD.get(); }

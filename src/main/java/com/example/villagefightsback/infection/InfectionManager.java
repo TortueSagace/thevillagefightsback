@@ -82,13 +82,17 @@ public final class InfectionManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!com.example.villagefightsback.Config.blockInfectionEnabled()) return; // master switch: no seeding, paths or fertile blocks
+        // Two independent spreads share this engine: the VILLAGE brain-node fertile spread (enable_block_infection)
+        // and the EMERALD faction's infested-path spread (enable_emerald_infestation).
+        boolean village = com.example.villagefightsback.Config.blockInfectionEnabled();
+        boolean emerald = com.example.villagefightsback.Config.emeraldInfestationEnabled();
+        if (!village && !emerald) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         long tc = server.getTickCount();
         long _p = com.example.villagefightsback.ModProfiler.now();
 
-        if (tc % MANAGE_INTERVAL == 0) {
+        if (village && tc % MANAGE_INTERVAL == 0) {            // seeding/staffing is village-only
             boolean doStaff = (tc % STAFF_INTERVAL == 0); // entity scans only every 5s
             BrainNodeData gdata = BrainNodeData.get(server);
             for (GlobalPos gp : new ArrayList<>(gdata.blocks())) {
@@ -108,8 +112,8 @@ public final class InfectionManager {
                 long now = level.getGameTime();
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
-                double[][] brain = brainNodeRanges(gdata, level);  // {cx, cz, rangeSqr, speed=1.0} per brainNode
-                double[][] ranges = concat(brain, infestedRanges(inf)); // + slow emerald infested-path sources (0.2)
+                double[][] brain = village ? brainNodeRanges(gdata, level) : EMPTY_RANGES; // {cx,cz,rSqr,speed=1.0}
+                double[][] ranges = emerald ? concat(brain, infestedRanges(inf)) : brain; // + slow infested (0.2)
                 if (ranges.length == 0) continue;                  // nothing active here -> nothing to infect
                 // Dirt paths still grow only within brain ranges; conversion spreads across both, but the convert
                 // chance is scaled by speedAt() so infested-only ground proliferates at 1/5 the brain rate.
@@ -139,6 +143,7 @@ public final class InfectionManager {
     }
 
     private static final double INFESTED_SPEED = 0.2; // emerald infested paths proliferate 5x slower than a brain
+    private static final double[][] EMPTY_RANGES = new double[0][];
 
     /** Per-infested-path proliferation reach: a full stage-4 radius around each tracked infested path block, but at
      *  the slow speed factor -- so the emerald faction's blocks spread on their own (away from any village) at 1/5
@@ -243,12 +248,12 @@ public final class InfectionManager {
     }
 
     /**
-     * Lay an infested path at {@code pos} (the block right below an emerald-converted unit), if block infection is
-     * enabled and that block is softer than ancient debris. Registers it as a slow, full-radius proliferation source
-     * (5x slower than a brain node). Safe to call on any thread-confined server context. (v1.0.3 mob infection.)
+     * Lay an infested path at {@code pos} (the block right below an emerald-converted unit), if emerald infestation
+     * is enabled (enable_emerald_infestation) and that block is softer than ancient debris. Registers it as a slow,
+     * full-radius proliferation source (5x slower than a brain node). (v1.0.3 mob infection.)
      */
     public static void placeInfestedPath(ServerLevel level, BlockPos pos) {
-        if (!com.example.villagefightsback.Config.blockInfectionEnabled()) return;
+        if (!com.example.villagefightsback.Config.emeraldInfestationEnabled()) return;
         if (!level.isLoaded(pos)) return;
         BlockState cur = level.getBlockState(pos);
         if (cur.is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) return;        // already ours

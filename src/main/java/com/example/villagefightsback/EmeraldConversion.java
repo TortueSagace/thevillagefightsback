@@ -153,6 +153,9 @@ public final class EmeraldConversion {
         if (!(event.getEntity() instanceof Mob mob) || !Factions.isEmerald(mob)) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker) || !attacker.isAlive()) return;
         if (Factions.isEmerald(attacker) || Factions.isVillage(attacker)) return; // never retaliate vs emerald/village
+        // NOTE: a player provoker IS retaliated against even when emerald_mobs_are_hostile_to_player is off -- "not
+        // hostile" means neutral (don't start fights), not passive. The config only gates PROACTIVE player targeting
+        // (in EmeraldMobs.isHostileTarget); a neutral emerald still fights back when the player strikes first.
         if (mob.getTarget() == null || !mob.getTarget().isAlive()) mob.setTarget(attacker);
     }
 

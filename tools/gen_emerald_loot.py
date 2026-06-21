@@ -36,7 +36,8 @@ def main():
             if table is None:
                 table = {"type": "minecraft:entity", "pools": []}
             table.setdefault("pools", [])
-            table["pools"].append(dict(EMERALD_POOL))
+            if mob != "endermite":   # emerald mites are transient swarm units -> they drop no emerald
+                table["pools"].append(dict(EMERALD_POOL))
             with open(os.path.join(out_dir, f"emerald_{mob}.json"), "w", encoding="utf-8") as fh:
                 json.dump(table, fh, indent=2)
             print(f"  emerald_{mob}: {'copied vanilla + emerald' if vanilla_table(zf, mob) else 'emerald only'}")
