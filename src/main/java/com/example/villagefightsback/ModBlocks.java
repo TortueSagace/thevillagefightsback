@@ -674,6 +674,8 @@ public final class ModBlocks {
                 output.accept(ModItems.EMERALD_CREEPER_SPAWN.get());
                 output.accept(ModItems.EMERALD_ENDERMAN_SPAWN.get());
                 output.accept(ModItems.EMERALD_IRON_GOLEM_SPAWN.get());
+                output.accept(ModItems.EMERALD_DEFENDER_GOLEM_SPAWN.get());
+                output.accept(ModItems.EMERALD_GIGACHAD_GOLEM_SPAWN.get());
                 output.accept(ModItems.EMERALD_PHANTOM_SPAWN.get());
                 output.accept(ModItems.EMERALD_WITHER_SPAWN.get());
                 output.accept(ModItems.EMERALD_GUARDIAN_SPAWN.get());

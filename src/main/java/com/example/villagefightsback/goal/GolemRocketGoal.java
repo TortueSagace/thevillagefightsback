@@ -69,6 +69,9 @@ public class GolemRocketGoal extends Goal {
      *  faction (vindictive guards/gigachads, the unleashed brain node) -- so the village fights back. */
     private boolean isValidHostile(LivingEntity t) {
         if (t == null || !t.isAlive() || golem.distanceToSqr(t) > SEE_RANGE * SEE_RANGE) return false;
+        if (com.example.villagefightsback.Factions.isEmerald(golem)) {
+            return com.example.villagefightsback.EmeraldMobs.isHostileTarget(t); // emerald golem: hunt the village
+        }
         if (com.example.villagefightsback.Factions.isInfected(golem)) {
             return !com.example.villagefightsback.Factions.isInfected(t);   // boss golem: anyone not boss
         }
@@ -96,7 +99,8 @@ public class GolemRocketGoal extends Goal {
 
     /** The golem "knows" ally positions around the target even without seeing them. Throttled. */
     private boolean noAllyNearTarget(LivingEntity t) {
-        if (com.example.villagefightsback.Factions.isInfected(golem)) return true; // a vindictive gigachad spares no one
+        if (com.example.villagefightsback.Factions.isInfected(golem)
+                || com.example.villagefightsback.Factions.isEmerald(golem)) return true; // boss/emerald golem spares no one
         int now = golem.tickCount;
         if (allyScanTick < 0 || now - allyScanTick >= ALLY_SCAN_INTERVAL) {
             allyScanTick = now;

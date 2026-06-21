@@ -169,8 +169,11 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         // Engine fire only ignites blocks it DESTROYS, so scatter our own fire when the fire switch is on
         // (independent of destruction). Units are already set alight by the blast above.
         if (setFire) ModExplosions.scorch(sl, blockPosition(), 3);
-        // JEG's big-explosion animation + a smoke cloud + the usual blast sound.
-        sl.sendParticles(ModParticles.GIGACHAD_EXPLOSION.get(), getX(), getY(), getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+        // JEG's big-explosion animation + a smoke cloud + the usual blast sound. The emerald gigachad's rockets
+        // detonate GREEN; everyone else's stay orange.
+        net.minecraft.core.particles.SimpleParticleType blast = owner instanceof EmeraldGigachadGolemEntity
+                ? ModParticles.GIGACHAD_EXPLOSION_GREEN.get() : ModParticles.GIGACHAD_EXPLOSION.get();
+        sl.sendParticles(blast, getX(), getY(), getZ(), 1, 0.0, 0.0, 0.0, 0.0);
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, getX(), getY(), getZ(), 10, 1.2, 1.2, 1.2, 0.02);
         sl.playSound(null, getX(), getY(), getZ(), net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE,
                 net.minecraft.sounds.SoundSource.BLOCKS, 4.0F,

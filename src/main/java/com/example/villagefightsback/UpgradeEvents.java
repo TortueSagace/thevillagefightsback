@@ -68,6 +68,7 @@ public final class UpgradeEvents {
      *  not-yet-upgraded villager/guard (-> armed in place). */
     private static boolean needsProcessing(LivingEntity e) {
         if (!e.isAlive()) return false;
+        if (Factions.isEmerald(e)) return false; // emerald golems are the ENEMY -> never village-upgraded/converted
         if (e instanceof IronGolem golem) {
             return !golem.isPlayerCreated() && !(golem instanceof GigachadGolemEntity);
         }

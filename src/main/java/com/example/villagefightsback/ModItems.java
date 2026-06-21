@@ -211,6 +211,8 @@ public final class ModItems {
     public static final RegistryObject<Item> EMERALD_CREEPER_SPAWN = emeraldEgg("emerald_creeper_spawn", ModEntities.EMERALD_CREEPER, 0x0DA70B, 0x000000);
     public static final RegistryObject<Item> EMERALD_ENDERMAN_SPAWN = emeraldEgg("emerald_enderman_spawn", ModEntities.EMERALD_ENDERMAN, 0x161616, 0x000000);
     public static final RegistryObject<Item> EMERALD_IRON_GOLEM_SPAWN = emeraldEgg("emerald_iron_golem_spawn", ModEntities.EMERALD_IRON_GOLEM, 0xDBD3D0, 0x9E8B79);
+    public static final RegistryObject<Item> EMERALD_DEFENDER_GOLEM_SPAWN = emeraldEgg("emerald_defender_golem_spawn", ModEntities.EMERALD_DEFENDER_GOLEM, 0xDBD3D0, 0x4FB6C4);
+    public static final RegistryObject<Item> EMERALD_GIGACHAD_GOLEM_SPAWN = emeraldEgg("emerald_gigachad_golem_spawn", ModEntities.EMERALD_GIGACHAD_GOLEM, 0xFCEE4B, 0xB8860B);
     public static final RegistryObject<Item> EMERALD_PHANTOM_SPAWN = emeraldEgg("emerald_phantom_spawn", ModEntities.EMERALD_PHANTOM, 0x43518A, 0x88FF00);
     public static final RegistryObject<Item> EMERALD_WITHER_SPAWN = emeraldEgg("emerald_wither_spawn", ModEntities.EMERALD_WITHER, 0x141414, 0x4D4D4D);
     public static final RegistryObject<Item> EMERALD_GUARDIAN_SPAWN = emeraldEgg("emerald_guardian_spawn", ModEntities.EMERALD_GUARDIAN, 0x4A7283, 0xD0B43E);

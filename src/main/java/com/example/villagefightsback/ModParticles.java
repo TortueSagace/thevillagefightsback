@@ -22,6 +22,10 @@ public final class ModParticles {
     public static final RegistryObject<SimpleParticleType> GIGACHAD_EXPLOSION =
             PARTICLES.register("gigachad_explosion", () -> new SimpleParticleType(true));
 
+    /** A GREEN recolour of {@link #GIGACHAD_EXPLOSION}, fired by the EMERALD gigachad golem's rockets. */
+    public static final RegistryObject<SimpleParticleType> GIGACHAD_EXPLOSION_GREEN =
+            PARTICLES.register("gigachad_explosion_green", () -> new SimpleParticleType(true));
+
     public static void register(IEventBus modBus) {
         PARTICLES.register(modBus);
     }

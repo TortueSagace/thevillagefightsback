@@ -252,6 +252,10 @@ public final class ModEntities {
             () -> EntityType.Builder.<EmeraldEnderman>of(EmeraldEnderman::new, MobCategory.MONSTER).sized(0.6F, 2.9F).clientTrackingRange(8).build("emerald_enderman"));
     public static final RegistryObject<EntityType<EmeraldIronGolem>> EMERALD_IRON_GOLEM = ENTITIES.register("emerald_iron_golem",
             () -> EntityType.Builder.<EmeraldIronGolem>of(EmeraldIronGolem::new, MobCategory.MISC).sized(1.4F, 2.7F).clientTrackingRange(10).build("emerald_iron_golem"));
+    public static final RegistryObject<EntityType<EmeraldDefenderGolemEntity>> EMERALD_DEFENDER_GOLEM = ENTITIES.register("emerald_defender_golem",
+            () -> EntityType.Builder.<EmeraldDefenderGolemEntity>of(EmeraldDefenderGolemEntity::new, MobCategory.MISC).sized(1.4F, 2.7F).clientTrackingRange(12).build("emerald_defender_golem"));
+    public static final RegistryObject<EntityType<EmeraldGigachadGolemEntity>> EMERALD_GIGACHAD_GOLEM = ENTITIES.register("emerald_gigachad_golem",
+            () -> EntityType.Builder.<EmeraldGigachadGolemEntity>of(EmeraldGigachadGolemEntity::new, MobCategory.MISC).sized(1.4F, 2.7F).clientTrackingRange(12).build("emerald_gigachad_golem"));
     public static final RegistryObject<EntityType<EmeraldPhantom>> EMERALD_PHANTOM = ENTITIES.register("emerald_phantom",
             () -> EntityType.Builder.<EmeraldPhantom>of(EmeraldPhantom::new, MobCategory.MONSTER).sized(0.9F, 0.5F).clientTrackingRange(8).build("emerald_phantom"));
     public static final RegistryObject<EntityType<EmeraldWither>> EMERALD_WITHER = ENTITIES.register("emerald_wither",
@@ -300,6 +304,8 @@ public final class ModEntities {
         event.put(EMERALD_CREEPER.get(), EmeraldCreeper.createAttributes().build());
         event.put(EMERALD_ENDERMAN.get(), EmeraldEnderman.createAttributes().build());
         event.put(EMERALD_IRON_GOLEM.get(), EmeraldIronGolem.createAttributes().build());
+        event.put(EMERALD_DEFENDER_GOLEM.get(), DefenderGolemEntity.createAttributes().build());      // 150 HP + turret
+        event.put(EMERALD_GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build()); // 200 HP applied at spawn (armGolemFull)
         event.put(EMERALD_PHANTOM.get(), EmeraldPhantom.createAttributes().build());
         event.put(EMERALD_WITHER.get(), EmeraldWither.createAttributes().build());
         event.put(EMERALD_GUARDIAN.get(), EmeraldGuardian.createAttributes().build());

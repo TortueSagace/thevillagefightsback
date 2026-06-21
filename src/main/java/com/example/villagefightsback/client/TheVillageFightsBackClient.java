@@ -99,6 +99,9 @@ public final class TheVillageFightsBackClient {
         // JEG-style big explosion animation (scaled-up ExplodeParticle with our fireball sprites).
         event.registerSpriteSet(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION.get(),
                 GigachadExplosionParticle.Provider::new);
+        // The same animation in green, for the emerald gigachad golem's rockets.
+        event.registerSpriteSet(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION_GREEN.get(),
+                GigachadExplosionParticle.Provider::new);
     }
 
     @SubscribeEvent
@@ -124,6 +127,8 @@ public final class TheVillageFightsBackClient {
         event.registerEntityRenderer(ModEntities.EMERALD_CREEPER.get(), EmeraldCreeperRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALD_ENDERMAN.get(), EmeraldEndermanRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALD_IRON_GOLEM.get(), EmeraldIronGolemRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_DEFENDER_GOLEM.get(), EmeraldDefenderGolemRenderer::new);
+        event.registerEntityRenderer(ModEntities.EMERALD_GIGACHAD_GOLEM.get(), EmeraldGigachadGolemRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALD_PHANTOM.get(), EmeraldPhantomRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALD_WITHER.get(), EmeraldWitherRenderer::new);
         event.registerEntityRenderer(ModEntities.EMERALD_GUARDIAN.get(), EmeraldGuardianRenderer::new);
@@ -205,6 +210,8 @@ public final class TheVillageFightsBackClient {
         addEmeraldSpike(event, ModEntities.EMERALD_CREEPER.get(), -8.0F);
         addEmeraldSpike(event, ModEntities.EMERALD_ENDERMAN.get(), -8.0F);
         addEmeraldSpike(event, ModEntities.EMERALD_IRON_GOLEM.get(), -12.0F);
+        // The emerald gigachad keeps its head (spiked); the emerald DEFENDER golem's head is a wall defender (no spike).
+        addEmeraldSpike(event, ModEntities.EMERALD_GIGACHAD_GOLEM.get(), -12.0F);
         addEmeraldSpike(event, ModEntities.EMERALD_WITHER.get(), -10.0F);
         addEmeraldSpike(event, ModEntities.EMERALD_GUARDIAN.get(), -8.0F);
         addEmeraldSpike(event, ModEntities.EMERALD_ELDER_GUARDIAN.get(), -8.0F);

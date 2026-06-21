@@ -175,6 +175,17 @@ def gen_sheep(zf, gems16):
     fur.save(os.path.join(ENT, "emerald_sheep_fur.png"))
     print("  body: emerald_sheep + emerald_sheep_fur", body.size)
 
+def gen_gigachad(gems16):
+    """Emerald Gigachad Golem shell: the full pipeline applied to OUR gold_golem.png (the gigachad's gold skin),
+    not a vanilla texture. The emerald defender golem reuses emerald_iron_golem.png for its body."""
+    src = os.path.join(ENT, "gold_golem.png")
+    if not os.path.exists(src):
+        print("  !! gold_golem.png missing -> skipping emerald_gigachad_golem")
+        return
+    img = overlay_gems(emerald_fleck(green_tint(Image.open(src).convert("RGBA")), "emerald_gigachad_golem", 0.05), gems16)
+    img.save(os.path.join(ENT, "emerald_gigachad_golem.png"))
+    print("  body: emerald_gigachad_golem", img.size)
+
 def main():
     with zipfile.ZipFile(JAR) as zf:
         gems16 = gem_overlay(zf)  # the rich-block emerald-gem crystals (emerald_ore minus stone)
@@ -186,6 +197,7 @@ def main():
                 gen_eyes(zf, mob, sub)
             except KeyError as e:
                 print("  !! missing vanilla texture for", mob, "->", sub, e)
+    gen_gigachad(gems16)
     print("done. (animated emissive glow layer comes next.)")
 
 if __name__ == "__main__":
