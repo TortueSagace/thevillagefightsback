@@ -33,6 +33,8 @@ public class BrainNodeData extends SavedData {
     public static final int MAX_LEVEL = 4;
     /** Emeralds may go this far into the red, but ONLY at level 1 (the village's max debt / last stand). */
     public static final int MIN_EMERALDS_LEVEL1 = -32;
+    /** Organic mass may dip this far below zero (a little deploy-on-credit buffer, like the emerald floor). */
+    public static final int ORGANIC_FLOOR = -32;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
     private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
@@ -79,12 +81,15 @@ public class BrainNodeData extends SavedData {
 
         /** Organic mass: the brain's unit-spawn budget (1.1.2 organic system). Fully independent of emeralds/level. */
         public int getOrganicPoints() { return organicPoints; }
-        public void addOrganicPoints(int n) { organicPoints = Math.max(0, organicPoints + n); setDirty(); }
-        /** Spend up to {@code n} organic points; returns the amount actually spent (never goes negative). */
+        public void addOrganicPoints(int n) { organicPoints = Math.max(ORGANIC_FLOOR, organicPoints + n); setDirty(); }
+        /** Spend {@code n} organic points on a unit; the balance may dip to {@link #ORGANIC_FLOOR} (deploy on a
+         *  little credit, like the emerald economy). Returns the amount actually spent. */
         public int spendOrganicPoints(int n) {
-            int spent = Math.max(0, Math.min(organicPoints, n));
-            if (spent > 0) { organicPoints -= spent; setDirty(); }
-            return spent;
+            if (n <= 0) return 0;
+            int before = organicPoints;
+            organicPoints = Math.max(ORGANIC_FLOOR, organicPoints - n);
+            setDirty();
+            return before - organicPoints;
         }
         /** Force the village stage (1..{@value #MAX_LEVEL}); clears the pending emeralds so it doesn't re-promote. */
         public void setLevel(int lvl) { level = Math.max(1, Math.min(MAX_LEVEL, lvl)); emeralds = 0; setDirty(); }

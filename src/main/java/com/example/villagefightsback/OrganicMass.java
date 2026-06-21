@@ -118,7 +118,7 @@ public final class OrganicMass {
     private static void decide(ServerLevel level, BrainNodeData data, GlobalPos gp, long now) {
         BrainNodeData.Econ econ = data.econ(gp);
         int P = econ.getOrganicPoints();
-        if (P < MIN_SPAWN_COST) return; // nothing affordable -> implicit BANK
+        if (P - BrainNodeData.ORGANIC_FLOOR < MIN_SPAWN_COST) return; // even on credit nothing is affordable -> BANK
 
         int C = fieldCap();
         BlockPos node = gp.pos();
@@ -147,28 +147,31 @@ public final class OrganicMass {
         List<BlockPos> waterAnchors = new ArrayList<>();
         for (BlockPos a : anchors) if (waterAdjacent(level, a)) waterAnchors.add(a);
 
-        double budgetMult = Config.organicSpawnBudgetMultiplier();
+        int spendable = P - BrainNodeData.ORGANIC_FLOOR; // = P + 32: includes the deploy-on-credit buffer
+        double mult = Config.organicSpawnBudgetMultiplier();
 
-        // ---- the tree ----
+        // ---- the decision tree: pick a leaf, a per-decision budget, and a spawn count ----
+        int leaf, budget, maxSpawns;
         if (threat >= DEFEND_THRESHOLD) {
-            if (threat >= BOSS_THREAT && P >= BOSS_COST) {
-                deploy(level, econ, BOSS, P, 1, prey, anchors, waterAnchors, node, field, C);
-            } else if (P >= ELITE_COST) {
-                deploy(level, econ, ELITE, budget(P, DEFEND_FRAC, budgetMult), K, prey, anchors, waterAnchors, node, field, C);
-            } else {
-                deploy(level, econ, SWARM_COMBAT, budget(P, DEFEND_FRAC, budgetMult), K, prey, anchors, waterAnchors, node, field, C);
-            }
+            if (threat >= BOSS_THREAT && P >= BOSS_COST) { leaf = BOSS; budget = spendable; maxSpawns = 1; }
+            else if (P >= ELITE_COST) { leaf = ELITE; budget = budget(spendable, DEFEND_FRAC, mult); maxSpawns = K; }
+            else { leaf = SWARM_COMBAT; budget = budget(spendable, DEFEND_FRAC, mult); maxSpawns = K; }
         } else if (!prey.isEmpty()) {
-            int leaf = (passive >= hostile) ? CHEAP_CONVERTER : HUNTER;
-            deploy(level, econ, leaf, budget(P, HARVEST_FRAC, budgetMult), K, prey, anchors, waterAnchors, node, field, C);
+            leaf = (passive >= hostile) ? CHEAP_CONVERTER : HUNTER;
+            budget = budget(spendable, HARVEST_FRAC, mult);
+            maxSpawns = K;
         } else if (!explorerOut) {
-            deploy(level, econ, SCOUT, P, 1, prey, anchors, waterAnchors, node, field, C); // one explorer to find food
+            leaf = SCOUT; budget = spendable; maxSpawns = 1; // one explorer to go find food
+        } else {
+            return; // idle with a scout already out -> BANK (points keep accruing).
         }
-        // else: idle with a scout already out -> BANK.
+
+        String summary = deploy(level, econ, leaf, budget, maxSpawns, prey, anchors, waterAnchors, node, field, C);
+        if (!summary.isEmpty()) log(level, gp, leafName(leaf) + ": " + summary);
     }
 
-    private static int budget(int P, double frac, double mult) {
-        return Math.max(MIN_SPAWN_COST, (int) Math.round(P * frac * mult));
+    private static int budget(int base, double frac, double mult) {
+        return Math.max(MIN_SPAWN_COST, (int) Math.round(base * frac * mult));
     }
 
     private static int fieldCap() {
@@ -179,14 +182,15 @@ public final class OrganicMass {
 
     // ============================ spend loop + WHERE ============================
 
-    private static void deploy(ServerLevel level, BrainNodeData.Econ econ, int leaf, int budget, int maxSpawns,
-                               List<LivingEntity> prey, List<BlockPos> anchors, List<BlockPos> waterAnchors,
-                               BlockPos node, int field, int cap) {
+    private static String deploy(ServerLevel level, BrainNodeData.Econ econ, int leaf, int budget, int maxSpawns,
+                                 List<LivingEntity> prey, List<BlockPos> anchors, List<BlockPos> waterAnchors,
+                                 BlockPos node, int field, int cap) {
         List<Cand> pool = candidates(leaf);
-        int spawned = 0;
-        int targetIdx = 0;
-        while (spawned < maxSpawns && field + spawned < cap) {
-            int remaining = Math.min(budget, econ.getOrganicPoints());
+        java.util.LinkedHashMap<EntityType<?>, Integer> spawned = new java.util.LinkedHashMap<>();
+        int n = 0, targetIdx = 0;
+        while (n < maxSpawns && field + n < cap) {
+            // affordable budget includes the deploy-on-credit buffer down to ORGANIC_FLOOR
+            int remaining = Math.min(budget, econ.getOrganicPoints() - BrainNodeData.ORGANIC_FLOOR);
             Cand pick = weightedPick(pool, remaining, !waterAnchors.isEmpty());
             if (pick == null) break; // nothing affordable / valid
             BlockPos target = prey.isEmpty() ? node : prey.get(targetIdx++ % prey.size()).blockPosition();
@@ -195,8 +199,52 @@ public final class OrganicMass {
             spawn(level, pick.type, anchor);
             econ.spendOrganicPoints(pick.cost);
             budget -= pick.cost;
-            spawned++;
+            spawned.merge(pick.type, 1, Integer::sum);
+            n++;
         }
+        if (spawned.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<EntityType<?>, Integer> e : spawned.entrySet()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(e.getValue()).append("x ").append(shortName(e.getKey()));
+        }
+        return sb.toString();
+    }
+
+    // --- per-brain organic decision log (transient; newest last), shown in the UI's Organic log tab ---
+    private static final Map<GlobalPos, java.util.ArrayDeque<String>> LOG = new HashMap<>();
+
+    public static List<String> logFor(GlobalPos node) {
+        java.util.ArrayDeque<String> q = LOG.get(node);
+        return q == null ? List.of() : new ArrayList<>(q);
+    }
+
+    private static void log(ServerLevel level, GlobalPos gp, String msg) {
+        java.util.ArrayDeque<String> q = LOG.computeIfAbsent(gp, k -> new java.util.ArrayDeque<>());
+        long day = level.getServer().overworld().getDayTime() / 24000L;
+        q.addLast("Day " + day + ": " + msg);
+        while (q.size() > 10) q.removeFirst();
+    }
+
+    private static String leafName(int leaf) {
+        switch (leaf) {
+            case BOSS: return "BOSS";
+            case ELITE: return "ELITE";
+            case SWARM_COMBAT: return "SWARM";
+            case HUNTER: return "HUNT";
+            case CHEAP_CONVERTER: return "HARVEST";
+            case SCOUT: return "SCOUT";
+            default: return "?";
+        }
+    }
+
+    private static String shortName(EntityType<?> type) {
+        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(type);
+        if (id == null) return "?";
+        String p = id.getPath();
+        if (p.startsWith("emerald_")) return p.substring("emerald_".length());
+        if (p.equals("rich_sheep")) return "sheep";
+        return p;
     }
 
     /** WHERE: the Euclidean-nearest anchor to {@code to} (linear scan over <=65 candidates; the unit's own AI paths). */

@@ -36,14 +36,16 @@ public class BrainNodeScreen extends Screen {
     private final int fertilized;
     private final int organic;
     private final List<String> reflexLog;
+    private final List<String> organicLog;
 
     private int leftPos;
     private int topPos;
     private int panelH;
-    private boolean showLogs; // false = upgrade tree, true = reflex log
+    private int view; // 0 = upgrade tree, 1 = reflex (emerald) log, 2 = organic log
 
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
-                           int villagers, int guards, int golems, int fertilized, int organic, List<String> reflexLog) {
+                           int villagers, int guards, int golems, int fertilized, int organic,
+                           List<String> reflexLog, List<String> organicLog) {
         super(Component.literal("Village Brain Node"));
         this.level = level;
         this.maxLevel = maxLevel;
@@ -55,6 +57,18 @@ public class BrainNodeScreen extends Screen {
         this.fertilized = fertilized;
         this.organic = organic;
         this.reflexLog = reflexLog;
+        this.organicLog = organicLog;
+    }
+
+    /** The view the toggle button cycles to next (skips the organic tab when the organic system is off). */
+    private int nextView(int v) {
+        int n = (v + 1) % 3;
+        if (n == 2 && !com.example.villagefightsback.Config.organicMassEnabled()) n = 0;
+        return n;
+    }
+
+    private static String viewLabel(int v) {
+        return v == 0 ? "Upgrades" : v == 1 ? "Reflex log" : "Organic log";
     }
 
     @Override
@@ -62,11 +76,12 @@ public class BrainNodeScreen extends Screen {
         this.panelH = HEADER_H + maxLevel * ROW_H + FOOTER_H;
         this.leftPos = (this.width - PANEL_W) / 2;
         this.topPos = (this.height - panelH) / 2;
-        // A "Logs" / "Upgrades" toggle in the header that flips between the upgrade tree and the reflex log.
-        addRenderableWidget(Button.builder(Component.literal("Logs"), b -> {
-            showLogs = !showLogs;
-            b.setMessage(Component.literal(showLogs ? "Upgrades" : "Logs"));
-        }).bounds(leftPos + PANEL_W - 62, topPos + 4, 56, 16).build());
+        // A header toggle that cycles Upgrades -> Reflex log -> Organic log (-> Upgrades). The button shows the
+        // view it will switch TO. The organic tab is skipped when the organic system is off.
+        addRenderableWidget(Button.builder(Component.literal(viewLabel(nextView(view))), b -> {
+            view = nextView(view);
+            b.setMessage(Component.literal(viewLabel(nextView(view))));
+        }).bounds(leftPos + PANEL_W - 78, topPos + 4, 72, 16).build());
     }
 
     @Override
@@ -84,8 +99,13 @@ public class BrainNodeScreen extends Screen {
 
         Upgrade hovered = null;
 
-        if (showLogs) {
-            renderLog(g);
+        if (view == 1) {
+            renderLog(g, "Reflex log (last 10)", reflexLog, "No reflexes yet.");
+            super.render(g, mouseX, mouseY, partial);
+            return;
+        }
+        if (view == 2) {
+            renderLog(g, "Organic log (last 10)", organicLog, "No organic activity yet.");
             super.render(g, mouseX, mouseY, partial);
             return;
         }
@@ -141,11 +161,14 @@ public class BrainNodeScreen extends Screen {
         }
         g.drawString(font, progress, leftPos + 8, footerY, 0xFFFFFFFF, false);
 
-        // Organic mass (1.1.2): shown right under the emerald line when the organic system is on.
-        if (com.example.villagefightsback.Config.organicMassEnabled()) {
-            g.drawString(font, Component.literal(organic + " organic mass").withStyle(ChatFormatting.GREEN),
-                    leftPos + 8, footerY + 10, 0xFFFFFFFF, false);
+        // Organic mass (1.1.2): a dark-green line under the emerald line when the organic system is on. The lines
+        // below are pushed down by `extra` so nothing overlaps.
+        boolean organicShown = com.example.villagefightsback.Config.organicMassEnabled();
+        if (organicShown) {
+            g.drawString(font, Component.literal(organic + " organic mass").withStyle(ChatFormatting.DARK_GREEN),
+                    leftPos + 8, footerY + 12, 0xFFFFFFFF, false);
         }
+        int extra = organicShown ? 12 : 0;
 
         // Defenders currently within the brain node's radius, by type.
         Component counts = Component.literal("Villagers: ").withStyle(ChatFormatting.GRAY)
@@ -154,12 +177,12 @@ public class BrainNodeScreen extends Screen {
                 .append(Component.literal(String.valueOf(guards)).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal("   Golems: ").withStyle(ChatFormatting.GRAY))
                 .append(Component.literal(String.valueOf(golems)).withStyle(ChatFormatting.WHITE));
-        g.drawString(font, counts, leftPos + 8, footerY + 12, 0xFFFFFFFF, false);
+        g.drawString(font, counts, leftPos + 8, footerY + 12 + extra, 0xFFFFFFFF, false);
 
         // Fertilized blocks spread by the village (the green takeover footprint).
         Component fert = Component.literal("Fertilized blocks: ").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
-        g.drawString(font, fert, leftPos + 8, footerY + 24, 0xFFFFFFFF, false);
+        g.drawString(font, fert, leftPos + 8, footerY + 24 + extra, 0xFFFFFFFF, false);
 
         // Small light-gray footnote at the very bottom (rendered at a reduced scale), wrapped to the panel width.
         float helpScale = 0.72F;
@@ -167,7 +190,7 @@ public class BrainNodeScreen extends Screen {
                 "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!")
                 .withStyle(ChatFormatting.GRAY);
         int splitW = (int) ((PANEL_W - 16) / helpScale); // wider wrap to account for the smaller font
-        int helpY = footerY + 40;
+        int helpY = footerY + 40 + extra;
         g.pose().pushPose();
         g.pose().scale(helpScale, helpScale, 1.0F);
         for (net.minecraft.util.FormattedCharSequence line : font.split(help, splitW)) {
@@ -188,19 +211,18 @@ public class BrainNodeScreen extends Screen {
         }
     }
 
-    /** The "Logs" tab: the brain's last (up to 10) reflex actions, newest at the top, with the day number. */
-    private void renderLog(GuiGraphics g) {
-        Component heading = Component.literal("Reflex log (last 10)").withStyle(ChatFormatting.AQUA);
-        g.drawString(font, heading, leftPos + 8, topPos + HEADER_H, 0xFFFFFFFF, false);
+    /** A log tab: the brain's last (up to 10) actions of one kind, newest at the top, with the day number. */
+    private void renderLog(GuiGraphics g, String heading, List<String> lines, String empty) {
+        g.drawString(font, Component.literal(heading).withStyle(ChatFormatting.AQUA),
+                leftPos + 8, topPos + HEADER_H, 0xFFFFFFFF, false);
         int y = topPos + HEADER_H + 14;
-        if (reflexLog == null || reflexLog.isEmpty()) {
-            g.drawString(font, Component.literal("No reflexes yet.").withStyle(ChatFormatting.DARK_GRAY),
+        if (lines == null || lines.isEmpty()) {
+            g.drawString(font, Component.literal(empty).withStyle(ChatFormatting.DARK_GRAY),
                     leftPos + 8, y, 0xFF555555, false);
             return;
         }
-        // Newest first.
-        for (int i = reflexLog.size() - 1; i >= 0; i--) {
-            g.drawString(font, Component.literal(reflexLog.get(i)).withStyle(ChatFormatting.GRAY),
+        for (int i = lines.size() - 1; i >= 0; i--) { // newest first
+            g.drawString(font, Component.literal(lines.get(i)).withStyle(ChatFormatting.GRAY),
                     leftPos + 8, y, 0xFFFFFFFF, false);
             y += 11;
         }
