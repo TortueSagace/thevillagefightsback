@@ -156,7 +156,10 @@ public final class OrganicMass {
             }
             if (far != null) {
                 EmeraldMarker.mark(level, far);
-                log(level, gp, "Marked a distant " + shortName(far.getType()) + " to rally the swarm");
+                String name = far.getName().getString();
+                if (name.length() > 20) name = name.substring(0, 20) + "..."; // trim long names (custom/player names)
+                int dist = (int) Math.round(Math.sqrt(bestD));
+                log(level, gp, "Marked a scent on " + name + ", " + dist + " blocks away");
             }
         }
 

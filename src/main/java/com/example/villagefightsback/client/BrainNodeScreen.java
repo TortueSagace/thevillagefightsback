@@ -221,10 +221,13 @@ public class BrainNodeScreen extends Screen {
                     leftPos + 8, y, 0xFF555555, false);
             return;
         }
+        int wrapW = PANEL_W - 16; // wrap long lines (e.g. a marker on a long-named target) onto extra lines
         for (int i = lines.size() - 1; i >= 0; i--) { // newest first
-            g.drawString(font, Component.literal(lines.get(i)).withStyle(ChatFormatting.GRAY),
-                    leftPos + 8, y, 0xFFFFFFFF, false);
-            y += 11;
+            net.minecraft.network.chat.Component line = Component.literal(lines.get(i)).withStyle(ChatFormatting.GRAY);
+            for (net.minecraft.util.FormattedCharSequence seq : font.split(line, wrapW)) {
+                g.drawString(font, seq, leftPos + 8, y, 0xFFFFFFFF, false);
+                y += 10;
+            }
         }
     }
 
