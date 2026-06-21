@@ -35,15 +35,16 @@ import net.minecraftforge.fml.common.Mod;
  *
  * <p><b>Conversion.</b> A non-emerald unit that DIES while carrying {@link ModEffects#EMERALD_INFECTION} -- or is
  * killed outright by an emerald unit -- is replaced by an emerald unit: its direct counterpart (cow -> emerald cow)
- * if it has one, else the emerald unit with the closest max HP (the 20-HP cluster resolves to a 50/50 emerald
- * skeleton/phantom). The replacement keeps the victim's held tool. A lime banishment swirl plays, the block right
- * below becomes an infested path, and every brain node whose radius the victim died in earns +1 emerald. A PLAYER
- * who dies infected does NOT convert -- an emerald mob spawns in their place instead. Spared factions (village,
+ * if it has one, else the emerald unit whose representative max HP is closest. Some HP slots are CLUSTERS of more
+ * than one type and resolve to a random member (the 10-HP cluster -> cow/horse, the 20-HP cluster -> skeleton/
+ * phantom). The replacement keeps the victim's held tool. A lime banishment swirl plays, the block right below
+ * becomes an infested path, and every brain node whose radius the victim died in earns +1 emerald. A PLAYER who
+ * dies infected does NOT convert -- an emerald mob spawns in their place instead. Spared factions (village,
  * vindictive, fellow emeralds) never convert.
  *
- * <p><b>Emerald death.</b> When an emerald unit dies, each infested path within 20 blocks spawns an emerald mite
- * (1% an EMERALD elder guardian), and every living emerald unit within 20 blocks gains Strength/Resistance/
- * Regeneration that ramps I -> II -> III on each successive nearby death (capped at III, duration refreshed).
+ * <p><b>Emerald death.</b> When an emerald unit dies, each infested path within 20 blocks erupts with an emerald
+ * mite (globally rate-limited to 3 per 30s window), and every living emerald unit within 20 blocks gains Strength/
+ * Resistance/Regeneration that ramps I -> II -> III on each successive nearby death (capped at III, duration refreshed).
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class EmeraldConversion {
@@ -51,7 +52,13 @@ public final class EmeraldConversion {
 
     private static final double DEATH_RADIUS = 20.0;       // emerald-death effect reach (spec 8)
     private static final int BUFF_TICKS = 20 * 20;         // 20s death buff
-    private static final int MAX_DEATH_SPAWNS = 8;         // cap mite spawns per emerald death (anti-amplify)
+
+    // Global rate limit on mites erupting from infested paths: at most MITE_BUDGET per tumbling MITE_WINDOW_TICKS
+    // window (the counter resets to 0 at the start of each new window), across ALL emerald deaths.
+    private static final int MITE_WINDOW_TICKS = 20 * 30;  // 30s window
+    private static final int MITE_BUDGET = 3;              // <= 3 mites per window
+    private static long miteWindowStart = Long.MIN_VALUE;
+    private static int miteCount;
 
     // --- direct correspondence (vanilla type -> emerald type), built lazily after registration ---
     private static Map<EntityType<?>, EntityType<?>> direct;
@@ -81,25 +88,33 @@ public final class EmeraldConversion {
         direct = m;
     }
 
-    // --- closest-HP fallback roster (representative max HP -> emerald type; null type == the 20-HP cluster) ---
-    private record HpEntry(double hp, EntityType<?> type) {}
+    // --- closest-HP fallback roster: each representative max HP maps to a CLUSTER of one or more emerald types.
+    //     When a cluster holds several types, the converted unit is a RANDOM one of them (so e.g. the 20-HP cluster
+    //     resolves 50/50 to skeleton/phantom, and the 10-HP cluster 50/50 to cow/horse). ---
+    private record HpEntry(double hp, EntityType<?>[] types) {}
     private static HpEntry[] roster;
+
+    private static HpEntry cluster(double hp, EntityType<?>... types) {
+        return new HpEntry(hp, types);
+    }
 
     private static void initRoster() {
         if (roster != null) return;
         roster = new HpEntry[]{
-                new HpEntry(3, ModEntities.EMERALD_SALMON.get()),
-                new HpEntry(4, ModEntities.EMERALD_CHICKEN.get()),
-                new HpEntry(6, ModEntities.EMERALD_BAT.get()),
-                new HpEntry(8, ModEntities.EMERALD_WOLF.get()),
-                new HpEntry(10, ModEntities.EMERALD_COW.get()),
-                new HpEntry(15, ModEntities.EMERALD_HORSE.get()),
-                new HpEntry(20, null),                            // 20-HP cluster -> 50/50 skeleton/phantom
-                new HpEntry(30, ModEntities.EMERALD_GUARDIAN.get()),
-                new HpEntry(40, ModEntities.EMERALD_ENDERMAN.get()),
-                new HpEntry(80, ModEntities.EMERALD_ELDER_GUARDIAN.get()),
-                new HpEntry(100, ModEntities.EMERALD_IRON_GOLEM.get()),
-                new HpEntry(300, ModEntities.EMERALD_WITHER.get()),
+                cluster(3, ModEntities.EMERALD_SALMON.get()),
+                cluster(4, ModEntities.EMERALD_CHICKEN.get()),
+                cluster(6, ModEntities.EMERALD_BAT.get()),
+                cluster(8, ModEntities.EMERALD_WOLF.get()),
+                // 10-HP cluster: cow OR horse. The horse lives HERE (not on its own 15-HP slot) so the very common
+                // ~15-HP mobs (spiders are 16) no longer ALL deterministically become horses.
+                cluster(10, ModEntities.EMERALD_COW.get(), ModEntities.EMERALD_HORSE.get()),
+                // 20-HP cluster: skeleton OR phantom.
+                cluster(20, ModEntities.EMERALD_SKELETON.get(), ModEntities.EMERALD_PHANTOM.get()),
+                cluster(30, ModEntities.EMERALD_GUARDIAN.get()),
+                cluster(40, ModEntities.EMERALD_ENDERMAN.get()),
+                cluster(80, ModEntities.EMERALD_ELDER_GUARDIAN.get()),
+                cluster(100, ModEntities.EMERALD_IRON_GOLEM.get()),
+                cluster(300, ModEntities.EMERALD_WITHER.get()),
         };
     }
 
@@ -119,9 +134,8 @@ public final class EmeraldConversion {
             double d = Math.abs(roster[i].hp - hp);
             if (d < bestD) { bestD = d; best = i; }
         }
-        EntityType<?> t = roster[best].type;
-        if (t == null) return rnd.nextBoolean() ? ModEntities.EMERALD_SKELETON.get() : ModEntities.EMERALD_PHANTOM.get();
-        return t;
+        EntityType<?>[] types = roster[best].types();          // a same-HP cluster -> pick a random member
+        return types.length == 1 ? types[0] : types[rnd.nextInt(types.length)];
     }
 
     /**
@@ -235,13 +249,17 @@ public final class EmeraldConversion {
     private static void onEmeraldDeath(ServerLevel level, LivingEntity dead) {
         BlockPos center = dead.blockPosition();
 
-        // 1. Each infested path within 20 blocks erupts with an emerald mite. Capped per death so a mass AoE wipe
-        //    near a dense infested field can't spawn (and amplify) dozens at once.
+        // 1. Each infested path within 20 blocks erupts with an emerald mite -- but globally rate-limited to
+        //    MITE_BUDGET per 30s window (resets each window), so a mass AoE wipe near a dense infested field can't
+        //    spawn (and amplify) a swarm.
+        long now = level.getGameTime();
+        if (now - miteWindowStart >= MITE_WINDOW_TICKS) { miteWindowStart = now; miteCount = 0; } // new window
         java.util.List<BlockPos> paths = InfectionManager.infestedPathsWithin(level, center, DEATH_RADIUS);
-        int spawns = Math.min(paths.size(), MAX_DEATH_SPAWNS);
+        int spawns = Math.max(0, Math.min(paths.size(), MITE_BUDGET - miteCount));
         for (int i = 0; i < spawns; i++) {
             spawnAt(level, paths.get(i).above(), ModEntities.EMERALD_ENDERMITE.get(), null);
         }
+        miteCount += spawns;
 
         // 2. Every living emerald unit within 20 blocks gets a Str/Res/Regen buff that ramps I->II->III.
         AABB box = new AABB(center).inflate(DEATH_RADIUS);
