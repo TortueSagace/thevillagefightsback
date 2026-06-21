@@ -51,7 +51,7 @@ public class InfectionData extends SavedData {
     // --- infested path blocks (v1.0.3): slow, full-radius proliferation sources placed by emerald conversion.
     // Bounded FIFO: an evicted entry stays in the world (and its already-spread fertile ground remains), it just
     // stops contributing a fresh proliferation radius, which keeps the per-pass range scan cheap. ---
-    public static final int INFESTED_CAP = 256;
+    public static final int INFESTED_CAP = 64; // bounds the per-pass range scan in InfectionManager.convert()
     private final ArrayDeque<Long> infested = new ArrayDeque<>();
     private final Set<Long> infestedSet = new HashSet<>();
 

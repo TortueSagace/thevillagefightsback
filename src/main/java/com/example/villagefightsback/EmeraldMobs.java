@@ -42,10 +42,17 @@ public final class EmeraldMobs {
         mob.targetSelector.removeAllGoals(g -> true); // replace vanilla targeting with the emerald-faction rules
         mob.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(
                 mob, LivingEntity.class, 10, true, false, t -> isHostileTarget(t)));
-        // Goals that need a PathfinderMob (a Bat is a plain Mob, so it just gets the target scan above).
+        // Goals that need a PathfinderMob (a Bat/Phantom is a plain Mob; they retaliate via the central
+        // EmeraldConversion.onEmeraldHurt handler instead, and attack through their own flight goals).
         if (mob instanceof PathfinderMob pm) {
             pm.targetSelector.addGoal(1, new HurtByTargetGoal(pm));
             if (passive) pm.goalSelector.addGoal(2, new MeleeAttackGoal(pm, 1.25D, true));
+        }
+        // A passive species deals 50% of its max health as melee (rule 4), set on its live attribute so it tracks
+        // the actual max HP rather than a hardcoded literal. Requires the entity to register an ATTACK_DAMAGE attr.
+        if (passive) {
+            var atk = mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+            if (atk != null) atk.setBaseValue(passiveAttackDamage(mob.getMaxHealth()));
         }
     }
 

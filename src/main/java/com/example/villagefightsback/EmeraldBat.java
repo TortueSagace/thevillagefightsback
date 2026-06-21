@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -25,6 +26,8 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
         return true;
     }
 
+    private int emeraldAttackCooldown = 0;
+
     @Override
     protected void registerGoals() {
         super.registerGoals();
@@ -33,7 +36,29 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
 
     public static AttributeSupplier.Builder createAttributes() {
         // Large follow range so the flitting bat detects (and homes in on) infectable mobs from afar.
-        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.FOLLOW_RANGE, 48.0D);
+        // ATTACK_DAMAGE is registered here; EmeraldMobs overwrites it to 50% of max HP.
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 6.0D).add(Attributes.FOLLOW_RANGE, 48.0D)
+                .add(Attributes.ATTACK_DAMAGE, 3.0D);
+    }
+
+    /** A vanilla bat has no attack and flits at random, so steer the emerald bat toward its target and bite it on
+     *  contact (it gets a target from the shared NearestAttackableTargetGoal / the central retaliation handler). */
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (this.level().isClientSide()) return;
+        LivingEntity target = this.getTarget();
+        if (target == null || !target.isAlive()) return;
+        net.minecraft.world.phys.Vec3 to = target.position()
+                .add(0.0D, target.getBbHeight() * 0.5D, 0.0D).subtract(this.position());
+        double dist = to.length();
+        if (dist > 0.01D) this.setDeltaMovement(this.getDeltaMovement().add(to.scale(0.05D / dist)));
+        this.getLookControl().setLookAt(target, 30.0F, 30.0F);
+        if (this.emeraldAttackCooldown > 0) this.emeraldAttackCooldown--;
+        if (dist < 1.6D && this.emeraldAttackCooldown == 0) {
+            this.doHurtTarget(target);
+            this.emeraldAttackCooldown = 20;
+        }
     }
 
     @Override

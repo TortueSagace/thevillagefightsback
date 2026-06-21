@@ -95,6 +95,7 @@ public final class Factions {
      *  defenders, General Darius, and Guard Villagers guards. Vindictive units (infected) are NOT village. */
     public static boolean isVillage(Entity e) {
         if (isInfected(e)) return false; // a vindictive gigachad is an IronGolem -> exclude the boss faction
+        if (isEmerald(e)) return false;  // an emerald iron golem is an IronGolem -> it's emerald, not village
         return e instanceof net.minecraft.world.entity.npc.Villager
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
                 || e instanceof WallDefenderEntity

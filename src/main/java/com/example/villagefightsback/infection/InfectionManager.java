@@ -165,17 +165,15 @@ public final class InfectionManager {
     }
 
     /** The fastest proliferation speed factor covering (x,z): a brain node (1.0) beats an infested path (0.2);
-     *  0 if no source covers it. Used to slow conversion in infested-only territory to 1/5 the brain rate. */
+     *  0 if no source covers it. Used to slow conversion in infested-only territory to 1/5 the brain rate.
+     *  Brain ranges are first in the array (speed 1.0 = the max), so the first covering range IS the fastest --
+     *  return immediately, which keeps this O(first-hit) instead of O(all ranges) on the hot convert path. */
     private static double speedAt(double x, double z, double[][] ranges) {
-        double best = 0.0;
         for (double[] g : ranges) {
             double dx = x - g[0], dz = z - g[1];
-            if (dx * dx + dz * dz <= g[2]) {
-                double sp = g.length > 3 ? g[3] : 1.0;
-                if (sp > best) best = sp;
-            }
+            if (dx * dx + dz * dz <= g[2]) return g.length > 3 ? g[3] : 1.0;
         }
-        return best;
+        return 0.0;
     }
 
     /** True if (x,z) lies within any brain node's (stage-scaled) infection range. */
