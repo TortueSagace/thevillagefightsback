@@ -35,11 +35,16 @@ public final class TheVillageFightsBackClient {
     public static final ModelLayerLocation DARIUS_LAYER =
             new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "general_darius"), "main");
 
+    /** A single green head spike worn by every emerald mob (see {@link EmeraldSpikeLayer}). */
+    public static final ModelLayerLocation EMERALD_SPIKE =
+            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "emerald_spike"), "main");
+
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
         event.registerLayerDefinition(LIMBO_HELMET_SPIKES, LimboHelmetSpikesLayer::createSpikesLayer);
         event.registerLayerDefinition(DARIUS_LAYER, DariusVillagerModel::createBodyLayer);
+        event.registerLayerDefinition(EMERALD_SPIKE, EmeraldSpikeLayer::createSpikeLayer);
     }
 
     /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
@@ -180,6 +185,43 @@ public final class TheVillageFightsBackClient {
         addAngryVillagerFace(event);
         addAngryGuardFace(event);
         addLimboHelmetSpikes(event);
+        addEmeraldSpikes(event);
+    }
+
+    /** One green head spike on every emerald mob. The per-mob Y offset (pixels, negative = up) raises the spike
+     *  base to that mob's head crown; tuned per model since heads differ. Fish/phantom have no head bone and so
+     *  get none (the layer no-ops). */
+    private static void addEmeraldSpikes(EntityRenderersEvent.AddLayers event) {
+        addEmeraldSpike(event, ModEntities.EMERALD_COW.get(), -7.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_PIG.get(), -7.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_CHICKEN.get(), -6.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_CAT.get(), -5.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_WOLF.get(), -6.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_HORSE.get(), -10.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_BAT.get(), -5.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_ENDERMITE.get(), -3.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_ZOMBIE.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_SKELETON.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_CREEPER.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_ENDERMAN.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_IRON_GOLEM.get(), -12.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_WITHER.get(), -10.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_GUARDIAN.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_ELDER_GUARDIAN.get(), -8.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_PHANTOM.get(), -6.0F);
+        addEmeraldSpike(event, ModEntities.EMERALD_SALMON.get(), -4.0F);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addEmeraldSpike(EntityRenderersEvent.AddLayers event, EntityType<?> type, float headTopY) {
+        LivingEntityRenderer renderer;
+        try {
+            renderer = event.getRenderer((EntityType) type);
+        } catch (ClassCastException notLiving) {
+            return;
+        }
+        if (renderer == null) return;
+        renderer.addLayer(new EmeraldSpikeLayer(renderer, event.getEntityModels(), headTopY));
     }
 
     /**
