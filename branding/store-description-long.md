@@ -42,7 +42,7 @@ Most of it is craftable, the **Weaponsmith** sells the Mace, wind charges, and t
 
 ## Walls and defensive structures
 
-![The Lure Tower: a defensive stage 3 structure that lures ennemies in a deadly trap](https://cdn.modrinth.com/data/cached_images/e002e669417041aa93e0ba45a0fc2cceed105945_0.webp)
+![The Lure Tower: a defensive stage 3 structure that lures enemies in a deadly trap](https://cdn.modrinth.com/data/cached_images/e002e669417041aa93e0ba45a0fc2cceed105945_0.webp)
 
 As the village grows, the Brain fortifies it. A built-in planner traces the village's actual footprint, however irregular, and **villagers raise a wall around it course by course**, complete with gates, **loopholes to shoot through**, and scaffolding to reach the high spots. The wall scales to the size of the settlement.
 
@@ -81,7 +81,7 @@ At its peak the virus produces the **Emeraldger**, a stage-4 virus warrior whose
 
 ![The Emerald faction](https://cdn.modrinth.com/data/cached_images/883eba69ef77ba77ca298afcfb084538043b7adc_0.webp)
 
-A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected **feeds the closest Brain Node with organic points**. The Brain node can then use these points to summon emerald units, based on an AI system that identifies whether it is better to explore, hunt, swarm the ennemy, summon a boss, etc.
+A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected **feeds the closest Brain Node with organic points**. The Brain node can then use these points to summon emerald units, based on an AI system that identifies whether it is better to explore, hunt, swarm the enemy, summon a boss, etc.
 
 The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Enemy of the Village, you, though by default they stay neutral toward the player. *Because I'm nice, I made them spare the cats, dogs and horses so that you don't lose your pets to them.*
 
