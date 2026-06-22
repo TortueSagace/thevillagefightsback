@@ -81,9 +81,11 @@ At its peak the virus produces the **Emeraldger**, a stage-4 virus warrior whose
 
 ![The Emerald faction](https://cdn.modrinth.com/data/cached_images/883eba69ef77ba77ca298afcfb084538043b7adc_0.webp)
 
-A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected is **reborn as its emerald counterpart**, keeping whatever weapon it held; a player who dies infected leaves an emerald creature in their place.
+A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected **feeds the closest Brain Node with organic points**. The Brain node can then use these points to summon emerald units, based on an AI system that identifies whether it is better to explore, hunt, swarm the ennemy, summon a boss, etc.
 
-The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Ennemy of the Village, you, though by default they stay neutral toward the player. The Brain Node quietly settles emerald cats with its villagers and sends out an emerald bat each sunset to carry the infection outward. Where an emerald creature is born the ground below turns to an **infested path** that slowly grows the fertile zone on its own, and when an emerald unit dies those paths erupt with emerald mites while the survivors nearby grow stronger. Emerald units drop their normal loot plus an emerald. The whole faction can be tuned, capped, or turned off in the configs.
+The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Enemy of the Village, you, though by default they stay neutral toward the player. *Because I'm nice, I made them spare the cats, dogs and horses so that you don't lose your pets to them.*
+
+Where an emerald creature is born the ground below turns to an **infested path** that slowly grows the fertile zone on its own, and when an emerald unit dies those paths erupt with emerald mites while the survivors nearby grow stronger. Emerald units drop their normal loot plus an emerald. The whole faction can be tuned, capped, or turned off in the configs.
 
 ## Bosses and the Infected faction
 
@@ -134,6 +136,8 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `multiplier_brain_influence_radius`: the reach of every "within the Brain's radius" rule
 - `multiplier_limbo_raiders`: how many raiders a Limbo raid throws at you
 - `multiplier_emerald_mobs_spawned_by_brain`: how many emerald scouts the Brain summons (base 2 cats per settlement + 1 bat per sunset, times this)
+- `organic_army_multiplier`: scales the standing organic army the Brain can field (cap = `emerald_mobs_max_number` times this)
+- `organic_spawn_budget_multiplier`: scales how much banked organic mass the Brain spends per decision (bigger bursts)
 
 **Switches and values:**
 
@@ -142,6 +146,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
 - `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
 - `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
+- `enable_organic_mass_system`: emerald kills bank "organic points" in the nearest Brain Node, which spends them to field its own emerald army instead of converting each kill directly (off = classic convert-on-kill)
 - `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire`: whether each kind of explosion breaks blocks or starts fires (it always still hits units)
 - `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
 - `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
