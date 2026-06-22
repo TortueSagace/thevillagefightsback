@@ -38,6 +38,24 @@ public class CheapScaffoldBlock extends ScaffoldingBlock {
     }
 
     /**
+     * Like vanilla scaffolding, but an UNSUPPORTED cheap scaffold (stability distance 7 -- e.g. placed over a
+     * grass path, whose top face isn't sturdy) simply VANISHES instead of becoming a falling-block entity. The
+     * vanilla fall path drops the block as an item bypassing {@link #getDrops}, which littered the village; this
+     * removes the block with no drop and no falling entity. Distances below 7 update exactly as vanilla.
+     */
+    @Override
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
+        int dist = getDistance(level, pos);
+        boolean bottom = dist > 0 && !level.getBlockState(pos.below()).is(this);
+        BlockState updated = state.setValue(DISTANCE, dist).setValue(BOTTOM, bottom);
+        if (dist == 7) {
+            level.removeBlock(pos, false); // unsupported -> just disappear (no falling block, no dropped item)
+        } else if (state != updated) {
+            level.setBlock(pos, updated, 3);
+        }
+    }
+
+    /**
      * Drop the scaffold item if and ONLY if it was broken with a Silk Touch tool. Any other cause -- a plain
      * break, the ~30s auto-break, loss of support, a builder clearing it, fire, or an explosion -- yields
      * nothing. This overrides the loot table entirely. Mirrors {@link VillageBrainNodeBlock#getDrops}.
