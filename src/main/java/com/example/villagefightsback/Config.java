@@ -158,7 +158,7 @@ public final class Config {
                         "(the multiplier_block_infection_* settings are then irrelevant). Default: true.")
                 .define("enable_block_infection", true);
         ENABLE_MOB_INFECTION = b
-                .comment("Master switch for MOB infection (the 18 emerald units). If false, NO emerald unit can ever spawn:",
+                .comment("Master switch for MOB infection (the 20 emerald units). If false, NO emerald unit can ever spawn:",
                         "no infection-conversion of a slain mob, no brain summon, not even a spawn egg. Default: true.")
                 .define("enable_mob_infection", true);
         ENABLE_EMERALD_INFESTATION = b
@@ -255,7 +255,7 @@ public final class Config {
 
         SPEC = b.build();
 
-        // Generic key -> value index (the 27 player-facing tunables, declaration order). Drift is internal/omitted.
+        // Generic key -> value index (the 37 player-facing tunables, declaration order). Drift is internal/omitted.
         INDEX.put("creature_rocket_explosion_destroy_blocks", CREATURE_ROCKET_EXPLOSION_DESTROY_BLOCKS);
         INDEX.put("creature_rocket_set_blocks_on_fire", CREATURE_ROCKET_SET_BLOCKS_ON_FIRE);
         INDEX.put("air_strike_rocket_explosion_destroy_blocks", AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS);
