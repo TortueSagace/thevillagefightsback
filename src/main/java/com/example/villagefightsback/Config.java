@@ -14,7 +14,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
  * <p>Every entry is registered with a comment (which becomes a comment line in the generated TOML), a default, and
  * -- for the numeric ones -- a valid range. All MULTIPLIERS are floats defaulting to {@value #MULT_DEFAULT} and are
  * lower-bounded at {@value #MULT_MIN} (so they can never be zero/negative and never divide-by-zero). Booleans
- * default to {@code true} except the seven "off by default" switches called out in their comments.
+ * default to {@code true} except the "off by default" switches called out in their comments.
  *
  * <p>{@link #INDEX} maps each snake_case key to its value so the commands can list/get/set generically.
  */
@@ -62,6 +62,7 @@ public final class Config {
     public static final ForgeConfigSpec.DoubleValue ORGANIC_ARMY_MULTIPLIER;
     public static final ForgeConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
+    public static final ForgeConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -207,6 +208,12 @@ public final class Config {
                 .comment("If true, a stage-3 guard slain by a hostile/boss-minion goes out in a TNT-strength, fire-spreading",
                         "blast (a 'fire grenade'). If false, guards die quietly. Default: true.")
                 .define("guards_drop_fire_grenade_upon_death", true);
+        ENABLE_CHUNK_PORTALS = b
+                .comment("Master switch for CHUNK PORTALS (work in progress, v1.2.1). When ON: once a village brain reaches",
+                        "stage 3, ~1% of nearby overworld chunks turn into 4-wall portals that show, and lead into, the Limbo.",
+                        "Default: false (off for now). Turning this on applies portals immediately to any stage-3-or-higher",
+                        "brain node currently in reach (loaded); turning it off only stops NEW portals -- existing ones persist.")
+                .define("enable_chunk_portals", false);
         b.pop();
 
         b.push("multipliers");
@@ -288,6 +295,7 @@ public final class Config {
         INDEX.put("organic_army_multiplier", ORGANIC_ARMY_MULTIPLIER);
         INDEX.put("organic_spawn_budget_multiplier", ORGANIC_SPAWN_BUDGET_MULTIPLIER);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
+        INDEX.put("enable_chunk_portals", ENABLE_CHUNK_PORTALS);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);
@@ -350,6 +358,7 @@ public final class Config {
     public static double organicArmyMultiplier()          { return ORGANIC_ARMY_MULTIPLIER.get(); }
     public static double organicSpawnBudgetMultiplier()   { return ORGANIC_SPAWN_BUDGET_MULTIPLIER.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }
+    public static boolean chunkPortalsEnabled()           { return ENABLE_CHUNK_PORTALS.get(); }
 
     public static double levelUpThresholdMult()  { return MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD.get(); }
     public static double unitSpawnFrequencyMult()     { return MULTIPLIER_UNIT_SPAWN_FREQUENCY.get(); }
