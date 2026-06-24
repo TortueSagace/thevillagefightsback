@@ -267,8 +267,19 @@ public final class EmeraldVirusEvents {
     public static void onDrops(LivingDropsEvent event) {
         LivingEntity e = event.getEntity();
         if (e.level().isClientSide() || !EmeraldVirus.isActive(e)) return;
-        int n = 2 + e.getRandom().nextInt(3); // a few (2..4) emeralds
-        event.getDrops().add(new ItemEntity(e.level(), e.getX(), e.getY(), e.getZ(), new ItemStack(Items.EMERALD, n)));
+        // A host that dies carrying the virus has its whole body banked as organic mass by the nearest brain node
+        // (see onDeath), so the corpse leaves NOTHING -- no emeralds, no vanilla loot. Only true emerald-faction
+        // units drop an emerald, and they do so via their own loot tables (they are immune to the virus, so they
+        // never reach this branch). When mob infection is OFF the virus is just a debuff and the brain banks
+        // nothing, so the corpse is left to drop normally.
+        if (Config.mobInfectionEnabled()) event.getDrops().clear();
+    }
+
+    /** A virus host's experience is consumed along with its organic mass -> no XP orbs either (only when the
+     *  feature is on; otherwise the virus is a plain debuff and XP drops normally). */
+    @SubscribeEvent
+    public static void onXpDrop(net.minecraftforge.event.entity.living.LivingExperienceDropEvent event) {
+        if (Config.mobInfectionEnabled() && EmeraldVirus.isActive(event.getEntity())) event.setCanceled(true);
     }
 
     private static final int MAX_DETONATIONS_PER_TICK = 8; // throttle so a backlog can't freeze a tick
