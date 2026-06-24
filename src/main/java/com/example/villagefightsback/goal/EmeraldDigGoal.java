@@ -46,6 +46,9 @@ public class EmeraldDigGoal extends Goal {
     public boolean canUse() {
         LivingEntity target = mob.getTarget();
         if (target == null || !target.isAlive() || !mob.onGround()) return false;
+        // Only dig once the mob has actually WALKED to the end of its path (it is stuck), never mid-stride -- this is
+        // what stops it gouging random holes in the floor on the way to reachable prey.
+        if (!mob.getNavigation().isDone()) return false;
         if (!stuckCheckDue()) return false;            // only run the (costly) reach test a few times a second
         if (canReachTarget(target)) return false;      // a clear path exists -> walk, don't dig
         dig = findDiggable(target);
@@ -65,9 +68,12 @@ public class EmeraldDigGoal extends Goal {
         return (mob.tickCount + mob.getId()) % RECHECK_TICKS == 0;
     }
 
-    /** True if the mob can actually path to {@code target} (so it should walk, not dig). */
+    /** True if the mob can actually path to {@code target} (so it should walk/jump, not dig). Accuracy 1 means
+     *  reaching ADJACENT counts as reachable -- a melee mob never stands on its target's exact block, and the
+     *  pathfinder already steps/jumps 1-block rises, so a straight path with a single step-up is "reachable"
+     *  (accuracy 0 wrongly reported every such target as unreachable, which made it dig everywhere). */
     private boolean canReachTarget(LivingEntity target) {
-        Path p = mob.getNavigation().createPath(target, 0);
+        Path p = mob.getNavigation().createPath(target, 1);
         return p != null && p.canReach();
     }
 
