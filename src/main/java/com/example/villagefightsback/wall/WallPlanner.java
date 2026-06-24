@@ -33,6 +33,7 @@ public final class WallPlanner {
     private static final int MAX_BLOCKS = 6500;     // total placement cap
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
     private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
+    private static final int MAX_WALL_ELEVATION = 10; // inner wall: ignore columns whose ground is >this far above/below the brain node
 
     /** Compute the inner (cobblestone) wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds) {
@@ -106,6 +107,10 @@ public final class WallPlanner {
             if (!level.hasChunk(col.x >> 4, col.z >> 4)) continue;     // never build into unloaded terrain
             int surfaceY = surfaceY(level, col.x, col.z, minY);
             if (surfaceY <= minY) continue;                            // void column -> skip
+            // Inner wall: skip columns whose ground sits more than MAX_WALL_ELEVATION blocks above or below the
+            // brain node, so builders don't trek into a deep pit (or up a cliff) to wall a section far off the
+            // village's level. The stage-3 OUTER (obsidian) wall is exempt -- it rings the spread-out expansion.
+            if (!obsidian && Math.abs(surfaceY - brainNode.pos().getY()) > MAX_WALL_ELEVATION) continue;
             List<WallBlock> colBlocks = new ArrayList<>();
             expandColumn(col, surfaceY, colBlocks, doors.contains(pack(col.x, col.z)), obsidian);
             if (!colBlocks.isEmpty()) { columns.add(colBlocks); total += colBlocks.size(); }

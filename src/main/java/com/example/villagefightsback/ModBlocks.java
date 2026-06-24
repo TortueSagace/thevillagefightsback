@@ -564,6 +564,7 @@ public final class ModBlocks {
                 output.accept(GOLEM_FACTORY_NODE_ITEM.get());
                 output.accept(BARRACKS_NODE_ITEM.get());
                 output.accept(LURE_TOWER_NODE_ITEM.get());
+                output.accept(ModItems.GLOW_WAND.get()); // wand: highlights the mod's units + these node blocks
 
                 // === Defensive / structural blocks ===
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
@@ -613,7 +614,6 @@ public final class ModBlocks {
                 for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
                 output.accept(ModItems.EMERALD_APPLE.get());
                 output.accept(ModItems.EMERALD_EGG.get());
-                output.accept(ModItems.GLOW_WAND.get());
 
                 // === Potions ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
