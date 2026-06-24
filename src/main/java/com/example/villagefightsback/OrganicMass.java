@@ -143,7 +143,7 @@ public final class OrganicMass {
                     if (back > 0) { reclaimed++; reclaimedMass += back; continue; }
                 }
                 field++;
-                if (e instanceof EmeraldCat) explorers++; // count the roaming explorer CATS (the screen we maintain)
+                if (e instanceof EmeraldCat || e instanceof EmeraldSalmon) explorers++; // roaming scouts: land cats + water salmon (the screen we maintain)
             } else if (EmeraldMobs.isHostileTarget(e)) {
                 // Ignore prey the ground swarm can't reach: deep in caves (more than UNDERGROUND_BELOW under the
                 // node) or flying. This keeps the brain hunting the threat OUTSIDE the village, not chasing cave mobs.
@@ -244,10 +244,10 @@ public final class OrganicMass {
     /** Reclaim a small, idle, STUCK emerald unit: if {@code m}'s max HP is below {@link #RECLAIM_MAX_HP} and it has
      *  dealt no damage for {@link #IDLE_RECLAIM_TICKS} (5 min), refund its organic mass to {@code econ} and despawn
      *  it (frees units stranded in a hole). Returns the refunded points, or 0 if it was NOT reclaimed.
-     *  Explorers/scouts (cats, mites) are EXEMPT -- roaming without fighting is their whole job, so they must never
-     *  be culled for being "idle" (and mites self-despawn after ~1 min anyway). */
+     *  Explorers/scouts (cats, water salmon, mites) are EXEMPT -- roaming without fighting is their whole job, so they
+     *  must never be culled for being "idle" (and mites self-despawn after ~1 min anyway). */
     private static int reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
-        if (m instanceof EmeraldCat || m instanceof EmeraldEndermite) return 0; // explorers/scouts are never auto-culled
+        if (m instanceof EmeraldCat || m instanceof EmeraldSalmon || m instanceof EmeraldEndermite) return 0; // scouts never auto-culled
         if (m instanceof net.minecraft.world.entity.animal.IronGolem) return 0; // emerald golems (+ both variants) exempt
         if (m.getMaxHealth() >= RECLAIM_MAX_HP) return 0; // other heavy units (elites / withers) are never auto-culled
         net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
@@ -401,9 +401,11 @@ public final class OrganicMass {
     private static List<Cand> candidates(int leaf) {
         if (leaves == null) {
             leaves = new List[6];
-            // SCOUT: a cat (explorer) to find new prey; bat as a cheap flying fallback.
+            // SCOUT: a cat (land explorer) to find new prey; a salmon (water explorer) to sweep nearby water when
+            // there's water to deploy into; mite as a cheap roaming combat scout.
             leaves[SCOUT] = List.of(
-                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),        // the roaming explorer
+                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),        // the roaming LAND explorer
+                    new Cand(ModEntities.EMERALD_SALMON.get(), 3, 4.0, true),       // the roaming WATER explorer (aquatic)
                     new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 4.0, false));  // cheap roaming combat scout
                     // (bat dropped: it can't roam-explore -- it just flutters. It still appears as a CHEAP_CONVERTER.)
             // CHEAP_CONVERTER: harvest passive food cheaply. Mite dominates; animals are deliberately rare.

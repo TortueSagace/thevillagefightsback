@@ -103,4 +103,11 @@ public final class EmeraldMobs {
         // milling around their spawn. See ScoutRoamGoal.
         mob.goalSelector.addGoal(6, new com.example.villagefightsback.goal.ScoutRoamGoal(mob, 1.2D));
     }
+
+    /** Make an AQUATIC unit a WATER scout (the emerald salmon): sweep large water zones outward from the brain to
+     *  hunt for prey. The aquatic analogue of {@link #addExplorer}; priority 3 so it leads the vanilla fish swim.
+     *  Pair with a large FOLLOW_RANGE so it spots prey across the water from afar. See AquaticScoutRoamGoal. */
+    public static void addAquaticExplorer(PathfinderMob mob) {
+        mob.goalSelector.addGoal(3, new com.example.villagefightsback.goal.AquaticScoutRoamGoal(mob, 1.2D, 8));
+    }
 }

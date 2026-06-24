@@ -29,6 +29,7 @@ public class EmeraldSalmon extends Salmon implements EmeraldUnit {
     protected void registerGoals() {
         super.registerGoals();
         EmeraldMobs.addEmeraldGoals(this, true);
+        EmeraldMobs.addAquaticExplorer(this); // water scout: sweep large water zones outward, hunting for prey
     }
 
     /** The emerald salmon never suffocates out of water -- it hunts on dry land like the rest of the faction. */
@@ -41,7 +42,8 @@ public class EmeraldSalmon extends Salmon implements EmeraldUnit {
         return Mob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 3.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.7D)
-                .add(Attributes.ATTACK_DAMAGE, 2.0D);
+                .add(Attributes.ATTACK_DAMAGE, 2.0D)
+                .add(Attributes.FOLLOW_RANGE, 48.0D); // a wide net so the water scout spots prey across the water
     }
 
     @Override
