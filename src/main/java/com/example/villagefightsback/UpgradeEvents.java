@@ -62,6 +62,11 @@ public final class UpgradeEvents {
                     // inflict Virus II (both keyed off this flag). This is what makes emeraldgers a stage-4-only thing.
                     if (stage >= GIGACHAD_LEVEL) UpgradeState.setStage4(e);
                     VillageEvents.applyUpgrade(e);
+                } else {
+                    // Stage 2 (2 <= stage < 3): a GUARD becomes a virus archer -- emerald-virus crossbow + emerald
+                    // armour, but no mace (needsProcessing restricts this branch to guards). Villagers wait for stage 3.
+                    UpgradeState.setStage2(e);
+                    VillageEvents.applyUpgrade(e);
                 }
             }
         }
@@ -78,7 +83,11 @@ public final class UpgradeEvents {
             return !golem.isPlayerCreated() && !(golem instanceof GigachadGolemEntity);
         }
         if (!isUpgradable(e)) return false;
-        return !UpgradeState.isUpgraded(e) || (stage >= GIGACHAD_LEVEL && !UpgradeState.isStage4(e));
+        if (stage >= REQUIRED_LEVEL) {
+            return !UpgradeState.isUpgraded(e) || (stage >= GIGACHAD_LEVEL && !UpgradeState.isStage4(e));
+        }
+        // Stage 2: only GUARDS gain a tier here (the virus archer), and only until the stage-2 flag is stamped.
+        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType())) && !UpgradeState.isStage2(e);
     }
 
     private static boolean isUpgradable(LivingEntity e) {

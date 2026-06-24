@@ -1,6 +1,10 @@
 package com.example.villagefightsback;
 
+import java.util.Collections;
+import java.util.List;
+
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -35,9 +39,11 @@ public final class EmeraldPopulation {
     /** Persistent-data flag marking a DELIBERATE spawn (e.g. the brain's scout cats) that bypasses the lag cap. */
     public static final String UNCAPPED_TAG = "tvfb_uncapped";
 
-    /** Every emerald unit counts toward the cap (mites included) -- the cap is about loaded/ticking-entity lag. */
+    /** Every LIVE emerald unit counts toward the cap (mites included) -- the cap is about loaded/ticking-entity lag.
+     *  Dead/dying emeralds (mid death-animation, about to be removed) are excluded so the cap count, the mite-cull
+     *  baseline and the mites list all agree on the same alive population. */
     private static boolean isCapped(Entity e) {
-        return Factions.isEmerald(e);
+        return Factions.isEmerald(e) && (!(e instanceof LivingEntity le) || le.isAlive());
     }
 
     /** A valid HP-absorption recipient: a live, NON-mite emerald (mites are too transient to bank HP into). */
@@ -53,14 +59,49 @@ public final class EmeraldPopulation {
         return level.getEntitiesOfClass(LivingEntity.class, box, EmeraldPopulation::isCapped).size() >= max;
     }
 
+    /**
+     * Master gate for "enable_mob_infection": when the feature is OFF, NO emerald unit may enter the world via ANY
+     * path (virus-death spawn, brain summon, spawn egg). Highest priority so it cancels before the cap logic below.
+     * (Moved here when the old EmeraldInfection class was removed in 1.1.4.)
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onEmeraldJoinGate(EntityJoinLevelEvent event) {
+        if (Config.mobInfectionEnabled() || event.getLevel().isClientSide()) return;
+        if (Factions.isEmerald(event.getEntity())) event.setCanceled(true);
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW) // after the enable_mob_infection gate, which may cancel first
     public static void onJoin(EntityJoinLevelEvent event) {
         if (event.isCanceled() || event.getLevel().isClientSide() || event.loadedFromDisk()) return;
         if (!(event.getLevel() instanceof ServerLevel level) || !isCapped(event.getEntity())) return;
         if (event.getEntity().getPersistentData().getBoolean(UNCAPPED_TAG)) return; // deliberate spawn -> never capped
-        if (atCap(level, event.getEntity().position())) {
+        Vec3 pos = event.getEntity().position();
+        if (!atCap(level, pos)) return;
+        // At the cap. A NON-mite emerald (e.g. an Emeraldger) first makes room by culling expendable mites; each
+        // culled mite buffs the surrounding emeralds. A mite never culls other mites to spawn itself.
+        if (!(event.getEntity() instanceof EmeraldEndermite)) cullMitesToMakeRoom(level, pos);
+        if (atCap(level, pos)) {                       // still full (no mites to cull, or the joiner itself is a mite)
             if (event.getEntity() instanceof LivingEntity wouldBe) absorbInto(level, wouldBe);
             event.setCanceled(true);
+        }
+    }
+
+    /** Kill random emerald mites within {@link #RANGE} of {@code pos} -- buffing nearby emeralds on each -- until the
+     *  local emerald population falls below the cap or no mites remain. Frees a slot for a non-mite spawn. */
+    private static void cullMitesToMakeRoom(ServerLevel level, Vec3 pos) {
+        int max = Config.emeraldMobsMaxNumber();
+        if (max <= 0) return;
+        AABB box = new AABB(pos, pos).inflate(RANGE);
+        List<EmeraldEndermite> mites = level.getEntitiesOfClass(EmeraldEndermite.class, box, LivingEntity::isAlive);
+        if (mites.isEmpty()) return;
+        Collections.shuffle(mites);                                       // cull RANDOM mites, not the nearest
+        int count = level.getEntitiesOfClass(LivingEntity.class, box, EmeraldPopulation::isCapped).size();
+        for (EmeraldEndermite mite : mites) {
+            if (count < max) break;                                       // enough room freed
+            BlockPos mp = mite.blockPosition();
+            mite.discard();                                              // remove cleanly: no drops, no mite eruption
+            EmeraldConversion.buffNearbyEmeralds(level, mp, null);       // each cull still feeds the swarm's buff
+            count--;
         }
     }
 

@@ -81,6 +81,7 @@ public final class UnleashedManager {
     // --- the summon -----------------------------------------------------------------------------
     /** Emerge the boss at {@code pos} with the dramatic intro. Called from VillageBrainNodeBlock#onRemove. */
     public static void summonBoss(ServerLevel sl, BlockPos pos) {
+        if (!Config.spawnSpiritOnDefeat()) return; // boss + its emerge animation gated off by config
         UnleashedBrainNodeEntity boss = ModEntities.UNLEASHED_BRAIN_NODE.get().create(sl);
         if (boss == null) return;
         boss.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, sl.random.nextFloat() * 360.0F, 0.0F);

@@ -40,11 +40,6 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> KARATS_WILL =
             EFFECTS.register("karats_will", KaratsWillEffect::new);
 
-    /** "Emerald Infection": any hit from an emerald-faction unit inflicts it; Wither I, no particles; a unit that
-     *  dies carrying it is converted into an emerald unit (see {@link EmeraldInfectionEffect} / {@link EmeraldInfection}). */
-    public static final RegistryObject<MobEffect> EMERALD_INFECTION =
-            EFFECTS.register("emerald_infection", EmeraldInfectionEffect::new);
-
     /** "Emerald Marker": a brain node beacon that rallies every emerald unit within 100 blocks onto the marked
      *  target. Applied with VISIBLE particles, unlike the mod's other effects (see {@link EmeraldMarkerEffect}). */
     public static final RegistryObject<MobEffect> EMERALD_MARKER =

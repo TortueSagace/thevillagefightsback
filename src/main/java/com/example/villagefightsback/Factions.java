@@ -105,8 +105,10 @@ public final class Factions {
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
-    /** The "emerald" faction (the v1.0.3 mob-infection units). Membership = the {@link EmeraldUnit} marker. */
+    /** The "emerald" faction (the v1.0.3 mob-infection units + the Emeraldger). Membership = the {@link EmeraldUnit}
+     *  marker, plus the {@link EmeraldgerEntity} (a Villager subclass, so it can't carry the marker, but it is a
+     *  full emerald unit: it counts toward the cap, joins the emerald death-buff, and is village-allied like the rest). */
     public static boolean isEmerald(Entity e) {
-        return e instanceof EmeraldUnit;
+        return e instanceof EmeraldUnit || e instanceof EmeraldgerEntity;
     }
 }

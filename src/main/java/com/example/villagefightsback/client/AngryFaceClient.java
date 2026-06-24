@@ -45,10 +45,11 @@ public final class AngryFaceClient {
         if (mc.level == null) return false; // no client level -> nothing to time against
         long now = mc.level.getGameTime();
 
-        // Only a FIGHT swing counts -- never a work swing. A villager mining swings an iron pickaxe and a
-        // builder swings a block; the face must stay normal for those. So we refresh the angry timer only
-        // when the mob is mid-swing AND holding an actual combat weapon (see isCombatItem).
-        if (isSwinging(entity) && isCombatItem(entity)) {
+        // A FIGHT signal counts -- never a work swing. A villager mining swings an iron pickaxe and a builder
+        // swings a block; the face must stay normal for those. So we refresh the angry timer only when the mob is
+        // either mid-swing (melee) OR drawing a ranged weapon (a guard spends most of a fight at range with a
+        // crossbow, where there is no melee swing), AND holding an actual combat weapon (see isCombatItem).
+        if ((isSwinging(entity) || isDrawingRanged(entity)) && isCombatItem(entity)) {
             ANGRY_UNTIL.put(entity.getId(), now + ANGRY_TICKS);
         }
 
@@ -66,6 +67,15 @@ public final class AngryFaceClient {
      */
     private static boolean isSwinging(LivingEntity entity) {
         return entity.swinging || entity.swingTime > 0;
+    }
+
+    /**
+     * True while the entity is actively drawing/charging a ranged weapon -- the synced "use item" animation. This
+     * is the RANGED fight tell: a crossbow guard never melee-swings, but it charges its crossbow each shot, so
+     * {@code isUsingItem()} pulses true throughout a ranged fight (and the 3s window bridges the gaps between shots).
+     */
+    private static boolean isDrawingRanged(LivingEntity entity) {
+        return entity.isUsingItem();
     }
 
     /**

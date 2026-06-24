@@ -9,6 +9,7 @@ import com.example.villagefightsback.network.ModNetwork;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -23,6 +24,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -58,12 +60,15 @@ public final class EmeraldVirusEvents {
     private static final float BLAST_RADIUS = 4.0F;     // TNT-strength blast
     private static final int FIRE_PASS_RADIUS = 4;      // set the whole blast range on fire
 
+    /** What rises from the corpse after the (optional) blast. */
+    private static final int SPAWN_NONE = 0, SPAWN_MITE = 1, SPAWN_EMERALDGER = 2;
+
     /** Pending post-death explosion, fired when the corpse fades (~1s later). We keep the corpse ENTITY (not a
      *  fixed point), because the Alien Slasher's huge knockback keeps flinging the dead body during its death
-     *  animation -- so we explode where the corpse actually ends up, not where it died. {@code deadMaxHp}
-     *  drives the Emeraldger that rises after the blast (stage-4 only). */
-    private record Pending(ServerLevel level, LivingEntity corpse, long when,
-                           float deadMaxHp, boolean spawnEmeraldger) {}
+     *  animation -- so we explode where the corpse actually ends up, not where it died. {@code deadMaxHp} drives
+     *  the Emeraldger that rises after the blast; {@code spawnKind} is SPAWN_MITE (Virus I) or SPAWN_EMERALDGER
+     *  (Virus II, stage-4 only). */
+    private record Pending(ServerLevel level, LivingEntity corpse, long when, float deadMaxHp, int spawnKind) {}
     private static final List<Pending> PENDING = new ArrayList<>();
 
     // --- Alien Slasher on-hit payload ------------------------------------------------------------
@@ -100,6 +105,35 @@ public final class EmeraldVirusEvents {
         if (attacker == null) return 0;
         if (attacker instanceof VindictiveGuardEntity || attacker instanceof VindictiveGigachadEntity) return 0;
         return UpgradeState.isStage4(attacker) ? 1 : 0;
+    }
+
+    /**
+     * Emerald CREATURES' on-hit payload (this replaces the old Emerald Infection): every hit from an emerald-faction
+     * unit imparts the Emerald Virus. At a STAGE-4 village it imparts Virus II; below stage 4, Virus I. We key off
+     * the damage source's responsible entity, so melee hits, skeleton arrows, creeper blasts and wither skulls all
+     * count, and we use LivingAttackEvent so it lands even on a hit that deals no final damage. Spared factions
+     * (fellow emeralds, the village, the vindictive) are never infected.
+     */
+    @SubscribeEvent
+    public static void onEmeraldAttack(LivingAttackEvent event) {
+        if (event.getEntity().level().isClientSide() || !Config.mobInfectionEnabled()) return;
+        if (!Factions.isEmerald(event.getSource().getEntity())) return;
+        LivingEntity victim = event.getEntity();
+        if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return;
+        if (!(victim.level() instanceof ServerLevel sl)) return;
+        EmeraldVirus.infect(victim, stage4Village(sl, victim.blockPosition()) ? 1 : 0); // stage 4 -> Virus II
+    }
+
+    /** True if any Village Brain Node within income range of {@code pos} has reached stage 4 -- so emerald units
+     *  there impart Virus II rather than Virus I (keeping Virus II a stage-4-only thing). */
+    private static boolean stage4Village(ServerLevel level, BlockPos pos) {
+        BrainNodeData data = BrainNodeData.get(level.getServer());
+        double r2 = (double) BrainNodeEvents.INCOME_RADIUS * BrainNodeEvents.INCOME_RADIUS;
+        for (GlobalPos gp : data.blocks()) {
+            if (gp.dimension().equals(level.dimension()) && gp.pos().distSqr(pos) <= r2
+                    && data.econ(gp).getLevel() >= 4) return true;
+        }
+        return false;
     }
 
     /** Launch the target ~20 blocks away from the attacker, bypassing knockback resistance (direct velocity set). */
@@ -154,15 +188,21 @@ public final class EmeraldVirusEvents {
         }
     }
 
-    /** Infect not-yet-infected, non-immune creatures within {@link #SPREAD_RANGE} blocks (strong chance each). */
+    /** Infect not-yet-infected, non-immune creatures within {@link #SPREAD_RANGE} blocks (strong chance each). The
+     *  contagion carries the HOST's own virus level, so a Virus II host (a stage-4 infection) spreads Virus II. A
+     *  fresh contagion infection awards nearby players "What about social distancing?". */
     private static void spread(LivingEntity host, Level level) {
+        net.minecraft.world.effect.MobEffectInstance hv = host.getEffect(ModEffects.EMERALD_VIRUS.get());
+        int amp = hv != null ? hv.getAmplifier() : 0;
         AABB box = host.getBoundingBox().inflate(SPREAD_RANGE);
         double rangeSqr = SPREAD_RANGE * SPREAD_RANGE;
         List<LivingEntity> near = level.getEntitiesOfClass(LivingEntity.class, box,
                 x -> x != host && EmeraldVirus.canInfect(x) && x.distanceToSqr(host) <= rangeSqr);
         for (LivingEntity other : near) {
-            if (host.getRandom().nextFloat() < SPREAD_CHANCE) {
-                EmeraldVirus.infect(other);
+            if (host.getRandom().nextFloat() < SPREAD_CHANCE && EmeraldVirus.infect(other, amp)
+                    && level instanceof ServerLevel sl) {
+                Achievements.awardNearby(sl, other.getX(), other.getY(), other.getZ(), 48.0,
+                        "brain_node/what_about_social_distancing"); // infected by the contagion, not a direct hit
             }
         }
     }
@@ -200,14 +240,27 @@ public final class EmeraldVirusEvents {
         if (event.getSource().getEntity() instanceof EmeraldgerEntity killer) killer.markKill();
 
         if (!(e.level() instanceof ServerLevel sl)) return;
+        if (Factions.isEmerald(e)) return;     // emerald units: their death is handled by EmeraldConversion.onEmeraldDeath
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
-        // An Emeraldger rises ONLY from a host that died carrying Emerald Virus II (amplifier >= 1). Virus II is
-        // dealt solely by the Alien Eradicator and a stage-4 guard's crossbow (and by Emeraldgers themselves), so
-        // emeraldgers only ever appear at stage 4. A Virus-I death (Alien Slasher / stage-3 crossbow) never spawns one.
-        net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS.get());
-        boolean virusII = vinst != null && vinst.getAmplifier() >= 1;
-        boolean spawnEmeraldger = !(e instanceof EmeraldgerEntity) && virusII;
-        PENDING.add(new Pending(sl, e, sl.getGameTime() + CORPSE_DELAY, e.getMaxHealth(), spawnEmeraldger));
+
+        // The merged "infection" powers (formerly Emerald Infection) are FACTION machinery -- they only run when mob
+        // infection is enabled, matching the master gate (EmeraldPopulation.onEmeraldJoinGate). With it OFF the virus
+        // is just a Wither debuff: no organic mass, no green swirl, no infested path, and nothing rises from the
+        // corpse. The explosion is independent (its own enable_emerald_virus_explosion config), so the corpse entry
+        // is still scheduled for it.
+        int spawnKind = SPAWN_NONE;
+        if (Config.mobInfectionEnabled()) {
+            LimboBanishFx.startLime(e);                              // green death swirl
+            EmeraldConversion.placeInfestedPathUnder(sl, e);        // infested path under the corpse
+            OrganicMass.addToNearestBrain(sl, e.blockPosition(), Math.round(e.getMaxHealth())); // bank organic mass
+            // A host that died carrying Virus II (amplifier >= 1) -> an Emeraldger; a Virus-I death -> an emerald mite.
+            // Virus II is dealt only at stage 4 (Alien Eradicator, stage-4 guard crossbow, stage-4 emerald units), so
+            // emeraldgers only ever appear at stage 4.
+            net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS.get());
+            boolean virusII = vinst != null && vinst.getAmplifier() >= 1;
+            spawnKind = virusII ? SPAWN_EMERALDGER : SPAWN_MITE;
+        }
+        PENDING.add(new Pending(sl, e, sl.getGameTime() + CORPSE_DELAY, e.getMaxHealth(), spawnKind));
     }
 
     @SubscribeEvent
@@ -246,7 +299,12 @@ public final class EmeraldVirusEvents {
             // animation), not where it died. After removal the entity still reports its last position.
             double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
             if (Config.emeraldVirusExplosion()) explodeWithFire(p.level, x, y, z); // master switch (no boom if off)
-            if (p.spawnEmeraldger) spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
+            if (p.spawnKind == SPAWN_EMERALDGER) {
+                spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
+            } else if (p.spawnKind == SPAWN_MITE) {
+                // Virus I -> an emerald mite (capped: EmeraldPopulation absorbs/cancels it when already at the cap).
+                EmeraldConversion.spawnAt(p.level, BlockPos.containing(x, y, z), ModEntities.EMERALD_ENDERMITE.get(), null);
+            }
         }
         ModProfiler.add("virus.explode", _p);
     }

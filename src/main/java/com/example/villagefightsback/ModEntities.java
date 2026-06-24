@@ -157,7 +157,7 @@ public final class ModEntities {
                     .updateInterval(10)
                     .build("fire_grenade"));
 
-    /** The Emerald Egg's thrown projectile (inflicts Emerald Infection on hit). See {@link EmeraldEggEntity}. */
+    /** The Emerald Egg's thrown projectile (inflicts Emerald Virus on hit). See {@link EmeraldEggEntity}. */
     public static final RegistryObject<EntityType<EmeraldEggEntity>> EMERALD_EGG = ENTITIES.register(
             "emerald_egg",
             () -> EntityType.Builder.<EmeraldEggEntity>of(EmeraldEggEntity::new, MobCategory.MISC)

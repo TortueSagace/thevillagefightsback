@@ -15,8 +15,8 @@ import net.minecraft.world.entity.player.Player;
  * <p>An emerald unit is hostile to anything that is NOT (rule 4): another emerald unit, a player without the
  * Enemy-of-the-Village status, a village-faction unit, or a vindictive-faction unit -- i.e. it attacks vanilla
  * hostiles, peaceful animals, and Enemy-of-the-Village players, snowballing the faction across the world.
- * Conversion, the on-hit Emerald Infection, loot and the death effects are wired separately in
- * {@link EmeraldInfection}.
+ * The on-hit Emerald Virus, loot and the death effects (mite/emeraldger spawn, buffs) are wired separately in
+ * {@link EmeraldVirusEvents} and {@link EmeraldConversion}.
  */
 public final class EmeraldMobs {
     private EmeraldMobs() {}

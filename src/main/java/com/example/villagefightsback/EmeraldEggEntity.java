@@ -16,9 +16,9 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.network.NetworkHooks;
 
 /**
- * The Emerald Egg's thrown projectile: hurled like a snowball, it inflicts the {@link ModEffects#EMERALD_INFECTION}
- * on whatever creature it strikes (so a hit unit that dies infected converts to the emerald faction). It bursts
- * into a small green shower on any impact. Emerald chickens lay these eggs.
+ * The Emerald Egg's thrown projectile: hurled like a snowball, it inflicts {@link EmeraldVirus} I on whatever
+ * creature it strikes (so a hit unit that dies carrying it spawns an emerald mite). It bursts into a small green
+ * shower on any impact. Emerald chickens lay these eggs.
  */
 public class EmeraldEggEntity extends ThrowableItemProjectile {
     public EmeraldEggEntity(EntityType<? extends EmeraldEggEntity> type, Level level) {
@@ -38,7 +38,7 @@ public class EmeraldEggEntity extends ThrowableItemProjectile {
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
         if (!level().isClientSide() && result.getEntity() instanceof LivingEntity victim) {
-            EmeraldInfection.apply(victim); // Emerald Infection -> converts on death (gated by enable_mob_infection)
+            EmeraldVirus.infect(victim, 0); // Emerald Virus I -> spawns a mite on death (gated by enable_mob_infection)
             if (getOwner() instanceof net.minecraft.server.level.ServerPlayer thrower) {
                 Achievements.award(thrower, "brain_node/a_very_bad_speech"); // landed an emerald egg on a target
             }

@@ -10,7 +10,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-/** A throwable Emerald Egg -- hurl it (like a snowball/egg) to inflict the Emerald Infection on the creature it
+/** A throwable Emerald Egg -- hurl it (like a snowball/egg) to inflict the Emerald Virus on the creature it
  *  hits (see {@link EmeraldEggEntity}). Emerald chickens lay these. */
 public class EmeraldEggItem extends Item {
     public EmeraldEggItem(Properties props) {

@@ -7,7 +7,7 @@ package com.example.villagefightsback;
  *
  * <p>Emerald units share one behaviour set, wired in via {@link EmeraldMobs}: they hunt everything that is not
  * spared (see {@link EmeraldMobs#isHostileTarget}); a normally-PASSIVE species ({@link #emeraldPassive()} true)
- * gains a melee attack dealing 50% of its max health; and every hit they land inflicts Emerald Infection.
+ * gains a melee attack dealing 50% of its max health; and every hit they land inflicts the Emerald Virus.
  */
 public interface EmeraldUnit {
     /** True for species that have no vanilla attack (cow, sheep, bat, ...): they get a 50%-max-HP melee attack. */

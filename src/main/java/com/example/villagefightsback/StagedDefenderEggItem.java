@@ -31,7 +31,7 @@ public class StagedDefenderEggItem extends Item {
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     private final Kind kind;
-    private final int stage;          // 1, 3 or 4
+    private final int stage;          // 1, 2, 3 or 4
     private final int primaryColor;   // egg base colour (tint layer 0)
     private final int secondaryColor; // egg spots colour (tint layer 1)
 
@@ -90,6 +90,7 @@ public class StagedDefenderEggItem extends Item {
         // Stamp the stage BEFORE the entity joins the level, so VillageEvents#onEntityJoin arms it to match.
         if (stage == 4) UpgradeState.setStage4(entity);
         else if (stage == 3) UpgradeState.setUpgraded(entity);
+        else if (stage == 2) UpgradeState.setStage2(entity); // a stage-2 guard: virus archer (no mace)
         sl.addFreshEntity(entity);
 
         if (ctx.getPlayer() != null && !ctx.getPlayer().isCreative()) ctx.getItemInHand().shrink(1);

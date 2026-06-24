@@ -44,6 +44,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE;
     // --- feature switches ---
     public static final ForgeConfigSpec.BooleanValue BRAIN_NODE_EXTINGUISHES_FIRE;
+    public static final ForgeConfigSpec.BooleanValue DEFEATED_BRAIN_NODE_SPAWN_SPIRIT;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_HOSTILE;
     public static final ForgeConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
     public static final ForgeConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
@@ -109,23 +110,28 @@ public final class Config {
         ENABLE_EMERALD_VIRUS_EXPLOSION = b
                 .comment("Master switch for the emerald-virus death explosion. If false, a creature that dies carrying the",
                         "emerald virus does NOT explode at all (no blast, no entity damage, no fire) -- the two options below",
-                        "then have no effect. The emeraldger spawn and emerald loot still happen. Default: true.")
-                .define("enable_emerald_virus_explosion", true);
+                        "then have no effect. The mite/emeraldger spawn and emerald loot still happen. Default: false (nerf).")
+                .define("enable_emerald_virus_explosion", false);
         EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS = b
                 .comment("If true, the explosion of a creature that dies carrying the emerald virus breaks blocks.",
                         "The blast still hurts units either way. Default: false.")
                 .define("emerald_virus_explosion_destroy_blocks", false);
         EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE = b
-                .comment("If true, the emerald-virus death explosion can set blocks on fire.")
-                .define("emerald_virus_explosion_set_blocks_on_fire", true);
+                .comment("If true, the emerald-virus death explosion can set blocks on fire. Default: false.")
+                .define("emerald_virus_explosion_set_blocks_on_fire", false);
         b.pop();
 
         b.push("features");
         BRAIN_NODE_EXTINGUISHES_FIRE = b
-                .comment("If true, a brain node will (for 1 emerald, on a 1-minute cooldown, at any stage) clear ALL vanilla",
+                .comment("If true, a brain node will (free, on a 1-minute cooldown, at any stage) clear ALL vanilla",
                         "fire (normal + soul fire) within its influence radius. This mod adds no fire of its own; other",
                         "mods' custom fire is left untouched.")
                 .define("brain_node_extinguishes_fire", true);
+        DEFEATED_BRAIN_NODE_SPAWN_SPIRIT = b
+                .comment("If true, destroying a Village Brain Node (any non-silk-touch break) unleashes the Vindictive",
+                        "Village Spirit boss, with its emerge animation and warning. If false, the node can be destroyed",
+                        "without summoning the boss. Default: true.")
+                .define("defeated_brain_node_spawn_spirit", true);
         PLAYER_IS_HOSTILE = b
                 .comment("If true, every player permanently has the 'Enemy of the Village' status and can NEVER become a",
                         "Hero of the Village, no matter what. Default: false.")
@@ -264,6 +270,7 @@ public final class Config {
         INDEX.put("emerald_virus_explosion_destroy_blocks", EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS);
         INDEX.put("emerald_virus_explosion_set_blocks_on_fire", EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE);
         INDEX.put("brain_node_extinguishes_fire", BRAIN_NODE_EXTINGUISHES_FIRE);
+        INDEX.put("defeated_brain_node_spawn_spirit", DEFEATED_BRAIN_NODE_SPAWN_SPIRIT);
         INDEX.put("player_is_hostile", PLAYER_IS_HOSTILE);
         INDEX.put("emeraldgers_size_variation", EMERALDGERS_SIZE_VARIATION);
         INDEX.put("mega_expansion_mode", MEGA_EXPANSION_MODE);
@@ -325,6 +332,7 @@ public final class Config {
     public static boolean emeraldVirusDestroysBlocks()    { return EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS.get(); }
     public static boolean emeraldVirusSetsFire()          { return EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE.get(); }
     public static boolean brainExtinguishesFire()         { return BRAIN_NODE_EXTINGUISHES_FIRE.get(); }
+    public static boolean spawnSpiritOnDefeat()           { return DEFEATED_BRAIN_NODE_SPAWN_SPIRIT.get(); }
     public static boolean playerIsHostile()               { return PLAYER_IS_HOSTILE.get(); }
     public static boolean emeraldgerSizeVariation()       { return EMERALDGERS_SIZE_VARIATION.get(); }
     public static boolean megaExpansionMode()             { return MEGA_EXPANSION_MODE.get(); }

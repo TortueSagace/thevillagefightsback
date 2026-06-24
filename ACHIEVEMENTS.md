@@ -26,9 +26,12 @@ at the bottom.
 - **Emerald knights** (stage-3 guards): mace / crossbow / Alien Slasher; death explosion.
 - **Gigachad golems**: gold re-skin, 200 HP, rockets.
 - **Immunity** effect/potion + a brain node immunity aura covering villagers, guards, and golems.
-- **Advancements** (Brain Node tab): **A very bad speech** (land an emerald egg on a target), plus an organic
-  branch -- **Emerald party** (10 emerald units around a village), **Overpopulation** (reach 50), and
-  **I'm not kidding anymore** (witness the birth of an emerald wither).
+- **Advancements** (Brain Node tab): **A very bad speech** (land an emerald egg on a target), **What about social
+  distancing?** (a mob catches the virus from another infected creature), plus an organic branch -- **Emerald party**
+  (10 emerald units around a village), **Overpopulation** (reach 50), and **I'm not kidding anymore** (witness the
+  birth of an emerald wither).
+- **Guard stages** now run 1-4 with a spawn egg each: stage 2 is a new **virus archer** (emerald-virus crossbow +
+  emerald armour, no mace), stage 3 the full emerald knight (adds the mace), stage 4 inflicts Virus II.
 
 ### 3. Walls & defensive structures
 - Deterministic wall planner that follows the village footprint (concave), with builders, gates, loopholes,
@@ -43,7 +46,12 @@ at the bottom.
   block cap, fertile/rich sculk catalysts, and a full **Fertile/Rich block family** (dirt, sand, stone, log,
   deepslate, netherrack, end stone, sculk, leaves, stairs/slab/fence/door).
 - **Emerald Apple**, **Emerald Virus potion + arrows**.
-- **Emeraldger**: the stage-4 virus warrior (scales with the host's HP, total immunity, glowing green eyes).
+- **Emeraldger**: the stage-4 virus warrior (scales with the host's HP, glowing green eyes). Now a full emerald unit
+  (counts toward the 50 cap, joins the emerald death-buff), but only ever rises from a Virus II death (never brain-summoned).
+- **Emerald Infection merged into the virus (1.1.4)**: there is no separate "infection" effect anymore. Emerald
+  creatures' hits and the Emerald Egg now apply the Emerald Virus; a mob that dies carrying it banks organic mass,
+  plays the green swirl, lays an infested path, and spawns an emerald mite (Virus I) or an Emeraldger (Virus II).
+  Stage-4 emerald units spread Virus II. The contagion carries the host's own virus level.
 
 ### 5. The Unleashed BrainNode (boss)
 - Erupts when a village's last villager dies. Green sonic-boom **banish waves**, slam attack, screen shake.

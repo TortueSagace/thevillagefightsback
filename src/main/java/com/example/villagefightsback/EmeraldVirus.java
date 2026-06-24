@@ -29,13 +29,15 @@ public final class EmeraldVirus {
 
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
-    /** Villagers, guards, iron/snow golems and players are naturally immune and can never catch the virus. */
+    /** Villagers, guards, iron/snow golems, players and the emerald faction are naturally immune and can never
+     *  catch the virus (an emerald unit is already the faction, so it has nothing to catch). */
     public static boolean isNaturallyImmune(LivingEntity e) {
         return e instanceof Player
                 || e instanceof Villager
                 || e instanceof IronGolem
                 || e instanceof SnowGolem
                 || e instanceof VindictiveGuardEntity   // the boss's own guards are immune to the virus
+                || Factions.isEmerald(e)                // emerald units never catch the virus (they ARE it)
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 

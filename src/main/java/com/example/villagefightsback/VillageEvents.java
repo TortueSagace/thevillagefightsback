@@ -141,7 +141,9 @@ public final class VillageEvents {
             if (upgraded) armVillagerFull(villager);
             else armVillagerNerfed(villager);
         } else if (isGuard(mob)) {
-            if (upgraded) armGuardFull(mob);            // else: normal guard
+            if (upgraded) armGuardFull(mob);                       // stage 3+: full emerald knight (mace-bounce)
+            else if (UpgradeState.isStage2(mob)) armGuardStage2(mob); // stage 2: virus archer (no mace)
+            // else: normal guard
         }
     }
 
@@ -188,7 +190,8 @@ public final class VillageEvents {
         } else if (e instanceof IronGolem golem) {
             if (!golem.isPlayerCreated()) armGolemFull(golem);
         } else if (e instanceof PathfinderMob pm && isGuard(pm)) {
-            armGuardFull(pm);
+            if (UpgradeState.isUpgraded(pm)) armGuardFull(pm);
+            else if (UpgradeState.isStage2(pm)) armGuardStage2(pm);
         }
     }
 
@@ -301,6 +304,20 @@ public final class VillageEvents {
         // The mace replaces any JEG gun (the equipment change makes onEquipmentChange strip JEG's gun goal);
         // the combat goal swaps in the crossbow / Alien Slasher as the situation demands.
         guard.setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.mace().copy());
+        guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        GuardWeapons.equipEmeraldArmor(guard);
+        guard.goalSelector.addGoal(1, new com.example.villagefightsback.goal.StageThreeGuardGoal(guard));
+    }
+
+    /**
+     * STAGE 2: a "virus archer" guard -- the same emerald-virus crossbow + emerald armour as the full knight and
+     * the same {@link com.example.villagefightsback.goal.StageThreeGuardGoal} combat brain, but NO mace (the goal's
+     * mace-bounce is gated to stage 3+, so a stage-2 guard fights with crossbow + Alien Slasher only).
+     */
+    private static void armGuardStage2(PathfinderMob guard) {
+        if (hasGoal(guard, com.example.villagefightsback.goal.StageThreeGuardGoal.class)) return; // re-added each load
+        CombatUtil.extendFollowRange(guard, FOLLOW_RANGE);
+        guard.setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.crossbow().copy()); // idle look: an archer (no mace)
         guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         GuardWeapons.equipEmeraldArmor(guard);
         guard.goalSelector.addGoal(1, new com.example.villagefightsback.goal.StageThreeGuardGoal(guard));

@@ -119,19 +119,23 @@ public class StageThreeGuardGoal extends Goal {
         guard.setTarget(t);
         guard.getLookControl().setLookAt(t, 30.0F, 30.0F);
 
+        // The mace-bounce (launch / dive / smash) is a STAGE-3+ ability. A stage-2 "virus archer" guard has no mace,
+        // so it sticks to crossbow + Alien Slasher. Vindictive guards keep the mace-bounce regardless.
+        boolean hasMace = com.example.villagefightsback.UpgradeState.isUpgraded(guard)
+                || guard instanceof com.example.villagefightsback.VindictiveGuardEntity;
         double dist = guard.distanceTo(t);
         if (t instanceof Creeper) {            // never melee a creeper -- shoot it with the crossbow at any range
             crossbow(t, dist);
-        } else if (!guard.onGround()) {        // already airborne -> keep diving / smashing / clutching
+        } else if (hasMace && !guard.onGround()) { // already airborne -> keep diving / smashing / clutching
             diveAndSmash(t);
         } else if (dist > CROSSBOW_RANGE) {
             crossbow(t, dist);
         } else if (t.getY() - guard.getY() > CLIMB_THRESHOLD) {
             climbWithScaffold(t, dist);         // reach a target well above us with cheap scaffolds (NOT wind charge)
-        } else if (hasHeadroom()) {
+        } else if (hasMace && hasHeadroom()) {
             launchAt(t);                        // begin a bounce (wind charge = attack only)
         } else {
-            slasher(t, dist);                   // low ceiling -> villager-style melee
+            slasher(t, dist);                   // low ceiling / stage 2 -> villager-style melee
         }
     }
 

@@ -94,7 +94,7 @@ public final class ModItems {
     public static final RegistryObject<Item> FIRE_GRENADE =
             ITEMS.register("fire_grenade", () -> new FireGrenadeItem(new Item.Properties().stacksTo(16)));
 
-    /** Emerald Egg: a throwable egg that inflicts the Emerald Infection on the creature it hits. Emerald chickens
+    /** Emerald Egg: a throwable egg that inflicts the Emerald Virus on the creature it hits. Emerald chickens
      *  lay it. See {@link EmeraldEggItem} / {@link EmeraldEggEntity}. */
     public static final RegistryObject<Item> EMERALD_EGG =
             ITEMS.register("emerald_egg", () -> new EmeraldEggItem(new Item.Properties().stacksTo(16)));
@@ -275,6 +275,7 @@ public final class ModItems {
     public static final RegistryObject<Item> VILLAGER_STAGE3 = egg("villager_stage3", StagedDefenderEggItem.Kind.VILLAGER, 3, 0x8B6F47, 0x2BBF4E);
     public static final RegistryObject<Item> VILLAGER_STAGE4 = egg("villager_stage4", StagedDefenderEggItem.Kind.VILLAGER, 4, 0x2BBF4E, 0x0A5C28);
     public static final RegistryObject<Item> GUARD_STAGE1 = egg("guard_stage1", StagedDefenderEggItem.Kind.GUARD, 1, 0x8E9BA8, 0xA0A0A0);
+    public static final RegistryObject<Item> GUARD_STAGE2 = egg("guard_stage2", StagedDefenderEggItem.Kind.GUARD, 2, 0x8E9BA8, 0x6FE08A);
     public static final RegistryObject<Item> GUARD_STAGE3 = egg("guard_stage3", StagedDefenderEggItem.Kind.GUARD, 3, 0x8E9BA8, 0x2BBF4E);
     public static final RegistryObject<Item> GUARD_STAGE4 = egg("guard_stage4", StagedDefenderEggItem.Kind.GUARD, 4, 0x2BBF4E, 0x0A5C28);
     public static final RegistryObject<Item> IRON_GOLEM = egg("iron_golem", StagedDefenderEggItem.Kind.GOLEM, 1, 0xDBD3D0, 0x70A35A);
@@ -283,7 +284,7 @@ public final class ModItems {
     /** All staged-defender eggs, in creative-tab / colour-handler order. */
     public static final java.util.List<RegistryObject<Item>> STAGED_EGGS = java.util.List.of(
             VILLAGER_STAGE1, VILLAGER_STAGE3, VILLAGER_STAGE4,
-            GUARD_STAGE1, GUARD_STAGE3, GUARD_STAGE4,
+            GUARD_STAGE1, GUARD_STAGE2, GUARD_STAGE3, GUARD_STAGE4,
             IRON_GOLEM, GIGACHAD_GOLEM);
 
     public static void register(IEventBus modBus) {

@@ -126,10 +126,15 @@ public class EmeraldgerEntity extends Villager {
         // total immunity: ignored.
     }
 
-    /** Immune to EVERY status effect, good or bad -- the addEffect call is rejected here, so no particles. */
+    /** Immune to every status effect EXCEPT the emerald death-buff (Strength/Resistance/Regeneration), which it
+     *  receives like any other emerald unit when a nearby emerald dies. Everything else (virus, wither, ...) is
+     *  rejected here, so no particles and no harm. */
     @Override
     public boolean canBeAffected(net.minecraft.world.effect.MobEffectInstance effect) {
-        return false;
+        net.minecraft.world.effect.MobEffect e = effect.getEffect();
+        return e == net.minecraft.world.effect.MobEffects.DAMAGE_BOOST
+                || e == net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE
+                || e == net.minecraft.world.effect.MobEffects.REGENERATION;
     }
 
     /** Immune to freezing in powder snow too (it isn't a MobEffect, so it needs its own guard). */
