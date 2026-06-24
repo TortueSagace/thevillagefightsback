@@ -44,6 +44,16 @@ public final class EmeraldMarker {
         joinScentTeam(level, target); // colour that outline lime
     }
 
+    /** Clear {@code target}'s mark right now (effects + glow + team), instead of waiting for it to expire. Used
+     *  when the single killstreak slot switches to a stronger creature (see {@link KillstreakMarker}). */
+    public static void unmark(LivingEntity target) {
+        if (target == null) return;
+        MARKED.remove(target);
+        target.removeEffect(ModEffects.EMERALD_MARKER.get());
+        target.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+        leaveScentTeam(target);
+    }
+
     /** Put {@code target} on the lime-coloured scent team so its Glowing outline renders lime instead of white. */
     private static void joinScentTeam(ServerLevel level, LivingEntity target) {
         Scoreboard sb = level.getScoreboard();
