@@ -1243,7 +1243,13 @@ public final class BrainNodeEvents {
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
-            net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(gp.pos()).inflate(COLLECT_RADIUS);
+            net.minecraft.world.phys.Vec3 center = net.minecraft.world.phys.Vec3.atCenterOf(gp.pos());
+            double near2 = COLLECT_RADIUS * COLLECT_RADIUS;
+            // Scan the brain's whole influence radius. An emerald is absorbed if it is either CLOSE to the node
+            // (within COLLECT_RADIUS, the classic vacuum) OR -- at any range in reach -- it has come to rest on one
+            // of OUR infection blocks (fertile / rich / infested path): the village reclaims every gem that lands on
+            // its own ground and feeds it to the brain.
+            net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(gp.pos()).inflate(INCOME_RADIUS);
             java.util.List<net.minecraft.world.entity.item.ItemEntity> loose = level.getEntitiesOfClass(
                     net.minecraft.world.entity.item.ItemEntity.class, box,
                     e -> e.isAlive() && e.getAge() >= COLLECT_MIN_AGE
@@ -1251,6 +1257,10 @@ public final class BrainNodeEvents {
             if (loose.isEmpty()) continue;
             int collected = 0;
             for (net.minecraft.world.entity.item.ItemEntity ie : loose) {
+                boolean nearNode = ie.distanceToSqr(center) <= near2;
+                boolean onInfection = ie.onGround()
+                        && com.example.villagefightsback.infection.BlockMatcher.isInfection(ie.getBlockStateOn());
+                if (!nearNode && !onInfection) continue;
                 collected += ie.getItem().getCount();
                 ie.discard();
             }
