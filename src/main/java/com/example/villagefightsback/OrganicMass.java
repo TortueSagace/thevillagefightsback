@@ -193,7 +193,10 @@ public final class OrganicMass {
         // Spawn anchors: infested blocks within radius + the brain node itself (always valid). Drop deep-underground
         // anchors so units never spawn stranded in a cave; the node is always a valid surface anchor.
         List<BlockPos> anchors = InfectionManager.infestedPathsWithin(level, node, BrainNodeEvents.INCOME_RADIUS);
-        anchors.removeIf(a -> a.getY() < node.getY() - UNDERGROUND_BELOW);
+        // Drop deep-underground anchors so LAND units never spawn stranded in a cave -- but KEEP deep WATER anchors:
+        // a submerged infested path is the natural home of an aquatic unit, not a cave trap, so a single infested
+        // path inside the water always enables water units regardless of how far below the node it sits.
+        anchors.removeIf(a -> a.getY() < node.getY() - UNDERGROUND_BELOW && !waterAdjacent(level, a));
         anchors.add(node);
         List<BlockPos> waterAnchors = new ArrayList<>();
         for (BlockPos a : anchors) if (waterAdjacent(level, a)) waterAnchors.add(a);
