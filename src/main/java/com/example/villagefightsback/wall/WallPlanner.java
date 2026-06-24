@@ -233,16 +233,17 @@ public final class WallPlanner {
      */
     private static boolean isSurface(LevelReader level, int x, int y, int z) {
         BlockState s = level.getBlockState(new BlockPos(x, y, z));
-        // Trees are NOT ground: a wall column ignores logs and leaves -- vanilla AND the counter-infection's
-        // fertile/rich variants of them -- and sits on the real ground below, then rises straight through the
-        // trunk/canopy (builders replace those blocks). Without the fertile/rich check a wall could land on a
-        // fertile tree's canopy, leaving a hole beneath it.
+        // Trees + foliage are NOT ground: a wall column ignores logs, leaves and fertile grass -- vanilla AND the
+        // counter-infection's fertile/rich variants -- and sits on the real ground below, then rises straight
+        // through the trunk/canopy/grass (builders replace those blocks). Without these checks a wall could land
+        // on a fertile tree's canopy (or treat fertile grass as ground), leaving a hole beneath it.
         if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES)
                 || isFertileFoliage(s)) return false;
         return s.blocksMotion() || !s.getFluidState().isEmpty();
     }
 
-    /** True for our fertile/rich LOG or LEAVES blocks (which aren't in the vanilla #logs/#leaves tags). */
+    /** True for our fertile/rich LOG or LEAVES blocks, and Fertile Grass -- none of which are real ground a wall
+     *  should rest on (and none are in the vanilla #logs/#leaves tags). */
     private static boolean isFertileFoliage(BlockState s) {
         net.minecraft.resources.ResourceLocation id =
                 net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock());
@@ -250,7 +251,7 @@ public final class WallPlanner {
             return false;
         }
         String p = id.getPath();
-        return p.endsWith("_log") || p.endsWith("_leaves");
+        return p.endsWith("_log") || p.endsWith("_leaves") || p.equals("fertile_grass");
     }
 
     // --- 2D footprint helpers ---
