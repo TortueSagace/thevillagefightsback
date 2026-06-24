@@ -52,8 +52,11 @@ public final class EmeraldMobs {
      *  super.registerGoals() so the species keeps its movement/attack goals but not its target selection. */
     public static void addEmeraldGoals(Mob mob, boolean passive) {
         mob.targetSelector.removeAllGoals(g -> true); // replace vanilla targeting with the emerald-faction rules
+        // mustSee=false: hunt prey even with no line of sight (line of sight is a collision raycast that GLASS and
+        // walls block, so otherwise an enclosed pig in a glass dome is ignored). mustReach=false: target it even
+        // when there is no walking path -- the dig goal then breaks through to reach it.
         mob.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(
-                mob, LivingEntity.class, 10, true, false, t -> isHostileTarget(t)));
+                mob, LivingEntity.class, 10, false, false, t -> isHostileTarget(t)));
         // Low-priority rally: an IDLE unit runs at the brain's nearest Emerald Marker (below real combat goals,
         // so a unit already fighting/retaliating ignores it).
         mob.targetSelector.addGoal(3, new com.example.villagefightsback.goal.RallyToMarkedGoal(mob));

@@ -85,14 +85,27 @@ public class EmeraldDigGoal extends Goal {
         int h = Math.max(1, Mth.ceil(mob.getBbHeight())); // 2 for a 2-tall unit, 3 for a 3-tall one
         Direction dir = Direction.getNearest(
                 (float) (target.getX() - mob.getX()), 0.0F, (float) (target.getZ() - mob.getZ()));
-        if (target.getY() < mob.getY() - 1.0 && isDiggable(level, feet.below())) return feet.below(); // prey below -> down
-        for (int y = 0; y < h; y++) {                      // blocks directly in FRONT, foot to head
-            BlockPos p = feet.above(y).relative(dir);
-            if (isDiggable(level, p)) return p;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        // Prey below us -> dig straight DOWN toward it first.
+        if (target.getY() < mob.getY() - 1.0) {
+            p.set(feet.getX(), feet.getY() - 1, feet.getZ());
+            if (isDiggable(level, p)) return p.immutable();
         }
-        BlockPos above = feet.above(h);                    // the block directly ABOVE the head
-        if (isDiggable(level, above)) return above;
-        return isDiggable(level, feet.below()) ? feet.below() : null; // fallback: straight down (if permitted)
+        // Blocks directly in FRONT, foot to head. WIDE units (golems, width > 1) scan up to 2 blocks ahead so they
+        // reach PAST their own body to the actual obstruction (a 1-block check sits inside a golem's own footprint).
+        int reach = mob.getBbWidth() > 1.0F ? 2 : 1;
+        for (int dist = 1; dist <= reach; dist++) {
+            for (int y = 0; y < h; y++) {
+                p.set(feet.getX() + dir.getStepX() * dist, feet.getY() + y, feet.getZ() + dir.getStepZ() * dist);
+                if (isDiggable(level, p)) return p.immutable();
+            }
+        }
+        // The block directly ABOVE the head.
+        p.set(feet.getX(), feet.getY() + h, feet.getZ());
+        if (isDiggable(level, p)) return p.immutable();
+        // Fallback: straight DOWN (only if that block is itself diggable).
+        p.set(feet.getX(), feet.getY() - 1, feet.getZ());
+        return isDiggable(level, p) ? p.immutable() : null;
     }
 
     /** A block this unit is allowed to dig: a solid, breakable block that the fertile infection would convert
@@ -108,6 +121,12 @@ public class EmeraldDigGoal extends Goal {
             ResourceLocation id = ForgeRegistries.BLOCKS.getKey(s.getBlock());
             String path = id == null ? "" : id.getPath();
             return !(path.contains("cobblestone") || path.contains("planks") || path.contains("brick"));
+        }
+        // Flimsy glass barriers (a player's glass dome, etc.) ARE smashable to reach enclosed prey -- but NOT the
+        // mod's own reinforced/protecting glass (village defence), which lives in our namespace.
+        if (s.is(net.minecraftforge.common.Tags.Blocks.GLASS) || s.is(net.minecraftforge.common.Tags.Blocks.GLASS_PANES)) {
+            ResourceLocation gid = ForgeRegistries.BLOCKS.getKey(s.getBlock());
+            return gid == null || !gid.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID);
         }
         return false;
     }
