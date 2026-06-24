@@ -43,6 +43,9 @@ public final class ModCommands {
         for (var entry : Config.INDEX.entrySet()) {
             config.then(buildKey(entry.getKey(), entry.getValue()));
         }
+        // config reset_default_configs -- restore EVERY option to its default value (op only).
+        config.then(Commands.literal("reset_default_configs").requires(s -> s.hasPermission(OP))
+                .executes(c -> resetConfigs(c.getSource())));
         root.then(config);
 
         // --- brain_stage_get / brain_stage_set <1-4> ---
@@ -113,6 +116,22 @@ public final class ModCommands {
         Config.INDEX.forEach((k, v) ->
                 src.sendSuccess(() -> Component.literal("§7" + k + " §8= §f" + v.get()), false));
         src.sendSuccess(() -> Component.literal("§8Set with /thevillagefightsback config <key> <value>"), false);
+        src.sendSuccess(() -> Component.literal("§8Reset all with /thevillagefightsback config reset_default_configs"), false);
+    }
+
+    /** Restore EVERY tunable option to its default value (the value passed to define(...) when the spec was built). */
+    private static int resetConfigs(CommandSourceStack src) {
+        int n = 0;
+        for (ForgeConfigSpec.ConfigValue<?> v : Config.INDEX.values()) { resetOne(v); n++; }
+        try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
+        final int count = n;
+        src.sendSuccess(() -> Component.literal("§aReset §e" + count
+                + "§a config option(s) to their default values."), true);
+        return 1;
+    }
+
+    private static <T> void resetOne(ForgeConfigSpec.ConfigValue<T> v) {
+        v.set(v.getDefault()); // ConfigValue.getDefault() returns the value passed to define(...)
     }
 
     // --- brain stage + teleport --------------------------------------------------------------------

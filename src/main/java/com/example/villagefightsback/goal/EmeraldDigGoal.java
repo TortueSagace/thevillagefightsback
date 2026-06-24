@@ -19,8 +19,9 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * An emerald unit that cannot PATH to its prey digs through the soft block in its way -- the block(s) directly in
  * FRONT of it (one per body level: 2 blocks for a 2-tall unit, 3 for a 3-tall one), the one directly ABOVE its head,
- * or straight DOWN (always allowed, and preferred when the prey is below). It digs at a bare-hand player's speed
- * (no tool) and shows the cracking animation.
+ * or straight DOWN (preferred when the prey is below). It digs at a bare-hand player's speed (no tool) and shows the
+ * cracking animation. In EVERY direction -- down included -- it only breaks blocks {@link #isDiggable} permits;
+ * forbidden blocks (cobblestone, fake/wall blocks, chests, ore, glass, the brain node, bedrock, ...) are never mined.
  *
  * <p>It may ONLY break blocks the fertile infection would itself convert ({@link BlockMatcher#isCandidate}) --
  * dirt, sand, stone, logs, etc. -- plus, as an exception, the faction's own already-fertile GROUND blocks (so it can
@@ -70,7 +71,8 @@ public class EmeraldDigGoal extends Goal {
         }
         BlockPos above = feet.above(h);                    // the block directly ABOVE the head
         if (isDiggable(level, above)) return above;
-        // DOWN is always an option -- fall back to digging straight down if front and up are blocked.
+        // Fall back to digging straight DOWN if front and up are blocked -- but ONLY if the block below is itself a
+        // permitted dig (isDiggable). Forbidden blocks are never mined in any direction, down included.
         return isDiggable(level, feet.below()) ? feet.below() : null;
     }
 
