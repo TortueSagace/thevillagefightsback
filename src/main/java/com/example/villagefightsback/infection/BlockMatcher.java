@@ -94,6 +94,7 @@ public final class BlockMatcher {
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
         if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
+        if (ModBlocks.FERTILE_KELP.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_KELP.get());   // converted kelp
 
         // Villager job-site workstations + the meeting bell: never infected, so a village keeps its jobs.
         jobSites = new HashSet<>();

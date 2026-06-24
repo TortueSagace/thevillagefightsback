@@ -376,6 +376,15 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_GRASS_ITEM = ITEMS.register("fertile_grass",
             () -> new BlockItem(FERTILE_GRASS.get(), new Item.Properties()));
 
+    /** Fertile Kelp: the green glowing underwater PLANT. Vanilla kelp the infection reaches becomes this; it
+     *  glows like the rest of the fertile family and gives a passing mob the Emerald Virus I. See
+     *  {@link FertileKelpBlock}. No rich variant. */
+    public static final RegistryObject<Block> FERTILE_KELP = BLOCKS.register("fertile_kelp",
+            () -> new FertileKelpBlock(BlockBehaviour.Properties.copy(Blocks.KELP_PLANT)
+                    .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final RegistryObject<Item> FERTILE_KELP_ITEM = ITEMS.register("fertile_kelp",
+            () -> new BlockItem(FERTILE_KELP.get(), new Item.Properties()));
+
     /** Infested Path (v1.0.3 mob infection): a lime, glowing path laid below an emerald-converted unit. Spreads
      *  fertile/rich blocks like a village path -- to a stage-4 brain radius but 5x slower. See {@link InfestedPathBlock}
      *  + {@link com.example.villagefightsback.infection.InfectionManager}. */
@@ -649,6 +658,7 @@ public final class ModBlocks {
                 output.accept(FERTILE_FENCE_ITEM.get());
                 output.accept(FERTILE_IRON_BARS_ITEM.get());
                 output.accept(FERTILE_GRASS_ITEM.get());
+                output.accept(FERTILE_KELP_ITEM.get());
                 output.accept(FERTILE_PLANKS_ITEM.get());
                 output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
                 output.accept(FERTILE_PLANKS_SLAB_ITEM.get());

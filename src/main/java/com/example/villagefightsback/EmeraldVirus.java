@@ -24,6 +24,9 @@ public final class EmeraldVirus {
     /** Full virus length: 1 minute. */
     public static final int DURATION_TICKS = 60 * 20; // 1200
 
+    /** Contact infection length: a fertile plant (grass / kelp) brushed against gives Emerald Virus I for 20s. */
+    public static final int CONTACT_TICKS = 20 * 20; // 400
+
     private static final String NBT_EVER = "emerald_virus_ever";     // has this host EVER been infected?
     private static final String NBT_PROGRESS = "emerald_virus_tint"; // green-tint progress 0..1 (never reverts)
 
@@ -76,14 +79,28 @@ public final class EmeraldVirus {
 
     /** Infect with a given strength: amplifier 0 = Emerald Virus I, amplifier 1 = Emerald Virus II (stage-4 hit). */
     public static boolean infect(LivingEntity e, int amplifier) {
+        return infect(e, amplifier, DURATION_TICKS);
+    }
+
+    /** Infect with a given strength AND length. amplifier 0 = Emerald Virus I, 1 = II; {@code durationTicks} is the
+     *  active-effect length (the permanent "ever infected" flag + green tint are stamped regardless of length). */
+    public static boolean infect(LivingEntity e, int amplifier, int durationTicks) {
         if (!canInfect(e)) return false;
         CompoundTag data = e.getPersistentData();
         data.putBoolean(NBT_EVER, true);
         // ambient=false, showParticles=false, showIcon=true -> no swirl particles, but a HUD icon for players.
-        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), DURATION_TICKS, amplifier, false, false, true));
+        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), durationTicks, amplifier, false, false, true));
         // Seed a faint tint immediately so the colour shift is visible from the first second.
         if (progress(e) < 0.05F) setProgress(e, 0.05F);
         return true;
+    }
+
+    /** A mob brushes against a fertile plant (grass / kelp): give it Emerald Virus I for 20s if it is eligible
+     *  ({@link #canInfect}). Server-side only; harmlessly no-ops for immune / already-infected hosts, so it is
+     *  safe to call every tick from a block's {@code entityInside}. */
+    public static void touch(LivingEntity e) {
+        if (e.level().isClientSide()) return;
+        infect(e, 0, CONTACT_TICKS);
     }
 
     /** True if the host should currently look green (any accumulated tint). */

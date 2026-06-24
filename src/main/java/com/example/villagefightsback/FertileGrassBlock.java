@@ -6,7 +6,10 @@ import com.example.villagefightsback.infection.InfectionData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -41,6 +44,12 @@ public class FertileGrassBlock extends BushBlock {
     @Override
     public boolean isRandomlyTicking(BlockState state) {
         return true; // so it can fertilize the soil beneath it over time
+    }
+
+    /** Any mob wading through the alien grass catches the Emerald Virus I (20s) if it is eligible. */
+    @Override
+    public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        if (entity instanceof LivingEntity le) EmeraldVirus.touch(le);
     }
 
     /** Convert the block directly below into its Fertile variant (the same rules the spreading infection uses),

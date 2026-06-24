@@ -535,11 +535,15 @@ public final class InfectionManager {
      *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
     private static void convertNearbyPlants(ServerLevel level, BlockPos center) {
         BlockState fg = com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get().defaultBlockState();
+        BlockState fk = com.example.villagefightsback.ModBlocks.FERTILE_KELP.get().defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int[] o : N26) {
             m.set(center.getX() + o[0], center.getY() + o[1], center.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
-            if (BlockMatcher.isConvertiblePlant(level.getBlockState(m))) {
+            BlockState s = level.getBlockState(m);
+            if (s.is(Blocks.KELP) || s.is(Blocks.KELP_PLANT)) {        // underwater kelp -> our fertile kelp
+                level.setBlock(m.immutable(), fk, 3);
+            } else if (BlockMatcher.isConvertiblePlant(s)) {           // grass/ferns/flowers -> fertile grass
                 level.setBlock(m.immutable(), fg, 3);
             }
         }
