@@ -289,6 +289,7 @@ public final class EmeraldVirusEvents {
     public static void onEmeraldGemDrop(LivingDropsEvent event) {
         LivingEntity e = event.getEntity();
         if (e.level().isClientSide() || !Factions.isEmerald(e)) return;
+        if (e instanceof EmeraldEndermite) return; // emerald mites are transient swarm units -> never drop an emerald
         float chance = Math.min(1.0F, e.getMaxHealth() * EMERALD_DROP_PER_HP);
         if (e.getRandom().nextFloat() >= chance) return;
         ItemEntity gem = new ItemEntity(e.level(), e.getX(), e.getY() + 0.5, e.getZ(), new ItemStack(Items.EMERALD));
