@@ -37,6 +37,7 @@ public final class EmeraldVirus {
                 || e instanceof IronGolem
                 || e instanceof SnowGolem
                 || e instanceof VindictiveGuardEntity   // the boss's own guards are immune to the virus
+                || EmeraldMobs.isPlayerCompanion(e)     // the player's pets/mounts (cats, dogs/wolves, horses) never catch it
                 || Factions.isEmerald(e)                // emerald units never catch the virus (they ARE it)
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
