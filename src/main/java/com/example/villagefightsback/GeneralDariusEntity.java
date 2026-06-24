@@ -256,7 +256,9 @@ public class GeneralDariusEntity extends Monster {
     }
 
     private boolean isHuntable(LivingEntity e) {
-        if (e == this || !e.isAlive() || Factions.isInfected(e)) return false;
+        // Emerald units are a separate faction the village never fights (see EmeraldConversion faction rules), so
+        // Darius -- a village champion -- never hunts or chases them.
+        if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
         return e instanceof Enemy;
     }
