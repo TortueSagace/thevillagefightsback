@@ -72,6 +72,15 @@ public final class EmeraldMobs {
                 // melee a HIGH priority so it commits to the kill instead of wandering/breeding/fleeing.
                 pm.goalSelector.removeAllGoals(g -> g instanceof net.minecraft.world.entity.ai.goal.PanicGoal);
                 pm.goalSelector.addGoal(1, new MeleeAttackGoal(pm, 1.25D, true));
+                // Environment morph (green swirl on change): an emerald salmon stranded on DRY land 5s becomes an
+                // emerald chicken; any other emerald animal that stays IN WATER 10s becomes an emerald salmon.
+                if (pm instanceof EmeraldSalmon) {
+                    pm.goalSelector.addGoal(4, new com.example.villagefightsback.goal.EmeraldMorphGoal(
+                            pm, ModEntities.EMERALD_CHICKEN, false, 100)); // 5s on dry land -> chicken
+                } else {
+                    pm.goalSelector.addGoal(4, new com.example.villagefightsback.goal.EmeraldMorphGoal(
+                            pm, ModEntities.EMERALD_SALMON, true, 200));   // 10s in water -> salmon
+                }
             }
         }
         // A passive species deals 50% of its max health as melee (rule 4), set on its live attribute so it tracks
