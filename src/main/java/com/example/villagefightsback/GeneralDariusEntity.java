@@ -91,6 +91,8 @@ public class GeneralDariusEntity extends Monster {
         // No vanilla zombie goals (no super call): Darius's combat brain only, plus float + idle look.
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new GeneralDariusGoal(this));
+        // Dig straight down to a target buried below him (his contact-plowing never breaks the floor he stands on).
+        this.goalSelector.addGoal(2, new com.example.villagefightsback.goal.DariusDigDownGoal(this));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         // NOTE: no target selector -- the goal locks/retaliates by itself (HurtByTarget is handled in-goal).
     }
