@@ -160,7 +160,7 @@ public final class OrganicMass {
         // their own (used sparingly -- at most EmeraldMarker.MAX_ACTIVE live at once). Runs regardless of the spawn
         // decision below.
         if (field > 0 && !prey.isEmpty() && level.getRandom().nextFloat() < MARK_CHANCE
-                && now - LAST_SCENT.getOrDefault(gp, Long.MIN_VALUE) >= SCENT_COOLDOWN  // 4-minute per-brain cooldown
+                && now - LAST_SCENT.getOrDefault(gp, now - SCENT_COOLDOWN) >= SCENT_COOLDOWN  // 4-minute per-brain cooldown (first mark allowed immediately; Long.MIN_VALUE default would overflow and block forever)
                 && EmeraldMarker.activeCount(level) < EmeraldMarker.MAX_ACTIVE) {
             LivingEntity far = null;
             double bestD = Double.MAX_VALUE;
