@@ -151,8 +151,10 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
 - `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
 - `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald
+- `defeated_brain_node_spawn_spirit`: whether destroying a Brain Node (any non-silk-touch break) unleashes the Vindictive Village Spirit boss; off lets a node be broken without summoning it (default on)
 - `air_strikes_appear_at_stage` (1-4): the stage air strikes unlock at
 - `unstable_limbo_gravel_HP_threshold`: the HP above which a banished creature is "unstable" in Limbo
+- `enable_chunk_portals`: work in progress; when on, once a brain reaches stage 3 about 1% of nearby chunks turn into 4-wall portals that show and lead into the Limbo (default off; turning it off stops new portals but leaves existing ones)
 - `guards_spawning_with_general_darius`: guards that spawn already under General Darius's command
 - `general_darius_remains`: Darius holds the field instead of returning home
 - `emeraldgers_size_variation`: emeraldgers sized by the HP of the host they sprang from
