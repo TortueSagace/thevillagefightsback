@@ -34,6 +34,13 @@ public class EmeraldZombie extends Zombie implements EmeraldUnit {
         return false;
     }
 
+    /** Never convert to a vanilla Drowned underwater -- an emerald zombie stays an emerald-faction unit (a vanilla
+     *  Drowned would have the wrong loot/AI and no longer count as emerald). */
+    @Override
+    protected boolean convertsInWater() {
+        return false;
+    }
+
     public static AttributeSupplier.Builder createAttributes() {
         return Zombie.createAttributes();
     }
