@@ -79,28 +79,36 @@ public final class EmeraldPopulation {
         if (!atCap(level, pos)) return;
         // At the cap. A NON-mite emerald (e.g. an Emeraldger) first makes room by culling expendable mites; each
         // culled mite buffs the surrounding emeralds. A mite never culls other mites to spawn itself.
-        if (!(event.getEntity() instanceof EmeraldEndermite)) cullMitesToMakeRoom(level, pos);
-        if (atCap(level, pos)) {                       // still full (no mites to cull, or the joiner itself is a mite)
+        if (!(event.getEntity() instanceof EmeraldEndermite)) {
+            cullToMakeRoom(level, pos, EmeraldEndermite.class);
+            // No mites left to sacrifice? A unit MORE valuable than an Emeraldger may now sacrifice Emeraldgers too
+            // (an Emeraldger never culls other Emeraldgers to spawn itself, just as a mite never culls mites).
+            if (atCap(level, pos) && !(event.getEntity() instanceof EmeraldgerEntity)) {
+                cullToMakeRoom(level, pos, EmeraldgerEntity.class);
+            }
+        }
+        if (atCap(level, pos)) {                       // still full (nothing left to cull, or the joiner is too cheap)
             if (event.getEntity() instanceof LivingEntity wouldBe) absorbInto(level, wouldBe);
             event.setCanceled(true);
         }
     }
 
-    /** Kill random emerald mites within {@link #RANGE} of {@code pos} -- buffing nearby emeralds on each -- until the
-     *  local emerald population falls below the cap or no mites remain. Frees a slot for a non-mite spawn. */
-    private static void cullMitesToMakeRoom(ServerLevel level, Vec3 pos) {
+    /** Kill random emerald units of {@code type} within {@link #RANGE} of {@code pos} -- buffing nearby emeralds on
+     *  each -- until the local emerald population falls below the cap or none of that type remain. Frees slots for a
+     *  more valuable spawn (mites are sacrificed first; Emeraldgers only once the mites are gone). */
+    private static <T extends LivingEntity> void cullToMakeRoom(ServerLevel level, Vec3 pos, Class<T> type) {
         int max = Config.emeraldMobsMaxNumber();
         if (max <= 0) return;
         AABB box = new AABB(pos, pos).inflate(RANGE);
-        List<EmeraldEndermite> mites = level.getEntitiesOfClass(EmeraldEndermite.class, box, LivingEntity::isAlive);
-        if (mites.isEmpty()) return;
-        Collections.shuffle(mites);                                       // cull RANDOM mites, not the nearest
+        List<T> victims = level.getEntitiesOfClass(type, box, LivingEntity::isAlive);
+        if (victims.isEmpty()) return;
+        Collections.shuffle(victims);                                    // cull RANDOM victims, not the nearest
         int count = level.getEntitiesOfClass(LivingEntity.class, box, EmeraldPopulation::isCapped).size();
-        for (EmeraldEndermite mite : mites) {
-            if (count < max) break;                                       // enough room freed
-            BlockPos mp = mite.blockPosition();
-            mite.discard();                                              // remove cleanly: no drops, no mite eruption
-            EmeraldConversion.buffNearbyEmeralds(level, mp, null);       // each cull still feeds the swarm's buff
+        for (T victim : victims) {
+            if (count < max) break;                                      // enough room freed
+            BlockPos vp = victim.blockPosition();
+            victim.discard();                                           // remove cleanly: no drops, no death eruption
+            EmeraldConversion.buffNearbyEmeralds(level, vp, null);       // each cull still feeds the swarm's buff
             count--;
         }
     }
