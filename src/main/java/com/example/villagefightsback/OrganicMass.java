@@ -245,7 +245,8 @@ public final class OrganicMass {
      *  be culled for being "idle" (and mites self-despawn after ~1 min anyway). */
     private static int reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
         if (m instanceof EmeraldCat || m instanceof EmeraldEndermite) return 0; // explorers/scouts are never auto-culled
-        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return 0; // golems / elites / withers are never auto-culled
+        if (m instanceof net.minecraft.world.entity.animal.IronGolem) return 0; // emerald golems (+ both variants) exempt
+        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return 0; // other heavy units (elites / withers) are never auto-culled
         net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
         if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return 0; } // start its idle clock
         if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return 0;
@@ -373,6 +374,9 @@ public final class OrganicMass {
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
         mob.getPersistentData().putLong(LAST_DMG_TAG, level.getGameTime()); // start its idle-reclaim clock at spawn
+        // Emerald golems (iron + defender + gigachad variants) are a heavy investment: make them persistent so they
+        // never vanilla-despawn when the player travels away (they are also exempt from the idle-reclaim cull).
+        if (mob instanceof net.minecraft.world.entity.animal.IronGolem) mob.setPersistenceRequired();
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(mob);
         LimboBanishFx.startLime(mob); // the lime emergence swirl (the conversion/limbo-throw animation) on the new unit
