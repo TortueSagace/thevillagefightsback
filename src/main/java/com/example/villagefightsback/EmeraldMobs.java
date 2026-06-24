@@ -24,6 +24,7 @@ public final class EmeraldMobs {
     /** A target an emerald unit will hunt: alive, and none of the four spared conditions. */
     public static boolean isHostileTarget(LivingEntity target) {
         if (target == null || !target.isAlive()) return false;
+        if (target instanceof net.minecraft.world.entity.decoration.ArmorStand) return false; // inanimate prop, never prey/scent
         if (Factions.isEmerald(target)) return false;        // (i) fellow emerald unit
         if (Factions.isVillage(target)) return false;        // (iii) villager/guard/golem/wall defender/Darius
         if (Factions.isInfected(target)) return false;       // (iv) vindictive faction
