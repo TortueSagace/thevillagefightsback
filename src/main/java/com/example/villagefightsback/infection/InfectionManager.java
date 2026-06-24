@@ -142,7 +142,7 @@ public final class InfectionManager {
         return out.toArray(new double[0][]);
     }
 
-    private static final double INFESTED_SPEED = 0.2; // emerald infested paths proliferate 5x slower than a brain
+    private static final double INFESTED_SPEED = 1.0 / 3.0; // infested paths proliferate at a uniform 1/3 of the brain rate
     private static final double[][] EMPTY_RANGES = new double[0][];
 
     /** Per-infested-path proliferation reach: a full stage-4 radius around each tracked infested path block, but at
@@ -169,16 +169,20 @@ public final class InfectionManager {
         return out;
     }
 
-    /** The fastest proliferation speed factor covering (x,z): a brain node (1.0) beats an infested path (0.2);
-     *  0 if no source covers it. Used to slow conversion in infested-only territory to 1/5 the brain rate.
-     *  Brain ranges are first in the array (speed 1.0 = the max), so the first covering range IS the fastest --
-     *  return immediately, which keeps this O(first-hit) instead of O(all ranges) on the hot convert path. */
+    /** The proliferation speed factor for (x,z): the SLOWEST covering source wins. So wherever an infested path
+     *  reaches, conversion runs at the UNIFORM infested rate ({@link #INFESTED_SPEED} = 1/3) even if a brain node
+     *  also covers that cell; a cell covered ONLY by a brain runs at full speed (1.0). 0 if no source covers it.
+     *  (Scans all ranges -- the convert pass is throttled, so this stays cheap.) */
     private static double speedAt(double x, double z, double[][] ranges) {
+        double best = 0.0; // 0 = no source covers this cell
         for (double[] g : ranges) {
             double dx = x - g[0], dz = z - g[1];
-            if (dx * dx + dz * dz <= g[2]) return g.length > 3 ? g[3] : 1.0;
+            if (dx * dx + dz * dz <= g[2]) {
+                double sp = g.length > 3 ? g[3] : 1.0;
+                if (best == 0.0 || sp < best) best = sp; // the slowest covering source governs (uniform infested rate)
+            }
         }
-        return 0.0;
+        return best;
     }
 
     /** True if (x,z) lies within any brain node's (stage-scaled) infection range. */

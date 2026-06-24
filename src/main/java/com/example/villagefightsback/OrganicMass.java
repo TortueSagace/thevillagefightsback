@@ -135,12 +135,15 @@ public final class OrganicMass {
         // idle, stuck unit (refunding its organic mass) so the field self-heals (e.g. units stranded in a hole).
         AABB box = new AABB(node).inflate(BrainNodeEvents.INCOME_RADIUS);
         List<LivingEntity> prey = new ArrayList<>();
-        int passive = 0, hostile = 0, field = 0, explorers = 0, reclaimed = 0;
+        int passive = 0, hostile = 0, field = 0, explorers = 0, reclaimed = 0, reclaimedMass = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (Factions.isEmerald(e)) {
-                if (e instanceof Mob m && reclaimIfIdle(econ, m, gameTime)) { reclaimed++; continue; }
+                if (e instanceof Mob m) {
+                    int back = reclaimIfIdle(econ, m, gameTime);
+                    if (back > 0) { reclaimed++; reclaimedMass += back; continue; }
+                }
                 field++;
-                if (e instanceof EmeraldCat || e instanceof EmeraldEndermite) explorers++; // the roaming scouts
+                if (e instanceof EmeraldCat) explorers++; // count the roaming explorer CATS (the screen we maintain)
             } else if (EmeraldMobs.isHostileTarget(e)) {
                 // Ignore prey the ground swarm can't reach: deep in caves (more than UNDERGROUND_BELOW under the
                 // node) or flying. This keeps the brain hunting the threat OUTSIDE the village, not chasing cave mobs.
@@ -149,7 +152,8 @@ public final class OrganicMass {
                 if (e instanceof Enemy) hostile++; else passive++;
             }
         }
-        if (reclaimed > 0) log(level, gp, "Reclaimed " + reclaimed + " idle unit" + (reclaimed > 1 ? "s" : ""));
+        if (reclaimed > 0) log(level, gp, "Reclaimed " + reclaimed + " idle unit" + (reclaimed > 1 ? "s" : "")
+                + " (+" + reclaimedMass + ")");
 
         int P = econ.getOrganicPoints(); // read AFTER reclaim, which refunds points
         if (P - BrainNodeData.ORGANIC_FLOOR < MIN_SPAWN_COST) return; // even on credit nothing is affordable -> BANK
@@ -203,12 +207,19 @@ public final class OrganicMass {
             if (threat >= BOSS_THREAT && P >= BOSS_COST) { leaf = BOSS; budget = spendable; maxSpawns = 1; }
             else if (P >= ELITE_COST) { leaf = ELITE; budget = budget(spendable, DEFEND_FRAC, mult); maxSpawns = K; }
             else { leaf = SWARM_COMBAT; budget = budget(spendable, DEFEND_FRAC, mult); maxSpawns = K; }
+        } else if (explorers < EXPLORER_TARGET && P > 0) {
+            // Keep a roaming screen of explorer cats out at all times (to find distant prey), as soon as the brain
+            // has spare income -- positive points, so the early bootstrap credit still goes to hunters first. Cats
+            // are never reclaimed, so this is a one-time investment per lost cat, not a drain.
+            leaf = SCOUT;
+            budget = budget(spendable, SCOUT_FRAC, mult);
+            maxSpawns = Math.min(K, EXPLORER_TARGET - explorers);
         } else if (!prey.isEmpty()) {
             leaf = (passive >= hostile) ? CHEAP_CONVERTER : HUNTER;
             budget = budget(spendable, HARVEST_FRAC, mult);
             maxSpawns = K;
         } else if (explorers < EXPLORER_TARGET) {
-            // Early game / no prey detected: focus on EXPLORATION -- field scouts (cat/mite) until some are out.
+            // No prey detected at all -> explore to find some (even on credit).
             leaf = SCOUT;
             budget = budget(spendable, SCOUT_FRAC, mult);
             maxSpawns = Math.min(K, EXPLORER_TARGET - explorers);
@@ -227,18 +238,22 @@ public final class OrganicMass {
         return Math.max(MIN_SPAWN_COST, (int) Math.round(base * frac * mult));
     }
 
-    /** Reclaim a small, idle emerald unit: if {@code m}'s max HP is below {@link #RECLAIM_MAX_HP} and it has dealt
-     *  no damage for {@link #IDLE_RECLAIM_TICKS} (5 min), refund its organic mass to {@code econ} and despawn it.
-     *  This frees units that got stuck (e.g. in a hole). Returns true if it was reclaimed. */
-    private static boolean reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
-        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return false; // golems / elites / withers are never auto-culled
+    /** Reclaim a small, idle, STUCK emerald unit: if {@code m}'s max HP is below {@link #RECLAIM_MAX_HP} and it has
+     *  dealt no damage for {@link #IDLE_RECLAIM_TICKS} (5 min), refund its organic mass to {@code econ} and despawn
+     *  it (frees units stranded in a hole). Returns the refunded points, or 0 if it was NOT reclaimed.
+     *  Explorers/scouts (cats, mites) are EXEMPT -- roaming without fighting is their whole job, so they must never
+     *  be culled for being "idle" (and mites self-despawn after ~1 min anyway). */
+    private static int reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
+        if (m instanceof EmeraldCat || m instanceof EmeraldEndermite) return 0; // explorers/scouts are never auto-culled
+        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return 0; // golems / elites / withers are never auto-culled
         net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
-        if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return false; } // start its idle clock
-        if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return false;
-        econ.addOrganicPoints(Math.round(m.getMaxHealth())); // give the mass back to the brain
+        if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return 0; } // start its idle clock
+        if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return 0;
+        int refund = Math.round(m.getMaxHealth());
+        econ.addOrganicPoints(refund); // give the mass back to the brain
         LimboBanishFx.startLime(m);
         m.discard();
-        return true;
+        return refund;
     }
 
     /** Record that an emerald unit just dealt damage (resets its idle-reclaim clock). Called from the damage hook. */
