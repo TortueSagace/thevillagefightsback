@@ -1,4 +1,5 @@
 {
   "type": "minecraft:entity",
+  "random_sequence": "minecraft:entities/endermite",
   "pools": []
 }

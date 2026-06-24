@@ -1,15 +1,5 @@
 {
   "type": "minecraft:entity",
   "random_sequence": "minecraft:entities/wither",
-  "pools": [
-    {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:emerald"
-        }
-      ]
-    }
-  ]
+  "pools": []
 }

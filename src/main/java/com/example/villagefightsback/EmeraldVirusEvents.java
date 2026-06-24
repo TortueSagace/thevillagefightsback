@@ -275,6 +275,27 @@ public final class EmeraldVirusEvents {
         if (Config.mobInfectionEnabled()) event.getDrops().clear();
     }
 
+    /** Per-HP chance an emerald-faction unit drops ONE emerald on death: 2.5% per max-HP point, so a 20-HP unit
+     *  drops it ~50% of the time and a 4-HP unit ~10%, capped at 100% (heavy units always drop one). */
+    private static final float EMERALD_DROP_PER_HP = 0.025F;
+
+    /**
+     * Emerald gem drop: an emerald-faction unit drops ONE emerald with a chance proportional to its max HP
+     * ({@link #EMERALD_DROP_PER_HP} per point, capped at 100%). Replaces the old guaranteed loot-table pool, which
+     * a static table couldn't make HP-dependent. Emerald units are immune to the virus, so {@link #onDrops} never
+     * touches them; their normal (vanilla-variant) loot still comes from their loot table.
+     */
+    @SubscribeEvent
+    public static void onEmeraldGemDrop(LivingDropsEvent event) {
+        LivingEntity e = event.getEntity();
+        if (e.level().isClientSide() || !Factions.isEmerald(e)) return;
+        float chance = Math.min(1.0F, e.getMaxHealth() * EMERALD_DROP_PER_HP);
+        if (e.getRandom().nextFloat() >= chance) return;
+        ItemEntity gem = new ItemEntity(e.level(), e.getX(), e.getY() + 0.5, e.getZ(), new ItemStack(Items.EMERALD));
+        gem.setDefaultPickUpDelay();
+        event.getDrops().add(gem);
+    }
+
     /** A virus host's experience is consumed along with its organic mass -> no XP orbs either (only when the
      *  feature is on; otherwise the virus is a plain debuff and XP drops normally). */
     @SubscribeEvent

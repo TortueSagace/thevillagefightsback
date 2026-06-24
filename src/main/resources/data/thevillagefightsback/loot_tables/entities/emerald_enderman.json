@@ -29,15 +29,6 @@
         }
       ],
       "rolls": 1.0
-    },
-    {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:emerald"
-        }
-      ]
     }
   ],
   "random_sequence": "minecraft:entities/enderman"
