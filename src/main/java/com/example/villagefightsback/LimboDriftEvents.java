@@ -106,6 +106,7 @@ public final class LimboDriftEvents {
 
             LevelChunk lc = limbo.getChunk(lcp.x, lcp.z);
             LevelChunk tc = twin.getChunk(link.twinChunk.x, link.twinChunk.z); // loads/generates the twin
+            if (job[1] == 0) displaceEntities(limbo, lcp); // move any units out before the terrain overwrites them
             LimboDrift.copySection(limbo, lc, tc, link.type, (int) job[1]);
             budget--;
             int next = (int) job[1] + 1;
@@ -154,6 +155,32 @@ public final class LimboDriftEvents {
                 BlockPos lp = LimboDrift.toLimboBlock(new ChunkPos(key), pos);
                 if (!limbo.isOutsideBuildHeight(lp)) limbo.setBlock(lp, state, 3);
             }
+        }
+    }
+
+    // --- displace units out of a drift chunk before its terrain materialises -------------------------
+    /** When a drift chunk's copy starts, shove any non-player entities standing in it into the nearest NON-drift
+     *  neighbour chunk (never destroying them) and drop a fake-bedrock pad under each so they don't fall into the
+     *  void. Runs once per chunk (at section cursor 0). */
+    private static void displaceEntities(ServerLevel limbo, ChunkPos cp) {
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
+                cp.getMinBlockX(), limbo.getMinBuildHeight(), cp.getMinBlockZ(),
+                cp.getMaxBlockX() + 1, limbo.getMaxBuildHeight(), cp.getMaxBlockZ() + 1);
+        java.util.List<net.minecraft.world.entity.Entity> units = limbo.getEntitiesOfClass(
+                net.minecraft.world.entity.Entity.class, box,
+                e -> !(e instanceof net.minecraft.world.entity.player.Player));
+        if (units.isEmpty()) return;
+        long seed = limbo.getSeed();
+        // Prefer a cardinal non-drift neighbour, then a diagonal; if every neighbour is itself drift, just push +X.
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+        int sx = 1, sz = 0;
+        for (int[] d : dirs) {
+            if (LimboDrift.type(seed, cp.x + d[0], cp.z + d[1]) == LimboDrift.Type.NONE) { sx = d[0]; sz = d[1]; break; }
+        }
+        for (net.minecraft.world.entity.Entity e : units) {
+            double nx = e.getX() + sx * 16.0, nz = e.getZ() + sz * 16.0;
+            LimboDimension.ensureFloorUnder(limbo, BlockPos.containing(nx, e.getY(), nz));
+            e.teleportTo(nx, e.getY(), nz);
         }
     }
 }

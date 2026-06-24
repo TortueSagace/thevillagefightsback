@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "thevillagefightsback:block/limbo_portal_ns"
+    },
+    "axis=z": {
+      "model": "thevillagefightsback:block/limbo_portal_ew"
+    }
+  }
+}

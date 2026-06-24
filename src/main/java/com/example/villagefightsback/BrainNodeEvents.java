@@ -78,6 +78,7 @@ public final class BrainNodeEvents {
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
         manageExpansion(server, data); // level-3 settler wave (fires spontaneously on reaching level 3)
+        ChunkPortalManager.manage(server, data); // v1.2.1 chunk portals (no-op unless config on + a stage-3 brain in reach)
         driveOuterWalls(server, data); // level-3 OUTER obsidian wall around the expansion buildings
         manageDome(server, data);      // level-4 protective glass dome
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)

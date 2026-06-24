@@ -554,6 +554,21 @@ public final class ModBlocks {
                     .noLootTable()
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)));
 
+    /**
+     * One pane of a CHUNK PORTAL (work in progress, v1.2.1): the four walls around a transformed overworld
+     * chunk are built from these ({@link ChunkPortalBlock} / {@link ChunkPortalManager}). Same green swirl as
+     * the {@link #LIMBO_PORTAL} (its blockstate reuses the limbo_portal models); no item form; unbreakable;
+     * glows. Entirely dormant unless {@link Config#chunkPortalsEnabled()} is on.
+     */
+    public static final RegistryObject<Block> CHUNK_PORTAL = BLOCKS.register("chunk_portal",
+            () -> new ChunkPortalBlock(BlockBehaviour.Properties.of()
+                    .noCollission()
+                    .strength(-1.0F)
+                    .sound(SoundType.GLASS)
+                    .lightLevel(s -> 11)
+                    .noLootTable()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)));
+
     /** The mod's own creative tab. New blocks/items get added here over time. */
     public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
