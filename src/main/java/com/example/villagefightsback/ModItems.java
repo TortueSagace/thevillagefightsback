@@ -99,6 +99,11 @@ public final class ModItems {
     public static final RegistryObject<Item> EMERALD_EGG =
             ITEMS.register("emerald_egg", () -> new EmeraldEggItem(new Item.Properties().stacksTo(16)));
 
+    /** Glow Wand: right-click to make every nearby unit of this mod (incl. villagers/guards/golems) glow for 3s,
+     *  and to mark the 4 summoning node blocks. See {@link GlowWandItem}. */
+    public static final RegistryObject<Item> GLOW_WAND =
+            ITEMS.register("glow_wand", () -> new GlowWandItem(new Item.Properties().stacksTo(1)));
+
     /** Emerald Apple: edible, but eating it inflicts the Emerald Virus. The base brewing component for the
      *  Emerald Virus potion (and, via that potion's tipped arrows, the Emerald Virus arrows). Drops rarely
      *  from fertile leaves. */

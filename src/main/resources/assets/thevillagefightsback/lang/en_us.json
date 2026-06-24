@@ -184,6 +184,8 @@
   "block.thevillagefightsback.infested_path": "Infested Path",
   "item.thevillagefightsback.emerald_apple": "Emerald Apple",
   "item.thevillagefightsback.emerald_egg": "Emerald Egg",
+  "item.thevillagefightsback.glow_wand": "Glow Wand",
+  "item.thevillagefightsback.glow_wand.desc": "Right-click to make every nearby unit and summoning node of this mod glow for 3 seconds.",
   "item.thevillagefightsback.emerald_egg.desc": "Throw it to inflict the Emerald Virus on a creature. Laid by emerald chickens.",
   "item.thevillagefightsback.emerald_virus_arrow": "Emerald Virus Arrow",
   "item.thevillagefightsback.emerald_virus_arrow_2": "Emerald Virus Arrow II",
