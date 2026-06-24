@@ -60,6 +60,9 @@ public final class EmeraldMobs {
         // EmeraldConversion.onEmeraldHurt handler instead, and attack through their own flight goals).
         if (mob instanceof PathfinderMob pm) {
             pm.targetSelector.addGoal(1, new HurtByTargetGoal(pm));
+            // Dig through soft/infectable terrain to reach prey it can't path to (only fires when the navigation is
+            // stuck; breaks the front columns / the block above the head at bare-hand speed). See EmeraldDigGoal.
+            pm.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(pm));
             if (passive) {
                 // An infected passive species is an AGGRESSOR, not prey: drop its flee-when-hurt goal and give the
                 // melee a HIGH priority so it commits to the kill instead of wandering/breeding/fleeing.

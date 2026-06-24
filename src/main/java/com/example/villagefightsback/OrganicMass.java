@@ -55,7 +55,10 @@ public final class OrganicMass {
     private static final double SCOUT_FRAC = 0.5;         // exploration spend fraction
     private static final double MARK_MIN_DIST = 24.0;     // only Emerald-Marker prey at least this far from the node
     private static final double MARK_MAX_BELOW = 5.0;     // never scent prey more than this far BELOW the node (skip caves)
+    private static final double MARK_MAX_ABOVE = 10.0;    // never scent prey more than this far ABOVE the node
     private static final float MARK_CHANCE = 0.25F;       // chance to even attempt a scent on an eligible decision
+    private static final long SCENT_COOLDOWN = 20L * 60L * 4L; // a brain may place a scent at most every 4 minutes
+    private static final Map<GlobalPos, Long> LAST_SCENT = new HashMap<>(); // per-brain last-scent tick (getTickCount)
     private static final double UNDERGROUND_BELOW = 8.0;  // ignore prey + spawn anchors this far below the node (caves)
     private static final String LAST_DMG_TAG = "OrganicLastDmg"; // game-time a unit last dealt damage
     private static final long IDLE_RECLAIM_TICKS = 6000L; // 5 in-game minutes dealing no damage -> reclaim the unit
@@ -157,19 +160,23 @@ public final class OrganicMass {
         // their own (used sparingly -- at most EmeraldMarker.MAX_ACTIVE live at once). Runs regardless of the spawn
         // decision below.
         if (field > 0 && !prey.isEmpty() && level.getRandom().nextFloat() < MARK_CHANCE
+                && now - LAST_SCENT.getOrDefault(gp, Long.MIN_VALUE) >= SCENT_COOLDOWN  // 4-minute per-brain cooldown
                 && EmeraldMarker.activeCount(level) < EmeraldMarker.MAX_ACTIVE) {
             LivingEntity far = null;
             double bestD = Double.MAX_VALUE;
             double minD2 = MARK_MIN_DIST * MARK_MIN_DIST;
             double minY = node.getY() - MARK_MAX_BELOW;
+            double maxY = node.getY() + MARK_MAX_ABOVE;
             for (LivingEntity p : prey) {
                 if (EmeraldMarker.isMarked(p)) continue;
-                if (p.getY() < minY) continue;  // scent only prey within 5 below the node (the prey list already dropped caves/flyers)
+                // scent only prey within 5 below / 10 above the node (the prey list already dropped caves/flyers).
+                if (p.getY() < minY || p.getY() > maxY) continue;
                 double d = p.blockPosition().distSqr(node);
                 if (d >= minD2 && d < bestD) { bestD = d; far = p; } // nearest prey beyond MARK_MIN_DIST
             }
             if (far != null) {
                 EmeraldMarker.mark(level, far);
+                LAST_SCENT.put(gp, now);
                 String name = far.getName().getString();
                 if (name.length() > 20) name = name.substring(0, 20) + "..."; // trim long names (custom/player names)
                 int dist = (int) Math.round(Math.sqrt(bestD));

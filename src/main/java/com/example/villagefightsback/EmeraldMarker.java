@@ -28,11 +28,13 @@ public final class EmeraldMarker {
 
     private static final Map<LivingEntity, Long> MARKED = new WeakHashMap<>(); // entity -> expiry game-time
 
-    /** Mark {@code target}: rally beacon + the visible green effect. */
+    /** Mark {@code target}: rally beacon + the visible green effect + a vanilla Glowing outline. */
     public static void mark(ServerLevel level, LivingEntity target) {
         MARKED.put(target, level.getGameTime() + DURATION);
         // visible=true on purpose, so the player sees the marked mob (unlike the mod's other, hidden effects).
         target.addEffect(new MobEffectInstance(ModEffects.EMERALD_MARKER.get(), DURATION, 0, false, true, true));
+        // Also Glowing: a through-walls outline so the player can track the scented target. (request 1.1.4)
+        target.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, DURATION, 0, false, true, true));
     }
 
     public static boolean isMarked(LivingEntity t) {
