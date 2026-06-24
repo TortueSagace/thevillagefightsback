@@ -4,9 +4,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Scoreboard;
 
 /**
  * The EMERALD MARKER rally beacon (1.1.2). The brain node paints a distant target with it; every emerald unit
@@ -28,13 +31,39 @@ public final class EmeraldMarker {
 
     private static final Map<LivingEntity, Long> MARKED = new WeakHashMap<>(); // entity -> expiry game-time
 
-    /** Mark {@code target}: rally beacon + the visible green effect + a vanilla Glowing outline. */
+    /** Scoreboard team that tints the Glowing outline LIME (a team's colour drives the glow colour; no team = white). */
+    private static final String SCENT_TEAM = "tvfb_scent";
+
+    /** Mark {@code target}: rally beacon + the visible green effect + a vanilla Glowing outline (tinted lime). */
     public static void mark(ServerLevel level, LivingEntity target) {
         MARKED.put(target, level.getGameTime() + DURATION);
         // visible=true on purpose, so the player sees the marked mob (unlike the mod's other, hidden effects).
         target.addEffect(new MobEffectInstance(ModEffects.EMERALD_MARKER.get(), DURATION, 0, false, true, true));
         // Also Glowing: a through-walls outline so the player can track the scented target. (request 1.1.4)
         target.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, DURATION, 0, false, true, true));
+        joinScentTeam(level, target); // colour that outline lime
+    }
+
+    /** Put {@code target} on the lime-coloured scent team so its Glowing outline renders lime instead of white. */
+    private static void joinScentTeam(ServerLevel level, LivingEntity target) {
+        Scoreboard sb = level.getScoreboard();
+        PlayerTeam team = sb.getPlayerTeam(SCENT_TEAM);
+        if (team == null) {
+            team = sb.addPlayerTeam(SCENT_TEAM);
+            team.setColor(ChatFormatting.GREEN);       // 0x55FF55 == lime
+            team.setSeeFriendlyInvisibles(false);
+        }
+        sb.addPlayerToTeam(target.getScoreboardName(), team);
+    }
+
+    /** Remove {@code target} from the scent team (its outline reverts to the default) when its mark ends. */
+    private static void leaveScentTeam(LivingEntity target) {
+        if (!(target.level() instanceof ServerLevel level)) return;
+        Scoreboard sb = level.getScoreboard();
+        PlayerTeam team = sb.getPlayerTeam(SCENT_TEAM);
+        if (team != null && team.getPlayers().contains(target.getScoreboardName())) {
+            sb.removePlayerFromTeam(target.getScoreboardName(), team);
+        }
     }
 
     public static boolean isMarked(LivingEntity t) {
@@ -51,7 +80,7 @@ public final class EmeraldMarker {
         while (it.hasNext()) {
             Map.Entry<LivingEntity, Long> e = it.next();
             LivingEntity t = e.getKey();
-            if (t == null || !t.isAlive() || now > e.getValue()) { it.remove(); continue; }
+            if (t == null || !t.isAlive() || now > e.getValue()) { if (t != null) leaveScentTeam(t); it.remove(); continue; }
             if (t.level() != from.level()) continue;
             double d = t.distanceToSqr(from);
             if (d <= best) { best = d; result = t; }
@@ -67,7 +96,7 @@ public final class EmeraldMarker {
         while (it.hasNext()) {
             Map.Entry<LivingEntity, Long> e = it.next();
             LivingEntity t = e.getKey();
-            if (t == null || !t.isAlive() || now > e.getValue()) { it.remove(); continue; }
+            if (t == null || !t.isAlive() || now > e.getValue()) { if (t != null) leaveScentTeam(t); it.remove(); continue; }
             if (t.level() == level) n++;
         }
         return n;
