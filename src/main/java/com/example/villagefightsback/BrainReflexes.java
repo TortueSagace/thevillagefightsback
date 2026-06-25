@@ -397,7 +397,7 @@ public final class BrainReflexes {
     private static void spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
         if (type == null) return;
         BlockPos spot = findInsideSpot(level, brain);
-        Entity e = type.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false);
+        Entity e = type.spawn(level, (net.minecraft.world.item.ItemStack) null, (net.minecraft.world.entity.player.Player) null, spot, MobSpawnType.EVENT, false, false);
         if (e instanceof Villager v) v.setBaby(false);
     }
 

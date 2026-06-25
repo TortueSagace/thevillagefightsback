@@ -85,7 +85,7 @@ public final class NodeSpawns {
             d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
             level.addFreshEntity(d);                     // defender golem carries its own kit by construction
         } else {
-            EntityType.IRON_GOLEM.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false); // stage 1: plain golem
+            EntityType.IRON_GOLEM.spawn(level, (net.minecraft.world.item.ItemStack) null, (net.minecraft.world.entity.player.Player) null, spot, MobSpawnType.EVENT, false, false); // stage 1: plain golem
         }
     }
 
@@ -95,7 +95,7 @@ public final class NodeSpawns {
         if (guardType == null) return;
         BlockPos spot = belowOrAbove(level, node, 2);
         if (spot == null) return;
-        Entity guard = guardType.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false);
+        Entity guard = guardType.spawn(level, (net.minecraft.world.item.ItemStack) null, (net.minecraft.world.entity.player.Player) null, spot, MobSpawnType.EVENT, false, false);
         if (stage >= 3 && guard instanceof PathfinderMob pm) {
             UpgradeState.setUpgraded(pm);
             VillageEvents.applyUpgrade(pm);              // give it the full stage-3 guard kit now

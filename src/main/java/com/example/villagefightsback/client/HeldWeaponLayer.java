@@ -99,7 +99,7 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
             pose.scale(scale, scale, scale);
             Minecraft.getInstance().getItemRenderer().renderStatic(
                     stack, context, packedLight, OverlayTexture.NO_OVERLAY, pose, buffer,
-                    entity.level, entity.getId());
+                    entity.getId());
         } catch (Throwable t) {
             // If JEG's gun item renderer can't handle a non-player holder, give up rather than
             // crash the client every frame.

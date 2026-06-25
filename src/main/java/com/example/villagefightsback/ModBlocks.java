@@ -35,6 +35,15 @@ public final class ModBlocks {
     public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, TheVillageFightsBack.MODID);
 
+    /** The mod's own creative tab. Declared BEFORE the items so each item's Item.Properties().tab(TAB)
+     *  can reference it (1.19.2 classic tab; membership + ordering follow registration order). */
+    public static final CreativeModeTab TAB = new CreativeModeTab(TheVillageFightsBack.MODID) {
+        @Override
+        public ItemStack makeIcon() {
+            return new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get());
+        }
+    };
+
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
      * evolution level. It glows brighter as the level rises (charges visual). As tough as obsidian
@@ -563,15 +572,6 @@ public final class ModBlocks {
                     .sound(SoundType.GLASS)
                     .lightLevel(s -> 11)
                     .noLootTable()));
-
-    /** The mod's own creative tab. New blocks/items get added here over time (membership is set per item
-     *  via Item.Properties().tab(TAB); item ordering follows registration order). */
-    public static final CreativeModeTab TAB = new CreativeModeTab(TheVillageFightsBack.MODID) {
-        @Override
-        public ItemStack makeIcon() {
-            return new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get());
-        }
-    };
 
     /** Register the DeferredRegisters on the mod event bus (call from the mod constructor). */
     public static void register(IEventBus modBus) {

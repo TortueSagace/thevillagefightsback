@@ -7,8 +7,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.OverlayRegistry;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 
 /**
  * Draws the banish-ability cooldown indicator (a small green square that fills as it recharges, with the
@@ -21,8 +21,8 @@ public final class LimboAbilityHud {
     private static final int GREEN = 0xFF3BF07A;
 
     /** Registered from client setup (1.19.2 has no RegisterGuiOverlaysEvent). */
-    public static void register() {
-        OverlayRegistry.registerOverlayAbove(ForgeIngameGui.HOTBAR_ELEMENT, "limbo_ability_cooldown",
+    public static void register(RegisterGuiOverlaysEvent event) {
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "limbo_ability_cooldown",
                 (gui, ps, partialTick, w, h) -> draw(ps, w, h));
     }
 

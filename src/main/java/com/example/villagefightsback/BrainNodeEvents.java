@@ -1052,7 +1052,7 @@ public final class BrainNodeEvents {
     private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
         BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall) : null;
         if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
-        Entity e = type.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false);
+        Entity e = type.spawn(level, (net.minecraft.world.item.ItemStack) null, (net.minecraft.world.entity.player.Player) null, spot, MobSpawnType.EVENT, false, false);
         if (e instanceof Villager v) v.setBaby(false);
     }
 
@@ -1258,7 +1258,7 @@ public final class BrainNodeEvents {
             int collected = 0;
             for (net.minecraft.world.entity.item.ItemEntity ie : loose) {
                 boolean nearNode = ie.distanceToSqr(center) <= near2;
-                boolean onInfection = ie.onGround
+                boolean onInfection = ie.isOnGround()
                         && com.example.villagefightsback.infection.BlockMatcher.isInfection(ie.getBlockStateOn());
                 if (!nearNode && !onInfection) continue;
                 collected += ie.getItem().getCount();

@@ -4,8 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
-import net.minecraftforge.client.gui.ForgeIngameGui;
-import net.minecraftforge.client.gui.OverlayRegistry;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 
 /**
  * Draws the two-line "village discovered" message at the bottom of the screen (above the hotbar, NOT in chat)
@@ -36,8 +36,8 @@ public final class VillageDiscoveryHud {
     }
 
     /** Registered from client setup (1.19.2 has no RegisterGuiOverlaysEvent). */
-    public static void register() {
-        OverlayRegistry.registerOverlayAbove(ForgeIngameGui.HOTBAR_ELEMENT, "village_discovery_message",
+    public static void register(RegisterGuiOverlaysEvent event) {
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "village_discovery_message",
                 (gui, ps, partialTick, w, h) -> draw(ps, w, h));
     }
 

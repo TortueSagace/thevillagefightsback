@@ -50,10 +50,15 @@ public final class TheVillageFightsBackClient {
                     new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
                     (stack, level, entity, seed) ->
                             (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F);
-            // 1.19.2: GUI overlays register via OverlayRegistry from client setup (no RegisterGuiOverlaysEvent).
-            LimboAbilityHud.register();
-            VillageDiscoveryHud.register();
         });
+    }
+
+    /** 1.19.2 GUI overlays: the overlay package + RegisterGuiOverlaysEvent exist in 1.19.2; only the render
+     *  lambda takes a PoseStack instead of 1.20.1's GuiGraphics. */
+    @SubscribeEvent
+    public static void onRegisterOverlays(net.minecraftforge.client.event.RegisterGuiOverlaysEvent event) {
+        LimboAbilityHud.register(event);
+        VillageDiscoveryHud.register(event);
     }
 
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
