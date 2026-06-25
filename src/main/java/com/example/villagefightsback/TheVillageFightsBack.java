@@ -36,8 +36,9 @@ public class TheVillageFightsBack {
         ModParticles.register(modBus);
         ModSounds.register(modBus);
         ModLoot.register(modBus);
-        modBus.addListener(this::commonSetup);
-        modBus.addListener(this::onRegisterBrewingRecipes); // brewing recipes (now a dedicated mod-bus event)
+        ModTriggers.register(modBus); // custom advancement trigger (trigger_type registry is frozen by setup)
+        // RegisterBrewingRecipesEvent fires on the GAME bus (NeoForge.EVENT_BUS) in 1.21.1, not the mod bus.
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRegisterBrewingRecipes);
         modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent e) -> {
             if (e.getConfig().getSpec() == Config.SPEC) Config.apply(); // push drift chances into LimboDrift
         });
@@ -45,12 +46,6 @@ public class TheVillageFightsBack {
         modContainer.registerConfig(
                 net.neoforged.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/thevillagefightsback-common.toml
         LOGGER.info("[The Village Fights Back] loaded.");
-    }
-
-    private void commonSetup(net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
-            ModTriggers.register(); // custom advancement triggers (brainNode stage)
-        });
     }
 
     /**

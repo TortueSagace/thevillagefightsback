@@ -50,7 +50,7 @@ public final class BrainNodeAchievementEvents {
             int stage = data.econ(gp).getLevel();
             int emeralds = countEmeraldUnits(server, gp); // emerald units around this village
             for (ServerPlayer player : near) {
-                if (stage > 0) ModTriggers.BRAIN_NODE_STAGE.trigger(player, stage); // dedupes; highest nearby satisfies
+                if (stage > 0) ModTriggers.BRAIN_NODE_STAGE.get().trigger(player, stage); // dedupes; highest nearby satisfies
                 if (emeralds >= PARTY_COUNT) Achievements.award(player, "brain_node/emerald_party");
                 if (emeralds >= OVERPOPULATION_COUNT) Achievements.award(player, "brain_node/overpopulation");
             }
