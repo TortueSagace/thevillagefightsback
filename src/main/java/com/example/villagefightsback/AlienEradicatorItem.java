@@ -14,8 +14,9 @@ import net.minecraft.world.item.Tiers;
  */
 public class AlienEradicatorItem extends AxeItem {
     public AlienEradicatorItem(Properties properties) {
-        // Vanilla netherite axe values: AxeItem(Tiers.NETHERITE, 5.0F, -3.0F, props).
-        super(Tiers.NETHERITE, 5.0F, -3.0F, properties);
+        // Vanilla netherite axe values: +5 attack damage, -3.0 attack speed. In 1.21 the attack stats are baked
+        // into Item.Properties via AxeItem.createAttributes(tier, dmg, speed).
+        super(Tiers.NETHERITE, properties.attributes(AxeItem.createAttributes(Tiers.NETHERITE, 5.0F, -3.0F)));
     }
 
     /** Always shimmer so the blade looks "alive" and glows, even with no enchantments. */
@@ -24,9 +25,6 @@ public class AlienEradicatorItem extends AxeItem {
         return true;
     }
 
-    /** Netherite-grade: survives lava/fire like the axe it was forged from. */
-    @Override
-    public boolean isFireResistant() {
-        return true;
-    }
+    // Netherite-grade fire resistance is now set via Item.Properties.fireResistant() in ModItems (the Item
+    // isFireResistant() override was removed in 1.21).
 }

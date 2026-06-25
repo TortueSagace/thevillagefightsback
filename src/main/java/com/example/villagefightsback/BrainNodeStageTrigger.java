@@ -1,15 +1,16 @@
 package com.example.villagefightsback;
 
-import com.google.gson.JsonObject;
+import java.util.Optional;
 
-import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.DeserializationContext;
-import net.minecraft.advancements.critereon.SerializationContext;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 
 /**
  * Custom advancement trigger: a player is "near a village whose brain node has reached stage N". Fired by the
@@ -17,16 +18,11 @@ import net.minecraft.util.GsonHelper;
  * {@code {"trigger":"thevillagefightsback:brain_node_stage","conditions":{"stage":2}}}.
  */
 public class BrainNodeStageTrigger extends SimpleCriterionTrigger<BrainNodeStageTrigger.Instance> {
-    public static final ResourceLocation ID = new ResourceLocation(TheVillageFightsBack.MODID, "brain_node_stage");
+    public static final ResourceLocation ID = TheVillageFightsBack.id("brain_node_stage");
 
     @Override
-    public ResourceLocation getId() {
-        return ID;
-    }
-
-    @Override
-    protected Instance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext ctx) {
-        return new Instance(player, GsonHelper.getAsInt(json, "stage", 1));
+    public Codec<Instance> codec() {
+        return Instance.CODEC;
     }
 
     /** Fire for {@code player} given the stage of the village they are currently near. */
@@ -34,23 +30,19 @@ public class BrainNodeStageTrigger extends SimpleCriterionTrigger<BrainNodeStage
         this.trigger(player, inst -> inst.matches(currentStage));
     }
 
-    public static class Instance extends AbstractCriterionTriggerInstance {
-        private final int minStage;
-
-        public Instance(ContextAwarePredicate player, int minStage) {
-            super(ID, player);
-            this.minStage = minStage;
-        }
+    /**
+     * Codec-based criterion instance (1.21). The optional {@code player} predicate is the standard contextual
+     * entity check; {@code stage} is the minimum brain-node stage the village must have reached.
+     */
+    public record Instance(Optional<ContextAwarePredicate> player, int minStage)
+            implements SimpleCriterionTrigger.SimpleInstance {
+        public static final Codec<Instance> CODEC = RecordCodecBuilder.create(inst -> inst.group(
+                EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("stage", 1).forGetter(Instance::minStage)
+        ).apply(inst, Instance::new));
 
         public boolean matches(int currentStage) {
             return currentStage >= minStage;
-        }
-
-        @Override
-        public JsonObject serializeToJson(SerializationContext ctx) {
-            JsonObject o = super.serializeToJson(ctx);
-            o.addProperty("stage", minStage);
-            return o;
         }
     }
 }

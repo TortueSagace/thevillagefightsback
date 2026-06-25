@@ -12,28 +12,27 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /** Client-only: attaches the decorative gun render layer to villager and iron golem renderers. */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class TheVillageFightsBackClient {
     private TheVillageFightsBackClient() {}
 
     public static final ModelLayerLocation WALL_DEFENDER_LAYER =
-            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "wall_defender"), "main");
+            new ModelLayerLocation(TheVillageFightsBack.id("wall_defender"), "main");
 
     /** Three spikes baked at the top of a humanoid head, added to wearers of the Limbo Helmet. */
     public static final ModelLayerLocation LIMBO_HELMET_SPIKES =
-            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "limbo_helmet_spikes"), "main");
+            new ModelLayerLocation(TheVillageFightsBack.id("limbo_helmet_spikes"), "main");
 
     /** General Darius's body: a humanoid model with the villager nose (see {@link DariusVillagerModel}). */
     public static final ModelLayerLocation DARIUS_LAYER =
-            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "general_darius"), "main");
+            new ModelLayerLocation(TheVillageFightsBack.id("general_darius"), "main");
 
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
@@ -44,10 +43,10 @@ public final class TheVillageFightsBackClient {
 
     /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
     @SubscribeEvent
-    public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
+    public static void onClientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
         event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
                 ModItems.ROCKET_LAUNCHER.get(),
-                new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
+                TheVillageFightsBack.id("aiming"),
                 (stack, level, entity, seed) ->
                         (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F));
     }
@@ -55,8 +54,8 @@ public final class TheVillageFightsBackClient {
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
     @SubscribeEvent
     public static void onRegisterDimensionEffects(
-            net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent event) {
-        event.register(new ResourceLocation(TheVillageFightsBack.MODID, "limbo"), new LimboDimensionEffects());
+            net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent event) {
+        event.register(TheVillageFightsBack.id("limbo"), new LimboDimensionEffects());
     }
 
     /** Two-tone tint for the staged-defender spawn eggs (template_spawn_egg model, layers 0=base, 1=spots). */
@@ -64,7 +63,7 @@ public final class TheVillageFightsBackClient {
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
         net.minecraft.client.color.item.ItemColor handler =
                 (stack, layer) -> ((StagedDefenderEggItem) stack.getItem()).getColor(layer);
-        for (RegistryObject<net.minecraft.world.item.Item> ro : ModItems.STAGED_EGGS) {
+        for (var ro : ModItems.STAGED_EGGS) {
             event.register(handler, ro.get());
         }
         // Soul gravel: tint toward the held creature's colour (its spawn egg, else a sampled texture colour).
@@ -87,7 +86,7 @@ public final class TheVillageFightsBackClient {
     }
 
     @SubscribeEvent
-    public static void onRegisterParticles(net.minecraftforge.client.event.RegisterParticleProvidersEvent event) {
+    public static void onRegisterParticles(net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event) {
         // Our green sonic-boom reuses the vanilla SonicBoomParticle renderer with green sprites.
         event.registerSpriteSet(com.example.villagefightsback.ModParticles.GREEN_SONIC_BOOM.get(),
                 net.minecraft.client.particle.SonicBoomParticle.Provider::new);
@@ -172,7 +171,7 @@ public final class TheVillageFightsBackClient {
     }
 
     /** The Guard Villagers guard entity type id. The mod is a RUNTIME soft-dep, so this may resolve to null. */
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     @SubscribeEvent
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
@@ -199,7 +198,7 @@ public final class TheVillageFightsBackClient {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addLimboHelmetSpikes(EntityRenderersEvent.AddLayers event) {
         // Players (default + slim skins).
-        for (String skin : event.getSkins()) {
+        for (net.minecraft.client.resources.PlayerSkin.Model skin : event.getSkins()) {
             if (event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer pr) {
                 pr.addLayer(new LimboHelmetSpikesLayer<>(pr, event.getEntityModels()));
             }
@@ -207,30 +206,27 @@ public final class TheVillageFightsBackClient {
         // Every other humanoid mob (zombies, skeletons, piglins, armour stands, the Guard Villagers guard, ...).
         // Skip the player (handled above) and General Darius (his renderer already adds the layer) so neither
         // gets a doubled layer.
-        for (EntityType<?> type : net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValues()) {
+        for (EntityType<?> type : net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE) {
             if (type == EntityType.PLAYER || type == ModEntities.GENERAL_DARIUS.get()) continue;
-            LivingEntityRenderer<?, ?> renderer;
-            try {
-                renderer = event.getRenderer((EntityType) type); // throws CCE for non-living renderers
-            } catch (ClassCastException notLiving) {
+            // getRenderer now returns EntityRenderer<?>; narrow to a living renderer with a HumanoidModel.
+            net.minecraft.client.renderer.entity.EntityRenderer<?> renderer = event.getRenderer((EntityType) type);
+            if (!(renderer instanceof LivingEntityRenderer<?, ?> living)
+                    || !(living.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) {
                 continue;
             }
-            if (renderer == null || !(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) {
-                continue;
-            }
-            ((LivingEntityRenderer) renderer).addLayer(
-                    new LimboHelmetSpikesLayer((LivingEntityRenderer) renderer, event.getEntityModels()));
+            ((LivingEntityRenderer) living).addLayer(
+                    new LimboHelmetSpikesLayer((LivingEntityRenderer) living, event.getEntityModels()));
         }
     }
 
     /** Attach the angry-face layer to the vanilla villager renderer. */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addAngryVillagerFace(EntityRenderersEvent.AddLayers event) {
-        LivingEntityRenderer<?, ?> renderer = event.getRenderer(EntityType.VILLAGER);
-        if (renderer == null) return; // defensive: some setups replace the villager renderer
+        net.minecraft.client.renderer.entity.EntityRenderer<?> renderer = event.getRenderer(EntityType.VILLAGER);
+        if (!(renderer instanceof LivingEntityRenderer<?, ?> living)) return; // defensive: some setups replace the villager renderer
         // The villager renderer's model is a VillagerModel; the wildcard erases that, so cast through raw.
-        ((LivingEntityRenderer) renderer).addLayer(new AngryVillagerFaceLayer(
-                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+        ((LivingEntityRenderer) living).addLayer(new AngryVillagerFaceLayer(
+                (net.minecraft.client.renderer.entity.RenderLayerParent) living));
     }
 
     /**
@@ -240,14 +236,14 @@ public final class TheVillageFightsBackClient {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addAngryGuardFace(EntityRenderersEvent.AddLayers event) {
-        EntityType<?> guardType = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        EntityType<?> guardType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
         if (guardType == null) return; // Guard Villagers not installed -- nothing to decorate
         // getRenderer needs EntityType<? extends T extends LivingEntity>; the registry hands us EntityType<?>,
         // so go through a raw EntityType (we re-check the model type below before attaching the layer).
-        LivingEntityRenderer<?, ?> renderer = event.getRenderer((EntityType) guardType);
-        if (renderer == null) return;
-        if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) return; // wrong model -> skip
-        ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
-                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+        net.minecraft.client.renderer.entity.EntityRenderer<?> renderer = event.getRenderer((EntityType) guardType);
+        if (!(renderer instanceof LivingEntityRenderer<?, ?> living)) return;
+        if (!(living.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) return; // wrong model -> skip
+        ((LivingEntityRenderer) living).addLayer(new AngryGuardFaceLayer(
+                (net.minecraft.client.renderer.entity.RenderLayerParent) living));
     }
 }

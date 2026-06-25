@@ -436,7 +436,7 @@ public final class WallPlan {
 
     public static WallPlan load(CompoundTag tag) {
         ResourceKey<Level> dim = ResourceKey.create(
-                Registries.DIMENSION, new ResourceLocation(tag.getString("gm_dim")));
+                Registries.DIMENSION, ResourceLocation.parse(tag.getString("gm_dim")));
         GlobalPos gm = GlobalPos.of(dim, BlockPos.of(tag.getLong("gm_pos")));
         java.util.TreeMap<Integer, List<WallBlock>> byColumn = new java.util.TreeMap<>();
         ListTag list = tag.getList("blocks", Tag.TAG_COMPOUND);

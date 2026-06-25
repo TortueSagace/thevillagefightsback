@@ -9,20 +9,20 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
  * The NATIVE mace combat: the signature SMASH attack and the three mace enchantments (Density, Breach, Wind
- * Burst), all driven from a Forge-bus {@link LivingHurtEvent} so no mixin is needed. A mace SMASH triggers when
+ * Burst), all driven from a game-bus {@link LivingIncomingDamageEvent} so no mixin is needed (this fires before
+ * armour/absorption mitigation, matching the old Forge LivingHurtEvent semantics). A mace SMASH triggers when
  * the attacker strikes an entity while falling (fall distance &gt; 1.5 and not elytra-flying): it adds heavy
  * fall-scaled bonus damage (plus Density's per-fall bonus), negates the attacker's fall damage, launches the
  * attacker up if Wind Burst is present, and shoves nearby living entities outward. Breach reduces the target's
- * effective armour. An IDENTICAL clone of the vanilla 1.21 mace behaviour (1.20.1 has no mace smash sound, so a
- * fallback sound is used).
+ * effective armour. An IDENTICAL clone of the vanilla mace behaviour (a fallback sound is used for the smash).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class MaceCombatEvents {
     private MaceCombatEvents() {}
 
@@ -31,7 +31,7 @@ public final class MaceCombatEvents {
     private static final double KB_UP = 0.7;                // fixed upward push on knocked-back entities
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
@@ -45,13 +45,14 @@ public final class MaceCombatEvents {
 
         // --- BREACH: shave off part of the target's armour effectiveness. Approximate by scaling the event
         //     amount so that, after vanilla applies the FULL armour, the net matches the reduced-armour result.
-        float breach = ModEnchantments.getBreachFraction(weapon);
+        float breach = ModEnchantments.getBreachFraction(attacker, weapon);
         if (breach > 0.0F) {
             float amount = event.getAmount();
             float armor = (float) victim.getArmorValue();
             float toughness = (float) victim.getAttributeValue(Attributes.ARMOR_TOUGHNESS);
-            float afterFull = CombatRules.getDamageAfterAbsorb(amount, armor, toughness);
-            float afterReduced = CombatRules.getDamageAfterAbsorb(amount, armor * (1.0F - breach), toughness);
+            float afterFull = CombatRules.getDamageAfterAbsorb(victim, amount, event.getSource(), armor, toughness);
+            float afterReduced = CombatRules.getDamageAfterAbsorb(victim, amount, event.getSource(),
+                    armor * (1.0F - breach), toughness);
             if (afterFull > 0.0F) {
                 event.setAmount(amount * (afterReduced / afterFull));
             }
@@ -59,8 +60,8 @@ public final class MaceCombatEvents {
 
         // FIRE ASPECT 2 baseline for the Alien Smasher: ALWAYS set the target alight for 8s (FA-2 duration)
         // on any hit, like the guard mace's Fire Aspect 2. A player-added Fire Aspect stacks naturally
-        // (vanilla applies its own burn in hurtEnemy), and setSecondsOnFire only ever extends the burn.
-        if (smasher) victim.setSecondsOnFire(8);
+        // (vanilla applies its own burn in hurtEnemy), and igniteForSeconds only ever extends the burn.
+        if (smasher) victim.igniteForSeconds(8.0F);
 
         // --- SMASH: only on a downward strike from a real fall (and never while elytra-flying).
         float fall = attacker.fallDistance;
@@ -76,7 +77,7 @@ public final class MaceCombatEvents {
             bonus = 22.0F + (fall - 8.0F);
         }
         // Density's per-fall bonus, floored at level 3 for the Alien Smasher (guard-mace baseline).
-        float densityPerFall = ModEnchantments.getDensityBonusPerFall(weapon);
+        float densityPerFall = ModEnchantments.getDensityBonusPerFall(attacker, weapon);
         if (smasher) densityPerFall = Math.max(densityPerFall, 0.5F * 3);
         bonus += densityPerFall * fall;
         event.setAmount(event.getAmount() + bonus);
@@ -107,7 +108,7 @@ public final class MaceCombatEvents {
 
         // WIND BURST: launch the ATTACKER upward by the per-level strength (floored at the level-3 value
         // 2.2 for the Alien Smasher, the guard-mace baseline).
-        double launch = ModEnchantments.getWindBurstLaunch(weapon);
+        double launch = ModEnchantments.getWindBurstLaunch(attacker, weapon);
         if (smasher) launch = Math.max(launch, 2.2);
         if (launch > 0.0) {
             Vec3 m = attacker.getDeltaMovement();
@@ -117,9 +118,9 @@ public final class MaceCombatEvents {
             attacker.fallDistance = 0.0F;
         }
 
-        // Smash sound (1.20.1 has no MACE_SMASH_GROUND; fall back to a low-pitch explosion / anvil land).
+        // Smash sound (fall back to a low-pitch explosion / anvil land for the smash impact).
         sl.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
-                heavy ? SoundEvents.GENERIC_EXPLODE : SoundEvents.ANVIL_LAND, SoundSource.PLAYERS,
+                heavy ? SoundEvents.GENERIC_EXPLODE.value() : SoundEvents.ANVIL_LAND, SoundSource.PLAYERS,
                 heavy ? 1.0F : 0.8F, heavy ? 0.6F : 0.9F);
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION, victim.getX(), victim.getY(),
                 victim.getZ(), heavy ? 2 : 1, 0.0, 0.0, 0.0, 0.0);

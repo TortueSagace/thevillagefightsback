@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -15,11 +17,11 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * {@code mega_brutal_mode}: while enabled, every village unit near a brain node permanently carries Strength III,
@@ -30,7 +32,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * it covers units that already exist and cleanly stops when the switch is turned off (the short-duration effects
  * simply lapse). Off by default; the scan only runs while the switch is on.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class MegaBrutal {
     private MegaBrutal() {}
 
@@ -38,11 +40,10 @@ public final class MegaBrutal {
     private static final int EFFECT_TICKS = 60;
     private static final int AMP_III = 2;                   // amplifier 2 == level III
     private static final double TELEPORT_MIN = 16.0;        // golems blink only when this far from their target
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         if (!Config.megaBrutalMode()) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
@@ -66,9 +67,9 @@ public final class MegaBrutal {
      *  unit refreshes the same Strength/Regen/Resistance/Speed III buff, and emerald golems gain the blink. The
      *  effects are short, so turning the switch off lets them lapse on their own. */
     @SubscribeEvent
-    public static void onEmeraldTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent event) {
+    public static void onEmeraldTick(EntityTickEvent.Post event) {
         if (!Config.megaBrutalMode()) return;
-        LivingEntity e = event.getEntity();
+        if (!(event.getEntity() instanceof LivingEntity e)) return;
         if (e.level().isClientSide() || !(e instanceof EmeraldUnit) || e.tickCount % INTERVAL != 0) return;
         buff(e);
         if (e instanceof IronGolem golem) teleportToTarget(golem);
@@ -82,7 +83,7 @@ public final class MegaBrutal {
     }
 
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     private static void buff(LivingEntity e) {
@@ -92,7 +93,7 @@ public final class MegaBrutal {
         apply(e, MobEffects.MOVEMENT_SPEED);    // Speed III
     }
 
-    private static void apply(LivingEntity e, MobEffect eff) {
+    private static void apply(LivingEntity e, Holder<MobEffect> eff) {
         e.addEffect(new MobEffectInstance(eff, EFFECT_TICKS, AMP_III, false, false, false)); // no particles, no icon
     }
 

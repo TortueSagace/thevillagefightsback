@@ -22,7 +22,7 @@ import net.minecraft.resources.ResourceLocation;
  *  hitbox and stays easy to hit. */
 public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_phantom.png");
+            TheVillageFightsBack.id("textures/entity/limbo_phantom.png");
 
     public LimboPhantomRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new PhantomModel<>(ctx.bakeLayer(ModelLayers.PHANTOM)), 0.75F);
@@ -37,8 +37,8 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
 
     @Override
     protected void setupRotations(LimboPhantomEntity entity, PoseStack pose, float ageInTicks, float yBodyRot,
-                                  float partialTicks) {
-        super.setupRotations(entity, pose, ageInTicks, yBodyRot, partialTicks);
+                                  float partialTicks, float scale) {
+        super.setupRotations(entity, pose, ageInTicks, yBodyRot, partialTicks, scale);
         pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(entity.getXRot())); // pitch like a diving phantom
     }
 
@@ -50,7 +50,7 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
     /** Fullbright white eyes -- so they glow even from far away / in the dark. */
     private static class WhiteEyesLayer extends EyesLayer<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> {
         private static final RenderType EYES = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_phantom_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/limbo_phantom_eyes.png"));
 
         WhiteEyesLayer(RenderLayerParent<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> parent) {
             super(parent);
@@ -65,7 +65,7 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
     /** White vines overlaid on the body (mostly-transparent vine texture, grown slightly so it sits outside). */
     private static class WhiteVinesLayer extends RenderLayer<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> {
         private static final ResourceLocation VINES =
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_phantom_vines.png");
+                TheVillageFightsBack.id("textures/entity/limbo_phantom_vines.png");
 
         WhiteVinesLayer(RenderLayerParent<LimboPhantomEntity, PhantomModel<LimboPhantomEntity>> parent) {
             super(parent);
@@ -77,7 +77,7 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
                            float netHeadYaw, float headPitch) {
             if (entity.isInvisible()) return;
             VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(VINES));
-            getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+            getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         }
     }
 }

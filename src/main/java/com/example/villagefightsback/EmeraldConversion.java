@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import com.example.villagefightsback.infection.InfectionManager;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -15,12 +16,12 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
  * EMERALD faction combat rules + the emerald-unit death effects.
@@ -37,7 +38,7 @@ import net.minecraftforge.fml.common.Mod;
  * virus spawns a mite (Virus I) or an Emeraldger (Virus II) instead of converting -- handled in
  * {@link EmeraldVirusEvents}, which also banks organic mass and plays the green death swirl.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class EmeraldConversion {
     private EmeraldConversion() {}
 
@@ -59,7 +60,7 @@ public final class EmeraldConversion {
      */
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
-        LivingEntity target = event.getNewTarget();
+        LivingEntity target = event.getNewAboutToBeSetTarget();
         if (target == null) return;
         LivingEntity me = event.getEntity();
         if (Factions.isEmerald(target) && (Factions.isVillage(me) || me instanceof UnleashedBrainNodeEntity)) {
@@ -76,7 +77,7 @@ public final class EmeraldConversion {
      * back). Only sets a target when the unit is currently idle, so it doesn't thrash an existing target.
      */
     @SubscribeEvent
-    public static void onEmeraldHurt(LivingHurtEvent event) {
+    public static void onEmeraldHurt(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || !Factions.isEmerald(mob)) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker) || !attacker.isAlive()) return;
         if (Factions.isEmerald(attacker) || Factions.isVillage(attacker)) return; // never retaliate vs emerald/village
@@ -91,7 +92,7 @@ public final class EmeraldConversion {
      * cull (and refund) units that have been useless (e.g. stuck) for 5 minutes. Only relevant in organic mode.
      */
     @SubscribeEvent
-    public static void onEmeraldDealtDamage(LivingHurtEvent event) {
+    public static void onEmeraldDealtDamage(LivingIncomingDamageEvent event) {
         if (!Config.organicMassEnabled()) return;
         if (event.getSource().getEntity() instanceof LivingEntity attacker && Factions.isEmerald(attacker)
                 && !Factions.isEmerald(event.getEntity()) && !Factions.isVillage(event.getEntity())) {
@@ -107,7 +108,7 @@ public final class EmeraldConversion {
      * player can still fight either side, and emeralds still hurt non-emerald/non-village mobs they hunt.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onFactionImmunity(LivingHurtEvent event) {
+    public static void onFactionImmunity(LivingIncomingDamageEvent event) {
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
         LivingEntity victim = event.getEntity();
         boolean aE = Factions.isEmerald(attacker), vE = Factions.isEmerald(victim);
@@ -146,11 +147,12 @@ public final class EmeraldConversion {
      *  No UNCAPPED_TAG, so the population cap applies (EmeraldPopulation absorbs/cancels it when at cap, and the
      *  enable_mob_infection master gate cancels it when the feature is off). */
     static void spawnAt(ServerLevel level, BlockPos pos, EntityType<?> type, ItemStack tool) {
+        if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled
         Entity e = type.create(level);
         if (!(e instanceof LivingEntity unit)) return;
         unit.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         if (unit instanceof Mob mob) {
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.CONVERSION, null, null);
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.CONVERSION, null);
         }
         if (tool != null) unit.setItemSlot(EquipmentSlot.MAINHAND, tool);
         level.addFreshEntity(unit);
@@ -194,7 +196,7 @@ public final class EmeraldConversion {
         }
     }
 
-    private static void ramp(LivingEntity e, MobEffect eff, int amp) {
+    private static void ramp(LivingEntity e, Holder<MobEffect> eff, int amp) {
         e.addEffect(new MobEffectInstance(eff, BUFF_TICKS, amp, false, false, true)); // refreshes duration + level
     }
 }

@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:emerald_block"
+    },
+    "title": "Overpopulation",
+    "description": "Reach the maximum of 50 emerald units around a village.",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "got_it": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "got_it"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/emerald_party"
+}

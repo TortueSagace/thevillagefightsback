@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
-import net.minecraft.advancements.Advancement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -15,8 +14,8 @@ public final class Achievements {
     /** Award one advancement to a player (no-op if it does not exist or is already earned -- advancements dedupe). */
     public static void award(ServerPlayer player, String id) {
         if (player == null) return;
-        Advancement adv = player.server.getAdvancements()
-                .getAdvancement(new ResourceLocation(TheVillageFightsBack.MODID, id));
+        AdvancementHolder adv = player.server.getAdvancements()
+                .get(TheVillageFightsBack.id(id));
         if (adv != null) player.getAdvancements().award(adv, "got_it");
     }
 

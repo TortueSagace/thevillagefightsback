@@ -10,9 +10,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * Stage-4 "air strike": a scripted bombing run of 27 vertical rockets (three 3x3 waves, one second apart) onto
@@ -24,7 +24,7 @@ import net.minecraftforge.fml.common.Mod;
  * down (literally from the sky -- not from a fixed height above the target, which would embed them in a cave
  * ceiling), with the exact same blast as a gigachad golem's rocket.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class AirStrikeManager {
     private AirStrikeManager() {}
 
@@ -97,8 +97,8 @@ public final class AirStrikeManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ACTIVE.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (ACTIVE.isEmpty()) return;
         Iterator<Strike> it = ACTIVE.iterator();
         while (it.hasNext()) {
             Strike s = it.next();
@@ -123,7 +123,7 @@ public final class AirStrikeManager {
      *  orphans a force-loaded chunk (setChunkForced persists to disk -- an orphan would keep that area, and any
      *  village in it, ticking forever). Completed strikes already released their chunks in {@link #onServerTick}. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         for (Strike s : ACTIVE) {
             if (s.level == null) continue;
             for (ChunkPos cp : s.forced) s.level.setChunkForced(cp.x, cp.z, false);

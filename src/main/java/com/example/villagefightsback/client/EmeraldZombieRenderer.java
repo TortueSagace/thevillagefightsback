@@ -16,12 +16,12 @@ import net.minecraft.world.entity.monster.Zombie;
  */
 public class EmeraldZombieRenderer extends ZombieRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_zombie.png");
+            TheVillageFightsBack.id("textures/entity/emerald_zombie.png");
 
     public EmeraldZombieRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_zombie_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_zombie_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

@@ -15,12 +15,12 @@ import net.minecraft.world.entity.monster.Phantom;
  */
 public class EmeraldPhantomRenderer extends PhantomRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_phantom.png");
+            TheVillageFightsBack.id("textures/entity/emerald_phantom.png");
 
     public EmeraldPhantomRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_phantom_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_phantom_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

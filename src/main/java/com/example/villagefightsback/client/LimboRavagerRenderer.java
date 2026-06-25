@@ -12,9 +12,9 @@ import net.minecraft.world.entity.monster.Ravager;
  *  baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboRavagerRenderer extends RavagerRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_ravager.png");
+            TheVillageFightsBack.id("textures/entity/limbo_ravager.png");
     private static final ResourceLocation GLOW =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_ravager_glow.png");
+            TheVillageFightsBack.id("textures/entity/limbo_ravager_glow.png");
 
     public LimboRavagerRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

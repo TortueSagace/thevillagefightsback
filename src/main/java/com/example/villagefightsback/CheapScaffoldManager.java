@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -43,7 +44,8 @@ public class CheapScaffoldManager extends SavedData {
 
     public static CheapScaffoldManager get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(CheapScaffoldManager::load, CheapScaffoldManager::new, NAME);
+                .computeIfAbsent(new SavedData.Factory<>(CheapScaffoldManager::new,
+                        (tag, registries) -> load(tag, registries)), NAME);
     }
 
     /** Register a freshly placed cheap scaffold onto the current (or a new) shared timer. */
@@ -96,13 +98,13 @@ public class CheapScaffoldManager extends SavedData {
 
     // --- persistence ---
 
-    public static CheapScaffoldManager load(CompoundTag tag) {
+    public static CheapScaffoldManager load(CompoundTag tag, HolderLookup.Provider registries) {
         CheapScaffoldManager d = new CheapScaffoldManager();
         ListTag list = tag.getList("batches", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
             Batch b = new Batch();
-            b.dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            b.dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             b.expiry = c.getLong("expiry");
             b.openUntil = c.getLong("openUntil");
             for (long l : c.getLongArray("pos")) b.positions.add(l);
@@ -112,7 +114,7 @@ public class CheapScaffoldManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (Batch b : batches) {
             CompoundTag c = new CompoundTag();

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -38,7 +39,8 @@ public class ChunkPortalData extends SavedData {
 
     public static ChunkPortalData get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(ChunkPortalData::load, ChunkPortalData::new, NAME);
+        return overworld.getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(ChunkPortalData::new, (tag, registries) -> load(tag, registries)), NAME);
     }
 
     public boolean isActivated() { return activated; }
@@ -54,7 +56,7 @@ public class ChunkPortalData extends SavedData {
     /** Live (unsaved) map of portal key -> next emergence game-time. */
     public Map<Long, Long> nextSpawn() { return nextSpawn; }
 
-    public static ChunkPortalData load(CompoundTag tag) {
+    public static ChunkPortalData load(CompoundTag tag, HolderLookup.Provider registries) {
         ChunkPortalData d = new ChunkPortalData();
         d.activated = tag.getBoolean("activated");
         for (long k : tag.getLongArray("portals")) d.portals.add(k);
@@ -63,7 +65,7 @@ public class ChunkPortalData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putBoolean("activated", activated);
         tag.putLongArray("portals", portals.stream().mapToLong(Long::longValue).toArray());
         tag.putLongArray("limboRings", limboRings.stream().mapToLong(Long::longValue).toArray());

@@ -1,8 +1,7 @@
 {
   "pack": {
-    "description": {
-      "text": "${mod_id} resources"
-    },
-    "pack_format": 15
+    "description": "thevillagefightsback resources",
+    "pack_format": 34,
+    "supported_formats": [34, 99]
   }
 }

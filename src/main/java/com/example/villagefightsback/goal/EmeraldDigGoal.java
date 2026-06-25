@@ -6,6 +6,7 @@ import com.example.villagefightsback.infection.BlockMatcher;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -15,7 +16,6 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * An emerald unit that cannot PATH to its prey digs through the soft block in its way -- the block(s) directly in
@@ -118,14 +118,14 @@ public class EmeraldDigGoal extends Goal {
         if (s.getDestroySpeed(level, pos) < 0.0F) return false;    // unbreakable (bedrock / fake bedrock)
         if (BlockMatcher.isCandidate(level, pos, s)) return true;  // any infectable obstruction (incl. foreign soft blocks)
         if (BlockMatcher.isInfection(s)) {                         // exception: dig through our OWN fertile terrain
-            ResourceLocation id = ForgeRegistries.BLOCKS.getKey(s.getBlock());
+            ResourceLocation id = BuiltInRegistries.BLOCK.getKey(s.getBlock());
             String path = id == null ? "" : id.getPath();
             return !(path.contains("cobblestone") || path.contains("planks") || path.contains("brick"));
         }
         // Flimsy glass barriers (a player's glass dome, etc.) ARE smashable to reach enclosed prey -- but NOT the
         // mod's own reinforced/protecting glass (village defence), which lives in our namespace.
-        if (s.is(net.minecraftforge.common.Tags.Blocks.GLASS) || s.is(net.minecraftforge.common.Tags.Blocks.GLASS_PANES)) {
-            ResourceLocation gid = ForgeRegistries.BLOCKS.getKey(s.getBlock());
+        if (s.is(net.neoforged.neoforge.common.Tags.Blocks.GLASS_BLOCKS) || s.is(net.neoforged.neoforge.common.Tags.Blocks.GLASS_PANES)) {
+            ResourceLocation gid = BuiltInRegistries.BLOCK.getKey(s.getBlock());
             return gid == null || !gid.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID);
         }
         return false;

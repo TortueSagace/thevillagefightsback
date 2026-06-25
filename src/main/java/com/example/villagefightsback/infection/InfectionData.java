@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -67,7 +68,8 @@ public class InfectionData extends SavedData {
     public InfectionData() {}
 
     public static InfectionData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(InfectionData::load, InfectionData::new, NAME);
+        return level.getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(InfectionData::new, (tag, registries) -> load(tag, registries)), NAME);
     }
 
     // --- path heads ---
@@ -214,7 +216,7 @@ public class InfectionData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putLongArray("pathHeads", toArray(pathHeads));
         tag.putLongArray("frontier", toArray(frontier));
         tag.putLongArray("rich", toArray(rich));
@@ -230,7 +232,7 @@ public class InfectionData extends SavedData {
         return tag;
     }
 
-    public static InfectionData load(CompoundTag tag) {
+    public static InfectionData load(CompoundTag tag, HolderLookup.Provider registries) {
         InfectionData d = new InfectionData();
         for (long l : tag.getLongArray("pathHeads")) { d.pathHeads.addLast(l); d.pathHeadSet.add(l); }
         for (long l : tag.getLongArray("frontier")) { d.frontier.addLast(l); d.frontierSet.add(l); }

@@ -1,65 +1,40 @@
 package com.example.villagefightsback.network;
 
-import com.example.villagefightsback.TheVillageFightsBack;
-
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /** The mod's single network channel. Registered from the mod constructor (common side). */
 public final class ModNetwork {
     private ModNetwork() {}
 
     private static final String PROTOCOL = "1";
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(TheVillageFightsBack.MODID, "main"),
-            () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
-    public static void register() {
-        int id = 0;
-        CHANNEL.messageBuilder(OpenBrainNodeScreenPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(OpenBrainNodeScreenPacket::encode)
-                .decoder(OpenBrainNodeScreenPacket::decode)
-                .consumerMainThread(OpenBrainNodeScreenPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(EmeraldTintPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(EmeraldTintPacket::encode)
-                .decoder(EmeraldTintPacket::decode)
-                .consumerMainThread(EmeraldTintPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(ScreenShakePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ScreenShakePacket::encode)
-                .decoder(ScreenShakePacket::decode)
-                .consumerMainThread(ScreenShakePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(LimboBeamPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(LimboBeamPacket::encode)
-                .decoder(LimboBeamPacket::decode)
-                .consumerMainThread(LimboBeamPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(LimboCooldownPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(LimboCooldownPacket::encode)
-                .decoder(LimboCooldownPacket::decode)
-                .consumerMainThread(LimboCooldownPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(VillageDiscoveryPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(VillageDiscoveryPacket::encode)
-                .decoder(VillageDiscoveryPacket::decode)
-                .consumerMainThread(VillageDiscoveryPacket::handle)
-                .add();
+    public static void register(IEventBus modBus) {
+        modBus.addListener(ModNetwork::onRegister);
+    }
+
+    private static void onRegister(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL);
+        registrar.playToClient(OpenBrainNodeScreenPacket.TYPE, OpenBrainNodeScreenPacket.STREAM_CODEC, OpenBrainNodeScreenPacket::handle);
+        registrar.playToClient(EmeraldTintPacket.TYPE, EmeraldTintPacket.STREAM_CODEC, EmeraldTintPacket::handle);
+        registrar.playToClient(ScreenShakePacket.TYPE, ScreenShakePacket.STREAM_CODEC, ScreenShakePacket::handle);
+        registrar.playToServer(LimboBeamPacket.TYPE, LimboBeamPacket.STREAM_CODEC, LimboBeamPacket::handle);
+        registrar.playToClient(LimboCooldownPacket.TYPE, LimboCooldownPacket.STREAM_CODEC, LimboCooldownPacket::handle);
+        registrar.playToClient(VillageDiscoveryPacket.TYPE, VillageDiscoveryPacket.STREAM_CODEC, VillageDiscoveryPacket::handle);
     }
 
     /** Send a packet to one player (server -> client). */
-    public static void sendTo(ServerPlayer player, Object msg) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), msg);
+    public static void sendTo(ServerPlayer player, CustomPacketPayload msg) {
+        PacketDistributor.sendToPlayer(player, msg);
     }
 
     /** Send a packet to every client tracking {@code entity} (server -> clients), including the entity itself. */
-    public static void sendToTracking(Entity entity, Object msg) {
-        CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), msg);
+    public static void sendToTracking(Entity entity, CustomPacketPayload msg) {
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, msg);
     }
 }

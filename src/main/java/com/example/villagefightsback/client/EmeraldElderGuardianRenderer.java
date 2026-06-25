@@ -16,13 +16,13 @@ import net.minecraft.world.entity.monster.Guardian;
  */
 public class EmeraldElderGuardianRenderer extends ElderGuardianRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_elder_guardian.png");
+            TheVillageFightsBack.id("textures/entity/emerald_elder_guardian.png");
 
     public EmeraldElderGuardianRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         // Anonymous EyesLayer<> infers <ElderGuardian, GuardianModel> from this renderer's RenderLayerParent type.
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_elder_guardian_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_elder_guardian_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

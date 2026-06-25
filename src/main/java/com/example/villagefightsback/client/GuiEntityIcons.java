@@ -47,7 +47,12 @@ public final class GuiEntityIcons {
             age += SPIN_RATE;        // advance the model animation slowly (the wall defender's spin reads ageInTicks)
             e.tickCount = (int) age;
             // Centre the entity horizontally; ICON_DROP lowers the feet anchor so the spinning core sits mid-slot.
-            InventoryScreen.renderEntityInInventoryFollowsMouse(g, iconX + 8, iconY + ICON_DROP, scale, 0.0F, 0.0F, e);
+            // 1.21.1's box-based overload centres the entity at ((x1+x2)/2, y2-feet); passing the box centre as the
+            // mouse position yields a 0 relative angle, matching the old fixed-facing (0,0) call.
+            int cx = iconX + 8;
+            int by = iconY + ICON_DROP;
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
+                    g, cx, by - scale * 2, cx, by, scale, 0.0F, cx, by - scale, e);
             return true;
         } catch (Throwable t) {
             disabled = true;

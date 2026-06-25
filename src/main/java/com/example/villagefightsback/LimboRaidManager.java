@@ -32,12 +32,12 @@ import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * The Limbo raid. Spend more than 30s straight in the Limbo and you earn the {@link VeryBadOmenEffect Very Bad
@@ -46,7 +46,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * horn, village AI and victory/loss) -- the only change is that every illager vanilla spawns is immediately
  * swapped for its ghostly Limbo counterpart, and each wave is reinforced with a few Limbo Phantoms.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboRaidManager {
     private LimboRaidManager() {}
 
@@ -68,8 +68,7 @@ public final class LimboRaidManager {
     private static final List<Raider> pendingSwaps = new ArrayList<>();
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         long _p = ModProfiler.now();
@@ -147,10 +146,10 @@ public final class LimboRaidManager {
             UUID id = p.getUUID();
             if (LimboDimension.LIMBO.equals(level.dimension())) {
                 int t = limboTime.merge(id, 20, Integer::sum);
-                if (t >= OMEN_TICKS && !p.hasEffect(ModEffects.VERY_BAD_OMEN.get())) applyOmen(p);
+                if (t >= OMEN_TICKS && !p.hasEffect(ModEffects.VERY_BAD_OMEN)) applyOmen(p);
             } else {
                 limboTime.remove(id);
-                if (p.hasEffect(ModEffects.VERY_BAD_OMEN.get())) {
+                if (p.hasEffect(ModEffects.VERY_BAD_OMEN)) {
                     BlockPos center = findVillageCenter(level, p.blockPosition());
                     if (center != null && !raidActiveNear(center)) triggerLimboRaid(p, level, center);
                 }
@@ -160,16 +159,16 @@ public final class LimboRaidManager {
 
     /** Apply the omen (visible=false -> NO particles) and warn the just-marked player in red: "Incoming...". */
     private static void applyOmen(ServerPlayer p) {
-        p.addEffect(new MobEffectInstance(ModEffects.VERY_BAD_OMEN.get(), OMEN_DURATION, 0, false, false, true));
+        p.addEffect(new MobEffectInstance(ModEffects.VERY_BAD_OMEN, OMEN_DURATION, 0, false, false, true));
         p.sendSystemMessage(Component.literal("§4Incoming..."));
     }
 
     /** Convert the Very Bad Omen into a REAL vanilla raid at the village, then mark it so its raiders are swapped. */
     private static void triggerLimboRaid(ServerPlayer player, ServerLevel level, BlockPos center) {
-        player.removeEffect(ModEffects.VERY_BAD_OMEN.get());
+        player.removeEffect(ModEffects.VERY_BAD_OMEN);
         // Hand the vanilla raid system a Bad Omen and let it build the raid; createOrExtendRaid absorbs it.
         player.addEffect(new MobEffectInstance(MobEffects.BAD_OMEN, 100, 0, false, false, false));
-        Raid raid = level.getRaids().createOrExtendRaid(player);
+        Raid raid = level.getRaids().createOrExtendRaid(player, center);
         if (raid == null) { player.removeEffect(MobEffects.BAD_OMEN); return; } // no raid possible -> don't leak omen
         limboRaids.put(raid, level);
         // The payoff line as the raid actually begins, shown to everyone nearby (the "Incoming..." warning was
@@ -205,7 +204,7 @@ public final class LimboRaidManager {
             BlockPos surf = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(x, center.getY(), z));
             ph.moveTo(x + 0.5, surf.getY() + 8 + level.getRandom().nextInt(8), z + 0.5,
                     level.getRandom().nextFloat() * 360.0F, 0.0F);
-            ph.finalizeSpawn(level, level.getCurrentDifficultyAt(ph.blockPosition()), MobSpawnType.EVENT, null, null);
+            ph.finalizeSpawn(level, level.getCurrentDifficultyAt(ph.blockPosition()), MobSpawnType.EVENT, null);
             level.addFreshEntity(ph);
         }
     }

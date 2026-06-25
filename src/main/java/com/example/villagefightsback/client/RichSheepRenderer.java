@@ -27,13 +27,13 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class RichSheepRenderer extends MobRenderer<RichSheepEntity, SheepModel<RichSheepEntity>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_sheep.png");
+            TheVillageFightsBack.id("textures/entity/emerald_sheep.png");
 
     public RichSheepRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new SheepModel<>(ctx.bakeLayer(ModelLayers.SHEEP)), 0.7F);
         this.addLayer(new RichSheepFurLayer(this, ctx.getModelSet()));
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_sheep_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_sheep_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {
@@ -51,7 +51,7 @@ public class RichSheepRenderer extends MobRenderer<RichSheepEntity, SheepModel<R
     /** Vanilla SheepFurLayer logic, but rendered at full-white RGB (no tint) with our rich fur texture. */
     private static class RichSheepFurLayer extends RenderLayer<RichSheepEntity, SheepModel<RichSheepEntity>> {
         private static final ResourceLocation FUR =
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/rich_sheep_fur.png");
+                TheVillageFightsBack.id("textures/entity/rich_sheep_fur.png");
         private final SheepFurModel<RichSheepEntity> model;
 
         RichSheepFurLayer(RenderLayerParent<RichSheepEntity, SheepModel<RichSheepEntity>> parent,
@@ -73,14 +73,14 @@ public class RichSheepRenderer extends MobRenderer<RichSheepEntity, SheepModel<R
                     this.model.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
                     var vc = buffer.getBuffer(RenderType.outline(FUR));
                     this.model.renderToBuffer(pose, vc, light,
-                            LivingEntityRenderer.getOverlayCoords(entity, 0.0F), 0.0F, 0.0F, 0.0F, 1.0F);
+                            LivingEntityRenderer.getOverlayCoords(entity, 0.0F), 0xFF000000);
                 }
                 return;
             }
             // Full white RGB -- the rich fur texture is already green, so we do not tint it.
             coloredCutoutModelCopyLayerRender(this.getParentModel(), this.model, FUR, pose, buffer, light,
                     entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, partialTick,
-                    1.0F, 1.0F, 1.0F);
+                    0xFFFFFFFF);
         }
     }
 }

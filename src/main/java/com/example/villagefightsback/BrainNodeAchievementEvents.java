@@ -9,10 +9,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Grants the brain node-stage advancements: every couple of seconds, each player near a village fires the
@@ -20,7 +20,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * earns the Settlement/Fertilization/Expansion/Culmination advancement the first time they are near a village
  * that has reached the matching stage -- however the village got there.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainNodeAchievementEvents {
     private BrainNodeAchievementEvents() {}
 
@@ -30,8 +30,7 @@ public final class BrainNodeAchievementEvents {
     private static final int OVERPOPULATION_COUNT = 50; // "Overpopulation" (the default army cap)
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % 40 != 0) return;
         BrainNodeData data = BrainNodeData.get(server);

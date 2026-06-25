@@ -9,6 +9,7 @@ import com.example.villagefightsback.infection.MinerRole;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
@@ -20,7 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -112,7 +113,7 @@ public class MinerGoal extends Goal {
 
     @Override
     public void start() {
-        villager.setPathfindingMalus(BlockPathTypes.WATER, 0.0F); // let miners path through / dive into water
+        villager.setPathfindingMalus(PathType.WATER, 0.0F); // let miners path through / dive into water
         if (!carrying) equipTool(Items.IRON_PICKAXE);
     }
 
@@ -342,7 +343,7 @@ public class MinerGoal extends Goal {
         if (s.isAir() || !s.blocksMotion()) return false;
         if (BlockMatcher.isInfection(s)) return false;       // don't chew our own spread / rich blocks
         net.minecraft.world.level.block.Block b = s.getBlock();
-        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(b);
+        net.minecraft.resources.ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
         if (id != null) {
             if (id.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID)) return false; // our blocks
             if (id.getPath().contains("cobblestone")) return false; // never the walls

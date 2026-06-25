@@ -15,12 +15,12 @@ import net.minecraft.world.entity.monster.AbstractSkeleton;
  */
 public class EmeraldSkeletonRenderer extends SkeletonRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_skeleton.png");
+            TheVillageFightsBack.id("textures/entity/emerald_skeleton.png");
 
     public EmeraldSkeletonRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_skeleton_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_skeleton_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

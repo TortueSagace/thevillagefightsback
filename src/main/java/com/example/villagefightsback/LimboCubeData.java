@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import java.util.HashSet;
 import java.util.Set;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -20,7 +21,8 @@ public class LimboCubeData extends SavedData {
     public LimboCubeData() {}
 
     public static LimboCubeData get(ServerLevel limbo) {
-        return limbo.getDataStorage().computeIfAbsent(LimboCubeData::load, LimboCubeData::new, NAME);
+        return limbo.getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(LimboCubeData::new, (tag, registries) -> load(tag)), NAME);
     }
 
     /** Mark a cube-origin chunk built; returns true if this is the first time (i.e. build it now). */
@@ -36,7 +38,7 @@ public class LimboCubeData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putLongArray("built", built.stream().mapToLong(Long::longValue).toArray());
         return tag;
     }

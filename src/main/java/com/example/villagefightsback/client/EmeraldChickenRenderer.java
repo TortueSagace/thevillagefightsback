@@ -16,12 +16,12 @@ import net.minecraft.world.entity.animal.Chicken;
  */
 public class EmeraldChickenRenderer extends ChickenRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_chicken.png");
+            TheVillageFightsBack.id("textures/entity/emerald_chicken.png");
 
     public EmeraldChickenRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_chicken_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_chicken_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

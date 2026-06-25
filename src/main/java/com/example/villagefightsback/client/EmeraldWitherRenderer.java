@@ -16,13 +16,13 @@ import net.minecraft.world.entity.boss.wither.WitherBoss;
  */
 public class EmeraldWitherRenderer extends WitherBossRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_wither.png");
+            TheVillageFightsBack.id("textures/entity/emerald_wither.png");
 
     public EmeraldWitherRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         // Fullbright eyes overlay; the anonymous EyesLayer infers <WitherBoss, model> from this renderer.
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_wither_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_wither_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

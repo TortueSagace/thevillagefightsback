@@ -24,13 +24,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Runs the Limbo "holding cell": each creature banished into Limbo is leashed by a {@link LimboGravelBlock}
@@ -43,7 +44,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * carried item is the only stable hold); and Silk Touch converts a gravel into a carried soul-gravel item that
  * keeps the creature banished until it is freed.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboManager {
     private LimboManager() {}
 
@@ -69,9 +70,8 @@ public final class LimboManager {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof ServerPlayer sp)) return;
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
         UUID id = sp.getUUID();
         if (LimboDimension.LIMBO.equals(sp.level().dimension())) {
             if (LIMBO_PLAYERS.add(id)) {
@@ -92,8 +92,7 @@ public final class LimboManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
@@ -527,7 +526,7 @@ public final class LimboManager {
     }
 
     private static String typeKey(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id == null ? "" : id.toString();
     }
 
@@ -543,13 +542,14 @@ public final class LimboManager {
         as.setNoGravity(true);
         as.setCustomName(Component.literal(name));
         as.setCustomNameVisible(true);
+        // Set marker/small/no-base-plate via a save/load round-trip (the setters are private). save(tag) is gone
+        // in 1.21; use addAdditionalSaveData/readAdditionalSaveData (mirrors ArmorStandEvents).
         CompoundTag tag = new CompoundTag();
-        if (as.save(tag)) {
-            tag.putBoolean("Marker", true);
-            tag.putBoolean("Small", true);
-            tag.putBoolean("NoBasePlate", true);
-            as.load(tag);
-        }
+        as.addAdditionalSaveData(tag);
+        tag.putBoolean("Marker", true);
+        tag.putBoolean("Small", true);
+        tag.putBoolean("NoBasePlate", true);
+        as.readAdditionalSaveData(tag);
         origin.addFreshEntity(as);
         return as.getUUID();
     }

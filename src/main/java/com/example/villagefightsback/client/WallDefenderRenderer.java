@@ -10,9 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 /** Renders the wall defender as a spinning conduit-like core. */
 public class WallDefenderRenderer extends MobRenderer<WallDefenderEntity, WallDefenderModel> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/wall_defender.png");
+            TheVillageFightsBack.id("textures/entity/wall_defender.png");
     private static final ResourceLocation TEXTURE_STAGE4 =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/wall_defender_stage4.png");
+            TheVillageFightsBack.id("textures/entity/wall_defender_stage4.png");
 
     public WallDefenderRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new WallDefenderModel(ctx.bakeLayer(TheVillageFightsBackClient.WALL_DEFENDER_LAYER)), 0.3F);

@@ -21,7 +21,7 @@ import net.minecraft.world.entity.animal.IronGolem;
  */
 public class EmeraldDefenderGolemRenderer extends IronGolemRenderer {
     private static final ResourceLocation BODY =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_iron_golem.png");
+            TheVillageFightsBack.id("textures/entity/emerald_iron_golem.png");
 
     public EmeraldDefenderGolemRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

@@ -55,7 +55,7 @@ public class LimboPortalBlock extends Block {
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level.isClientSide() || !(level instanceof ServerLevel sl)) return;
-        if (entity.isPassenger() || entity.isVehicle() || !entity.canChangeDimensions()) return;
+        if (entity.isPassenger() || entity.isVehicle() || !entity.canUsePortal(false)) return;
         if (entity.isOnPortalCooldown()) { entity.setPortalCooldown(); return; }
 
         long now = sl.getGameTime();

@@ -292,7 +292,7 @@ public class GeneralDariusGoal extends Goal {
         float fall = Math.min(darius.fallDistance, FALL_CAP);
         float dmg = SMASH_BASE + fall * SMASH_PER_BLOCK;
         t.hurt(darius.damageSources().mobAttack(darius), dmg);
-        t.setSecondsOnFire(FIRE_ASPECT_SECONDS);
+        t.igniteForSeconds(FIRE_ASPECT_SECONDS);
         darius.swing(InteractionHand.MAIN_HAND);
         darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.9F, 1.3F);

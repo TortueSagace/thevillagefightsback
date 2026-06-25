@@ -17,12 +17,12 @@ public class ReinforcedGlassBlock extends HalfTransparentBlock {
     }
 
     @Override
-    public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
+    protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
         return 0; // no dimming as light passes through (vanilla glass dims by 1)
     }
 
     @Override
-    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
         return true; // skylight passes straight down through the dome
     }
 }

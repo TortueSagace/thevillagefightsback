@@ -2,17 +2,16 @@ package com.example.villagefightsback;
 
 import com.google.common.collect.ImmutableSet;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * The mod's villager content: the Limbo Sage profession and the POI it works at.
@@ -26,19 +25,19 @@ public final class ModVillagers {
     private ModVillagers() {}
 
     public static final DeferredRegister<PoiType> POI_TYPES =
-            DeferredRegister.create(ForgeRegistries.POI_TYPES, TheVillageFightsBack.MODID);
+            DeferredRegister.create(BuiltInRegistries.POINT_OF_INTEREST_TYPE, TheVillageFightsBack.MODID);
     public static final DeferredRegister<VillagerProfession> PROFESSIONS =
-            DeferredRegister.create(ForgeRegistries.VILLAGER_PROFESSIONS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(BuiltInRegistries.VILLAGER_PROFESSION, TheVillageFightsBack.MODID);
 
     /** The POI's registry key, used by the profession predicates (a sage works/acquires only at this POI). */
     public static final ResourceKey<PoiType> LIMBO_SAGE_POI_KEY = ResourceKey.create(
-            Registries.POINT_OF_INTEREST_TYPE, new ResourceLocation(TheVillageFightsBack.MODID, "limbo_sage"));
+            Registries.POINT_OF_INTEREST_TYPE, TheVillageFightsBack.id("limbo_sage"));
 
     /**
      * The Limbo Sage POI: the brain node block. maxTickets = 1 (one sage per node = one per village),
      * validRange = 1 (the sage's job-site search radius around a claimed node).
      */
-    public static final RegistryObject<PoiType> LIMBO_SAGE_POI = POI_TYPES.register("limbo_sage",
+    public static final DeferredHolder<PoiType, PoiType> LIMBO_SAGE_POI = POI_TYPES.register("limbo_sage",
             () -> new PoiType(brainNodeStates(), 1, 1));
 
     /**
@@ -46,7 +45,7 @@ public final class ModVillagers {
      * No requested items, no secondary POI; it uses the cleric work sound. Built with the record's canonical
      * constructor (the predicates test the POI Holder against {@link #LIMBO_SAGE_POI_KEY}).
      */
-    public static final RegistryObject<VillagerProfession> LIMBO_SAGE = PROFESSIONS.register("limbo_sage",
+    public static final DeferredHolder<VillagerProfession, VillagerProfession> LIMBO_SAGE = PROFESSIONS.register("limbo_sage",
             () -> new VillagerProfession("limbo_sage",
                     holder -> holder.is(LIMBO_SAGE_POI_KEY),
                     holder -> holder.is(LIMBO_SAGE_POI_KEY),

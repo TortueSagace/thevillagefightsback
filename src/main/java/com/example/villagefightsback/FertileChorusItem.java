@@ -22,7 +22,7 @@ public class FertileChorusItem extends ChorusFruitItem {
         // super keeps the chorus-fruit behaviour: applies the food and teleports the eater.
         ItemStack result = super.finishUsingItem(stack, level, entity);
         if (!level.isClientSide && entity instanceof Player && level.random.nextFloat() < 0.01F) {
-            entity.addEffect(new MobEffectInstance(ModEffects.EMERALD_DIARRHEA.get(), 600)); // 30s
+            entity.addEffect(new MobEffectInstance(ModEffects.EMERALD_DIARRHEA, 600)); // 30s
         }
         return result;
     }

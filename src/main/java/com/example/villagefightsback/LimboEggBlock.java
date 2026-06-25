@@ -3,6 +3,8 @@ package com.example.villagefightsback;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -24,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * hatch on its own. It falls like a dragon egg; falling alone does not hatch it.
  */
 public class LimboEggBlock extends FallingBlock {
+    public static final MapCodec<LimboEggBlock> CODEC = simpleCodec(LimboEggBlock::new);
     private static final int NATURAL_HATCH_CHANCE = 800; // 1/this per random tick
 
     private static final Set<String> FALLING = ConcurrentHashMap.newKeySet();    // dim|pos currently falling
@@ -31,6 +34,11 @@ public class LimboEggBlock extends FallingBlock {
 
     public LimboEggBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends FallingBlock> codec() {
+        return CODEC;
     }
 
     private static String key(Level level, BlockPos pos) {
@@ -51,12 +59,15 @@ public class LimboEggBlock extends FallingBlock {
 
     /** Note a Silk-Touch break so {@link #onRemove} drops the egg instead of hatching it. */
     @Override
-    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (level instanceof ServerLevel
-                && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, player.getMainHandItem()) > 0) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (level instanceof ServerLevel sl
+                && EnchantmentHelper.getItemEnchantmentLevel(
+                        sl.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                                .getOrThrow(Enchantments.SILK_TOUCH),
+                        player.getMainHandItem()) > 0) {
             SILK_BREAK.add(key(level, pos));
         }
-        super.playerWillDestroy(level, pos, state, player);
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override
@@ -88,7 +99,7 @@ public class LimboEggBlock extends FallingBlock {
         LimboPhantomEntity phantom = ModEntities.LIMBO_PHANTOM.get().create(level);
         if (phantom != null) {
             phantom.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-            phantom.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null);
+            phantom.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
             phantom.setPersistenceRequired(); // hatched in a cube -> stays put
             level.addFreshEntity(phantom);
         }

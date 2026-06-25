@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,7 +15,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * A NATIVE Wind Charge projectile -- an IDENTICAL clone of the vanilla 1.21 wind charge (so the mod no longer
@@ -118,10 +115,5 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     @Override
     public ItemStack getItem() {
         return new ItemStack(ModItems.WIND_CHARGE.get()); // the billboard the client renders
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this); // carry velocity to the client
     }
 }

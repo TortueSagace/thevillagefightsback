@@ -6,27 +6,31 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Draws the banish-ability cooldown indicator (a small green square that fills as it recharges, with the
  * seconds remaining) just left of the hotbar -- but only while the player wears the full Limbo set, i.e. only
  * once they actually have the ability.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class LimboAbilityHud {
     private LimboAbilityHud() {}
 
     private static final int GREEN = 0xFF3BF07A;
 
     @SubscribeEvent
-    public static void onRegister(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "limbo_ability_cooldown",
-                (gui, g, partialTick, w, h) -> draw(g, w, h));
+    public static void onRegister(RegisterGuiLayersEvent event) {
+        event.registerAbove(VanillaGuiLayers.HOTBAR, TheVillageFightsBack.id("limbo_ability_cooldown"),
+                (GuiGraphics g, net.minecraft.client.DeltaTracker delta) -> {
+                    int w = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+                    int h = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+                    draw(g, w, h);
+                });
     }
 
     private static void draw(GuiGraphics g, int w, int h) {

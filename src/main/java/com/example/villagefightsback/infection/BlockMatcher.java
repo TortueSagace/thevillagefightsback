@@ -10,6 +10,7 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.LevelReader;
@@ -22,8 +23,7 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.Tags;
 
 /**
  * Decides which world blocks the infection may convert, and what Fertile/Rich block each becomes.
@@ -72,7 +72,7 @@ public final class BlockMatcher {
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
 
     private static Block byId(String name) {
-        return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
+        return BuiltInRegistries.BLOCK.get(TheVillageFightsBack.id(name));
     }
 
     private static void putAll(Map<Block, String> m, String base, Block... blocks) {
@@ -93,8 +93,8 @@ public final class BlockMatcher {
             if (f != null && r != null) upgradableFertile.add(f); // this fertile block can ripen into its rich form
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
-        if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
-        if (ModBlocks.FERTILE_KELP.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_KELP.get());   // converted kelp
+        if (ModBlocks.INFESTED_PATH.isBound()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
+        if (ModBlocks.FERTILE_KELP.isBound()) infectionBlocks.add(ModBlocks.FERTILE_KELP.get());   // converted kelp
 
         // Villager job-site workstations + the meeting bell: never infected, so a village keeps its jobs.
         jobSites = new HashSet<>();
@@ -106,23 +106,23 @@ public final class BlockMatcher {
             jobSites.add(b);
         }
         // our shape-preserving fertile blocks count as infection too, so they are never re-converted to cubes.
-        if (ModBlocks.FERTILE_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
-        if (ModBlocks.FERTILE_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
-        if (ModBlocks.FERTILE_FENCE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
-        if (ModBlocks.FERTILE_IRON_BARS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_IRON_BARS.get());
-        if (ModBlocks.FERTILE_DOOR.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_DOOR.get());
-        if (ModBlocks.FERTILE_PLANKS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS.get());
-        if (ModBlocks.FERTILE_PLANKS_STAIRS.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_STAIRS.get());
-        if (ModBlocks.FERTILE_PLANKS_SLAB.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_SLAB.get());
-        if (ModBlocks.FERTILE_COBBLESTONE.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_COBBLESTONE.get());
+        if (ModBlocks.FERTILE_STAIRS.isBound()) infectionBlocks.add(ModBlocks.FERTILE_STAIRS.get());
+        if (ModBlocks.FERTILE_SLAB.isBound()) infectionBlocks.add(ModBlocks.FERTILE_SLAB.get());
+        if (ModBlocks.FERTILE_FENCE.isBound()) infectionBlocks.add(ModBlocks.FERTILE_FENCE.get());
+        if (ModBlocks.FERTILE_IRON_BARS.isBound()) infectionBlocks.add(ModBlocks.FERTILE_IRON_BARS.get());
+        if (ModBlocks.FERTILE_DOOR.isBound()) infectionBlocks.add(ModBlocks.FERTILE_DOOR.get());
+        if (ModBlocks.FERTILE_PLANKS.isBound()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS.get());
+        if (ModBlocks.FERTILE_PLANKS_STAIRS.isBound()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_STAIRS.get());
+        if (ModBlocks.FERTILE_PLANKS_SLAB.isBound()) infectionBlocks.add(ModBlocks.FERTILE_PLANKS_SLAB.get());
+        if (ModBlocks.FERTILE_COBBLESTONE.isBound()) infectionBlocks.add(ModBlocks.FERTILE_COBBLESTONE.get());
         // fertile + rich chorus blocks count as infection so they are never re-converted.
-        if (ModBlocks.FERTILE_CHORUS_PLANT.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_PLANT.get());
-        if (ModBlocks.FERTILE_CHORUS_FLOWER.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_FLOWER.get());
-        if (ModBlocks.RICH_CHORUS_PLANT.isPresent()) {
+        if (ModBlocks.FERTILE_CHORUS_PLANT.isBound()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_PLANT.get());
+        if (ModBlocks.FERTILE_CHORUS_FLOWER.isBound()) infectionBlocks.add(ModBlocks.FERTILE_CHORUS_FLOWER.get());
+        if (ModBlocks.RICH_CHORUS_PLANT.isBound()) {
             Block b = ModBlocks.RICH_CHORUS_PLANT.get();
             infectionBlocks.add(b); richBlockSet.add(b);
         }
-        if (ModBlocks.RICH_CHORUS_FLOWER.isPresent()) {
+        if (ModBlocks.RICH_CHORUS_FLOWER.isBound()) {
             Block b = ModBlocks.RICH_CHORUS_FLOWER.get();
             infectionBlocks.add(b); richBlockSet.add(b);
         }
@@ -162,7 +162,7 @@ public final class BlockMatcher {
         init();
         if (!infectionBlocks.contains(s.getBlock())) return false;
         if (s.is(Blocks.DIRT_PATH)) return false;
-        return !(ModBlocks.INFESTED_PATH.isPresent() && s.is(ModBlocks.INFESTED_PATH.get())); // path vector, not a tally block
+        return !(ModBlocks.INFESTED_PATH.isBound() && s.is(ModBlocks.INFESTED_PATH.get())); // path vector, not a tally block
     }
 
     public static boolean isRich(BlockState s) {
@@ -214,7 +214,7 @@ public final class BlockMatcher {
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
         if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
         if (s.is(BlockTags.WOOL)) return false;                        // keep wool (all colours)
-        if (s.is(Tags.Blocks.GLASS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
+        if (s.is(Tags.Blocks.GLASS_BLOCKS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
         if (s.is(BlockTags.STONE_BRICKS)) return false;                // keep stone bricks (+ chiseled/mossy/cracked)
         if (b instanceof net.minecraft.world.level.block.CampfireBlock) return false; // keep campfires (lit OR unlit)
         // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
@@ -226,7 +226,7 @@ public final class BlockMatcher {
         if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 0) return false;                    // any light source (torch/glowstone/lantern/...)
         if (b.getExplosionResistance() >= 1200.0F) return false;       // toughness must be < 1200
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
         if (id != null) {
             // Never eat our own special blocks (brainNode / walls' fake cobblestone / glass / scaffolds / ...).
             if (id.getNamespace().equals(TheVillageFightsBack.MODID)) return false;
@@ -269,7 +269,7 @@ public final class BlockMatcher {
         Block b = s.getBlock();
         String ex = exact.get(b);
         if (ex != null) return ex;
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
         String path = id != null ? id.getPath() : "";
         for (String base : BASES) if (path.contains(base)) return base;
         float h = b.defaultDestroyTime();

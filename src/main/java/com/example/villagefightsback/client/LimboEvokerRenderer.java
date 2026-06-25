@@ -12,9 +12,9 @@ import net.minecraft.world.entity.monster.Evoker;
  *  scaled 2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboEvokerRenderer extends EvokerRenderer<Evoker> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_evoker.png");
+            TheVillageFightsBack.id("textures/entity/limbo_evoker.png");
     private static final ResourceLocation GLOW =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_evoker_glow.png");
+            TheVillageFightsBack.id("textures/entity/limbo_evoker_glow.png");
 
     public LimboEvokerRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

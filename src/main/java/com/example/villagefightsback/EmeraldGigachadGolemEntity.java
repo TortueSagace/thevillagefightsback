@@ -1,11 +1,8 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Gigachad Golem: the emerald-faction version of the {@link GigachadGolemEntity}. It inherits the
@@ -32,9 +29,4 @@ public class EmeraldGigachadGolemEntity extends GigachadGolemEntity implements E
 
     // finalizeSpawn is inherited from GigachadGolemEntity -> armGolemFull (rocket launcher, armour, 200 HP,
     // GolemRocketGoal). The rocket goal is faction-aware and fires at whatever the emerald goals target.
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

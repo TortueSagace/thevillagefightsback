@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " L ",
+    "RWR",
+    " E "
+  ],
+  "key": {
+    "L": { "item": "thevillagefightsback:rocket_launcher" },
+    "R": { "item": "thevillagefightsback:rocket" },
+    "W": { "item": "thevillagefightsback:wall_defender" },
+    "E": { "item": "minecraft:emerald" }
+  },
+  "result": { "id": "thevillagefightsback:wall_defender_stage4" }
+}

@@ -11,13 +11,13 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * "Fake cobblestone" -- looks/breaks like mossy cobblestone (and emits light), but is a smart door:
@@ -32,7 +32,7 @@ import net.minecraftforge.registries.ForgeRegistries;
  *    necessity in 1.20.1); allied mobs set that type's malus to 0 so only they route through.
  */
 public class FakeCobblestoneBlock extends Block {
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     public FakeCobblestoneBlock(Properties properties) {
         super(properties);
@@ -42,7 +42,7 @@ public class FakeCobblestoneBlock extends Block {
     public static boolean isPhaser(Entity e) {
         if (e instanceof Player || e instanceof Villager || e instanceof IronGolem) return true;
         if (Factions.isEmerald(e)) return true; // emerald faction units phase the village's smart doors too
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     @Override
@@ -72,7 +72,7 @@ public class FakeCobblestoneBlock extends Block {
 
     @Override
     @Nullable
-    public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
+    public PathType getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
         // Mob-blind in 1.20.1 (WalkNodeEvaluator passes null); ally/enemy split is via per-mob malus.
         return ModPathTypes.ALLY_PASSABLE;
     }

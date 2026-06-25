@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CPC",
+    "FAE",
+    "CGC"
+  ],
+  "key": {
+    "C": { "item": "thevillagefightsback:fertile_chorus" },
+    "A": { "item": "minecraft:netherite_axe" },
+    "P": { "type": "neoforge:data_components", "items": "minecraft:potion", "components": { "minecraft:potion_contents": { "potion": "thevillagefightsback:strong_emerald_virus" } } },
+    "F": { "item": "minecraft:fire_charge" },
+    "E": { "item": "minecraft:echo_shard" },
+    "G": { "item": "minecraft:ghast_tear" }
+  },
+  "result": {
+    "id": "thevillagefightsback:alien_eradicator",
+    "count": 1
+  }
+}

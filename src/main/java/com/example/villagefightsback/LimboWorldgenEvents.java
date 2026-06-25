@@ -4,10 +4,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * Generates the Limbo's floating bedrock cubes on demand. When a Limbo chunk loads we queue it; on the next
@@ -15,7 +15,7 @@ import net.minecraftforge.fml.common.Mod;
  * Chunks load only when a player is near, so -- apart from the always-loaded central cube -- the Limbo costs
  * nothing while empty.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboWorldgenEvents {
     private LimboWorldgenEvents() {}
 
@@ -30,10 +30,10 @@ public final class LimboWorldgenEvents {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || PENDING.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (PENDING.isEmpty()) return;
         net.minecraft.server.MinecraftServer server =
-                net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+                net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null) return;

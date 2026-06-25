@@ -20,10 +20,10 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class GreenTntBlock extends Block {
     // Tower variants and their cumulative spawn weights: original 40%, stone 40%, deepslate 20%.
-    private static final ResourceLocation TOWER = new ResourceLocation(TheVillageFightsBack.MODID, "village_tower_fix");
-    private static final ResourceLocation TOWER_STONE = new ResourceLocation(TheVillageFightsBack.MODID, "village_tower_fix_stone");
-    private static final ResourceLocation TOWER_DEEPSLATE = new ResourceLocation(TheVillageFightsBack.MODID, "village_tower_fix_deepslate");
-    private static final ResourceLocation LOOT = new ResourceLocation(TheVillageFightsBack.MODID, "chests/basic_house");
+    private static final ResourceLocation TOWER = TheVillageFightsBack.id("village_tower_fix");
+    private static final ResourceLocation TOWER_STONE = TheVillageFightsBack.id("village_tower_fix_stone");
+    private static final ResourceLocation TOWER_DEEPSLATE = TheVillageFightsBack.id("village_tower_fix_deepslate");
+    private static final ResourceLocation LOOT = TheVillageFightsBack.id("chests/basic_house");
 
     public GreenTntBlock(Properties properties) {
         super(properties);
@@ -42,7 +42,7 @@ public class GreenTntBlock extends Block {
         int roll = sl.random.nextInt(100);
         ResourceLocation tower = roll < 40 ? TOWER : roll < 80 ? TOWER_STONE : TOWER_DEEPSLATE; // 40 / 40 / 20
         HouseBuildManager.detonateNextTick(sl, at, () -> {
-            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 0.8F);
+            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 2.0F, 0.8F);
             sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
                     10, 2.0, 2.0, 2.0, 0.0);
             HousePlacer.place(sl, at, Rotation.NONE, tower, LOOT);

@@ -42,7 +42,7 @@ public class VindictiveGigachadEntity extends GigachadGolemEntity {
     }
 
     @Override
-    public void setSecondsOnFire(int seconds) {
+    public void igniteForTicks(int ticks) {
         // fire-immune: ignored
     }
 }

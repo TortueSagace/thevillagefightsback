@@ -8,16 +8,16 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Lights Limbo portals: right-clicking a {@link ModBlocks#FAKE_OBSIDIAN} frame with flint &amp; steel (or a fire
  * charge) tries to build a green Limbo portal in the enclosed opening ({@link LimboPortalShape}). On success
  * the flame is consumed but no fire is placed -- the portal blocks fill the frame directly.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPortalIgniteEvents {
     private LimboPortalIgniteEvents() {}
 
@@ -40,9 +40,9 @@ public final class LimboPortalIgniteEvents {
         sl.playSound(null, firePos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS, 1.0F, 1.0F);
         player.swing(event.getHand());
         if (held.is(Items.FLINT_AND_STEEL)) {
-            held.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(event.getHand() == InteractionHand.MAIN_HAND
+            held.hurtAndBreak(1, player, event.getHand() == InteractionHand.MAIN_HAND
                     ? net.minecraft.world.entity.EquipmentSlot.MAINHAND
-                    : net.minecraft.world.entity.EquipmentSlot.OFFHAND));
+                    : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
         } else if (!player.getAbilities().instabuild) {
             held.shrink(1);
         }

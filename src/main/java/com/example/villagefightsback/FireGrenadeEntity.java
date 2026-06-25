@@ -3,8 +3,6 @@ package com.example.villagefightsback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -18,7 +16,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Fire Grenade's thrown projectile -- a native replacement for JEG's molotov. On impact it shatters into
@@ -59,7 +56,7 @@ public class FireGrenadeEntity extends ThrowableItemProjectile {
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 new AABB(x, y, z, x, y, z).inflate(SPLASH_RADIUS), LivingEntity::isAlive)) {
             if (e == owner) continue;
-            e.setSecondsOnFire(FIRE_SECONDS);
+            e.igniteForSeconds(FIRE_SECONDS);
         }
 
         // scatter fire onto solid ground (mobGriefing-gated, like real fire spread)
@@ -73,10 +70,5 @@ public class FireGrenadeEntity extends ThrowableItemProjectile {
             }
         }
         discard();
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

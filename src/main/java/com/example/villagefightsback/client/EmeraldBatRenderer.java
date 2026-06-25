@@ -16,12 +16,12 @@ import net.minecraft.world.entity.ambient.Bat;
  */
 public class EmeraldBatRenderer extends BatRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_bat.png");
+            TheVillageFightsBack.id("textures/entity/emerald_bat.png");
 
     public EmeraldBatRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_bat_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_bat_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

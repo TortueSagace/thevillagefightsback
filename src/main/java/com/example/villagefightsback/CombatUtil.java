@@ -1,9 +1,9 @@
 package com.example.villagefightsback;
 
 import java.util.List;
-import java.util.UUID;
 
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -18,7 +18,6 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /** Helpers for aiming mobs, finding hostiles, and a few soft-dependency integrations. (No longer touches JEG
  *  or any third-party weapon mod -- the wind charge is native now.) */
@@ -29,8 +28,9 @@ public final class CombatUtil {
     // "converted" sculk, gore, tentacles, ...) are matched by namespace string rather than class.
     public static final String FAW_NAMESPACE = "fromanotherworld";
 
-    // Fixed UUID so re-applying the follow-range boost on world reload is idempotent.
-    private static final UUID FOLLOW_RANGE_BOOST_UUID = UUID.fromString("c0ffee00-0000-4000-8000-000000000001");
+    // Fixed id so re-applying the follow-range boost on world reload is idempotent.
+    private static final ResourceLocation FOLLOW_RANGE_BOOST_ID =
+            TheVillageFightsBack.id("vgun_follow_range");
 
     /**
      * Snap the shooter to face the target's centre of mass, so a subsequent straight-line shot (e.g. our
@@ -67,8 +67,8 @@ public final class CombatUtil {
         double delta = target - inst.getValue();
         if (delta <= 0) return;
         AttributeModifier mod = new AttributeModifier(
-                FOLLOW_RANGE_BOOST_UUID, "vgun follow range", delta, AttributeModifier.Operation.ADDITION);
-        if (!inst.hasModifier(mod)) {
+                FOLLOW_RANGE_BOOST_ID, delta, AttributeModifier.Operation.ADD_VALUE);
+        if (inst.getModifier(FOLLOW_RANGE_BOOST_ID) == null) {
             inst.addPermanentModifier(mod);
         }
     }
@@ -127,7 +127,7 @@ public final class CombatUtil {
 
     private static boolean isFawBlock(BlockState state) {
         if (state == null || state.isAir()) return false;
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         return id != null && FAW_NAMESPACE.equals(id.getNamespace());
     }
 

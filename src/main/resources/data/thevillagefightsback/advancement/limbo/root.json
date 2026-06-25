@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "thevillagefightsback:limbo_gravel"
+    },
+    "title": "You shouldn't stick around...",
+    "description": "Set foot in the Limbo.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "enter": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "thevillagefightsback:limbo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "enter"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/dark_deal"
+}

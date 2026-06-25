@@ -17,10 +17,10 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /**
  * CHUNK PORTALS (work in progress, v1.2.1) -- server side. Once {@link Config#chunkPortalsEnabled()} is on AND
@@ -35,7 +35,7 @@ import net.minecraftforge.fml.common.Mod;
  * plain green swirl; the live see-through Limbo view is a later phase. Mob cross-IN by walking a wall is also a
  * later phase (mobs only come out via the emergence below); only players walk through.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ChunkPortalManager {
     private ChunkPortalManager() {}
 
@@ -227,7 +227,7 @@ public final class ChunkPortalManager {
         Mob mob = randomRosterMob(level, rng);
         if (mob == null) return;
         mob.moveTo(x + 0.5, y, z + 0.5, rng.nextFloat() * 360.0F, 0.0F);
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.EVENT, null, null);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()), MobSpawnType.EVENT, null);
         mob.setPortalCooldown(); // don't let it instantly walk back into the wall it spawned by
         level.addFreshEntity(mob);
         level.sendParticles(ParticleTypes.PORTAL, x + 0.5, y + 1.0, z + 0.5, 24, 0.4, 0.6, 0.4, 0.25);

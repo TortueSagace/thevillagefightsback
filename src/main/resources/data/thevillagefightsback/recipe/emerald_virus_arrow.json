@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AAA",
+    "APA",
+    "AAA"
+  ],
+  "key": {
+    "A": { "item": "minecraft:arrow" },
+    "P": { "type": "neoforge:data_components", "items": "minecraft:potion", "components": { "minecraft:potion_contents": { "potion": "thevillagefightsback:emerald_virus" } } }
+  },
+  "result": {
+    "id": "thevillagefightsback:emerald_virus_arrow",
+    "count": 8
+  }
+}

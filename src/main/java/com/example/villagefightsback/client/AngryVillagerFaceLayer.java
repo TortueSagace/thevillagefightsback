@@ -12,8 +12,8 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-only: overlays an angry villager face on a vanilla {@link Villager} while it is FIGHTING (see
@@ -28,7 +28,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class AngryVillagerFaceLayer extends RenderLayer<Villager, VillagerModel<Villager>> {
     private static final ResourceLocation FACE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/angry_villager_face.png");
+            TheVillageFightsBack.id("textures/entity/angry_villager_face.png");
     private static final float GROW = 1.01F; // tiny outset so the scowl sits over (not inside) the face
 
     public AngryVillagerFaceLayer(RenderLayerParent<Villager, VillagerModel<Villager>> parent) {
@@ -45,7 +45,7 @@ public class AngryVillagerFaceLayer extends RenderLayer<Villager, VillagerModel<
         VertexConsumer vc = buffer.getBuffer(RenderType.entityTranslucent(FACE));
         pose.pushPose();
         pose.scale(GROW, GROW, GROW);
-        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         pose.popPose();
     }
 }

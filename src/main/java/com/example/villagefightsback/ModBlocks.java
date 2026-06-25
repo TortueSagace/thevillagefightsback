@@ -18,32 +18,32 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /** Block/item/creative-tab registration. */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public final class ModBlocks {
     private ModBlocks() {}
 
     public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(ForgeRegistries.BLOCKS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(BuiltInRegistries.BLOCK, TheVillageFightsBack.MODID);
     public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
     public static final DeferredRegister<CreativeModeTab> TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
     public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
-            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, TheVillageFightsBack.MODID);
+            DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, TheVillageFightsBack.MODID);
 
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
      * evolution level. It glows brighter as the level rises (charges visual). As tough as obsidian
      * (hardness 50, blast resistance 1200) so explosions can't destroy it.
      */
-    public static final RegistryObject<Block> VILLAGE_BRAIN_NODE = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> VILLAGE_BRAIN_NODE = BLOCKS.register(
             "village_brain_node",
             () -> new VillageBrainNodeBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
@@ -52,16 +52,16 @@ public final class ModBlocks {
                     // Glows at least as bright as a fertile block (FERTILE_LIGHT = 5), brighter as it levels up.
                     .lightLevel(s -> 15)));   // same full light as the Forgotten Glowstone block
 
-    public static final RegistryObject<Item> VILLAGE_BRAIN_NODE_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> VILLAGE_BRAIN_NODE_ITEM = ITEMS.register(
             "village_brain_node",
             () -> new BlockItem(VILLAGE_BRAIN_NODE.get(), new Item.Properties()));
 
     /** A throwaway scaffold villagers pillar with -- auto-breaks after ~1 minute (see {@link CheapScaffoldBlock}). */
-    public static final RegistryObject<Block> CHEAP_SCAFFOLD = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> CHEAP_SCAFFOLD = BLOCKS.register(
             "cheap_scaffold",
-            () -> new CheapScaffoldBlock(BlockBehaviour.Properties.copy(Blocks.SCAFFOLDING)));
+            () -> new CheapScaffoldBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.SCAFFOLDING)));
 
-    public static final RegistryObject<Item> CHEAP_SCAFFOLD_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> CHEAP_SCAFFOLD_ITEM = ITEMS.register(
             "cheap_scaffold",
             () -> new ScaffoldingBlockItem(CHEAP_SCAFFOLD.get(), new Item.Properties()));
 
@@ -71,28 +71,28 @@ public final class ModBlocks {
      * isSuffocating/isViewBlocking predicates are false so an ally inside it takes no damage / no
      * black overlay (these are Properties predicates, not block-method overrides).
      */
-    public static final RegistryObject<Block> FAKE_COBBLESTONE = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> FAKE_COBBLESTONE = BLOCKS.register(
             "fake_cobblestone",
-            () -> new FakeCobblestoneBlock(BlockBehaviour.Properties.copy(Blocks.MOSSY_COBBLESTONE)
+            () -> new FakeCobblestoneBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.MOSSY_COBBLESTONE)
                     .lightLevel(s -> 7)
                     .isSuffocating((s, l, p) -> false)
                     .isViewBlocking((s, l, p) -> false)));
 
-    public static final RegistryObject<Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
             "fake_cobblestone",
             () -> new TooltipBlockItem(FAKE_COBBLESTONE.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_cobblestone.desc"));
 
     /** "Fake obsidian": the stage-3 OUTER wall's gate -- same smart-door phasing as fake cobblestone, but with
      *  obsidian toughness so attackers can't break the gate. */
-    public static final RegistryObject<Block> FAKE_OBSIDIAN = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> FAKE_OBSIDIAN = BLOCKS.register(
             "fake_obsidian",
-            () -> new FakeObsidianBlock(BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)
+            () -> new FakeObsidianBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
                     .lightLevel(s -> 7)
                     .isSuffocating((s, l, p) -> false)
                     .isViewBlocking((s, l, p) -> false)));
 
-    public static final RegistryObject<Item> FAKE_OBSIDIAN_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> FAKE_OBSIDIAN_ITEM = ITEMS.register(
             "fake_obsidian",
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
@@ -101,67 +101,67 @@ public final class ModBlocks {
     //     (within a brain node's range); each also spawns its own reinforcement every sunset + on creation. ---
     private static BlockBehaviour.Properties nodeProps() {
         // pushReaction(BLOCK): pistons can't shove a node around (which would otherwise re-fire its spawn).
-        return BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)
+        return BlockBehaviour.Properties.ofFullCopy(Blocks.ANCIENT_DEBRIS).lightLevel(s -> 13)
                 .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK);
     }
 
     /** Golem Factory Node (formerly the Emerald Node): green, growing circle; spawns an iron/gigachad golem. */
-    public static final RegistryObject<Block> GOLEM_FACTORY_NODE = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> GOLEM_FACTORY_NODE = BLOCKS.register(
             "golem_factory_node", () -> new GolemFactoryNodeBlock(nodeProps()));
-    public static final RegistryObject<Item> GOLEM_FACTORY_NODE_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> GOLEM_FACTORY_NODE_ITEM = ITEMS.register(
             "golem_factory_node", () -> new TooltipBlockItem(GOLEM_FACTORY_NODE.get(), new Item.Properties(),
                     "block.thevillagefightsback.golem_factory_node.desc"));
 
     /** Barracks Node: orange, growing square; spawns 4 stage-appropriate guards (1/sec). */
-    public static final RegistryObject<Block> BARRACKS_NODE = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> BARRACKS_NODE = BLOCKS.register(
             "barracks_node", () -> new BarracksNodeBlock(nodeProps()));
-    public static final RegistryObject<Item> BARRACKS_NODE_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> BARRACKS_NODE_ITEM = ITEMS.register(
             "barracks_node", () -> new TooltipBlockItem(BARRACKS_NODE.get(), new Item.Properties(),
                     "block.thevillagefightsback.barracks_node.desc"));
 
     /** Lure Tower Node: purple, growing triangle; spawns a wall defender ABOVE it (no stacking). */
-    public static final RegistryObject<Block> LURE_TOWER_NODE = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> LURE_TOWER_NODE = BLOCKS.register(
             "lure_tower_node", () -> new LureTowerNodeBlock(nodeProps()));
-    public static final RegistryObject<Item> LURE_TOWER_NODE_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> LURE_TOWER_NODE_ITEM = ITEMS.register(
             "lure_tower_node", () -> new TooltipBlockItem(LURE_TOWER_NODE.get(), new Item.Properties(),
                     "block.thevillagefightsback.lure_tower_node.desc"));
 
     /** Debris: a colour-inverted ("negative") ancient debris with the same toughness; smelting/blasting it
      *  yields an iron ingot. */
-    public static final RegistryObject<Block> DEBRIS = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> DEBRIS = BLOCKS.register(
             "debris",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.ANCIENT_DEBRIS)));
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.ANCIENT_DEBRIS)));
 
-    public static final RegistryObject<Item> DEBRIS_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> DEBRIS_ITEM = ITEMS.register(
             "debris",
             () -> new TooltipBlockItem(DEBRIS.get(), new Item.Properties(),
                     "block.thevillagefightsback.debris.desc"));
 
     /** Elegant Stand: a slab-shaped quartz-and-gold display pedestal. A creature standing on it is frozen in
      *  place and always turns to face the nearest player (see {@link ElegantStandEvents}). */
-    public static final RegistryObject<Block> ELEGANT_STAND = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> ELEGANT_STAND = BLOCKS.register(
             "elegant_stand",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.QUARTZ_BLOCK)));
+            () -> new SlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.QUARTZ_BLOCK)));
 
-    public static final RegistryObject<Item> ELEGANT_STAND_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> ELEGANT_STAND_ITEM = ITEMS.register(
             "elegant_stand",
             () -> new TooltipBlockItem(ELEGANT_STAND.get(), new Item.Properties(),
                     "block.thevillagefightsback.elegant_stand.desc"));
 
     /** Obsidian stairs: the stage-3 OUTER wall's loophole stairs, so the obsidian curtain isn't broken up by
      *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
-    public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> OBSIDIAN_STAIRS = BLOCKS.register(
             "obsidian_stairs",
-            () -> new StairBlock(() -> Blocks.OBSIDIAN.defaultBlockState(),
-                    BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)));
+            () -> new StairBlock(Blocks.OBSIDIAN.defaultBlockState(),
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)));
 
-    public static final RegistryObject<Item> OBSIDIAN_STAIRS_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> OBSIDIAN_STAIRS_ITEM = ITEMS.register(
             "obsidian_stairs",
             () -> new BlockItem(OBSIDIAN_STAIRS.get(), new Item.Properties()));
 
     /** A purely decorative Iron Golem Head: an iron-block-tough bust shaped like the golem's head (rendered
      *  from the vanilla iron golem texture). Faces the placer; no behaviour. See {@link IronGolemHeadBlock}. */
-    public static final RegistryObject<Block> IRON_GOLEM_HEAD = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> IRON_GOLEM_HEAD = BLOCKS.register(
             "iron_golem_head",
             () -> new IronGolemHeadBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
@@ -170,54 +170,54 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-    public static final RegistryObject<Item> IRON_GOLEM_HEAD_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> IRON_GOLEM_HEAD_ITEM = ITEMS.register(
             "iron_golem_head",
             () -> new TooltipBlockItem(IRON_GOLEM_HEAD.get(), new Item.Properties(),
                     "block.thevillagefightsback.iron_golem_head.desc"));
 
     /** Blue TNT: a recolored TNT variant (red -> blue). Behaviour TBD; see {@link BlueTntBlock}. */
-    public static final RegistryObject<Block> BLUE_TNT = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> BLUE_TNT = BLOCKS.register(
             "blue_tnt",
-            () -> new BlueTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT)));
+            () -> new BlueTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT)));
 
-    public static final RegistryObject<Item> BLUE_TNT_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> BLUE_TNT_ITEM = ITEMS.register(
             "blue_tnt",
             () -> new BlockItem(BLUE_TNT.get(), new Item.Properties()));
 
     /** Green TNT: builds the big square "village tower" structure block-by-block (see {@link GreenTntBlock}). */
-    public static final RegistryObject<Block> GREEN_TNT = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> GREEN_TNT = BLOCKS.register(
             "green_tnt",
-            () -> new GreenTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT)));
+            () -> new GreenTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT)));
 
-    public static final RegistryObject<Item> GREEN_TNT_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> GREEN_TNT_ITEM = ITEMS.register(
             "green_tnt",
             () -> new BlockItem(GREEN_TNT.get(), new Item.Properties()));
 
     // --- Node-spawning TNTs: each detonates into one node structure (.nbt templates supplied separately).
     //     Colour -> node: yellow = golem factory, orange = barracks, purple = lure tower. ---
     private static net.minecraft.resources.ResourceLocation struct(String name) {
-        return new net.minecraft.resources.ResourceLocation(TheVillageFightsBack.MODID, name);
+        return TheVillageFightsBack.id(name);
     }
 
-    public static final RegistryObject<Block> YELLOW_TNT = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> YELLOW_TNT = BLOCKS.register(
             "yellow_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("iron_golem_factory")));
-    public static final RegistryObject<Item> YELLOW_TNT_ITEM = ITEMS.register(
+            () -> new StructureTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT), struct("iron_golem_factory")));
+    public static final DeferredHolder<Item, Item> YELLOW_TNT_ITEM = ITEMS.register(
             "yellow_tnt", () -> new BlockItem(YELLOW_TNT.get(), new Item.Properties()));
 
-    public static final RegistryObject<Block> ORANGE_TNT = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> ORANGE_TNT = BLOCKS.register(
             "orange_tnt",
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("barracks"),
+            () -> new StructureTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT), struct("barracks"),
                     struct("chests/barracks"))); // the barracks chest rolls a weapons-oriented loot table
-    public static final RegistryObject<Item> ORANGE_TNT_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> ORANGE_TNT_ITEM = ITEMS.register(
             "orange_tnt", () -> new BlockItem(ORANGE_TNT.get(), new Item.Properties()));
 
-    public static final RegistryObject<Block> PURPLE_TNT = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> PURPLE_TNT = BLOCKS.register(
             "purple_tnt",
             // floorLayer -1: a deep trap -> anchor on the powder-snow surface, which lands one block below the
             // TNT while the lava pit extends downward (and the small tower rises above).
-            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("lure_tower_node"), null, -1));
-    public static final RegistryObject<Item> PURPLE_TNT_ITEM = ITEMS.register(
+            () -> new StructureTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT), struct("lure_tower_node"), null, -1));
+    public static final DeferredHolder<Item, Item> PURPLE_TNT_ITEM = ITEMS.register(
             "purple_tnt", () -> new BlockItem(PURPLE_TNT.get(), new Item.Properties()));
 
     /**
@@ -226,7 +226,7 @@ public final class ModBlocks {
      * needs_diamond_tool tags). {@link ReinforcedGlassBlock} makes it fully light-transparent so a dome
      * never darkens the village.
      */
-    public static final RegistryObject<Block> REINFORCED_GLASS = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> REINFORCED_GLASS = BLOCKS.register(
             "reinforced_glass",
             () -> new ReinforcedGlassBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GREEN)
@@ -239,7 +239,7 @@ public final class ModBlocks {
                     .isSuffocating((s, l, p) -> false)
                     .isViewBlocking((s, l, p) -> false)));
 
-    public static final RegistryObject<Item> REINFORCED_GLASS_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> REINFORCED_GLASS_ITEM = ITEMS.register(
             "reinforced_glass",
             () -> new BlockItem(REINFORCED_GLASS.get(), new Item.Properties()));
 
@@ -249,7 +249,7 @@ public final class ModBlocks {
      * can exit. As fragile as normal glass (the one-way projectile block is its only strength) -- it is NOT
      * obsidian-tough, so attackers can break the defender shells open.
      */
-    public static final RegistryObject<Block> PROTECTING_GLASS = BLOCKS.register(
+    public static final DeferredHolder<Block, Block> PROTECTING_GLASS = BLOCKS.register(
             "protecting_glass",
             () -> new ProtectingGlassBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_LIGHT_BLUE)
@@ -261,7 +261,7 @@ public final class ModBlocks {
                     .isSuffocating((s, l, p) -> false)
                     .isViewBlocking((s, l, p) -> false)));
 
-    public static final RegistryObject<Item> PROTECTING_GLASS_ITEM = ITEMS.register(
+    public static final DeferredHolder<Item, Item> PROTECTING_GLASS_ITEM = ITEMS.register(
             "protecting_glass",
             () -> new BlockItem(PROTECTING_GLASS.get(), new Item.Properties()));
 
@@ -269,28 +269,28 @@ public final class ModBlocks {
      * Wall defender spawn egg: places the {@link WallDefenderEntity} conduit-turret creature (100 HP, fires a
      * real JEG bullet/second at the nearest hostile). The BrainNode also spawns one above each gate at level 2.
      */
-    public static final RegistryObject<Item> WALL_DEFENDER_SPAWN = ITEMS.register(
+    public static final DeferredHolder<Item, Item> WALL_DEFENDER_SPAWN = ITEMS.register(
             "wall_defender",
             () -> new WallDefenderSpawnEggItem(ModEntities.WALL_DEFENDER,
                     0x1b4a4a, 0x78ebf5, new Item.Properties())); // icon = the live spinning defender (see its item model)
 
     /** Stage-4 (rocket) wall defender spawn egg -- always in rocket mode + the gold stage-4 texture. */
-    public static final RegistryObject<Item> WALL_DEFENDER_STAGE4_SPAWN = ITEMS.register(
+    public static final DeferredHolder<Item, Item> WALL_DEFENDER_STAGE4_SPAWN = ITEMS.register(
             "wall_defender_stage4",
             () -> new WallDefenderSpawnEggItem(ModEntities.WALL_DEFENDER_STAGE4,
                     0x6e3a10, 0xffb020, new Item.Properties())); // icon = the live spinning gold stage-4 defender
 
     /** Defender Golem spawn egg: places the stage-2 evolution of the iron golem (iron body, wall-defender
      *  head in a protecting-glass cocoon, 150 HP, melee + turret). See {@link DefenderGolemEntity}. */
-    public static final RegistryObject<Item> DEFENDER_GOLEM_SPAWN = ITEMS.register(
+    public static final DeferredHolder<Item, Item> DEFENDER_GOLEM_SPAWN = ITEMS.register(
             "defender_golem",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.DEFENDER_GOLEM,
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.DEFENDER_GOLEM,
                     0xDBD3D0, 0x78ebf5, new Item.Properties()));
 
     /** Spawn egg for the {@link BrainNodeWardenEntity} (a green Warden with a brainNode-block head). */
-    public static final RegistryObject<Item> BRAIN_NODE_WARDEN_SPAWN = ITEMS.register(
+    public static final DeferredHolder<Item, Item> BRAIN_NODE_WARDEN_SPAWN = ITEMS.register(
             "brain_node_warden",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.UNLEASHED_BRAIN_NODE,
+            () -> new net.neoforged.neoforge.common.DeferredSpawnEggItem(ModEntities.UNLEASHED_BRAIN_NODE,
                     0x16331a, 0x55e07a, new Item.Properties()));
 
     // --- Fertile / Rich block family --------------------------------------------------------------
@@ -298,7 +298,7 @@ public final class ModBlocks {
     // "Rich X" is the same with emerald gems -- it drops emeralds like emerald ore (via its loot table) but
     // keeps the base's toughness/tool requirement. Sand & gravel variants fall (FallingBlock); logs are
     // axis-aware (RotatedPillarBlock). Textures/models/blockstates/loot are data-generated under resources.
-    public static final java.util.List<RegistryObject<Item>> FERTILE_RICH_ITEMS = new java.util.ArrayList<>();
+    public static final java.util.List<DeferredHolder<Item, Item>> FERTILE_RICH_ITEMS = new java.util.ArrayList<>();
 
     private enum FertileKind { CUBE, FALLING, LOG, SCULK, LEAVES }
 
@@ -330,12 +330,19 @@ public final class ModBlocks {
 
     private static void registerFertileBlock(String name, Block vanilla, FertileKind kind) {
         // if/else, not switch-over-enum, to avoid generating a synthetic switch-map class.
-        RegistryObject<Block> block = BLOCKS.register(name, () -> {
-            BlockBehaviour.Properties p = BlockBehaviour.Properties.copy(vanilla);
+        DeferredHolder<Block, Block> block = BLOCKS.register(name, () -> {
+            BlockBehaviour.Properties p = BlockBehaviour.Properties.ofFullCopy(vanilla);
             // Every fertile/rich block renders FULLBRIGHT (so the green specks glow) AND emits a weak light,
             // so a fertile zone glows green and softly lights its surroundings at night.
             p.emissiveRendering((s, l, pos) -> true).lightLevel(s -> FERTILE_LIGHT);
-            if (kind == FertileKind.FALLING) return new FallingBlock(p);
+            if (kind == FertileKind.FALLING) {
+                // FallingBlock is abstract in 1.21.1; use ColoredFallingBlock (what vanilla sand/gravel are) and
+                // carry over the vanilla block's falling-dust colour so fertile sand/gravel fall identically.
+                int dust = ((FallingBlock) vanilla).getDustColor(vanilla.defaultBlockState(),
+                        net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO);
+                return new net.minecraft.world.level.block.ColoredFallingBlock(
+                        new net.minecraft.util.ColorRGBA(dust), p);
+            }
             if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
             if (kind == FertileKind.LEAVES) {
                 // A real LeavesBlock (so heightmaps / the wall planner treat it as foliage and render is correct),
@@ -350,68 +357,68 @@ public final class ModBlocks {
     // Shape-preserving fertile blocks: an infected stair/slab/fence becomes one of these (same shape) so the
     // structure keeps its geometry instead of being filled with a solid fertile cube. The base material is
     // arbitrary -- only the SHAPE matters; they reuse the fertile_stone texture.
-    public static final RegistryObject<Block> FERTILE_STAIRS = BLOCKS.register("fertile_stairs",
-            () -> new StairBlock(() -> Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
-    public static final RegistryObject<Block> FERTILE_SLAB = BLOCKS.register("fertile_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
-    public static final RegistryObject<Block> FERTILE_FENCE = BLOCKS.register("fertile_fence",
-            () -> new FenceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
-    public static final RegistryObject<Item> FERTILE_STAIRS_ITEM = ITEMS.register("fertile_stairs",
+    public static final DeferredHolder<Block, Block> FERTILE_STAIRS = BLOCKS.register("fertile_stairs",
+            () -> new StairBlock(Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)));
+    public static final DeferredHolder<Block, Block> FERTILE_SLAB = BLOCKS.register("fertile_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)));
+    public static final DeferredHolder<Block, Block> FERTILE_FENCE = BLOCKS.register("fertile_fence",
+            () -> new FenceBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)));
+    public static final DeferredHolder<Item, Item> FERTILE_STAIRS_ITEM = ITEMS.register("fertile_stairs",
             () -> new BlockItem(FERTILE_STAIRS.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_SLAB_ITEM = ITEMS.register("fertile_slab",
+    public static final DeferredHolder<Item, Item> FERTILE_SLAB_ITEM = ITEMS.register("fertile_slab",
             () -> new BlockItem(FERTILE_SLAB.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
+    public static final DeferredHolder<Item, Item> FERTILE_FENCE_ITEM = ITEMS.register("fertile_fence",
             () -> new BlockItem(FERTILE_FENCE.get(), new Item.Properties()));
     /** Fertile iron bars: shape-preserving conversion of vanilla iron bars. No rich variant. */
-    public static final RegistryObject<Block> FERTILE_IRON_BARS = BLOCKS.register("fertile_iron_bars",
-            () -> new net.minecraft.world.level.block.IronBarsBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BARS)
+    public static final DeferredHolder<Block, Block> FERTILE_IRON_BARS = BLOCKS.register("fertile_iron_bars",
+            () -> new net.minecraft.world.level.block.IronBarsBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BARS)
                     .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Item> FERTILE_IRON_BARS_ITEM = ITEMS.register("fertile_iron_bars",
+    public static final DeferredHolder<Item, Item> FERTILE_IRON_BARS_ITEM = ITEMS.register("fertile_iron_bars",
             () -> new BlockItem(FERTILE_IRON_BARS.get(), new Item.Properties()));
 
     /** Fertile Grass: the green glowing PLANT (not a block). Any plant the infection reaches becomes this.
      *  Emissive (vivid green); no rich variant. See {@link FertileGrassBlock} + FertileFlora. */
-    public static final RegistryObject<Block> FERTILE_GRASS = BLOCKS.register("fertile_grass",
-            () -> new FertileGrassBlock(BlockBehaviour.Properties.copy(Blocks.GRASS).emissiveRendering((s, l, p) -> true)));
-    public static final RegistryObject<Item> FERTILE_GRASS_ITEM = ITEMS.register("fertile_grass",
+    public static final DeferredHolder<Block, Block> FERTILE_GRASS = BLOCKS.register("fertile_grass",
+            () -> new FertileGrassBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.SHORT_GRASS).emissiveRendering((s, l, p) -> true)));
+    public static final DeferredHolder<Item, Item> FERTILE_GRASS_ITEM = ITEMS.register("fertile_grass",
             () -> new BlockItem(FERTILE_GRASS.get(), new Item.Properties()));
 
     /** Fertile Kelp: the green glowing underwater PLANT. Vanilla kelp the infection reaches becomes this; it
      *  glows like the rest of the fertile family and gives a passing mob the Emerald Virus I. See
      *  {@link FertileKelpBlock}. No rich variant. */
-    public static final RegistryObject<Block> FERTILE_KELP = BLOCKS.register("fertile_kelp",
-            () -> new FertileKelpBlock(BlockBehaviour.Properties.copy(Blocks.KELP_PLANT)
+    public static final DeferredHolder<Block, Block> FERTILE_KELP = BLOCKS.register("fertile_kelp",
+            () -> new FertileKelpBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.KELP_PLANT)
                     .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Item> FERTILE_KELP_ITEM = ITEMS.register("fertile_kelp",
+    public static final DeferredHolder<Item, Item> FERTILE_KELP_ITEM = ITEMS.register("fertile_kelp",
             () -> new BlockItem(FERTILE_KELP.get(), new Item.Properties()));
 
     /** Infested Path (v1.0.3 mob infection): a lime, glowing path laid below an emerald-converted unit. Spreads
      *  fertile/rich blocks like a village path -- to a stage-4 brain radius but 5x slower. See {@link InfestedPathBlock}
      *  + {@link com.example.villagefightsback.infection.InfectionManager}. */
-    public static final RegistryObject<Block> INFESTED_PATH = BLOCKS.register("infested_path",
-            () -> new InfestedPathBlock(BlockBehaviour.Properties.copy(Blocks.DIRT_PATH)
+    public static final DeferredHolder<Block, Block> INFESTED_PATH = BLOCKS.register("infested_path",
+            () -> new InfestedPathBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)
                     .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Item> INFESTED_PATH_ITEM = ITEMS.register("infested_path",
+    public static final DeferredHolder<Item, Item> INFESTED_PATH_ITEM = ITEMS.register("infested_path",
             () -> new BlockItem(INFESTED_PATH.get(), new Item.Properties()));
 
     // Craftable fertile wood + cobble: fertile_planks (from fertile logs) -> stairs/slabs; fertile_cobblestone
     // (dropped only by mining fertile stone). They work in vanilla recipes via item tags (planks / stone tool
     // materials) -- no tint on the crafted output.
-    public static final RegistryObject<Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
-            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COBBLESTONE).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Item> FERTILE_PLANKS_ITEM = ITEMS.register("fertile_planks",
+    public static final DeferredHolder<Block, Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Block, Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
+            () -> new StairBlock(FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Block, Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Block, Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.COBBLESTONE).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Item, Item> FERTILE_PLANKS_ITEM = ITEMS.register("fertile_planks",
             () -> new BlockItem(FERTILE_PLANKS.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_PLANKS_STAIRS_ITEM = ITEMS.register("fertile_planks_stairs",
+    public static final DeferredHolder<Item, Item> FERTILE_PLANKS_STAIRS_ITEM = ITEMS.register("fertile_planks_stairs",
             () -> new BlockItem(FERTILE_PLANKS_STAIRS.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_PLANKS_SLAB_ITEM = ITEMS.register("fertile_planks_slab",
+    public static final DeferredHolder<Item, Item> FERTILE_PLANKS_SLAB_ITEM = ITEMS.register("fertile_planks_slab",
             () -> new BlockItem(FERTILE_PLANKS_SLAB.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_COBBLESTONE_ITEM = ITEMS.register("fertile_cobblestone",
+    public static final DeferredHolder<Item, Item> FERTILE_COBBLESTONE_ITEM = ITEMS.register("fertile_cobblestone",
             () -> new BlockItem(FERTILE_COBBLESTONE.get(), new Item.Properties()));
 
     // Fertile / Rich chorus: the fertile chorus FLOWER grows like a vanilla chorus flower but spreads OUR
@@ -420,40 +427,40 @@ public final class ModBlocks {
     // Both fertile and rich chorus are full chorus implementations (flower grows + spreads its plant, plant
     // connects/survives) -- they differ only in texture + drops (rich drops emeralds). randomTicks() so the
     // flower actually grows; the family suppliers wire each flower to spread its own plant.
-    public static final RegistryObject<Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
-    public static final RegistryObject<Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
-    public static final RegistryObject<Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
-            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
-    public static final RegistryObject<Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
-            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.copy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
-    public static final RegistryObject<Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
+    public static final DeferredHolder<Block, Block> FERTILE_CHORUS_PLANT = BLOCKS.register("fertile_chorus_plant",
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_FLOWER.get()));
+    public static final DeferredHolder<Block, Block> FERTILE_CHORUS_FLOWER = BLOCKS.register("fertile_chorus_flower",
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.FERTILE_CHORUS_PLANT.get()));
+    public static final DeferredHolder<Block, Block> RICH_CHORUS_PLANT = BLOCKS.register("rich_chorus_plant",
+            () -> new FertileChorusPlantBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.CHORUS_PLANT).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_FLOWER.get()));
+    public static final DeferredHolder<Block, Block> RICH_CHORUS_FLOWER = BLOCKS.register("rich_chorus_flower",
+            () -> new FertileChorusFlowerBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.CHORUS_FLOWER).randomTicks().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT), () -> ModBlocks.RICH_CHORUS_PLANT.get()));
+    public static final DeferredHolder<Item, Item> FERTILE_CHORUS_PLANT_ITEM = ITEMS.register("fertile_chorus_plant",
             () -> new BlockItem(FERTILE_CHORUS_PLANT.get(), new Item.Properties()));
-    public static final RegistryObject<Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",
+    public static final DeferredHolder<Item, Item> FERTILE_CHORUS_FLOWER_ITEM = ITEMS.register("fertile_chorus_flower",
             () -> new BlockItem(FERTILE_CHORUS_FLOWER.get(), new Item.Properties()));
-    public static final RegistryObject<Item> RICH_CHORUS_PLANT_ITEM = ITEMS.register("rich_chorus_plant",
+    public static final DeferredHolder<Item, Item> RICH_CHORUS_PLANT_ITEM = ITEMS.register("rich_chorus_plant",
             () -> new BlockItem(RICH_CHORUS_PLANT.get(), new Item.Properties()));
-    public static final RegistryObject<Item> RICH_CHORUS_FLOWER_ITEM = ITEMS.register("rich_chorus_flower",
+    public static final DeferredHolder<Item, Item> RICH_CHORUS_FLOWER_ITEM = ITEMS.register("rich_chorus_flower",
             () -> new BlockItem(RICH_CHORUS_FLOWER.get(), new Item.Properties()));
 
     // Fertile / Rich sculk catalyst: on a nearby mob death it spreads fertile / rich sculk like vanilla
     // sculk spreads from a catalyst (see SculkCatalystEvents). Glows like the sculk family.
-    public static final RegistryObject<Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Block> RICH_SCULK_CATALYST = BLOCKS.register("rich_sculk_catalyst",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
-    public static final RegistryObject<Item> FERTILE_SCULK_CATALYST_ITEM = ITEMS.register("fertile_sculk_catalyst",
+    public static final DeferredHolder<Block, Block> FERTILE_SCULK_CATALYST = BLOCKS.register("fertile_sculk_catalyst",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Block, Block> RICH_SCULK_CATALYST = BLOCKS.register("rich_sculk_catalyst",
+            () -> new Block(BlockBehaviour.Properties.ofFullCopy(Blocks.SCULK_CATALYST).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Item, Item> FERTILE_SCULK_CATALYST_ITEM = ITEMS.register("fertile_sculk_catalyst",
             () -> new BlockItem(FERTILE_SCULK_CATALYST.get(), new Item.Properties()));
-    public static final RegistryObject<Item> RICH_SCULK_CATALYST_ITEM = ITEMS.register("rich_sculk_catalyst",
+    public static final DeferredHolder<Item, Item> RICH_SCULK_CATALYST_ITEM = ITEMS.register("rich_sculk_catalyst",
             () -> new BlockItem(RICH_SCULK_CATALYST.get(), new Item.Properties()));
 
     /** Fertile door: the infection replaces every (wooden) door with this. Oak-door shape, green-tinted. */
-    public static final RegistryObject<Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
+    public static final DeferredHolder<Block, Block> FERTILE_DOOR = BLOCKS.register("fertile_door",
             () -> new net.minecraft.world.level.block.DoorBlock(
-                    BlockBehaviour.Properties.copy(Blocks.OAK_DOOR).noOcclusion().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT),
-                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
-    public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK,
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_DOOR).noOcclusion().emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Item, Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));
 
     /**
@@ -461,14 +468,14 @@ public final class ModBlocks {
      * the Limbo cube. Sleeping on it (right-click) sends the entity back to where it came from -- see
      * {@link LimboBedBlock}.
      */
-    public static final RegistryObject<Block> LIMBO_BED = BLOCKS.register("limbo_bed",
+    public static final DeferredHolder<Block, Block> LIMBO_BED = BLOCKS.register("limbo_bed",
             () -> new LimboBedBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(-1.0F, 3600000.0F)     // unbreakable, bedrock blast resistance
                     .sound(SoundType.STONE)
                     .noOcclusion()                   // low bed-height block
                     .noLootTable()));
-    public static final RegistryObject<Item> LIMBO_BED_ITEM = ITEMS.register("limbo_bed",
+    public static final DeferredHolder<Item, Item> LIMBO_BED_ITEM = ITEMS.register("limbo_bed",
             () -> new BlockItem(LIMBO_BED.get(), new Item.Properties()));
 
     /**
@@ -476,31 +483,31 @@ public final class ModBlocks {
      * is destroyed, that creature returns to this exact spot ({@link LimboGravelBlock}). Soul particles rise
      * when something walks on it.
      */
-    public static final RegistryObject<Block> LIMBO_GRAVEL = BLOCKS.register("limbo_gravel",
-            () -> new LimboGravelBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL)
+    public static final DeferredHolder<Block, Block> LIMBO_GRAVEL = BLOCKS.register("limbo_gravel",
+            () -> new LimboGravelBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.GRAVEL)
                     .mapColor(MapColor.COLOR_BLACK)
                     .noLootTable()));               // drops are handled in-code (plain item / soul item / restore)
-    public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
+    public static final DeferredHolder<Item, Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
     /** The block entity that caches a leashed gravel's render data (held entity type, name, instability deadline). */
-    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
+    public static final DeferredHolder<net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
             BLOCK_ENTITIES.register("limbo_gravel", () ->
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
                             LimboGravelBlockEntity::new, LIMBO_GRAVEL.get()).build(null));
     /** The "soul gravel" carried form: silk-mining an entity's gravel yields this non-stackable, entity-named
      *  item. While it is carried/stored the creature stays in Limbo; it returns when the item is freed. */
-    public static final RegistryObject<Item> LIMBO_SOUL_GRAVEL = ITEMS.register("limbo_soul_gravel",
+    public static final DeferredHolder<Item, Item> LIMBO_SOUL_GRAVEL = ITEMS.register("limbo_soul_gravel",
             () -> new LimboSoulGravelItem(new Item.Properties().stacksTo(1)));
 
     /**
      * Limbo Egg: a black-and-white dragon egg that nests in the Limbo. It does NOT teleport when clicked;
      * destroying it (other than with Silk Touch) hatches a Limbo Phantom ({@link LimboEggBlock}).
      */
-    public static final RegistryObject<Block> LIMBO_EGG = BLOCKS.register("limbo_egg",
-            () -> new LimboEggBlock(BlockBehaviour.Properties.copy(Blocks.DRAGON_EGG)
+    public static final DeferredHolder<Block, Block> LIMBO_EGG = BLOCKS.register("limbo_egg",
+            () -> new LimboEggBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DRAGON_EGG)
                     .mapColor(MapColor.COLOR_BLACK)
                     .randomTicks()));        // enables the small natural-hatch chance
-    public static final RegistryObject<Item> LIMBO_EGG_ITEM = ITEMS.register("limbo_egg",
+    public static final DeferredHolder<Item, Item> LIMBO_EGG_ITEM = ITEMS.register("limbo_egg",
             () -> new TooltipBlockItem(LIMBO_EGG.get(), new Item.Properties(),
                     "block.thevillagefightsback.limbo_egg.desc"));
 
@@ -509,7 +516,7 @@ public final class ModBlocks {
      * moss). It glows at the engine maximum (light 15 -- "twice glowstone" is capped there) and is as tough as
      * obsidian (needs a diamond+ pickaxe). Drops Forgotten Powder unless mined with Silk Touch (loot table).
      */
-    public static final RegistryObject<Block> FORGOTTEN_GLOWSTONE = BLOCKS.register("forgotten_glowstone",
+    public static final DeferredHolder<Block, Block> FORGOTTEN_GLOWSTONE = BLOCKS.register("forgotten_glowstone",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GREEN)
                     .strength(50.0F, 1200.0F)              // obsidian toughness
@@ -517,18 +524,18 @@ public final class ModBlocks {
                     .sound(SoundType.GLASS)
                     .lightLevel(s -> 15)                   // max light (the engine cap)
                     .isValidSpawn((s, l, p, e) -> false)));
-    public static final RegistryObject<Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
+    public static final DeferredHolder<Item, Item> FORGOTTEN_GLOWSTONE_ITEM = ITEMS.register("forgotten_glowstone",
             () -> new TooltipBlockItem(FORGOTTEN_GLOWSTONE.get(), new Item.Properties(),
                     "block.thevillagefightsback.forgotten_glowstone.desc"));
 
     /** "Fake bedrock": looks/breaks exactly like bedrock (unbreakable except by the Limbo Pickaxe) but every
      *  creature passes through it -- the whole Limbo is built from it (see {@link FakeBedrockBlock}). The
      *  isSuffocating/isViewBlocking predicates are false so a creature inside it is unharmed + unobscured. */
-    public static final RegistryObject<Block> FAKE_BEDROCK = BLOCKS.register("fake_bedrock",
-            () -> new FakeBedrockBlock(BlockBehaviour.Properties.copy(Blocks.BEDROCK)
+    public static final DeferredHolder<Block, Block> FAKE_BEDROCK = BLOCKS.register("fake_bedrock",
+            () -> new FakeBedrockBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.BEDROCK)
                     .isSuffocating((s, l, p) -> false)
                     .isViewBlocking((s, l, p) -> false)));
-    public static final RegistryObject<Item> FAKE_BEDROCK_ITEM = ITEMS.register("fake_bedrock",
+    public static final DeferredHolder<Item, Item> FAKE_BEDROCK_ITEM = ITEMS.register("fake_bedrock",
             () -> new TooltipBlockItem(FAKE_BEDROCK.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_bedrock.desc"));
 
@@ -538,7 +545,7 @@ public final class ModBlocks {
      * brain node). Works as a beacon base (see the beacon_base_blocks tag). Carries the Limbo gear's animated
      * green shimmer (animated texture + .mcmeta).
      */
-    public static final RegistryObject<Block> LIMBO_BLOCK = BLOCKS.register("limbo_block",
+    public static final DeferredHolder<Block, Block> LIMBO_BLOCK = BLOCKS.register("limbo_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(50.0F, 1200.0F)              // obsidian/bedrock-tough vs explosions, still mineable
@@ -546,7 +553,7 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)));
     // Plain BlockItem: ModTooltips auto-appends "<descId>.desc" (we must NOT override appendHoverText). Fire-
     // resistant like the rest of the Limbo gear it is crafted from.
-    public static final RegistryObject<Item> LIMBO_BLOCK_ITEM = ITEMS.register("limbo_block",
+    public static final DeferredHolder<Item, Item> LIMBO_BLOCK_ITEM = ITEMS.register("limbo_block",
             () -> new BlockItem(LIMBO_BLOCK.get(), new Item.Properties().fireResistant()));
 
     /**
@@ -554,7 +561,7 @@ public final class ModBlocks {
      * teleports between the overworld and Limbo at 16x compression ({@link LimboPortalBlock} /
      * {@link LimboPortalForcer}). No item form (like the nether portal); unbreakable; glows.
      */
-    public static final RegistryObject<Block> LIMBO_PORTAL = BLOCKS.register("limbo_portal",
+    public static final DeferredHolder<Block, Block> LIMBO_PORTAL = BLOCKS.register("limbo_portal",
             () -> new LimboPortalBlock(BlockBehaviour.Properties.of()
                     .noCollission()
                     .strength(-1.0F)
@@ -569,7 +576,7 @@ public final class ModBlocks {
      * the {@link #LIMBO_PORTAL} (its blockstate reuses the limbo_portal models); no item form; unbreakable;
      * glows. Entirely dormant unless {@link Config#chunkPortalsEnabled()} is on.
      */
-    public static final RegistryObject<Block> CHUNK_PORTAL = BLOCKS.register("chunk_portal",
+    public static final DeferredHolder<Block, Block> CHUNK_PORTAL = BLOCKS.register("chunk_portal",
             () -> new ChunkPortalBlock(BlockBehaviour.Properties.of()
                     .noCollission()
                     .strength(-1.0F)
@@ -579,7 +586,7 @@ public final class ModBlocks {
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)));
 
     /** The mod's own creative tab. New blocks/items get added here over time. */
-    public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
             .icon(() -> new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get()))
             .displayItems((params, output) -> {
@@ -616,43 +623,47 @@ public final class ModBlocks {
                 output.accept(ModItems.FIRE_GRENADE.get());
                 output.accept(ModItems.MACE.get());
                 // Alien Smasher, shown pre-enchanted (Density 3 + Wind Burst 3 + Fire Aspect 2) like a guard mace.
+                // In 1.21 enchantments are data-driven; resolve the vanilla keys to Holders against the tab's
+                // registry-access provider (params.holders()).
+                net.minecraft.core.HolderLookup.Provider lookup = params.holders();
+                net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> densityH =
+                        ModEnchantments.holder(lookup, ModEnchantments.DENSITY);
+                net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> breachH =
+                        ModEnchantments.holder(lookup, ModEnchantments.BREACH);
+                net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> windBurstH =
+                        ModEnchantments.holder(lookup, ModEnchantments.WIND_BURST);
+                net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> fireAspectH =
+                        ModEnchantments.holder(lookup, net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT);
                 ItemStack smasher = new ItemStack(ModItems.ALIEN_SMASHER.get());
-                smasher.enchant(ModEnchantments.DENSITY.get(), 3);
-                smasher.enchant(ModEnchantments.WIND_BURST.get(), 3);
-                smasher.enchant(net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, 2);
+                smasher.enchant(densityH, 3);
+                smasher.enchant(windBurstH, 3);
+                smasher.enchant(fireAspectH, 2);
                 output.accept(smasher);
                 output.accept(ModItems.WIND_CHARGE.get());
                 // The three mace enchanted books (at max level): native, not craftable.
-                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
-                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.DENSITY.get(), 5)));
-                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
-                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.BREACH.get(), 4)));
-                output.accept(net.minecraft.world.item.EnchantedBookItem.createForEnchantment(
-                        new net.minecraft.world.item.enchantment.EnchantmentInstance(ModEnchantments.WIND_BURST.get(), 3)));
+                output.accept(enchantedBook(densityH, 5));
+                output.accept(enchantedBook(breachH, 4));
+                output.accept(enchantedBook(windBurstH, 3));
 
                 // === Emerald gear & food (built from emeralds; stats between iron and diamond) -- in OUR tab ===
                 output.accept(ModArmor.EMERALD_HELMET.get());
                 output.accept(ModArmor.EMERALD_CHESTPLATE.get());
                 output.accept(ModArmor.EMERALD_LEGGINGS.get());
                 output.accept(ModArmor.EMERALD_BOOTS.get());
-                for (RegistryObject<Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
+                for (DeferredHolder<Item, Item> tool : ModItems.EMERALD_TOOLS) output.accept(tool.get());
                 output.accept(ModItems.EMERALD_APPLE.get());
                 output.accept(ModItems.EMERALD_EGG.get());
 
                 // === Potions ===
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL.get())); // Potion of Karat's Will
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL_LONG.get())); // Karat's Will (long)
+                output.accept(potionStack(ModPotions.IMMUNITY)); // Potion of Immunity
+                output.accept(potionStack(ModPotions.KARATS_WILL)); // Potion of Karat's Will
+                output.accept(potionStack(ModPotions.KARATS_WILL_LONG)); // Karat's Will (long)
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.EMERALD_VIRUS.get())); // Potion of Emerald Virus
+                output.accept(potionStack(ModPotions.EMERALD_VIRUS)); // Potion of Emerald Virus
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
-                for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
+                for (DeferredHolder<Item, Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
                 output.accept(FERTILE_STAIRS_ITEM.get());
                 output.accept(FERTILE_SLAB_ITEM.get());
                 output.accept(FERTILE_FENCE_ITEM.get());
@@ -676,7 +687,7 @@ public final class ModBlocks {
                 output.accept(WALL_DEFENDER_SPAWN.get());
                 output.accept(WALL_DEFENDER_STAGE4_SPAWN.get());
                 output.accept(DEFENDER_GOLEM_SPAWN.get());
-                for (RegistryObject<Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
+                for (DeferredHolder<Item, Item> egg : ModItems.STAGED_EGGS) output.accept(egg.get());
                 output.accept(BRAIN_NODE_WARDEN_SPAWN.get());
                 output.accept(ModItems.EMERALDGER_SPAWN.get());
                 output.accept(ModItems.VINDICTIVE_GUARD_SPAWN.get());
@@ -684,7 +695,7 @@ public final class ModBlocks {
                 output.accept(ModItems.GENERAL_DARIUS_SPAWN.get());
                 output.accept(ModItems.RICH_SHEEP_SPAWN.get());
                 output.accept(ModItems.LIMBO_PHANTOM_SPAWN.get());
-                for (RegistryObject<Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
+                for (DeferredHolder<Item, Item> egg : ModItems.LIMBO_RAID_EGGS) output.accept(egg.get());
 
                 // === Emerald faction (v1.0.3 mob infection) spawn eggs ===
                 output.accept(ModItems.EMERALD_COW_SPAWN.get());
@@ -734,6 +745,26 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_HOE.get());
             })
             .build());
+
+    /** A regular potion bottle carrying the given potion (1.21 stores it on the POTION_CONTENTS component). */
+    private static ItemStack potionStack(net.minecraft.core.Holder<net.minecraft.world.item.alchemy.Potion> potion) {
+        ItemStack stack = new ItemStack(net.minecraft.world.item.Items.POTION);
+        stack.set(net.minecraft.core.component.DataComponents.POTION_CONTENTS,
+                new net.minecraft.world.item.alchemy.PotionContents(potion));
+        return stack;
+    }
+
+    /** An enchanted book carrying a single stored enchantment (1.21 stores it on STORED_ENCHANTMENTS). */
+    private static ItemStack enchantedBook(
+            net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> enchantment, int level) {
+        ItemStack book = new ItemStack(net.minecraft.world.item.Items.ENCHANTED_BOOK);
+        net.minecraft.world.item.enchantment.ItemEnchantments.Mutable enchantments =
+                new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
+                        net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        enchantments.set(enchantment, level);
+        book.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchantments.toImmutable());
+        return book;
+    }
 
     /** Register the DeferredRegisters on the mod event bus (call from the mod constructor). */
     public static void register(IEventBus modBus) {

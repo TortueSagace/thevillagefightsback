@@ -21,8 +21,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * Client-only: renders three spikes on top of the head whenever a humanoid wearer (chiefly the player) has
@@ -40,7 +40,7 @@ public class LimboHelmetSpikesLayer<T extends LivingEntity, M extends HumanoidMo
         extends RenderLayer<T, M> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_helmet_spikes.png");
+            TheVillageFightsBack.id("textures/entity/limbo_helmet_spikes.png");
 
     private final ModelPart spikes;
 
@@ -76,7 +76,7 @@ public class LimboHelmetSpikesLayer<T extends LivingEntity, M extends HumanoidMo
         pose.pushPose();
         getParentModel().head.translateAndRotate(pose);
         VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-        spikes.render(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        spikes.render(pose, vc, light, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         pose.popPose();
     }
 }

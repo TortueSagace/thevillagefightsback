@@ -11,10 +11,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
  * All of the mod's commands, under the {@code /thevillagefightsback} root:
@@ -27,7 +27,7 @@ import net.minecraftforge.fml.common.Mod;
  *   <li>{@code tp_to_nearest_node} -- teleport just above the nearest brain node.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ModCommands {
     private ModCommands() {}
 
@@ -72,16 +72,16 @@ public final class ModCommands {
 
     // --- config command building -------------------------------------------------------------------
 
-    private static LiteralArgumentBuilder<CommandSourceStack> buildKey(String key, ForgeConfigSpec.ConfigValue<?> value) {
+    private static LiteralArgumentBuilder<CommandSourceStack> buildKey(String key, ModConfigSpec.ConfigValue<?> value) {
         LiteralArgumentBuilder<CommandSourceStack> node = Commands.literal(key)
                 .executes(c -> getConfig(c.getSource(), key, value));
-        if (value instanceof ForgeConfigSpec.BooleanValue bv) {
+        if (value instanceof ModConfigSpec.BooleanValue bv) {
             node.then(Commands.argument("value", BoolArgumentType.bool()).requires(s -> s.hasPermission(OP))
                     .executes(c -> setConfig(c.getSource(), key, bv, BoolArgumentType.getBool(c, "value"))));
-        } else if (value instanceof ForgeConfigSpec.IntValue iv) {
+        } else if (value instanceof ModConfigSpec.IntValue iv) {
             node.then(Commands.argument("value", intArgFor(key)).requires(s -> s.hasPermission(OP))
                     .executes(c -> setConfig(c.getSource(), key, iv, IntegerArgumentType.getInteger(c, "value"))));
-        } else if (value instanceof ForgeConfigSpec.DoubleValue dv) {
+        } else if (value instanceof ModConfigSpec.DoubleValue dv) {
             node.then(Commands.argument("value", DoubleArgumentType.doubleArg(Config.MULT_MIN, Config.MULT_MAX))
                     .requires(s -> s.hasPermission(OP))
                     .executes(c -> setConfig(c.getSource(), key, dv, DoubleArgumentType.getDouble(c, "value"))));
@@ -99,12 +99,12 @@ public final class ModCommands {
         };
     }
 
-    private static int getConfig(CommandSourceStack src, String key, ForgeConfigSpec.ConfigValue<?> value) {
+    private static int getConfig(CommandSourceStack src, String key, ModConfigSpec.ConfigValue<?> value) {
         src.sendSuccess(() -> Component.literal("§6" + key + " §7= §e" + value.get()), false);
         return 1;
     }
 
-    private static <T> int setConfig(CommandSourceStack src, String key, ForgeConfigSpec.ConfigValue<T> value, T newValue) {
+    private static <T> int setConfig(CommandSourceStack src, String key, ModConfigSpec.ConfigValue<T> value, T newValue) {
         value.set(newValue);
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         src.sendSuccess(() -> Component.literal("§a" + key + " §7set to §e" + newValue), true);
@@ -122,7 +122,7 @@ public final class ModCommands {
     /** Restore EVERY tunable option to its default value (the value passed to define(...) when the spec was built). */
     private static int resetConfigs(CommandSourceStack src) {
         int n = 0;
-        for (ForgeConfigSpec.ConfigValue<?> v : Config.INDEX.values()) { resetOne(v); n++; }
+        for (ModConfigSpec.ConfigValue<?> v : Config.INDEX.values()) { resetOne(v); n++; }
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         final int count = n;
         src.sendSuccess(() -> Component.literal("§aReset §e" + count
@@ -130,7 +130,7 @@ public final class ModCommands {
         return 1;
     }
 
-    private static <T> void resetOne(ForgeConfigSpec.ConfigValue<T> v) {
+    private static <T> void resetOne(ModConfigSpec.ConfigValue<T> v) {
         v.set(v.getDefault()); // ConfigValue.getDefault() returns the value passed to define(...)
     }
 

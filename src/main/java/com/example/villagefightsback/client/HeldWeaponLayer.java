@@ -12,13 +12,13 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Purely-decorative layer that draws a JEG gun on a villager / iron golem. The mob does NOT actually
@@ -68,7 +68,7 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
         }
         // Gate.HELD_GUN: show only when the holder is actually holding the very item we render (the golem's
         // native rocket launcher), so we no longer reference JEG's GunItem here.
-        return entity.getMainHandItem().getItem() == ForgeRegistries.ITEMS.getValue(gunId);
+        return entity.getMainHandItem().getItem() == BuiltInRegistries.ITEM.get(gunId);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
         if (!shouldShow(entity)) return; // only show the gun on UPGRADED defenders (see Gate)
 
         if (stack.isEmpty()) {
-            Item item = ForgeRegistries.ITEMS.getValue(gunId);
+            Item item = BuiltInRegistries.ITEM.get(gunId);
             if (item == null) return;
             stack = new ItemStack(item);
         }

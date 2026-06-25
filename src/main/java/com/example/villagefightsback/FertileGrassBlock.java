@@ -2,6 +2,7 @@ package com.example.villagefightsback;
 
 import com.example.villagefightsback.infection.BlockMatcher;
 import com.example.villagefightsback.infection.InfectionData;
+import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -24,10 +25,16 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * the soil under it: on a random tick it converts the block below into its Fertile variant (see {@link #randomTick}).
  */
 public class FertileGrassBlock extends BushBlock {
+    public static final MapCodec<FertileGrassBlock> CODEC = simpleCodec(FertileGrassBlock::new);
     private static final VoxelShape SHAPE = Block.box(2.0, 0.0, 2.0, 14.0, 13.0, 14.0);
 
     public FertileGrassBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BushBlock> codec() {
+        return CODEC;
     }
 
     @Override

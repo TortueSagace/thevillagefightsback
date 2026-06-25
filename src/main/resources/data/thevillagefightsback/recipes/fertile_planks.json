@@ -1,3 +1,0 @@
-{ "type": "minecraft:crafting_shapeless",
-  "ingredients": [ { "item": "thevillagefightsback:fertile_log" } ],
-  "result": { "item": "thevillagefightsback:fertile_planks", "count": 4 } }

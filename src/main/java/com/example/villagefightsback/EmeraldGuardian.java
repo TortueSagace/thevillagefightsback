@@ -1,12 +1,9 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Guardian: an emerald-faction member of the village's defence. A vanilla Guardian that fights
@@ -31,10 +28,5 @@ public class EmeraldGuardian extends Guardian implements EmeraldUnit {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Guardian.createAttributes();
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

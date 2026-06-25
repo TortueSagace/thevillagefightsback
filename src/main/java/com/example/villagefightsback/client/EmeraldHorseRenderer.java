@@ -19,12 +19,12 @@ import net.minecraft.world.entity.animal.horse.Horse;
  */
 public class EmeraldHorseRenderer extends AbstractHorseRenderer<Horse, HorseModel<Horse>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_horse.png");
+            TheVillageFightsBack.id("textures/entity/emerald_horse.png");
 
     public EmeraldHorseRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new HorseModel<>(ctx.bakeLayer(ModelLayers.HORSE)), 1.1F);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_horse_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_horse_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

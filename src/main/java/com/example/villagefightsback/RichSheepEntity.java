@@ -1,8 +1,8 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -14,6 +14,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -46,28 +47,29 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
     }
 
     @Override
-    public ResourceLocation getDefaultLootTable() {
+    public ResourceKey<LootTable> getDefaultLootTable() {
         // Always drop the lime-sheep loot (lime wool + mutton) regardless of the synced colour byte.
-        return new ResourceLocation("minecraft", "entities/sheep/lime");
+        return ResourceKey.create(Registries.LOOT_TABLE,
+                ResourceLocation.fromNamespaceAndPath("minecraft", "entities/sheep/lime"));
     }
 
     @Override
     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
             net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
-            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+            net.minecraft.world.entity.SpawnGroupData data) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data);
         this.setColor(DyeColor.LIME); // vanilla finalizeSpawn randomises colour -> force it back to lime
         return r;
     }
 
     /**
-     * Forge routes shears-on-mob through IForgeShearable.onSheared (NOT shear()), so we override it here to
+     * NeoForge routes shears-on-mob through IShearable.onSheared (NOT shear()), so we override it here to
      * yield light-green (lime) wool + an emerald.
      */
     @Override
     public java.util.List<net.minecraft.world.item.ItemStack> onSheared(
             net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack item,
-            Level level, BlockPos pos, int fortune) {
+            Level level, BlockPos pos) {
         this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR,
                 player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS, 1.0F, 1.0F);
         this.setSheared(true);
@@ -79,8 +81,8 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
     }
 
     @Override
-    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
-        super.dropCustomDeathLoot(source, looting, recentlyHit);
+    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
         this.spawnAtLocation(Items.EMERALD);
     }
 
@@ -102,11 +104,6 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
         this.spawnAtLocation(Items.EMERALD);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return net.minecraftforge.network.NetworkHooks.getEntitySpawningPacket(this);
-    }
-
     /**
      * With probability {@code chance}, create and finalize-spawn a Rich Sheep at {@code pos}. Another batch
      * calls this when a fertile tree generates.
@@ -116,7 +113,7 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
         RichSheepEntity sheep = ModEntities.RICH_SHEEP.get().create(level);
         if (sheep == null) return;
         sheep.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-        sheep.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+        sheep.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null);
         level.addFreshEntity(sheep);
     }
 }

@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,10 +24,16 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * Emerald Virus I (20s) if it is eligible.
  */
 public class FertileKelpBlock extends BushBlock {
+    public static final MapCodec<FertileKelpBlock> CODEC = simpleCodec(FertileKelpBlock::new);
     private static final VoxelShape SHAPE = Block.box(2.0, 0.0, 2.0, 14.0, 16.0, 14.0); // full-height kelp column
 
     public FertileKelpBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BushBlock> codec() {
+        return CODEC;
     }
 
     @Override

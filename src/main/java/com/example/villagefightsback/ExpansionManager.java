@@ -20,9 +20,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * STAGE-3 "EXPANSION": when a village's brainNode first reaches level 3, it dispatches a wave of settlers
@@ -36,7 +36,7 @@ import net.minecraftforge.fml.common.Mod;
  * lives in {@link ExpansionSettlerGoal}; this class handles the trigger, spawning, build-spot claims, and
  * the death fallback.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ExpansionManager {
     private ExpansionManager() {}
 
@@ -115,7 +115,7 @@ public final class ExpansionManager {
         Villager v = EntityType.VILLAGER.create(level);
         if (v == null) return;
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
         v.setBaby(false);
         v.getPersistentData().putBoolean(NBT_EXPANSION, true);
         v.getPersistentData().putInt(NBT_TNT, color);

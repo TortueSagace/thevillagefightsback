@@ -1,53 +1,49 @@
 package com.example.villagefightsback;
 
-import java.util.UUID;
-
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 /**
  * A NATIVE clone of the vanilla 1.21 Mace (so the mod no longer needs any third-party weapon mod). It is a
  * heavy one-handed weapon: +5 attack damage / -3.4 attack speed (so 6 damage and a slow swing), 500 durability,
  * EPIC rarity, and an enchantment value of 15. Its signature SMASH attack (heavy bonus damage + area knockback
- * on a downward strike from a fall) lives entirely in the Forge-bus {@link MaceCombatEvents} so we never touch a
+ * on a downward strike from a fall) lives entirely in the game-bus {@link MaceCombatEvents} so we never touch a
  * mixin; the mace enchantments (Density, Breach, Wind Burst from {@link ModEnchantments}) feed that same code.
  */
 public class MaceItem extends Item {
-    // Vanilla mace attribute additions (TieredItem/DiggerItem-style modifiers, fixed UUIDs so they're stable).
-    private static final UUID BASE_ATTACK_DAMAGE_UUID = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
-    private static final UUID BASE_ATTACK_SPEED_UUID = UUID.fromString("FA233E1C-4180-4865-B01B-BCCE9785ACA3");
+    // Vanilla mace attribute additions (TieredItem/DiggerItem-style modifiers). In 1.21 the modifier id is a
+    // ResourceLocation (no UUID/name); we use the vanilla base ids so the mainhand tooltip merges correctly.
     public static final float ATTACK_DAMAGE = 5.0F;   // +5 (-> 6 shown)
     public static final float ATTACK_SPEED = -3.4F;   // slow, heavy swing
 
-    private final Multimap<Attribute, AttributeModifier> mainhandModifiers;
-
     public MaceItem(Properties properties) {
-        super(properties.durability(500).rarity(Rarity.EPIC));
-        ImmutableMultimap.Builder<Attribute, AttributeModifier> b = ImmutableMultimap.builder();
-        b.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(
-                BASE_ATTACK_DAMAGE_UUID, "Weapon modifier", ATTACK_DAMAGE, AttributeModifier.Operation.ADDITION));
-        b.put(Attributes.ATTACK_SPEED, new AttributeModifier(
-                BASE_ATTACK_SPEED_UUID, "Weapon modifier", ATTACK_SPEED, AttributeModifier.Operation.ADDITION));
-        this.mainhandModifiers = b.build();
+        super(properties.durability(500).rarity(Rarity.EPIC).attributes(createAttributes()));
     }
 
-    /** True if {@code stack} is one of our maces (used by the mace EnchantmentCategory and the smash handler). */
+    /** The mainhand attack-damage / attack-speed modifiers (mirrors the old getAttributeModifiers override). */
+    private static ItemAttributeModifiers createAttributes() {
+        return ItemAttributeModifiers.builder()
+                .add(Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(Item.BASE_ATTACK_DAMAGE_ID, ATTACK_DAMAGE,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(Attributes.ATTACK_SPEED,
+                        new AttributeModifier(Item.BASE_ATTACK_SPEED_ID, ATTACK_SPEED,
+                                AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
+    }
+
+    /** True if {@code stack} is one of our maces (used by the smash handler). */
     public static boolean isMace(ItemStack stack) {
         return stack != null && stack.getItem() instanceof MaceItem;
-    }
-
-    @Override
-    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-        return slot == EquipmentSlot.MAINHAND ? this.mainhandModifiers : super.getAttributeModifiers(slot, stack);
     }
 
     @Override
@@ -66,14 +62,14 @@ public class MaceItem extends Item {
                              net.minecraft.world.level.block.state.BlockState state, net.minecraft.core.BlockPos pos,
                              net.minecraft.world.entity.LivingEntity miner) {
         if (!level.isClientSide && state.getDestroySpeed(level, pos) != 0.0F) {
-            stack.hurtAndBreak(2, miner, m -> m.broadcastBreakEvent(EquipmentSlot.MAINHAND));
+            stack.hurtAndBreak(2, miner, EquipmentSlot.MAINHAND);
         }
         return true;
     }
 
-    /** True if {@code ench} can be applied to this mace (only the mace-category enchants + a few generic ones). */
+    /** True if {@code ench} can be applied to this mace. Enchantability is governed by item tags in 1.21. */
     public static boolean canApply(Enchantment ench, ItemStack stack) {
-        return ench.canEnchant(stack);
+        return stack.getItem() instanceof MaceItem;
     }
 
     // The inventory tooltip (.desc) is added centrally by ModTooltips; no per-item override (it would double).

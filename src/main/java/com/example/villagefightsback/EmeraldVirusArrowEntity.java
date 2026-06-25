@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -12,7 +10,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Virus arrow: a normal arrow that also infects whatever living thing it hits with the Emerald
@@ -29,13 +26,14 @@ public class EmeraldVirusArrowEntity extends AbstractArrow {
     }
 
     public EmeraldVirusArrowEntity(Level level, LivingEntity shooter) {
-        super(ModEntities.EMERALD_VIRUS_ARROW.get(), shooter, level);
+        super(ModEntities.EMERALD_VIRUS_ARROW.get(), shooter, level,
+                new ItemStack(ModItems.EMERALD_VIRUS_ARROW.get()), null);
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DATA_AMPLIFIER, 0);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_AMPLIFIER, 0);
     }
 
     /** Virus strength this arrow inflicts on hit: 0 = Virus I, 1 = Virus II. */
@@ -48,7 +46,7 @@ public class EmeraldVirusArrowEntity extends AbstractArrow {
     }
 
     @Override
-    protected ItemStack getPickupItem() {
+    protected ItemStack getDefaultPickupItem() {
         return new ItemStack(getVirusAmplifier() >= 1
                 ? ModItems.EMERALD_VIRUS_ARROW_2.get() : ModItems.EMERALD_VIRUS_ARROW.get());
     }
@@ -57,7 +55,7 @@ public class EmeraldVirusArrowEntity extends AbstractArrow {
     @Override
     protected void doPostHurtEffects(LivingEntity target) {
         super.doPostHurtEffects(target);
-        target.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS,
+        target.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS, EmeraldVirus.DURATION_TICKS,
                 getVirusAmplifier()), this.getEffectSource());
     }
 
@@ -71,10 +69,5 @@ public class EmeraldVirusArrowEntity extends AbstractArrow {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("VirusAmplifier")) setVirusAmplifier(tag.getInt("VirusAmplifier"));
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

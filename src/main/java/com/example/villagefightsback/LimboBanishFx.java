@@ -8,9 +8,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * The "banishment" effect played where a creature's hitbox was when it is sent to Limbo: a column of big
@@ -19,7 +19,7 @@ import net.minecraftforge.fml.common.Mod;
  * bigger creature leaves a bigger swirl. Server-driven (particles are broadcast to nearby players), so it
  * keeps playing after the creature itself has left.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboBanishFx {
     private LimboBanishFx() {}
 
@@ -59,8 +59,8 @@ public final class LimboBanishFx {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ACTIVE.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (ACTIVE.isEmpty()) return;
         Iterator<Fx> it = ACTIVE.iterator();
         while (it.hasNext()) {
             Fx fx = it.next();

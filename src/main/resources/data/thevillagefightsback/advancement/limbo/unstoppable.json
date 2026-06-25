@@ -1,0 +1,48 @@
+{
+  "display": {
+    "icon": {
+      "id": "thevillagefightsback:limbo_chestplate"
+    },
+    "title": "Unstoppable",
+    "description": "Possess the full set of Limbo armor.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:limbo_helmet"
+            ]
+          },
+          {
+            "items": [
+              "thevillagefightsback:limbo_chestplate"
+            ]
+          },
+          {
+            "items": [
+              "thevillagefightsback:limbo_leggings"
+            ]
+          },
+          {
+            "items": [
+              "thevillagefightsback:limbo_boots"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/membrane"
+}

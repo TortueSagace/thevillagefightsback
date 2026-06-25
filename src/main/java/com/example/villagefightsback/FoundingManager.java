@@ -9,6 +9,7 @@ import com.example.villagefightsback.goal.FoundingSettlerGoal;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -21,11 +22,10 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * "Founding" a village from an empty brainNode. When the brain node is about to mark out its wall but no
@@ -38,13 +38,13 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Wall-planning is GATED via {@link #gate} (called from BrainNodeEvents.driveWalls) so the wall isn't
  * marked out until founding completes.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class FoundingManager {
     private FoundingManager() {}
 
     public static final String NBT_FOUNDING = "vgun_founding";
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
     static double CHECK_RADIUS = 64.0;  // brain influence radius for founding (set from Config.apply(); base 64)
     private static final int SETTLERS = 7;
     private static final int HEX_RADIUS = 10;
@@ -71,9 +71,9 @@ public final class FoundingManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || JOBS.isEmpty()) return;
-        MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (JOBS.isEmpty()) return;
+        MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         Iterator<Map.Entry<GlobalPos, Long>> it = JOBS.entrySet().iterator();
         while (it.hasNext()) {
@@ -159,7 +159,7 @@ public final class FoundingManager {
         Villager v = EntityType.VILLAGER.create(level);
         if (v == null) return;
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
         v.setBaby(false);
         v.getPersistentData().putBoolean(NBT_FOUNDING, true);
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant goals
@@ -175,7 +175,7 @@ public final class FoundingManager {
     }
 
     private static void spawnGuards(ServerLevel level, BlockPos brainNode) {
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        EntityType<?> guardType = BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
         if (guardType == null) return; // Guard Villagers not installed
         int[][] dirs = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}};
         for (int i = 0; i < GUARDS; i++) {
@@ -184,7 +184,7 @@ public final class FoundingManager {
             Entity g = guardType.create(level);
             if (!(g instanceof Mob mob)) continue;
             mob.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
             level.addFreshEntity(mob); // onEntityJoin arms the guard
         }
     }

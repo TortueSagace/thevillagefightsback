@@ -63,7 +63,13 @@ public class CheapScaffoldBlock extends ScaffoldingBlock {
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         ItemStack tool = params.getOptionalParameter(LootContextParams.TOOL);
-        int silk = tool == null ? 0 : EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool);
+        // 1.21: getItemEnchantmentLevel takes a Holder<Enchantment>; resolve the vanilla SILK_TOUCH key via the
+        // loot context's level registry access.
+        int silk = tool == null ? 0 : EnchantmentHelper.getItemEnchantmentLevel(
+                params.getLevel().registryAccess()
+                        .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                        .getOrThrow(Enchantments.SILK_TOUCH),
+                tool);
         return silk > 0 ? List.of(new ItemStack(this)) : List.of();
     }
 

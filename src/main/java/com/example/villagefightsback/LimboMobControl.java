@@ -2,9 +2,9 @@ package com.example.villagefightsback;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraftforge.event.entity.living.MobSpawnEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Keeps the Limbo a Phantom-only dimension: cancels every WILD (natural / chunk-gen / structure) mob spawn in
@@ -12,12 +12,12 @@ import net.minecraftforge.fml.common.Mod;
  * still spawn in chunks generated before the custom biome was set) regardless of chunk age. Intentional spawns
  * (spawn eggs, commands, our phantom spawner / egg hatches) are left alone.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboMobControl {
     private LimboMobControl() {}
 
     @SubscribeEvent
-    public static void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
+    public static void onFinalizeSpawn(FinalizeSpawnEvent event) {
         ServerLevel level = event.getLevel().getLevel();
         if (!LimboDimension.LIMBO.equals(level.dimension())) return;
         if (event.getEntity() instanceof LimboPhantomEntity) return; // our natives are welcome

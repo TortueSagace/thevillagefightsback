@@ -2,18 +2,18 @@ package com.example.villagefightsback.client;
 
 import com.example.villagefightsback.TheVillageFightsBack;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-only camera shake. The boss sends {@link com.example.villagefightsback.network.ScreenShakePacket}s;
  * {@link #add} starts/refreshes a decaying jitter that is applied to the camera angles each frame and counts
  * down each client tick. Pure cosmetic; no gameplay effect.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class ScreenShakeClient {
     private ScreenShakeClient() {}
 
@@ -35,8 +35,8 @@ public final class ScreenShakeClient {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && ticksLeft > 0) ticksLeft--;
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (ticksLeft > 0) ticksLeft--;
     }
 
     @SubscribeEvent

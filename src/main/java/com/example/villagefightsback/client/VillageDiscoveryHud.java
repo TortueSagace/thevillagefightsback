@@ -4,11 +4,11 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Draws the two-line "village discovered" message at the bottom of the screen (above the hotbar, NOT in chat)
@@ -17,7 +17,7 @@ import net.minecraftforge.fml.common.Mod;
  * client-tick timer ({@link VillageDiscoveryTicker} decrements it each unpaused tick) so it ALWAYS expires,
  * independent of world/dimension game-time.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillageDiscoveryHud {
     private VillageDiscoveryHud() {}
 
@@ -40,9 +40,13 @@ public final class VillageDiscoveryHud {
     }
 
     @SubscribeEvent
-    public static void onRegister(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "village_discovery_message",
-                (gui, g, partialTick, w, h) -> draw(g, w, h));
+    public static void onRegister(RegisterGuiLayersEvent event) {
+        event.registerAbove(VanillaGuiLayers.HOTBAR, TheVillageFightsBack.id("village_discovery_message"),
+                (GuiGraphics g, net.minecraft.client.DeltaTracker delta) -> {
+                    int w = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+                    int h = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+                    draw(g, w, h);
+                });
     }
 
     private static void draw(GuiGraphics g, int w, int h) {

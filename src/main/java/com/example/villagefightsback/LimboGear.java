@@ -47,7 +47,9 @@ public final class LimboGear {
 
     /** Convenience: is this stack a Limbo armour item of the given armour slot? */
     public static boolean isPieceForSlot(ItemStack stack, EquipmentSlot slot) {
-        return stack.getItem() instanceof ArmorItem ai && ai.getMaterial() == LimboArmorMaterial.INSTANCE
+        // In 1.21 the material is a Holder, so compare by value rather than by reference identity.
+        return stack.getItem() instanceof ArmorItem ai
+                && ai.getMaterial().value() == LimboArmorMaterial.INSTANCE.value()
                 && ai.getEquipmentSlot() == slot;
     }
 

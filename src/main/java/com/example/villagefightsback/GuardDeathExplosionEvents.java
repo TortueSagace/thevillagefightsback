@@ -2,6 +2,7 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -9,21 +10,20 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * A stage-3 (upgraded) Guard Villagers guard that is killed BY a hostile mob goes out with a bang: a
  * TNT-strength explosion that also sets the whole blast range on fire. Only fires for upgraded guards
  * killed by an {@link Enemy} (not fall damage, drowning, friendly fire, etc.).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class GuardDeathExplosionEvents {
     private GuardDeathExplosionEvents() {}
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
     private static final float BLAST_RADIUS = 4.0F;   // TNT-strength
     private static final int FIRE_RADIUS = 4;         // ignite the whole blast range
 
@@ -32,7 +32,7 @@ public final class GuardDeathExplosionEvents {
         if (!Config.guardsDropFireGrenadeUponDeath()) return;                            // config: off = guards die quietly
         LivingEntity e = event.getEntity();
         if (!(e.level() instanceof ServerLevel level)) return;
-        if (!GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) return; // Guard Villagers guard only
+        if (!GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()))) return; // Guard Villagers guard only
         if (!UpgradeState.isUpgraded(e)) return;                                         // stage-3 only
         Entity killer = event.getSource().getEntity();
         if (!(killer instanceof Enemy) && !Factions.isInfected(killer)) return;          // killed by a hostile / boss-minion only

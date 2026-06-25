@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
-import net.minecraft.advancements.Advancement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -24,13 +23,13 @@ public class EmeraldDiarrheaEffect extends MobEffect {
 
     /** Fire exactly once, on the final tick of the effect. */
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration == 1;
     }
 
     @Override
-    public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (!(entity instanceof ServerPlayer player)) return;
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
+        if (!(entity instanceof ServerPlayer player)) return true;
 
         // Drain hunger.
         int foodLevel = player.getFoodData().getFoodLevel();
@@ -45,10 +44,11 @@ public class EmeraldDiarrheaEffect extends MobEffect {
 
         // Award the achievement.
         MinecraftServer server = player.server;
-        Advancement advancement = server.getAdvancements()
-                .getAdvancement(new ResourceLocation(TheVillageFightsBack.MODID, "emerald_diarrhea"));
+        AdvancementHolder advancement = server.getAdvancements()
+                .get(TheVillageFightsBack.id("emerald_diarrhea"));
         if (advancement != null) {
             player.getAdvancements().award(advancement, "got_it");
         }
+        return true;
     }
 }

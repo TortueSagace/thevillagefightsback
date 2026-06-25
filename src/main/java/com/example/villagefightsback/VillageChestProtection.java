@@ -17,11 +17,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Village chest / barrel protection, with NO mixin. A "village chest" is a chest (incl. trapped chest) or barrel
@@ -39,7 +39,7 @@ import net.minecraftforge.fml.common.Mod;
  * Detection is snapshot-on-open + diff-on-close (no mixin). It guards against a null block entity, a chest
  * destroyed between open and close, and double chests (it snapshots and re-reads the SAME block entity).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillageChestProtection {
     private VillageChestProtection() {}
 

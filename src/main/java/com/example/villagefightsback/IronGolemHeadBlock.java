@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -19,12 +21,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * faces the placer, like a mob skull. Mineable with a pickaxe.
  */
 public class IronGolemHeadBlock extends HorizontalDirectionalBlock {
+    public static final MapCodec<IronGolemHeadBlock> CODEC = simpleCodec(IronGolemHeadBlock::new);
     // The head box (8x10x8) is symmetric under y-rotation, so a single facing-independent shape is enough.
     private static final VoxelShape SHAPE = Block.box(4.0, 0.0, 4.0, 12.0, 10.0, 12.0);
 
     public IronGolemHeadBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
+        return CODEC;
     }
 
     @Override

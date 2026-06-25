@@ -11,6 +11,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -46,37 +47,47 @@ public class VillageBrainNodeBlock extends Block {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    public ItemInteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos,
+                                           Player player, InteractionHand hand, BlockHitResult hit) {
+        if (!held.is(Items.EMERALD)) {
+            // Any non-emerald item: fall through to the empty-hand path (open the upgrade screen).
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+        ServerLevel sl = (ServerLevel) level;
+        BrainNodeData data = BrainNodeData.get(sl.getServer());
+        BrainNodeData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
+
+        int donated = held.getCount();
+        int gained = econ.addEmeralds(donated);
+        if (!player.getAbilities().instabuild) held.shrink(donated);
+        // Donating emeralds buys Hero of the Village -- 1 minute per emerald, STACKING onto any time left
+        // (both creative and survival).
+        if (player instanceof ServerPlayer hero) grantDonationHero(hero, donated);
+        // Reflect any level-up on the clicked block immediately; the rest sync via BrainNodeEvents.
+        int target = chargesForLevel(econ.getLevel());
+        if (state.getValue(CHARGES) != target) {
+            sl.setBlock(pos, state.setValue(CHARGES, target), 3);
+        }
+        sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.0F);
+        if (gained > 0) {
+            // Show the named phase in purple (SETTLEMENT / FERTILIZATION / EXPANSION / CULMINATION PHASE),
+            // matching the discovery banner -- not a generic orange "evolved" line.
+            player.displayClientMessage(
+                    Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
+        } else {
+            player.displayClientMessage(info(econ), false);
+        }
+        return ItemInteractionResult.CONSUME;
+    }
+
+    @Override
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                            BlockHitResult hit) {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         ServerLevel sl = (ServerLevel) level;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         BrainNodeData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
-        ItemStack held = player.getItemInHand(hand);
-
-        if (held.is(Items.EMERALD)) {
-            int donated = held.getCount();
-            int gained = econ.addEmeralds(donated);
-            if (!player.getAbilities().instabuild) held.shrink(donated);
-            // Donating emeralds buys Hero of the Village -- 1 minute per emerald, STACKING onto any time left
-            // (both creative and survival). The instance has empty curative items so milk cannot cure it.
-            if (player instanceof ServerPlayer hero) grantDonationHero(hero, donated);
-            // Reflect any level-up on the clicked block immediately; the rest sync via BrainNodeEvents.
-            int target = chargesForLevel(econ.getLevel());
-            if (state.getValue(CHARGES) != target) {
-                sl.setBlock(pos, state.setValue(CHARGES, target), 3);
-            }
-            sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.0F);
-            if (gained > 0) {
-                // Show the named phase in purple (SETTLEMENT / FERTILIZATION / EXPANSION / CULMINATION PHASE),
-                // matching the discovery banner -- not a generic orange "evolved" line.
-                player.displayClientMessage(
-                        Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
-            } else {
-                player.displayClientMessage(info(econ), false);
-            }
-            return InteractionResult.CONSUME;
-        }
 
         // Empty hand (or any non-emerald item): open the upgrade screen for THIS village.
         if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
@@ -110,11 +121,11 @@ public class VillageBrainNodeBlock extends Block {
         int newDuration = remaining + emeralds * HERO_TICKS_PER_EMERALD;
         net.minecraft.world.effect.MobEffectInstance hero = new net.minecraft.world.effect.MobEffectInstance(
                 net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE, newDuration, 0, false, false, true);
-        hero.setCurativeItems(new java.util.ArrayList<>()); // milk cannot cure it
+        // NeoForge removed per-instance curative items (replaced by EffectCure); see EnemyOfVillageEffect.
         player.addEffect(hero);
         // Hero and Enemy of the Village are mutually exclusive: becoming a hero clears any enemy status
         // (the reverse -- becoming an enemy clears hero -- is done in VillageEvents.markVillageEnemy/markThief).
-        player.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+        player.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE);
     }
 
     private static Component info(BrainNodeData.Econ econ) {
@@ -161,16 +172,18 @@ public class VillageBrainNodeBlock extends Block {
 
     /** Mark a silk-touch / creative break as "clean" so it does NOT summon the boss. */
     @Override
-    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide) {
             int silk = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
-                    net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, player.getMainHandItem());
+                    ModEnchantments.holder(level.registryAccess(),
+                            net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH),
+                    player.getMainHandItem());
             if (silk > 0) { // ONLY silk touch is a clean pickup; everything else (incl. creative) unleashes the boss
                 cleanBreakPos = pos.asLong();
                 cleanBreakTick = level.getGameTime();
             }
         }
-        super.playerWillDestroy(level, pos, state, player);
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     /** Drops the brain node ONLY on a silk-touch break; any other break consumes it (it becomes the boss). */
@@ -179,7 +192,9 @@ public class VillageBrainNodeBlock extends Block {
         ItemStack tool = params.getOptionalParameter(
                 net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL);
         int silk = tool == null ? 0 : net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
-                net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH, tool);
+                ModEnchantments.holder(params.getLevel().registryAccess(),
+                        net.minecraft.world.item.enchantment.Enchantments.SILK_TOUCH),
+                tool);
         return silk > 0 ? List.of(new ItemStack(this)) : List.of(); // only silk touch yields the block back
     }
 

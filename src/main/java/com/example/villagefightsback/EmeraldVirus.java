@@ -11,7 +11,7 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * State + rules for the Emerald Virus. The infection lives in the host's persistent NBT so it survives
@@ -30,7 +30,7 @@ public final class EmeraldVirus {
     private static final String NBT_EVER = "emerald_virus_ever";     // has this host EVER been infected?
     private static final String NBT_PROGRESS = "emerald_virus_tint"; // green-tint progress 0..1 (never reverts)
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     /** Villagers, guards, iron/snow golems, players and the emerald faction are naturally immune and can never
      *  catch the virus (an emerald unit is already the faction, so it has nothing to catch). */
@@ -42,7 +42,7 @@ public final class EmeraldVirus {
                 || e instanceof VindictiveGuardEntity   // the boss's own guards are immune to the virus
                 || EmeraldMobs.isPlayerCompanion(e)     // the player's pets/mounts (cats, dogs/wolves, horses) never catch it
                 || Factions.isEmerald(e)                // emerald units never catch the virus (they ARE it)
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** True if the host has ever carried the virus (used both for tint persistence and one-shot immunity). */
@@ -57,7 +57,7 @@ public final class EmeraldVirus {
 
     /** True while the timed effect is currently on the host. */
     public static boolean isActive(LivingEntity e) {
-        return e.hasEffect(ModEffects.EMERALD_VIRUS.get());
+        return e.hasEffect(ModEffects.EMERALD_VIRUS);
     }
 
     /** Green-tint progress, 0..1. Grows while active and is never reduced. */
@@ -89,7 +89,7 @@ public final class EmeraldVirus {
         CompoundTag data = e.getPersistentData();
         data.putBoolean(NBT_EVER, true);
         // ambient=false, showParticles=false, showIcon=true -> no swirl particles, but a HUD icon for players.
-        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), durationTicks, amplifier, false, false, true));
+        e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS, durationTicks, amplifier, false, false, true));
         // Seed a faint tint immediately so the colour shift is visible from the first second.
         if (progress(e) < 0.05F) setProgress(e, 0.05F);
         return true;

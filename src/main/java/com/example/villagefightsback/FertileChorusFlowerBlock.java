@@ -57,8 +57,8 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
 
     private static Block fertileEndStone() {
         if (fertileEndStone == null) {
-            fertileEndStone = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(
-                    new net.minecraft.resources.ResourceLocation(TheVillageFightsBack.MODID, "fertile_end_stone"));
+            fertileEndStone = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
+                    TheVillageFightsBack.id("fertile_end_stone"));
         }
         return fertileEndStone;
     }
@@ -121,7 +121,7 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
                 }
 
                 if (grow && allNeighborsEmpty(level, above, null) && level.isEmptyBlock(pos.above(2))) {
-                    level.setBlock(pos, plant().getStateForPlacement(level, pos), 2);
+                    level.setBlock(pos, ((FertileChorusPlantBlock) plant()).getFertileStateForPlacement(level, pos), 2);
                     placeGrownFlower(level, above, age);
                 } else if (age < 4) {
                     int spread = random.nextInt(4);
@@ -142,7 +142,7 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
                     }
 
                     if (spawned) {
-                        level.setBlock(pos, plant().getStateForPlacement(level, pos), 2);
+                        level.setBlock(pos, ((FertileChorusPlantBlock) plant()).getFertileStateForPlacement(level, pos), 2);
                     } else {
                         placeDeadFlower(level, pos);
                     }

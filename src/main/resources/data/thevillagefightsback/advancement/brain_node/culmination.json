@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "thevillagefightsback:reinforced_glass"
+    },
+    "title": "Unbreakable forteress",
+    "description": "Evolve a brain node to the Culmination Phase (stage 4).",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "stage": {
+      "trigger": "thevillagefightsback:brain_node_stage",
+      "conditions": {
+        "stage": 4
+      }
+    }
+  },
+  "requirements": [
+    [
+      "stage"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/expansion"
+}

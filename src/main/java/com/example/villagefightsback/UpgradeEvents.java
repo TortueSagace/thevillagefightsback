@@ -8,11 +8,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Drives the permanent upgrade: once the (global) Village Brain Node reaches level {@value #REQUIRED_LEVEL},
@@ -20,7 +20,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * and forever (the flag never clears). Cheap: gated by the level check, throttled, only loaded brainNodes,
  * and already-upgraded defenders are filtered out of the query.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class UpgradeEvents {
     private UpgradeEvents() {}
 
@@ -29,11 +29,10 @@ public final class UpgradeEvents {
     private static final int GIGACHAD_LEVEL = 4;     // a golem (iron OR defender) becomes a Gigachad at stage 4+
     static double RADIUS = 100.0; // brain influence radius (set from Config.apply(); base 100)
     private static final int INTERVAL = 100; // check every ~5s (upgrade is permanent; no need to be fast)
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         long _p = ModProfiler.now();
@@ -87,13 +86,13 @@ public final class UpgradeEvents {
             return !UpgradeState.isUpgraded(e) || (stage >= GIGACHAD_LEVEL && !UpgradeState.isStage4(e));
         }
         // Stage 2: only GUARDS gain a tier here (the virus archer), and only until the stage-2 flag is stamped.
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType())) && !UpgradeState.isStage2(e);
+        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType())) && !UpgradeState.isStage2(e);
     }
 
     private static boolean isUpgradable(LivingEntity e) {
         if (e instanceof GigachadGolemEntity) return false; // gigachad (+ vindictive) are already fully armed
         if (e instanceof IronGolem golem) return !golem.isPlayerCreated();
         if (e instanceof Villager) return true;
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 }

@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "id": "thevillagefightsback:emerald_apple"
+    },
+    "title": "What about social distancing?",
+    "description": "Have a creature catch the Emerald Virus from another infected creature.",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "got_it": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "got_it"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/root"
+}

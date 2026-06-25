@@ -87,9 +87,9 @@ public final class BrainNodeUpgrades {
                             "Glass Dome", "A reinforced-glass dome seals the village from aerial attacks."),
                     new Upgrade(new ItemStack(com.example.villagefightsback.ModItems.ROCKET_LAUNCHER.get()),
                             "Gigachad Golems", "Defender Golems become gold-plated Gigachad Golems with 200 HP and a rocket launcher."),
-                    new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
+                    new Upgrade(TheVillageFightsBack.id("textures/gui/emeraldger_face.png"),
                             "Emeraldgers", "Emerald Virus inflicts Wither II; dead hosts rise as Emeraldgers that grow with each kill."),
-                    new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/air_strike.png"),
+                    new Upgrade(TheVillageFightsBack.id("textures/gui/air_strike.png"),
                             "Air Strikes", "When attacked, the brain node rains 27 rockets on the strongest nearby enemy.")
             )
     );

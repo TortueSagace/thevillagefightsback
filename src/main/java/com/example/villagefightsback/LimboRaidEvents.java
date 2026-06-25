@@ -8,18 +8,18 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
  * Combat glue for the Limbo raiders: every attack a {@link LimboRaider} causes deals 3x damage (uniformly --
  * melee, crossbow bolts, evoker fangs, vex charges), a Limbo Evoker's summoned vexes are swapped for
  * {@link LimboVexEntity Limbo Vexes}, and the raiders smash through weak blocks that wall them off from prey.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboRaidEvents {
     private LimboRaidEvents() {}
 
@@ -29,7 +29,7 @@ public final class LimboRaidEvents {
      *  weak blocks at body height (never the floor under its feet, and never bedrock / obsidian-tough blocks),
      *  so a walled village is no defence against the Limbo. */
     @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
+    public static void onLivingTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof LimboRaider) || !(event.getEntity() instanceof Mob mob)) return;
         if (mob.level().isClientSide() || (mob.tickCount & 3) != 0) return;          // throttle: every 4 ticks
         if (mob.getTarget() == null || !mob.horizontalCollision) return;             // only dig when blocked en route
@@ -75,7 +75,7 @@ public final class LimboRaidEvents {
     /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells).
      *  Also spare the giant raiders from suffocation/cramming, since a 3x ravager's box can clip the village. */
     @SubscribeEvent
-    public static void onHurt(LivingHurtEvent event) {
+    public static void onHurt(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof LimboRaider
                 && (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)
                     || event.getSource().is(net.minecraft.world.damagesource.DamageTypes.CRAMMING))) {
@@ -101,7 +101,7 @@ public final class LimboRaidEvents {
         lv.setOwner(evoker);
         lv.setBoundOrigin(vex.blockPosition());
         lv.finalizeSpawn(level, level.getCurrentDifficultyAt(vex.blockPosition()),
-                MobSpawnType.MOB_SUMMONED, null, null);
+                MobSpawnType.MOB_SUMMONED, null);
         lv.setLimitedLife(20 * (30 + level.getRandom().nextInt(90))); // 30-120s, like a vanilla summoned vex
         level.addFreshEntity(lv);
     }

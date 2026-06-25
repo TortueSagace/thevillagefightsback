@@ -5,10 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.block.AbstractBannerBlock;
 import net.minecraft.world.level.block.BaseRailBlock;
 import net.minecraft.world.level.block.BasePressurePlateBlock;
@@ -34,10 +37,10 @@ import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * Drives the "rising house" build animation: instead of pasting a house at once, the blocks are placed
@@ -45,7 +48,7 @@ import net.minecraftforge.fml.common.Mod;
  * gravity-sensitive blocks (torches, lanterns, ladders, beds, doors, ...) LAST, so their support always
  * exists before they appear. All placements use no-neighbour-update flags, so nothing ever pops off.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class HouseBuildManager {
     private HouseBuildManager() {}
 
@@ -103,8 +106,7 @@ public final class HouseBuildManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         // Fire any pending TNT detonations first (each carves a footprint + queues a build job below).
         if (!DETONATIONS.isEmpty()) {
             List<PendingTnt> due = new ArrayList<>(DETONATIONS);
@@ -155,7 +157,7 @@ public final class HouseBuildManager {
                         level.setBlock(p.pos(), p.state(), FLAGS);
                         if (p.nbt() != null) loadBlockEntity(p);
                         if (loot != null && level.getBlockEntity(p.pos()) instanceof RandomizableContainerBlockEntity c) {
-                            c.setLootTable(loot, level.getRandom().nextLong());
+                            c.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, loot), level.getRandom().nextLong());
                             c.setChanged();
                         }
                         if ((cursor & 3) == 0) { // a soft building tick every 4th block
@@ -193,7 +195,7 @@ public final class HouseBuildManager {
             tag.putInt("x", p.pos().getX());
             tag.putInt("y", p.pos().getY());
             tag.putInt("z", p.pos().getZ());
-            be.load(tag);
+            be.loadWithComponents(tag, level.registryAccess());
             be.setChanged();
         }
     }

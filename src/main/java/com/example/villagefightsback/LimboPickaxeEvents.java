@@ -3,22 +3,22 @@ package com.example.villagefightsback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * Lets the Limbo Pickaxe mine the unmineable. Bedrock (-1 hardness) and reinforced deepslate (55 hardness,
  * never drops) can never be broken by the normal mining loop, so we intercept the left-click and shatter them
  * outright -- consuming a point of durability per block. Every other block is left to vanilla mining.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPickaxeEvents {
     private LimboPickaxeEvents() {}
 
@@ -42,7 +42,9 @@ public final class LimboPickaxeEvents {
         if (level instanceof ServerLevel sl) {
             sl.destroyBlock(pos, false, player); // remove it (these blocks have no drops anyway)
             sl.playSound(null, pos, state.getSoundType().getBreakSound(), SoundSource.BLOCKS, 1.0F, 0.7F);
-            held.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(InteractionHand.MAIN_HAND));
+            // 1.21: ItemStack.hurtAndBreak takes the EquipmentSlot the stack is in; the old
+            // broadcastBreakEvent callback is gone (the slot drives the break animation now).
+            held.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
         }
     }
 }

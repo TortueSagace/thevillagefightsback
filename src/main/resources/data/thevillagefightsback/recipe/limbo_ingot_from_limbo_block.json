@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "thevillagefightsback:limbo_block"
+    }
+  ],
+  "result": {
+    "id": "thevillagefightsback:limbo_ingot",
+    "count": 9
+  }
+}

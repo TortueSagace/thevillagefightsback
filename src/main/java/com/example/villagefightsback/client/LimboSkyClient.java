@@ -4,10 +4,10 @@ import com.example.villagefightsback.LimboDimension;
 import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ViewportEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Greens the Limbo's fog/horizon on the CLIENT, regardless of the dimension's baked effects. This is the
@@ -15,7 +15,7 @@ import net.minecraftforge.fml.common.Mod;
  * worlds created after the change). New worlds also get the full green void sky from
  * {@link LimboDimensionEffects}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class LimboSkyClient {
     private LimboSkyClient() {}
 

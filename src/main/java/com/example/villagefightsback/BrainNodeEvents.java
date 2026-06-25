@@ -33,22 +33,22 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Drives the Village Brain Node: spawns one at the centre of each loaded village, grants sunset emerald
  * income, and keeps every brain node's visual level in sync with the global {@link BrainNodeData}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainNodeEvents {
     private BrainNodeEvents() {}
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
     static int INCOME_RADIUS = 100;     // brain influence radius (set from Config.apply(); base 100)
     private static final int VILLAGE_SCAN_RADIUS = 64; // look for village centres this far from players
     private static final int DISCOVERY_HUD_TICKS = 100; // 5s on-screen discovery message (bottom of screen)
@@ -64,8 +64,7 @@ public final class BrainNodeEvents {
     private static final Map<GlobalPos, Long> strikeCooldownUntil = new HashMap<>(); // node -> gameTime the 10-min cooldown ends (set only after an ACTUAL strike)
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
 
@@ -122,13 +121,14 @@ public final class BrainNodeEvents {
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive()
                     && (x instanceof Villager
                         || x instanceof net.minecraft.world.entity.animal.IronGolem
-                        || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(x.getType()))))) {
+                        || GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(x.getType()))))) {
                 if (e.distanceToSqr(center) > r2) continue;
                 // ambient=false, showParticles=false, showIcon=false -> a silent, particle-free shield.
-                e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY.get(), 200, 0, false, false, false));
+                e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY, 200, 0, false, false, false));
                 // Also clear any harmful effect already on it (VillageEvents blocks NEW ones from landing).
-                List<net.minecraft.world.effect.MobEffect> bad = e.getActiveEffects().stream()
-                        .filter(i -> i.getEffect().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
+                // getEffect() now returns Holder<MobEffect>; .value() reaches the MobEffect for its category.
+                List<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> bad = e.getActiveEffects().stream()
+                        .filter(i -> i.getEffect().value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
                         .map(MobEffectInstance::getEffect).toList();
                 bad.forEach(e::removeEffect);
             }
@@ -201,7 +201,7 @@ public final class BrainNodeEvents {
     /** Cheap monitor: stamp the game-time an ally (villager/guard/golem) was last attacked, per nearby brain
      *  node, so a stage-4 air strike fires only when the village was actually under attack recently. */
     @SubscribeEvent
-    public static void onAllyAttacked(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+    public static void onAllyAttacked(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (!isVillageAlly(victim) || !(victim.level() instanceof ServerLevel sl)) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
@@ -281,7 +281,7 @@ public final class BrainNodeEvents {
         if (!e.isAlive()) return false;
         if (Factions.isEmerald(e)) return false;                       // the village spares emerald units (v1.0.3)
         if (e instanceof net.minecraft.world.entity.player.Player p) {
-            return !p.isCreative() && !p.isSpectator() && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+            return !p.isCreative() && !p.isSpectator() && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE);
         }
         if (e instanceof UnleashedBrainNodeEntity) return false;        // the boss has its own arc
         if (isVillageAlly(e) || e instanceof EmeraldgerEntity || e instanceof WallDefenderEntity) return false;
@@ -316,7 +316,7 @@ public final class BrainNodeEvents {
     private static boolean isVillageAlly(LivingEntity e) {
         return e instanceof Villager
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** Build the 3x3 protecting-glass cube (panes facing outward, bulldozing whatever is there) with a wall
@@ -532,8 +532,7 @@ public final class BrainNodeEvents {
      * every tick; the planning + completion logic stays on the 40-tick {@link #driveOuterWalls} cadence.
      */
     @SubscribeEvent
-    public static void raiseOuterWallsGradually(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void raiseOuterWallsGradually(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         BrainNodeData data = BrainNodeData.get(server);
@@ -568,24 +567,24 @@ public final class BrainNodeEvents {
     private static net.minecraft.world.item.ItemStack celebrationRocket(net.minecraft.util.RandomSource rand) {
         net.minecraft.world.item.ItemStack stack =
                 new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FIREWORK_ROCKET);
-        net.minecraft.nbt.CompoundTag fireworks = new net.minecraft.nbt.CompoundTag();
-        fireworks.putByte("Flight", (byte) (1 + rand.nextInt(2)));
-        net.minecraft.nbt.ListTag explosions = new net.minecraft.nbt.ListTag();
+        // 1.21: the firework data is the DataComponents.FIREWORKS component (Fireworks + FireworkExplosion records),
+        // not a "Fireworks" CompoundTag. Same flight + per-burst shape/colour/flicker/trail values as before.
+        java.util.List<net.minecraft.world.item.component.FireworkExplosion> explosions = new ArrayList<>();
         int bursts = 1 + rand.nextInt(2);
         for (int b = 0; b < bursts; b++) {
-            net.minecraft.nbt.CompoundTag ex = new net.minecraft.nbt.CompoundTag();
-            ex.putByte("Type", (byte) rand.nextInt(5));   // 0 small ball .. 4 burst
-            ex.putBoolean("Flicker", rand.nextBoolean());
-            ex.putBoolean("Trail", rand.nextBoolean());
+            net.minecraft.world.item.component.FireworkExplosion.Shape shape =
+                    net.minecraft.world.item.component.FireworkExplosion.Shape.byId(rand.nextInt(5)); // 0 small ball .. 4 burst
             int[] colors = new int[1 + rand.nextInt(3)];
             for (int c = 0; c < colors.length; c++) colors[c] = FIREWORK_COLORS[rand.nextInt(FIREWORK_COLORS.length)];
-            ex.putIntArray("Colors", colors);
-            explosions.add(ex);
+            explosions.add(new net.minecraft.world.item.component.FireworkExplosion(
+                    shape,
+                    it.unimi.dsi.fastutil.ints.IntList.of(colors),
+                    it.unimi.dsi.fastutil.ints.IntList.of(),       // no fade colours
+                    rand.nextBoolean(),                            // Trail
+                    rand.nextBoolean()));                          // Flicker (twinkle)
         }
-        fireworks.put("Explosions", explosions);
-        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
-        tag.put("Fireworks", fireworks);
-        stack.setTag(tag);
+        stack.set(net.minecraft.core.component.DataComponents.FIREWORKS,
+                new net.minecraft.world.item.component.Fireworks(1 + rand.nextInt(2), explosions));
         return stack;
     }
 
@@ -1015,7 +1014,7 @@ public final class BrainNodeEvents {
         if (!(type.create(level) instanceof net.minecraft.world.entity.Mob mob)) return;
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
-        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
+        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null);
         level.addFreshEntity(mob);
     }
 
@@ -1040,7 +1039,7 @@ public final class BrainNodeEvents {
             //  scheduleBirthScouts. The recurring sunset emerald scout is the BAT, in handleSunsetIncome.)
         }
 
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        EntityType<?> guardType = BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
         if (guardType != null) {
             for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType, outside);
         }
@@ -1198,7 +1197,7 @@ public final class BrainNodeEvents {
             if (e instanceof EmeraldgerEntity) continue;
             if (e instanceof Villager) villagers++;
             else if (e instanceof net.minecraft.world.entity.animal.IronGolem) golems++;
-            else if (GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) guards++;
+            else if (GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()))) guards++;
         }
         return new int[]{villagers, guards, golems};
     }
@@ -1223,7 +1222,7 @@ public final class BrainNodeEvents {
     }
 
     private static boolean isDefender(Entity e) {
-        return e instanceof Villager || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return e instanceof Villager || GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     private static void broadcast(MinecraftServer server, String message) {

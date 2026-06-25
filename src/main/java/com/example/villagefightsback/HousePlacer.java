@@ -39,17 +39,17 @@ public final class HousePlacer {
     private static final Direction LOCAL_DOOR = Direction.NORTH;
 
     /** Loot table rolled (lazily, on first open) for the large chest inside each house. */
-    private static final ResourceLocation HOUSE_LOOT = new ResourceLocation(TheVillageFightsBack.MODID, "chests/basic_house");
+    private static final ResourceLocation HOUSE_LOOT = TheVillageFightsBack.id("chests/basic_house");
 
     public static final ResourceLocation[] HOUSES = {
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house2"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house3"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house4"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house5"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house6"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house7"),
-            new ResourceLocation(TheVillageFightsBack.MODID, "basic_house8"),
+            TheVillageFightsBack.id("basic_house"),
+            TheVillageFightsBack.id("basic_house2"),
+            TheVillageFightsBack.id("basic_house3"),
+            TheVillageFightsBack.id("basic_house4"),
+            TheVillageFightsBack.id("basic_house5"),
+            TheVillageFightsBack.id("basic_house6"),
+            TheVillageFightsBack.id("basic_house7"),
+            TheVillageFightsBack.id("basic_house8"),
     };
 
     /** House path (Blue TNT): rotate so the door faces {@code doorFacing}; uses the house loot table. */

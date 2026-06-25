@@ -31,7 +31,7 @@ public class RocketLauncherItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
         return 72000; // effectively "hold until released"
     }
 

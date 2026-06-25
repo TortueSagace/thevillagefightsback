@@ -6,12 +6,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ExplosionEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ExplosionEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Efficient, event-driven wall repair. When a wall block is broken -- by a player ({@link BlockEvent.BreakEvent})
@@ -20,7 +20,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * block. There is NO periodic scanning of the wall: work happens only on an actual break, and only for
  * brainNodes within wall range of the break.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class WallRepairEvents {
     private WallRepairEvents() {}
 
@@ -38,8 +38,7 @@ public final class WallRepairEvents {
      * detected and repaired within a few seconds. The break/explosion events above remain the instant path.
      */
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % SCAN_INTERVAL != 0) return;
         BrainNodeData data = BrainNodeData.get(server);

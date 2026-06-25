@@ -7,7 +7,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -41,11 +41,11 @@ public class FakeBedrockBlock extends Block {
 
     @Override
     @Nullable
-    public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
+    public PathType getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
         // Match the collision: a covered block is open to pathfinding (mobs route through walls); a surface is
         // left to vanilla (a solid block they stand on top of).
         BlockState above = level.getBlockState(pos.above());
         boolean openAbove = above.isAir() || above.canBeReplaced();
-        return openAbove ? null : BlockPathTypes.OPEN;
+        return openAbove ? null : PathType.OPEN;
     }
 }

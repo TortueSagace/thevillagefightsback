@@ -24,11 +24,11 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Drives the brain node block infection (level 2+). Designed to stay cheap at any zone size:
@@ -38,7 +38,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *  - The same frontier walk doubles as destruction detection: a frontier cell whose block has vanished and
  *    was not a sanctioned removal (player break / miner dig) is treated as an ATTACK -> local speed-up (spec 8).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class InfectionManager {
     private InfectionManager() {}
 
@@ -80,8 +80,7 @@ public final class InfectionManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         // Two independent spreads share this engine: the VILLAGE brain-node fertile spread (enable_block_infection)
         // and the EMERALD faction's infested-path spread (enable_emerald_infestation).
         boolean village = com.example.villagefightsback.Config.blockInfectionEnabled();
@@ -209,9 +208,9 @@ public final class InfectionManager {
 
     /** Explosions: every infection block they destroy is an ATTACK unless a player/villager caused the blast. */
     @SubscribeEvent
-    public static void onExplosion(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+    public static void onExplosion(net.neoforged.neoforge.event.level.ExplosionEvent.Detonate event) {
         if (!(event.getLevel() instanceof ServerLevel sl)) return;
-        net.minecraft.world.entity.Entity cause = event.getExplosion().getExploder();
+        net.minecraft.world.entity.Entity cause = event.getExplosion().getDirectSourceEntity();
         boolean friendly = cause instanceof net.minecraft.world.entity.player.Player || cause instanceof Villager;
         InfectionData inf = InfectionData.get(sl);
         long now = sl.getGameTime();
@@ -231,13 +230,13 @@ public final class InfectionManager {
     /** A miner that dies frees its slot immediately (the emerald drops via its 1.0 drop chance); the next
      *  staffMiners pass promotes a replacement (spec 6). */
     @SubscribeEvent
-    public static void onMinerDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+    public static void onMinerDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
         if (event.getEntity() instanceof Villager v && MinerRole.isMiner(v)) MinerRole.demote(v);
     }
 
     /** A non-villager mob destroying an infection block (e.g. griefing) is an ATTACK. */
     @SubscribeEvent
-    public static void onMobDestroyBlock(net.minecraftforge.event.entity.living.LivingDestroyBlockEvent event) {
+    public static void onMobDestroyBlock(net.neoforged.neoforge.event.entity.living.LivingDestroyBlockEvent event) {
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         if (!BlockMatcher.isInfection(event.getState())) return;
         InfectionData inf = InfectionData.get(sl);

@@ -15,12 +15,12 @@ import net.minecraft.world.entity.monster.Guardian;
  */
 public class EmeraldGuardianRenderer extends GuardianRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_guardian.png");
+            TheVillageFightsBack.id("textures/entity/emerald_guardian.png");
 
     public EmeraldGuardianRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_guardian_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_guardian_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

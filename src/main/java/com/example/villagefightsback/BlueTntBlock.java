@@ -54,7 +54,7 @@ public class BlueTntBlock extends Block {
         Direction doorFacing = state.getValue(FACING);
         BlockPos at = pos.immutable();
         HouseBuildManager.detonateNextTick(sl, at, () -> {
-            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 2.0F, 1.0F);
+            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 2.0F, 1.0F);
             sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
                     8, 1.5, 1.5, 1.5, 0.0);
             HousePlacer.place(sl, at, doorFacing, HousePlacer.HOUSES[sl.random.nextInt(HousePlacer.HOUSES.length)]);

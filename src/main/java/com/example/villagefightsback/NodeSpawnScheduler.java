@@ -6,13 +6,13 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /** Staggers the Barracks Node's guard spawns: the requested guards appear one per second, so they don't all
  *  pop in on the same tick (see {@link BarracksNodeBlock}). */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class NodeSpawnScheduler {
     private NodeSpawnScheduler() {}
 
@@ -36,8 +36,8 @@ public final class NodeSpawnScheduler {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || BATCHES.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (BATCHES.isEmpty()) return;
         Iterator<Batch> it = BATCHES.iterator();
         while (it.hasNext()) {
             Batch b = it.next();
@@ -61,7 +61,7 @@ public final class NodeSpawnScheduler {
 
     /** Clear the queue on world unload so no stale Batch/ServerLevel survives into the next (integrated) world. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         BATCHES.clear();
     }
 }

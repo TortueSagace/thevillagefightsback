@@ -4,10 +4,11 @@ import java.util.List;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.DiggerItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 
 /**
  * The Limbo Pickaxe: a netherite-grade pickaxe (smithed from a netherite pickaxe + a Limbo Ingot + the Limbo
@@ -17,7 +18,9 @@ import net.minecraft.world.level.Level;
  */
 public class LimboPickaxeItem extends PickaxeItem {
     public LimboPickaxeItem(Properties properties) {
-        super(LimboToolTier.INSTANCE, 1, -2.8F, properties);
+        // 1.21: PickaxeItem's ctor no longer takes attack damage/speed; supply them via Properties.attributes.
+        super(LimboToolTier.INSTANCE, properties.attributes(
+                DiggerItem.createAttributes(LimboToolTier.INSTANCE, 1.0F, -2.8F)));
     }
 
     @Override
@@ -26,8 +29,8 @@ public class LimboPickaxeItem extends PickaxeItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tip, flag);
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tip, flag);
         tip.add(Component.translatable("item.thevillagefightsback.limbo_pickaxe.desc").withStyle(ChatFormatting.DARK_GREEN));
     }
 }

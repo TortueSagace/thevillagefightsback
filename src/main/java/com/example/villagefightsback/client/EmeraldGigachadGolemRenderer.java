@@ -18,9 +18,9 @@ import net.minecraft.world.item.ItemDisplayContext;
  */
 public class EmeraldGigachadGolemRenderer extends IronGolemRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_gigachad_golem.png");
+            TheVillageFightsBack.id("textures/entity/emerald_gigachad_golem.png");
     private static final ResourceLocation EYES =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_iron_golem_eyes.png");
+            TheVillageFightsBack.id("textures/entity/emerald_iron_golem_eyes.png");
 
     public EmeraldGigachadGolemRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -33,7 +33,7 @@ public class EmeraldGigachadGolemRenderer extends IronGolemRenderer {
         });
         addLayer(new EmeraldGlowLayer<>(this, "emerald_iron_golem")); // animated salt/pepper glow (shared frames)
         addLayer(new HeldWeaponLayer<>(this,
-                new ResourceLocation(TheVillageFightsBack.MODID, "rocket_launcher"), "right_arm",
+                TheVillageFightsBack.id("rocket_launcher"), "right_arm",
                 -0.72F, 1.55F, -0.30F, -90.0F, 0.0F, 0.0F, 1.6F, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
                 HeldWeaponLayer.Gate.HELD_GUN));
     }

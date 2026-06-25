@@ -67,6 +67,6 @@ public class LimboGravelRenderer implements BlockEntityRenderer<LimboGravelBlock
     }
 
     private static void vert(VertexConsumer vc, Matrix4f m, float[] p, float a) {
-        vc.vertex(m, p[0], p[1], p[2]).color(0.62F, 0.13F, 0.94F, a).endVertex();
+        vc.addVertex(m, p[0], p[1], p[2]).setColor(0.62F, 0.13F, 0.94F, a);
     }
 }

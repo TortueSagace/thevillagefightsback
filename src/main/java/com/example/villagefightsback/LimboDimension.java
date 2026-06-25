@@ -3,7 +3,6 @@ package com.example.villagefightsback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,10 +10,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 /**
  * "Limbo": a void dimension (data-driven: {@code data/thevillagefightsback/dimension[_type]/limbo.json}) whose
@@ -27,12 +28,12 @@ import net.minecraftforge.fml.common.Mod;
  *
  * Enter it with e.g. {@code /execute in thevillagefightsback:limbo run tp @s 0 61 0}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboDimension {
     private LimboDimension() {}
 
     public static final ResourceKey<Level> LIMBO =
-            ResourceKey.create(Registries.DIMENSION, new ResourceLocation(TheVillageFightsBack.MODID, "limbo"));
+            ResourceKey.create(Registries.DIMENSION, TheVillageFightsBack.id("limbo"));
 
     // Outer cube bounds (inclusive) -> 22 blocks on every axis, centred on the (0,0) column.
     private static final int MIN_X = -11, MAX_X = 10;
@@ -67,8 +68,8 @@ public final class LimboDimension {
 
     /**
      * Banish any entity to Limbo's spawn. Players are re-seated with {@code teleportTo}; mobs cross dimensions
-     * via the Forge {@code changeDimension(ServerLevel, ITeleporter)} overload (the returned entity is the new
-     * instance in Limbo). Server-side only; no-op on the client or if Limbo isn't loaded.
+     * via {@code changeDimension(DimensionTransition)} (the returned entity is the new instance in Limbo).
+     * Server-side only; no-op on the client or if Limbo isn't loaded.
      */
     public static Entity sendToLimbo(Entity e) {
         if (e.level().isClientSide()) return e;
@@ -85,7 +86,7 @@ public final class LimboDimension {
         // banishable: they return via their gravel like anything else.)
         if (e instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
                 || e instanceof net.minecraft.world.entity.boss.EnderDragonPart
-                || !e.canChangeDimensions()) return e;
+                || !e.canUsePortal(false)) return e;
         MinecraftServer server = e.getServer();
         if (server == null) return e;
         ServerLevel limbo = server.getLevel(LIMBO);
@@ -100,15 +101,11 @@ public final class LimboDimension {
             return player;
         }
         // changeDimension fires EntityTravelToDimensionEvent, which LimboManager uses to auto-place the leash.
-        return e.changeDimension(limbo, new net.minecraftforge.common.util.ITeleporter() {
-            @Override
-            public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
-                    java.util.function.Function<Boolean, Entity> repositionEntity) {
-                Entity moved = repositionEntity.apply(false); // recreate in Limbo, no portal logic
-                moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
-                return moved;
-            }
-        });
+        // 1.21: the custom ITeleporter placement (recreate in Limbo at x,y,z, keep current rotation, reset
+        // velocity) is now expressed as a DimensionTransition handed to changeDimension.
+        return e.changeDimension(new DimensionTransition(
+                limbo, new Vec3(x, y, z), Vec3.ZERO, e.getYRot(), e.getXRot(),
+                DimensionTransition.DO_NOTHING));
     }
 
     /**

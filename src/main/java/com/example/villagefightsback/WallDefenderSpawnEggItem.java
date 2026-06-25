@@ -5,16 +5,16 @@ import java.util.function.Supplier;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.common.ForgeSpawnEggItem;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 
 /**
- * The Wall Defender spawn eggs. Identical to a normal {@link ForgeSpawnEggItem} except their icon is a live,
+ * The Wall Defender spawn eggs. Identical to a normal {@link DeferredSpawnEggItem} except their icon is a live,
  * spinning Wall Defender (via {@code WallDefenderItemRenderer}), so the creative menu shows the actual defender
  * -- the same animated look as the brain node UI. The custom renderer is client-only (initializeClient runs
  * only on the client, so the client class never loads on a dedicated server).
  */
-public class WallDefenderSpawnEggItem extends ForgeSpawnEggItem {
+public class WallDefenderSpawnEggItem extends DeferredSpawnEggItem {
     public WallDefenderSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type, int background,
                                     int highlight, Properties props) {
         super(type, background, highlight, props);

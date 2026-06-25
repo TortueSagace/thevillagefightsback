@@ -1,7 +1,5 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -9,7 +7,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ambient.Bat;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Bat: a bat reskinned into the EMERALD faction. As a normally-passive species it gains a
@@ -59,10 +56,5 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
             this.doHurtTarget(target);
             this.emeraldAttackCooldown = 20;
         }
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

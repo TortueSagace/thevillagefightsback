@@ -7,9 +7,10 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.TridentItem;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * Decoration nicety: a vanilla armor stand HAS no arms, so a weapon you hand it goes into its main-hand slot
@@ -18,7 +19,7 @@ import net.minecraftforge.fml.common.Mod;
  * still does the item placement and inventory handling. Armless stands stay armless for armor / display use;
  * only handing one a weapon grows the arms. Purely cosmetic.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ArmorStandEvents {
     private ArmorStandEvents() {}
 
@@ -44,6 +45,14 @@ public final class ArmorStandEvents {
             return true;
         }
         // swords, axes (incl. the Alien Slasher/Eradicator) and any item that adds melee attack damage in hand.
-        return stack.getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(Attributes.ATTACK_DAMAGE);
+        // In 1.21 ItemStack.getAttributeModifiers() returns ItemAttributeModifiers (no slot arg / no containsKey):
+        // scan its entries for an ATTACK_DAMAGE modifier that applies in the main hand.
+        for (ItemAttributeModifiers.Entry entry : stack.getAttributeModifiers().modifiers()) {
+            if (entry.attribute().equals(Attributes.ATTACK_DAMAGE)
+                    && entry.slot().test(EquipmentSlot.MAINHAND)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

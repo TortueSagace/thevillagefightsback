@@ -1,7 +1,5 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -11,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * A native rocket projectile -- a clone of JEG's rocket mechanism so the iron golem's rocket launcher no
@@ -88,14 +85,14 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     }
 
     @Override
-    protected void defineSynchedData() {
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
         // No synced data: it's always a rocket and its velocity rides the spawn packet.
     }
 
     /** Dead-straight flight (the golem aims directly at the target). */
     @Override
-    protected float getGravity() {
-        return 0.0F;
+    protected double getDefaultGravity() {
+        return 0.0;
     }
 
     @Override
@@ -141,7 +138,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         result.getEntity().hurt(
                 damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null),
                 DIRECT_DAMAGE);
-        result.getEntity().setSecondsOnFire(5); // the blast sets the struck unit alight regardless of the block-fire config
+        result.getEntity().igniteForSeconds(5); // the blast sets the struck unit alight regardless of the block-fire config
     }
 
     /** Any contact (block or entity): detonate with JEG's explosion animation, then vanish. */
@@ -160,7 +157,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         boolean grief = sl.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
         boolean destroyBlocks = (airStrike ? Config.airStrikeDestroysBlocks() : Config.creatureRocketDestroysBlocks()) && grief;
         boolean setFire = airStrike ? Config.airStrikeSetsFire() : Config.creatureRocketSetsFire();
-        net.minecraft.world.level.Explosion ex = new net.minecraft.world.level.Explosion(sl, owner, null, null,
+        net.minecraft.world.level.Explosion ex = new net.minecraft.world.level.Explosion(sl, owner,
                 getX(), getY(), getZ(), EXPLOSION_RADIUS, false,
                 destroyBlocks ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
                       : net.minecraft.world.level.Explosion.BlockInteraction.KEEP);
@@ -184,10 +181,5 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     @Override
     public ItemStack getItem() {
         return new ItemStack(ModItems.ROCKET.get()); // the billboard the client renders
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this); // carry velocity to the client
     }
 }

@@ -10,10 +10,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * The "freed soul gravel" rule (R3). A {@link LimboSoulGravelItem} loose in the world frees its banished
@@ -23,7 +23,7 @@ import net.minecraftforge.fml.common.Mod;
  * just sleeping) and the item being PICKED UP / stored (then the creature stays banished). It distinguishes
  * destruction from a pickup/store by the removal reason plus whether the same soul gravel is now carried.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboGravelItemEvents {
     private LimboGravelItemEvents() {}
 
@@ -43,8 +43,8 @@ public final class LimboGravelItemEvents {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || TRACKED.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (TRACKED.isEmpty()) return;
         for (Iterator<Map.Entry<UUID, Tracked>> it = TRACKED.entrySet().iterator(); it.hasNext(); ) {
             Tracked t = it.next().getValue();
             ItemEntity ie = t.item();

@@ -2,7 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
@@ -37,8 +36,8 @@ public class LimboBedBlock extends BedBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                            BlockHitResult hit) {
         if (!level.isClientSide() && player instanceof ServerPlayer sp) {
             LimboManager.requestReturn(sp);
         }

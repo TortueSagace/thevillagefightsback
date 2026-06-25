@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +36,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * Holds a {@link LimboGravelBlockEntity} carrying render data (the held entity's colour + instability deadline).
  */
 public class LimboGravelBlock extends FallingBlock implements EntityBlock {
+    public static final MapCodec<LimboGravelBlock> CODEC = simpleCodec(LimboGravelBlock::new);
     private static final Set<String> FALLING = ConcurrentHashMap.newKeySet();        // dim|pos currently falling
     private static final Map<String, BlockPos> PENDING_FALL = new ConcurrentHashMap<>(); // dim@x,z -> pos it fell from
     private static final Set<String> SILK_BREAK = ConcurrentHashMap.newKeySet();     // dim|pos being silk-mined
@@ -41,6 +44,11 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
 
     public LimboGravelBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends FallingBlock> codec() {
+        return CODEC;
     }
 
     private static String posKey(Level level, BlockPos pos) {
@@ -87,12 +95,15 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
 
     /** Note a Silk-Touch break so {@link #onRemove} converts the gravel into a soul item instead of freeing. */
     @Override
-    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (level instanceof ServerLevel
-                && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, player.getMainHandItem()) > 0) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (level instanceof ServerLevel sl
+                && EnchantmentHelper.getItemEnchantmentLevel(
+                        sl.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                                .getOrThrow(Enchantments.SILK_TOUCH),
+                        player.getMainHandItem()) > 0) {
             SILK_BREAK.add(posKey(level, pos));
         }
-        super.playerWillDestroy(level, pos, state, player);
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override

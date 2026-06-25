@@ -101,9 +101,9 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
 
     /** On death the boss yields its prize: the Village Brain Node block (you can re-found a village with it). */
     @Override
-    protected void dropCustomDeathLoot(net.minecraft.world.damagesource.DamageSource source, int looting,
+    protected void dropCustomDeathLoot(ServerLevel level, net.minecraft.world.damagesource.DamageSource source,
                                        boolean recentlyHit) {
-        super.dropCustomDeathLoot(source, looting, recentlyHit);
+        super.dropCustomDeathLoot(level, source, recentlyHit);
         this.spawnAtLocation(new net.minecraft.world.item.ItemStack(ModBlocks.VILLAGE_BRAIN_NODE_ITEM.get()));
         this.spawnAtLocation(new net.minecraft.world.item.ItemStack(ModBlocks.FERTILE_SCULK_CATALYST_ITEM.get()));
     }
@@ -120,8 +120,8 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     // --- emerge on summon -----------------------------------------------------------------------
     @Override
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor lvl, DifficultyInstance diff, MobSpawnType reason,
-                                        @Nullable SpawnGroupData data, @Nullable CompoundTag tag) {
-        SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+                                        @Nullable SpawnGroupData data) {
+        SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data);
         setPose(Pose.EMERGING);
         this.emergeTicks = EMERGE_TICKS;
         this.glowTicks = 60;          // glow for ~3s on spawn so the player can spot it
@@ -296,7 +296,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         if (r && target instanceof LivingEntity le) {
             EmeraldVirus.infect(le, 0); // Virus I (stage-3 equivalent)
             le.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, 3, false, true)); // Slowness IV
-            le.setSecondsOnFire(5);
+            le.igniteForSeconds(5);
             applyBigKnockback(le);
         }
         return r;
@@ -410,7 +410,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         VindictiveGuardEntity g = ModEntities.VINDICTIVE_GUARD.get().create(sl);
         if (g == null) return;
         g.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, random.nextFloat() * 360.0F, 0.0F);
-        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.MOB_SUMMONED, null, null);
+        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.MOB_SUMMONED, null);
         g.setBaby(false);
         sl.addFreshEntity(g);
         // Make the "killed -> vindictive guard" transformation clearly visible.
@@ -428,7 +428,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         VindictiveGigachadEntity g = ModEntities.VINDICTIVE_GIGACHAD.get().create(sl);
         if (g == null) return;
         g.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360.0F, 0.0F);
-        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(at), MobSpawnType.MOB_SUMMONED, null, null);
+        g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(at), MobSpawnType.MOB_SUMMONED, null);
         sl.addFreshEntity(g);
         sl.sendParticles(ParticleTypes.SCULK_SOUL, at.getX() + 0.5, at.getY() + 1.0, at.getZ() + 0.5, 24, 0.5, 0.8, 0.5, 0.02);
         sl.playSound(null, at, SoundEvents.SCULK_CATALYST_BLOOM, getSoundSource(), 1.2F, 0.7F);
@@ -456,7 +456,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     }
 
     private static final net.minecraft.resources.ResourceLocation GUARD_ID =
-            new net.minecraft.resources.ResourceLocation("guardvillagers", "guard");
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     /**
      * Revert EVERY vindictive unit currently loaded in {@code sl} to its village variant: vindictive guards
@@ -471,7 +471,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             else if (e instanceof VindictiveGigachadEntity vgc) gigas.add(vgc);
         }
         net.minecraft.world.entity.EntityType<?> guardType =
-                net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
         for (VindictiveGuardEntity vg : guards) {
             BlockPos p = vg.blockPosition();
             float yaw = vg.getYRot();
@@ -480,7 +480,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             if (!(guardType.create(sl) instanceof net.minecraft.world.entity.Mob guard)) continue;
             guard.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, yaw, 0.0F);
             UpgradeState.setUpgraded(guard); // stage 3 (armed by VillageEvents#onEntityJoin)
-            guard.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
+            guard.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null);
             sl.addFreshEntity(guard);
             revertPuff(sl, p);
         }
@@ -491,7 +491,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(sl);
             if (g == null) continue;
             g.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, yaw, 0.0F);
-            g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
+            g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null);
             sl.addFreshEntity(g);
             revertPuff(sl, p);
         }
@@ -509,7 +509,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
 
     // --- immunity (like an Emeraldger) + no fall damage -----------------------------------------
     @Override public boolean fireImmune() { return true; }
-    @Override public void setSecondsOnFire(int seconds) { /* immune */ }
+    @Override public void igniteForTicks(int ticks) { /* immune */ }
     @Override public boolean canBeAffected(MobEffectInstance effect) { return false; } // incl. the Emerald Virus
     @Override public boolean canFreeze() { return false; }
     @Override public boolean causeFallDamage(float distance, float multiplier, net.minecraft.world.damagesource.DamageSource source) { return false; }

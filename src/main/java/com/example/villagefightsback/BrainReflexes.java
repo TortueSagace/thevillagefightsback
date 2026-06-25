@@ -23,28 +23,28 @@ import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /**
  * The Village Brain Node's emerald-funded "immune reflexes": reactive abilities the brain pays for out of its
  * accumulated gems ({@link BrainNodeData.Econ#spendEmeralds}) when the village comes under stress. Forge
- * events ({@link LivingHurtEvent}/{@link LivingDeathEvent}/{@link BlockEvent.BreakEvent}) only RECORD what
+ * events ({@link LivingIncomingDamageEvent}/{@link LivingDeathEvent}/{@link BlockEvent.BreakEvent}) only RECORD what
  * happened near each brain node; {@link #tick} (driven from {@link BrainNodeEvents}'s 40-tick loop) evaluates
  * every ability, spends the gems, performs the action, and appends a line to that brain's reflex log (shown
  * in the UI's Logs tab via {@link #logFor}). Spawned reinforcements never land on the stage-4 glass dome:
  * inside-wall spawns search around the brain node's own Y (under the dome) and settlers walk out past the wall.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainReflexes {
     private BrainReflexes() {}
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
     static double RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100, == INCOME_RADIUS)
     private static final double WITHER_RADIUS = 200.0; // detect a wither storm to summon Darius within this
 
@@ -109,7 +109,7 @@ public final class BrainReflexes {
     // --- event recording (cheap: only stamps timers/flags; the tick does the work) --------------------
 
     @SubscribeEvent
-    public static void onVillagerHurt(LivingHurtEvent event) {
+    public static void onVillagerHurt(LivingIncomingDamageEvent event) {
         LivingEntity v = event.getEntity();
         if (!(v instanceof Villager) || v instanceof EmeraldgerEntity) return;
         if (!(v.level() instanceof ServerLevel sl)) return;
@@ -131,7 +131,7 @@ public final class BrainReflexes {
         if (!(v.level() instanceof ServerLevel sl)) return;
         boolean villager = v instanceof Villager && !(v instanceof EmeraldgerEntity);
         boolean golem = v instanceof IronGolem;
-        boolean guard = GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(v.getType()));
+        boolean guard = GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(v.getType()));
         if (!villager && !golem && !guard) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos node = BrainNodeEvents.nearestBrainNode(data, sl, v.blockPosition(), RADIUS);
@@ -401,7 +401,7 @@ public final class BrainReflexes {
         if (e instanceof Villager v) v.setBaby(false);
     }
 
-    private static EntityType<?> guardType() { return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); }
+    private static EntityType<?> guardType() { return BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID); }
 
     // --- General Darius (stage-4 reflex) -------------------------------------------------------------
 
@@ -431,7 +431,7 @@ public final class BrainReflexes {
         if (d == null) return;
         BlockPos spot = findInsideSpot(level, brain);
         d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
-        d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
+        d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
         d.setHomeBrain(node);
         level.addFreshEntity(d);
         d.enrollEscort(level, Config.guardsWithGeneralDarius()); // guards_spawning_with_general_darius (default 0)

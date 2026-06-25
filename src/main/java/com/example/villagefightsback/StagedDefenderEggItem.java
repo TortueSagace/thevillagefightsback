@@ -12,7 +12,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * A creative spawn egg that places a defender ALREADY configured to a given BrainNode stage, with no brainNode
@@ -28,7 +28,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class StagedDefenderEggItem extends Item {
     public enum Kind { VILLAGER, GUARD, GOLEM }
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     private final Kind kind;
     private final int stage;          // 1, 2, 3 or 4
@@ -52,7 +52,7 @@ public class StagedDefenderEggItem extends Item {
         return switch (kind) {
             case VILLAGER -> EntityType.VILLAGER;
             case GOLEM -> golemTypeForStage();
-            case GUARD -> ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); // null if Guard Villagers absent
+            case GUARD -> BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID); // null if Guard Villagers absent
         };
     }
 
@@ -85,7 +85,7 @@ public class StagedDefenderEggItem extends Item {
         entity.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, yaw, 0.0F);
         if (entity instanceof Mob mob) {
             mob.setYHeadRot(yaw);
-            mob.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.SPAWN_EGG, null, null);
+            mob.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.SPAWN_EGG, null);
         }
         // Stamp the stage BEFORE the entity joins the level, so VillageEvents#onEntityJoin arms it to match.
         if (stage == 4) UpgradeState.setStage4(entity);

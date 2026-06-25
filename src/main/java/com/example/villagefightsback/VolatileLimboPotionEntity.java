@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -14,7 +12,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Volatile Limbo Potion's thrown projectile. On impact it bursts and banishes every living creature in a
@@ -55,10 +52,5 @@ public class VolatileLimboPotionEntity extends ThrowableItemProjectile {
             LimboDimension.sendToLimbo(e); // drops the gravel marker + plays the per-entity banish FX
         }
         discard();
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

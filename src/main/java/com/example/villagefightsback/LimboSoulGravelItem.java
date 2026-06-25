@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.item.component.CustomData;
 
 /**
  * The "soul gravel" carried form of a Limbo leash. Silk-mining a creature's gravel block converts it into ONE
@@ -28,7 +30,7 @@ public class LimboSoulGravelItem extends net.minecraft.world.item.BlockItem {
     /** Build the carried item that represents this leash. */
     public static ItemStack of(LimboData.Entry e) {
         ItemStack stack = new ItemStack(ModBlocks.LIMBO_SOUL_GRAVEL.get());
-        CompoundTag t = stack.getOrCreateTagElement(HOLD);
+        CompoundTag t = new CompoundTag();
         t.putUUID("token", e.token);
         t.putUUID("creature", e.creature);
         t.putString("dim", e.originDim.location().toString());
@@ -36,14 +38,25 @@ public class LimboSoulGravelItem extends net.minecraft.world.item.BlockItem {
         t.putString("type", e.typeId);
         t.putFloat("maxhp", e.maxHealth);
         t.putBoolean("storm", e.stormPart);
+        // Store the HOLD sub-tag under the vanilla CUSTOM_DATA component (preserves the exact tag structure).
+        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, cd -> {
+            CompoundTag root = cd.copyTag();
+            root.put(HOLD, t);
+            return CustomData.of(root);
+        });
         return stack;
     }
 
     public static boolean isSoulGravel(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof LimboSoulGravelItem && stack.getTagElement(HOLD) != null;
+        return !stack.isEmpty() && stack.getItem() instanceof LimboSoulGravelItem && hold(stack) != null;
     }
 
-    public static CompoundTag hold(ItemStack stack) { return stack.getTagElement(HOLD); }
+    public static CompoundTag hold(ItemStack stack) {
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return null;
+        CompoundTag root = cd.copyTag();
+        return root.contains(HOLD) ? root.getCompound(HOLD) : null;
+    }
 
     public static UUID token(ItemStack stack) {
         CompoundTag t = hold(stack);
@@ -69,7 +82,7 @@ public class LimboSoulGravelItem extends net.minecraft.world.item.BlockItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         CompoundTag t = hold(stack);
         if (t != null && t.getBoolean("storm")) {
             tooltip.add(Component.literal("A piece of a banished Wither Storm.").withStyle(ChatFormatting.GRAY));

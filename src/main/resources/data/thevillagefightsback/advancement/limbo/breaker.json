@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "id": "thevillagefightsback:limbo_pickaxe"
+    },
+    "title": "Breaker Of The Unbreakable",
+    "description": "Forge the Limbo Pickaxe, which mines bedrock.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:limbo_pickaxe"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/membrane"
+}

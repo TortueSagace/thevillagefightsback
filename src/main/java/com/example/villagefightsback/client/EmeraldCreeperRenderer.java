@@ -17,12 +17,12 @@ import net.minecraft.world.entity.monster.Creeper;
  */
 public class EmeraldCreeperRenderer extends CreeperRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_creeper.png");
+            TheVillageFightsBack.id("textures/entity/emerald_creeper.png");
 
     public EmeraldCreeperRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_creeper_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_creeper_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

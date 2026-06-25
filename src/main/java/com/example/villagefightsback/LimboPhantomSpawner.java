@@ -7,10 +7,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Naturally populates the Limbo with Limbo Phantoms: every so often, each player in the Limbo has a chance to
@@ -18,7 +18,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * are NOT persistence-required, so they despawn once the player moves away (egg-hatched phantoms, which ARE
  * persistent, stay in their cubes).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPhantomSpawner {
     private LimboPhantomSpawner() {}
 
@@ -28,8 +28,7 @@ public final class LimboPhantomSpawner {
     private static final float CHANCE = 0.6F;    // per interval
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
@@ -60,7 +59,7 @@ public final class LimboPhantomSpawner {
         LimboPhantomEntity ph = ModEntities.LIMBO_PHANTOM.get().create(limbo);
         if (ph == null) return;
         ph.moveTo(x + 0.5, y, z + 0.5, r.nextFloat() * 360.0F, 0.0F);
-        ph.finalizeSpawn(limbo, limbo.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+        ph.finalizeSpawn(limbo, limbo.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null);
         limbo.addFreshEntity(ph);
     }
 }

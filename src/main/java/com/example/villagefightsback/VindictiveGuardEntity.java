@@ -55,8 +55,8 @@ public class VindictiveGuardEntity extends ZombieVillager {
     @Override
     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
             net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
-            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+            net.minecraft.world.entity.SpawnGroupData data) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data);
         GuardWeapons.equipEmeraldArmor(this);
         return r;
     }
@@ -80,7 +80,7 @@ public class VindictiveGuardEntity extends ZombieVillager {
     }
 
     @Override
-    public void setSecondsOnFire(int seconds) {
+    public void igniteForTicks(int ticks) {
         // fire-immune: ignored
     }
 

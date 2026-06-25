@@ -4,9 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
  * The Elegant Stand pedestal: any creature standing on an {@link ModBlocks#ELEGANT_STAND} block is frozen
@@ -15,7 +15,7 @@ import net.minecraftforge.fml.common.Mod;
  * persistent-data marker records which mobs WE froze, so we never clear someone else's NoAI and we tidy up
  * even across a world reload.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ElegantStandEvents {
     private ElegantStandEvents() {}
 
@@ -23,7 +23,7 @@ public final class ElegantStandEvents {
     private static final double FACE_RANGE = 48.0;
 
     @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
+    public static void onLivingTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide) return;
         if (mob instanceof UnleashedBrainNodeEntity) return;          // never freeze the boss
         boolean onStand = isOnStand(mob);

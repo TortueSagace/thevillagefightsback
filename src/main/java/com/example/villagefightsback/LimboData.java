@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -81,7 +82,8 @@ public class LimboData extends SavedData {
     public LimboData() {}
 
     public static LimboData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(LimboData::load, LimboData::new, NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(LimboData::new, (tag, registries) -> load(tag)), NAME);
     }
 
     private static String gravelKey(ResourceKey<Level> dim, BlockPos pos) {
@@ -186,7 +188,7 @@ public class LimboData extends SavedData {
             CompoundTag c = list.getCompound(i);
             UUID token = c.hasUUID("token") ? c.getUUID("token") : UUID.randomUUID();
             UUID creature = c.getUUID("uuid");
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             BlockPos pos = BlockPos.of(c.getLong("pos"));
             UUID marker = c.hasUUID("marker") ? c.getUUID("marker") : null;
             Entry e = new Entry(token, creature, dim, pos, c.getLong("time"), c.getString("name"), marker,
@@ -200,7 +202,7 @@ public class LimboData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (Entry e : byToken.values()) {
             CompoundTag c = new CompoundTag();

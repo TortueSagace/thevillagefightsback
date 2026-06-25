@@ -1,0 +1,41 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+# Make the Mob#goalSelector access transformer available at runtime.
+[[accessTransformers]]
+file="META-INF/accesstransformer.cfg"
+
+# --- Dependencies ---
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# Guard Villagers: the village's guard reinforcements are layered onto its `guardvillagers:guard`
+# entity, but the mod only ever references it by entity id (no compile-time link), so the port can
+# load without it. Declared as a soft (optional) dependency; load AFTER it so its entity registers
+# first. Flip type to "required" if you want to hard-require a 1.21.1 build of Guard Villagers.
+[[dependencies.${mod_id}]]
+    modId="guardvillagers"
+    type="optional"
+    versionRange="[1,)"
+    ordering="AFTER"
+    side="BOTH"

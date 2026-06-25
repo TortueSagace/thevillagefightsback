@@ -10,6 +10,7 @@ import com.example.villagefightsback.wall.WallPlan;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -33,8 +34,8 @@ public class BrainNodeData extends SavedData {
     public static final int MAX_LEVEL = 4;
     /** Emeralds may go this far into the red, but ONLY at level 1 (the village's max debt / last stand). */
     public static final int MIN_EMERALDS_LEVEL1 = -32;
-    /** Organic mass may dip this far below zero (a little deploy-on-credit buffer, like the emerald floor). */
-    public static final int ORGANIC_FLOOR = -32;
+    /** Organic mass is clamped to this floor everywhere; 0 forbids any negative organic-point balance. */
+    public static final int ORGANIC_FLOOR = 0;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
     private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
@@ -64,7 +65,8 @@ public class BrainNodeData extends SavedData {
 
     public static BrainNodeData get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(BrainNodeData::load, BrainNodeData::new, NAME);
+        return overworld.getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(BrainNodeData::new, (tag, registries) -> load(tag, registries)), NAME);
     }
 
     // --- per-village level / emerald economy ---
@@ -82,8 +84,8 @@ public class BrainNodeData extends SavedData {
         /** Organic mass: the brain's unit-spawn budget (1.1.2 organic system). Fully independent of emeralds/level. */
         public int getOrganicPoints() { return organicPoints; }
         public void addOrganicPoints(int n) { organicPoints = Math.max(ORGANIC_FLOOR, organicPoints + n); setDirty(); }
-        /** Spend {@code n} organic points on a unit; the balance may dip to {@link #ORGANIC_FLOOR} (deploy on a
-         *  little credit, like the emerald economy). Returns the amount actually spent. */
+        /** Spend {@code n} organic points on a unit; the balance is clamped at {@link #ORGANIC_FLOOR} (0) so it
+         *  can never go negative. Returns the amount actually spent. */
         public int spendOrganicPoints(int n) {
             if (n <= 0) return 0;
             int before = organicPoints;
@@ -128,7 +130,7 @@ public class BrainNodeData extends SavedData {
             }
             setDirty();
             if (delta < 0) { // a devolve happened -> re-show the (now lower) phase, e.g. "SETTLEMENT PHASE"
-                MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+                MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
                 if (server != null) BrainNodeEvents.broadcastPhaseBanner(server, level);
             }
             return delta;
@@ -245,7 +247,7 @@ public class BrainNodeData extends SavedData {
 
     // --- persistence ---
 
-    public static BrainNodeData load(CompoundTag tag) {
+    public static BrainNodeData load(CompoundTag tag, HolderLookup.Provider registries) {
         BrainNodeData d = new BrainNodeData();
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "nodes", d.nodes);
@@ -258,12 +260,12 @@ public class BrainNodeData extends SavedData {
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             GlobalPos key = GlobalPos.of(dim, BlockPos.of(c.getLong("pos")));
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
             e.emeralds = c.getInt("emeralds");
-            e.organicPoints = c.getInt("organic");
+            e.organicPoints = Math.max(ORGANIC_FLOOR, c.getInt("organic"));
             e.lastIncomeDay = c.contains("income") ? c.getLong("income") : Long.MIN_VALUE;
             d.econs.put(key, e);
         }
@@ -288,14 +290,14 @@ public class BrainNodeData extends SavedData {
         ListTag bells = tag.getList("bellPlacers", Tag.TAG_COMPOUND);
         for (int i = 0; i < bells.size(); i++) {
             CompoundTag c = bells.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             d.bellPlacers.put(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))), c.getUUID("player"));
         }
         return d;
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "nodes", nodes);
         writePositions(tag, "serviced", servicedCenters);
@@ -349,7 +351,7 @@ public class BrainNodeData extends SavedData {
         ListTag list = tag.getList(key, Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             out.add(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))));
         }
     }

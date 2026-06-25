@@ -20,7 +20,7 @@ import net.minecraft.world.entity.animal.IronGolem;
  */
 public class VindictiveVinesLayer extends RenderLayer<IronGolem, IronGolemModel<IronGolem>> {
     private static final ResourceLocation VINES =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/vindictive_gigachad_vines.png");
+            TheVillageFightsBack.id("textures/entity/vindictive_gigachad_vines.png");
     private static final float GROW = 1.03F; // > gold shell's 1.02 -> vines render over the gold
 
     public VindictiveVinesLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent) {
@@ -35,7 +35,7 @@ public class VindictiveVinesLayer extends RenderLayer<IronGolem, IronGolemModel<
         VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(VINES));
         pose.pushPose();
         pose.scale(GROW, GROW, GROW);
-        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         pose.popPose();
     }
 }

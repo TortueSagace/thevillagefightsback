@@ -109,7 +109,8 @@ public final class LimboDrift {
                     lp.getMinBlockZ() + (tpos.getZ() & 15));
             BlockEntity lbe = limboChunk.getBlockEntity(lpos);
             if (lbe != null && lbe.getType() == tbe.getType()) {
-                lbe.load(tbe.saveWithoutMetadata());
+                var registries = limbo.registryAccess();
+                lbe.loadWithComponents(tbe.saveWithoutMetadata(registries), registries);
             }
         }
     }

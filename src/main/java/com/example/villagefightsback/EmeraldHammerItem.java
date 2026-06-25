@@ -13,16 +13,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
  * The Emerald Hammer: an emerald-tier pickaxe that breaks a 3x3 area (the plane of the MINED FACE) in a
@@ -47,7 +48,9 @@ public class EmeraldHammerItem extends PickaxeItem {
     private static final Map<UUID, Direction> LAST_FACE = new ConcurrentHashMap<>();
 
     public EmeraldHammerItem(Tier tier, int attackDamage, float attackSpeed, Properties props) {
-        super(tier, attackDamage, attackSpeed, props);
+        // 1.21: PickaxeItem's ctor no longer takes attack damage/speed; the mainhand modifiers are supplied
+        // through Item.Properties.attributes(...) instead (same numbers as before).
+        super(tier, props.attributes(DiggerItem.createAttributes(tier, attackDamage, attackSpeed)));
     }
 
     @Override
@@ -117,7 +120,7 @@ public class EmeraldHammerItem extends PickaxeItem {
      * mined face instead of the coarser view axis), and drives the 3x3 in CREATIVE (where vanilla never calls
      * {@link #mineBlock}). Survival is handled by {@code mineBlock}; this only does the creative fan-out.
      */
-    @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    @EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
     public static final class FaceTracker {
         private static final double REACH = 6.0; // a touch beyond survival reach (4.5), covers creative too
 

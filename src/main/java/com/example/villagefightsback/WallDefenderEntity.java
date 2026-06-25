@@ -56,9 +56,9 @@ public class WallDefenderEntity extends Mob {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DATA_STAGE4, false);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_STAGE4, false);
     }
 
     /** Client-side: true if this defender should render as a stage-4 (rocket) defender. The forced stage-4

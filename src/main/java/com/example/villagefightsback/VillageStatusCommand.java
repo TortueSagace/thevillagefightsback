@@ -12,9 +12,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
  * The status report for the Village Brain Node nearest the player -- its evolution stage, the emeralds still
@@ -22,7 +22,7 @@ import net.minecraftforge.fml.common.Mod;
  * it (within its income/defender radius). Exposed as {@code /thevillagefightsback village_status_report}
  * ({@link ModCommands}); this class also runs the 10s node-highlight glow.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillageStatusCommand {
     private VillageStatusCommand() {}
 
@@ -86,8 +86,8 @@ public final class VillageStatusCommand {
 
     /** Each tick, emit a bright fullbright aura around every actively-glowing node; drop expired ones. */
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || GLOWS.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (GLOWS.isEmpty()) return;
         GLOWS.removeIf(g -> {
             if (g.level.getGameTime() >= g.endGameTime) return true;
             if (g.level.isLoaded(g.pos) && (g.level.getGameTime() & 1L) == 0L) emitGlow(g.level, g.pos);

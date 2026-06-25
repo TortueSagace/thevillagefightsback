@@ -26,7 +26,7 @@ import net.minecraft.world.entity.animal.IronGolem;
  */
 public class DefenderGolemHeadLayer extends RenderLayer<IronGolem, IronGolemModel<IronGolem>> {
     private static final ResourceLocation WALL_DEFENDER_TEX =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/wall_defender.png");
+            TheVillageFightsBack.id("textures/entity/wall_defender.png");
 
     // --- visual tunables (tweak in-game) ---
     private static final float GLASS_SCALE = 0.78F;  // protecting-glass cocoon ~0.78 blocks
@@ -74,8 +74,9 @@ public class DefenderGolemHeadLayer extends RenderLayer<IronGolem, IronGolemMode
         VertexConsumer vc = buffer.getBuffer(core.renderType(WALL_DEFENDER_TEX));
         // Emerald defender golem: tint the conduit core green and draw it full-bright so the head glows in the dark.
         int coreLight = emerald ? LightTexture.FULL_BRIGHT : light;
+        // Packed ARGB: emerald tint (a=1.0,r=0.42,g=1.0,b=0.52) -> 0xFF6BFF85; otherwise opaque white.
         core.renderToBuffer(pose, vc, coreLight, OverlayTexture.NO_OVERLAY,
-                emerald ? 0.42F : 1.0F, 1.0F, emerald ? 0.52F : 1.0F, 1.0F);
+                emerald ? 0xFF6BFF85 : 0xFFFFFFFF);
         pose.popPose();
 
         // The protecting-glass cocoon around it: flip y/z back upright, scale to cocoon size, centre on the bone.

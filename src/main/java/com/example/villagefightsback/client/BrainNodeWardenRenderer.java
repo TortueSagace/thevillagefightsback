@@ -18,7 +18,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class BrainNodeWardenRenderer extends MobRenderer<BrainNodeWardenEntity, WardenModel<BrainNodeWardenEntity>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/brain_node_warden/warden.png");
+            TheVillageFightsBack.id("textures/entity/brain_node_warden/warden.png");
 
     public BrainNodeWardenRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new WardenModel<>(ctx.bakeLayer(ModelLayers.WARDEN)), 0.9F);

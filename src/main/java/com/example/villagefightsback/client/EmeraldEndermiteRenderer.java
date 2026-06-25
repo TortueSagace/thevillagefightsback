@@ -18,12 +18,12 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class EmeraldEndermiteRenderer extends MobRenderer<EmeraldEndermite, EndermiteModel<EmeraldEndermite>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_endermite.png");
+            TheVillageFightsBack.id("textures/entity/emerald_endermite.png");
 
     public EmeraldEndermiteRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new EndermiteModel<>(ctx.bakeLayer(ModelLayers.ENDERMITE)), 0.3F);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_endermite_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_endermite_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

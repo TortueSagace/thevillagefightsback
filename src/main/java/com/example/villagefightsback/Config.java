@@ -3,7 +3,7 @@ package com.example.villagefightsback;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The player-tunable configuration for The Village Fights Back: a single commented file
@@ -26,63 +26,63 @@ public final class Config {
     public static final double MULT_MAX = 1000.0;
     public static final double MULT_DEFAULT = 1.0;
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     // --- pre-existing (internal: not exposed as a tunable command) ---
-    public static final ForgeConfigSpec.DoubleValue DRIFT_OVERWORLD_CHANCE;
-    public static final ForgeConfigSpec.DoubleValue DRIFT_NETHER_CHANCE;
+    public static final ModConfigSpec.DoubleValue DRIFT_OVERWORLD_CHANCE;
+    public static final ModConfigSpec.DoubleValue DRIFT_NETHER_CHANCE;
 
     // --- explosions: creature rockets ---
-    public static final ForgeConfigSpec.BooleanValue CREATURE_ROCKET_EXPLOSION_DESTROY_BLOCKS;
-    public static final ForgeConfigSpec.BooleanValue CREATURE_ROCKET_SET_BLOCKS_ON_FIRE;
+    public static final ModConfigSpec.BooleanValue CREATURE_ROCKET_EXPLOSION_DESTROY_BLOCKS;
+    public static final ModConfigSpec.BooleanValue CREATURE_ROCKET_SET_BLOCKS_ON_FIRE;
     // --- explosions: air strikes ---
-    public static final ForgeConfigSpec.BooleanValue AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS;
-    public static final ForgeConfigSpec.BooleanValue AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE;
+    public static final ModConfigSpec.BooleanValue AIR_STRIKE_ROCKET_EXPLOSION_DESTROY_BLOCKS;
+    public static final ModConfigSpec.BooleanValue AIR_STRIKE_ROCKET_SET_BLOCKS_ON_FIRE;
     // --- explosions: emerald virus ---
-    public static final ForgeConfigSpec.BooleanValue ENABLE_EMERALD_VIRUS_EXPLOSION;
-    public static final ForgeConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS;
-    public static final ForgeConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE;
+    public static final ModConfigSpec.BooleanValue ENABLE_EMERALD_VIRUS_EXPLOSION;
+    public static final ModConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_DESTROY_BLOCKS;
+    public static final ModConfigSpec.BooleanValue EMERALD_VIRUS_EXPLOSION_SET_BLOCKS_ON_FIRE;
     // --- feature switches ---
-    public static final ForgeConfigSpec.BooleanValue BRAIN_NODE_EXTINGUISHES_FIRE;
-    public static final ForgeConfigSpec.BooleanValue DEFEATED_BRAIN_NODE_SPAWN_SPIRIT;
-    public static final ForgeConfigSpec.BooleanValue PLAYER_IS_HOSTILE;
-    public static final ForgeConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
-    public static final ForgeConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
-    public static final ForgeConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
-    public static final ForgeConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
-    public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
-    public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
-    public static final ForgeConfigSpec.BooleanValue ENABLE_BLOCK_INFECTION;
-    public static final ForgeConfigSpec.BooleanValue ENABLE_MOB_INFECTION;
-    public static final ForgeConfigSpec.BooleanValue ENABLE_EMERALD_INFESTATION;
-    public static final ForgeConfigSpec.BooleanValue EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN;
-    public static final ForgeConfigSpec.IntValue EMERALD_MOBS_MAX_NUMBER;
-    public static final ForgeConfigSpec.BooleanValue ENABLE_ORGANIC_MASS_SYSTEM;
-    public static final ForgeConfigSpec.DoubleValue ORGANIC_ARMY_MULTIPLIER;
-    public static final ForgeConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
-    public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
-    public static final ForgeConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
+    public static final ModConfigSpec.BooleanValue BRAIN_NODE_EXTINGUISHES_FIRE;
+    public static final ModConfigSpec.BooleanValue DEFEATED_BRAIN_NODE_SPAWN_SPIRIT;
+    public static final ModConfigSpec.BooleanValue PLAYER_IS_HOSTILE;
+    public static final ModConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
+    public static final ModConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
+    public static final ModConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
+    public static final ModConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
+    public static final ModConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
+    public static final ModConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
+    public static final ModConfigSpec.BooleanValue ENABLE_BLOCK_INFECTION;
+    public static final ModConfigSpec.BooleanValue ENABLE_MOB_INFECTION;
+    public static final ModConfigSpec.BooleanValue ENABLE_EMERALD_INFESTATION;
+    public static final ModConfigSpec.BooleanValue EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN;
+    public static final ModConfigSpec.IntValue EMERALD_MOBS_MAX_NUMBER;
+    public static final ModConfigSpec.BooleanValue ENABLE_ORGANIC_MASS_SYSTEM;
+    public static final ModConfigSpec.DoubleValue ORGANIC_ARMY_MULTIPLIER;
+    public static final ModConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
+    public static final ModConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
+    public static final ModConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
     // --- multipliers (float, default 1.0, lower-bounded) ---
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_NUMBER_OF_SETTLERS;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_BRAIN_INITIATIVES_COOLDOWN;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_AIR_STRIKES_COOLDOWN;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_BLOCK_INFECTION_SPEED;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_BRAIN_INFLUENCE_RADIUS;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_BLOCK_INFECTION_REACH;
-    public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LIMBO_RAIDERS;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_NUMBER_OF_SETTLERS;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_BRAIN_INITIATIVES_COOLDOWN;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_AIR_STRIKES_COOLDOWN;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_BLOCK_INFECTION_SPEED;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_BRAIN_INFLUENCE_RADIUS;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_BLOCK_INFECTION_REACH;
+    public static final ModConfigSpec.DoubleValue MULTIPLIER_LIMBO_RAIDERS;
     // --- integers ---
-    public static final ForgeConfigSpec.IntValue AIR_STRIKES_APPEAR_AT_STAGE;
-    public static final ForgeConfigSpec.IntValue UNSTABLE_LIMBO_GRAVEL_HP_THRESHOLD;
-    public static final ForgeConfigSpec.IntValue GUARDS_SPAWNING_WITH_GENERAL_DARIUS;
+    public static final ModConfigSpec.IntValue AIR_STRIKES_APPEAR_AT_STAGE;
+    public static final ModConfigSpec.IntValue UNSTABLE_LIMBO_GRAVEL_HP_THRESHOLD;
+    public static final ModConfigSpec.IntValue GUARDS_SPAWNING_WITH_GENERAL_DARIUS;
 
     /** snake_case key -> value, in declaration order, for the /thevillagefightsback config commands. */
-    public static final Map<String, ForgeConfigSpec.ConfigValue<?>> INDEX = new LinkedHashMap<>();
+    public static final Map<String, ModConfigSpec.ConfigValue<?>> INDEX = new LinkedHashMap<>();
 
     static {
-        ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
         b.push("limbo");
         DRIFT_OVERWORLD_CHANCE = b
@@ -310,7 +310,7 @@ public final class Config {
         INDEX.put("guards_spawning_with_general_darius", GUARDS_SPAWNING_WITH_GENERAL_DARIUS);
     }
 
-    private static ForgeConfigSpec.DoubleValue mult(ForgeConfigSpec.Builder b, String key, String... comment) {
+    private static ModConfigSpec.DoubleValue mult(ModConfigSpec.Builder b, String key, String... comment) {
         return b.comment(comment).defineInRange(key, MULT_DEFAULT, MULT_MIN, MULT_MAX);
     }
 
@@ -351,6 +351,9 @@ public final class Config {
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }
+    /** Emerald MOBS spawn only when BOTH the mob-infection master gate AND the emerald-infestation toggle are on.
+     *  Turning off enable_emerald_infestation therefore stops every emerald mob (in addition to the block spread). */
+    public static boolean emeraldMobsEnabled()            { return ENABLE_MOB_INFECTION.get() && ENABLE_EMERALD_INFESTATION.get(); }
     public static boolean emeraldMobsHostileToPlayer()    { return EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER.get(); }
     public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
     public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }

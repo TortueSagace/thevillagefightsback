@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
@@ -18,13 +19,19 @@ public final class GuardWeapons {
 
     private static ItemStack mace, crossbow, slasher, eradicator, alienSmasher; // built lazily (registries ready after construction)
 
+    /** The server's registry access (enchantments are data-driven Holders in 1.21, resolved via the registry). */
+    private static RegistryAccess access() {
+        return net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer().registryAccess();
+    }
+
     /** Our native Mace with Density 3 + Wind Burst 3 + Fire Aspect 2 (the stage-3/4 guard loadout). */
     public static ItemStack mace() {
         if (mace == null) {
+            RegistryAccess access = access();
             ItemStack s = new ItemStack(ModItems.MACE.get());
-            s.enchant(ModEnchantments.DENSITY.get(), 3);
-            s.enchant(ModEnchantments.WIND_BURST.get(), 3);
-            s.enchant(Enchantments.FIRE_ASPECT, 2);
+            s.enchant(ModEnchantments.holder(access, ModEnchantments.DENSITY), 3);
+            s.enchant(ModEnchantments.holder(access, ModEnchantments.WIND_BURST), 3);
+            s.enchant(ModEnchantments.holder(access, Enchantments.FIRE_ASPECT), 2);
             mace = s;
         }
         return mace;
@@ -33,9 +40,10 @@ public final class GuardWeapons {
     /** Vanilla crossbow with Quick Charge III + Piercing IV. */
     public static ItemStack crossbow() {
         if (crossbow == null) {
+            RegistryAccess access = access();
             ItemStack s = new ItemStack(Items.CROSSBOW);
-            s.enchant(Enchantments.QUICK_CHARGE, 3);
-            s.enchant(Enchantments.PIERCING, 4);
+            s.enchant(ModEnchantments.holder(access, Enchantments.QUICK_CHARGE), 3);
+            s.enchant(ModEnchantments.holder(access, Enchantments.PIERCING), 4);
             crossbow = s;
         }
         return crossbow;
@@ -59,10 +67,11 @@ public final class GuardWeapons {
      *  always wields the full enchanted-mace power even before MaceCombatEvents runs. */
     public static ItemStack alienSmasher() {
         if (alienSmasher == null) {
+            RegistryAccess access = access();
             ItemStack s = new ItemStack(ModItems.ALIEN_SMASHER.get());
-            s.enchant(ModEnchantments.DENSITY.get(), 3);
-            s.enchant(ModEnchantments.WIND_BURST.get(), 3);
-            s.enchant(Enchantments.FIRE_ASPECT, 2);
+            s.enchant(ModEnchantments.holder(access, ModEnchantments.DENSITY), 3);
+            s.enchant(ModEnchantments.holder(access, ModEnchantments.WIND_BURST), 3);
+            s.enchant(ModEnchantments.holder(access, Enchantments.FIRE_ASPECT), 2);
             alienSmasher = s;
         }
         return alienSmasher;
@@ -82,10 +91,11 @@ public final class GuardWeapons {
     }
 
     private static void equip(Mob guard, EquipmentSlot slot, Item piece) {
+        RegistryAccess access = guard.level().registryAccess();
         ItemStack s = new ItemStack(piece);
         // forced together (the two protection types are normally mutually exclusive): both still function.
-        s.enchant(Enchantments.FIRE_PROTECTION, 4);
-        s.enchant(Enchantments.BLAST_PROTECTION, 4);
+        s.enchant(ModEnchantments.holder(access, Enchantments.FIRE_PROTECTION), 4);
+        s.enchant(ModEnchantments.holder(access, Enchantments.BLAST_PROTECTION), 4);
         guard.setItemSlot(slot, s);
         guard.setDropChance(slot, 0.0F);
     }

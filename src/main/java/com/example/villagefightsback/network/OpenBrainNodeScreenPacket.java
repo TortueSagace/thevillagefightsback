@@ -1,69 +1,65 @@
 package com.example.villagefightsback.network;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.TheVillageFightsBack;
+
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server -> client: open the Village Brain Node upgrade screen, carrying the clicked village's current
  * level and emerald progress (the client has no access to the server-side {@code BrainNodeData}).
  */
-public class OpenBrainNodeScreenPacket {
-    public final int level;
-    public final int maxLevel;
-    public final int emeralds;
-    public final int costNext; // -1 if already at max level
-    public final int villagers; // defenders within the brain node's radius, by type
-    public final int guards;
-    public final int golems;
-    public final int fertilized; // count of fertilized (fertile/rich) blocks in this dimension
-    public final int organic; // banked organic mass (1.1.2 organic system; 0 / hidden when that mode is off)
-    public final List<String> reflexLog; // the brain's last (up to 10) reflex (emerald-spend) log lines, oldest first
-    public final List<String> organicLog; // the brain's last (up to 10) organic-spawn decisions, oldest first
+public record OpenBrainNodeScreenPacket(
+        int level,
+        int maxLevel,
+        int emeralds,
+        int costNext, // -1 if already at max level
+        int villagers, // defenders within the brain node's radius, by type
+        int guards,
+        int golems,
+        int fertilized, // count of fertilized (fertile/rich) blocks in this dimension
+        int organic, // banked organic mass (1.1.2 organic system; 0 / hidden when that mode is off)
+        List<String> reflexLog, // the brain's last (up to 10) reflex (emerald-spend) log lines, oldest first
+        List<String> organicLog // the brain's last (up to 10) organic-spawn decisions, oldest first
+) implements CustomPacketPayload {
+    public static final Type<OpenBrainNodeScreenPacket> TYPE =
+            new Type<>(TheVillageFightsBack.id("open_brain_node_screen"));
 
-    public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
-                                     int villagers, int guards, int golems, int fertilized, int organic,
-                                     List<String> reflexLog, List<String> organicLog) {
-        this.level = level;
-        this.maxLevel = maxLevel;
-        this.emeralds = emeralds;
-        this.costNext = costNext;
-        this.villagers = villagers;
-        this.guards = guards;
-        this.golems = golems;
-        this.fertilized = fertilized;
-        this.organic = organic;
-        this.reflexLog = reflexLog;
-        this.organicLog = organicLog;
+    // 11 fields exceeds StreamCodec.composite's max arity, so mirror the old encode/decode byte-for-byte.
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenBrainNodeScreenPacket> STREAM_CODEC =
+            StreamCodec.ofMember(OpenBrainNodeScreenPacket::write, OpenBrainNodeScreenPacket::read);
+
+    private void write(RegistryFriendlyByteBuf buf) {
+        buf.writeVarInt(this.level);
+        buf.writeVarInt(this.maxLevel);
+        buf.writeVarInt(this.emeralds);
+        buf.writeVarInt(this.costNext);
+        buf.writeVarInt(this.villagers);
+        buf.writeVarInt(this.guards);
+        buf.writeVarInt(this.golems);
+        buf.writeVarInt(this.fertilized);
+        buf.writeVarInt(this.organic);
+        buf.writeCollection(this.reflexLog, (b, s) -> b.writeUtf(s));
+        buf.writeCollection(this.organicLog, (b, s) -> b.writeUtf(s));
     }
 
-    public static void encode(OpenBrainNodeScreenPacket msg, FriendlyByteBuf buf) {
-        buf.writeVarInt(msg.level);
-        buf.writeVarInt(msg.maxLevel);
-        buf.writeVarInt(msg.emeralds);
-        buf.writeVarInt(msg.costNext);
-        buf.writeVarInt(msg.villagers);
-        buf.writeVarInt(msg.guards);
-        buf.writeVarInt(msg.golems);
-        buf.writeVarInt(msg.fertilized);
-        buf.writeVarInt(msg.organic);
-        buf.writeCollection(msg.reflexLog, FriendlyByteBuf::writeUtf);
-        buf.writeCollection(msg.organicLog, FriendlyByteBuf::writeUtf);
-    }
-
-    public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
+    private static OpenBrainNodeScreenPacket read(RegistryFriendlyByteBuf buf) {
         return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readList(FriendlyByteBuf::readUtf), buf.readList(FriendlyByteBuf::readUtf));
+                buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()));
     }
 
-    public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> com.example.villagefightsback.client.BrainNodeScreenHooks.open(msg)));
-        ctx.get().setPacketHandled(true);
+    @Override
+    public Type<OpenBrainNodeScreenPacket> type() {
+        return TYPE;
+    }
+
+    public static void handle(OpenBrainNodeScreenPacket msg, IPayloadContext context) {
+        context.enqueueWork(() ->
+                com.example.villagefightsback.client.BrainNodeScreenHooks.open(msg));
     }
 }

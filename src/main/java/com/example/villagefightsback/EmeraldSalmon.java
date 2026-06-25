@@ -1,14 +1,11 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Salmon;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Salmon: a salmon converted to the EMERALD faction. A normally-passive species, so via
@@ -44,10 +41,5 @@ public class EmeraldSalmon extends Salmon implements EmeraldUnit {
                 .add(Attributes.MOVEMENT_SPEED, 0.7D)
                 .add(Attributes.ATTACK_DAMAGE, 2.0D)
                 .add(Attributes.FOLLOW_RANGE, 48.0D); // a wide net so the water scout spots prey across the water
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

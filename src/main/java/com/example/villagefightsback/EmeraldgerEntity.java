@@ -63,9 +63,9 @@ public class EmeraldgerEntity extends Villager {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(DATA_SCALE, 1.0F);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_SCALE, 1.0F);
     }
 
     public float getEmeraldgerScale() {
@@ -84,8 +84,8 @@ public class EmeraldgerEntity extends Villager {
     }
 
     @Override
-    public EntityDimensions getDimensions(Pose pose) {
-        return super.getDimensions(pose).scale(getEmeraldgerScale());
+    public EntityDimensions getDefaultDimensions(Pose pose) {
+        return super.getDefaultDimensions(pose).scale(getEmeraldgerScale());
     }
 
     /** Never let a profession stick: emeraldgers stay professionless (and so never trade or take a job). */
@@ -122,7 +122,7 @@ public class EmeraldgerEntity extends Villager {
 
     /** Never catch fire (e.g. from the Alien Slasher's on-hit fire) -- belt-and-braces with fireImmune(). */
     @Override
-    public void setSecondsOnFire(int seconds) {
+    public void igniteForTicks(int ticks) {
         // total immunity: ignored.
     }
 
@@ -131,7 +131,7 @@ public class EmeraldgerEntity extends Villager {
      *  rejected here, so no particles and no harm. */
     @Override
     public boolean canBeAffected(net.minecraft.world.effect.MobEffectInstance effect) {
-        net.minecraft.world.effect.MobEffect e = effect.getEffect();
+        net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> e = effect.getEffect();
         return e == net.minecraft.world.effect.MobEffects.DAMAGE_BOOST
                 || e == net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE
                 || e == net.minecraft.world.effect.MobEffects.REGENERATION;

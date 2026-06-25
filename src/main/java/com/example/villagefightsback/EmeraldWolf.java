@@ -1,12 +1,9 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Wolf: a wolf belonging to the emerald faction. Hostile (not passive) and uses the shared
@@ -31,10 +28,5 @@ public class EmeraldWolf extends Wolf implements EmeraldUnit {
 
     public static AttributeSupplier.Builder createAttributes() {
         return Wolf.createAttributes();
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

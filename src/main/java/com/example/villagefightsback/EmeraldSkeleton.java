@@ -1,13 +1,10 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Skeleton: a skeleton recruited into the EMERALD faction. Keeps its vanilla ranged-bow combat,
@@ -37,10 +34,5 @@ public class EmeraldSkeleton extends Skeleton implements EmeraldUnit {
 
     public static AttributeSupplier.Builder createAttributes() {
         return AbstractSkeleton.createAttributes();
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

@@ -23,14 +23,14 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Lifecycle + faction rules for the unleashed brainNode boss ({@link UnleashedBrainNodeEntity}) and its
@@ -41,7 +41,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *  - infected faction never harm/target each other; they absorb 90% of explosion damage;
  *  - a creature slain by a DIRECT boss hit becomes a vindictive guard instead of dying.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class UnleashedManager {
     private UnleashedManager() {}
 
@@ -56,8 +56,7 @@ public final class UnleashedManager {
     // losing its last villager removes the brain node and summons the boss FIRST, so the brain-node auto-placer
     // (which scans the same tick) already sees the boss and won't race a duplicate brain node into existence.
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % 40 != 0) return;
         long _p = ModProfiler.now();
@@ -85,7 +84,7 @@ public final class UnleashedManager {
         UnleashedBrainNodeEntity boss = ModEntities.UNLEASHED_BRAIN_NODE.get().create(sl);
         if (boss == null) return;
         boss.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, sl.random.nextFloat() * 360.0F, 0.0F);
-        boss.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null, null); // triggers emerge
+        boss.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null); // triggers emerge
         sl.addFreshEntity(boss);
 
         Component title = Component.literal("Prepare...").withStyle(ChatFormatting.WHITE, ChatFormatting.BOLD);
@@ -112,14 +111,14 @@ public final class UnleashedManager {
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity self = event.getEntity();
-        LivingEntity target = event.getNewTarget();
+        LivingEntity target = event.getNewAboutToBeSetTarget();
         if (target != null && Factions.isInfected(self) && Factions.isInfected(target)) {
             event.setCanceled(true); // boss <-> vindictive guards never target each other
         }
     }
 
     @SubscribeEvent
-    public static void onHurt(LivingHurtEvent event) {
+    public static void onHurt(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
         if (!Factions.isInfected(victim)) return;

@@ -15,7 +15,7 @@ public class VeryBadOmenEffect extends MobEffect {
 
     /** Never run an effect tick -- this effect is purely a marker the raid manager reads. */
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return false;
     }
 }

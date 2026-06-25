@@ -13,11 +13,11 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.CommandEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Soft population cap for the EMERALD faction ({@code emerald_mobs_max_number}) -- purely to limit lag, so it is
@@ -29,7 +29,7 @@ import net.minecraftforge.fml.common.Mod;
  * Manual spawns (spawn egg / {@code /summon}) check {@link #atCap} up front and tell the player. Entities loaded
  * from disk are never capped.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class EmeraldPopulation {
     private EmeraldPopulation() {}
 
@@ -60,13 +60,14 @@ public final class EmeraldPopulation {
     }
 
     /**
-     * Master gate for "enable_mob_infection": when the feature is OFF, NO emerald unit may enter the world via ANY
-     * path (virus-death spawn, brain summon, spawn egg). Highest priority so it cancels before the cap logic below.
-     * (Moved here when the old EmeraldInfection class was removed in 1.1.4.)
+     * Master gate for emerald mobs: when EITHER "enable_mob_infection" OR "enable_emerald_infestation" is OFF, NO
+     * emerald unit may enter the world via ANY path (virus-death spawn, brain summon, spawn egg, morph). Highest
+     * priority so it cancels before the cap logic below. (Moved here when the old EmeraldInfection class was removed
+     * in 1.1.4; gated on emerald_infestation too in 1.2.4 so that toggle fully disables the emerald faction.)
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEmeraldJoinGate(EntityJoinLevelEvent event) {
-        if (Config.mobInfectionEnabled() || event.getLevel().isClientSide()) return;
+        if (event.getLevel().isClientSide() || Config.emeraldMobsEnabled()) return;
         if (Factions.isEmerald(event.getEntity())) event.setCanceled(true);
     }
 

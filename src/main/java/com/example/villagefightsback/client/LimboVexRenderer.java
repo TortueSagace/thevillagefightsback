@@ -12,9 +12,9 @@ import net.minecraft.world.entity.monster.Vex;
  *  with glowing white eyes/markings in the dark. */
 public class LimboVexRenderer extends VexRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_vex.png");
+            TheVillageFightsBack.id("textures/entity/limbo_vex.png");
     private static final ResourceLocation GLOW =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_vex_glow.png");
+            TheVillageFightsBack.id("textures/entity/limbo_vex_glow.png");
 
     public LimboVexRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

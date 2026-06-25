@@ -1,14 +1,17 @@
 package com.example.villagefightsback;
 
+import java.util.Optional;
+
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.village.VillagerTradesEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * The Limbo Sage's wares. EVERYTHING is expensive in emeralds -- the sage deals in Limbo curios and luxury gear,
@@ -19,7 +22,7 @@ import net.minecraftforge.registries.RegistryObject;
  * each producing a {@link MerchantOffer} of "N emeralds -> item". They are added to the per-tier lists from the
  * {@link VillagerTradesEvent} only when the traded profession is the Limbo Sage.</p>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboSageTrades {
     private LimboSageTrades() {}
 
@@ -59,7 +62,7 @@ public final class LimboSageTrades {
     /** A plain "N emeralds -> {@code result}" listing (no crafting recipe involved). */
     private static VillagerTrades.ItemListing emeraldsFor(ItemStack result, int emeralds, int maxUses, int xp) {
         return (trader, rand) -> new MerchantOffer(
-                new ItemStack(Items.EMERALD, emeralds), result.copy(), maxUses, xp, 0.05F);
+                new ItemCost(Items.EMERALD, emeralds), result.copy(), maxUses, xp, 0.05F);
     }
 
     /**
@@ -67,12 +70,12 @@ public final class LimboSageTrades {
      * {@link EnchantmentHelper#enchantItem} (treasure = false), so each offer is a fresh roll. NEVER used for
      * armor -- only the five Limbo tools are passed in here.
      */
-    private static VillagerTrades.ItemListing enchantedTool(RegistryObject<net.minecraft.world.item.Item> tool,
+    private static VillagerTrades.ItemListing enchantedTool(DeferredHolder<net.minecraft.world.item.Item, net.minecraft.world.item.Item> tool,
             int emeralds, int maxUses, int xp) {
         return (trader, rand) -> {
             ItemStack stack = new ItemStack(tool.get());
-            EnchantmentHelper.enchantItem(rand, stack, ENCHANT_LEVEL, false);
-            return new MerchantOffer(new ItemStack(Items.EMERALD, emeralds), stack, maxUses, xp, 0.05F);
+            EnchantmentHelper.enchantItem(rand, stack, ENCHANT_LEVEL, trader.level().registryAccess(), Optional.empty());
+            return new MerchantOffer(new ItemCost(Items.EMERALD, emeralds), stack, maxUses, xp, 0.05F);
         };
     }
 }

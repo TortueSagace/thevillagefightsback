@@ -23,22 +23,21 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * All Emerald-Virus behaviour: the Alien Slasher's on-hit payload, the virus's contagion / ground-rot /
  * green-tint sync while active, and the post-death TNT explosion + emerald loot. Immunity and the
  * one-shot infection rule live in {@link EmeraldVirus}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class EmeraldVirusEvents {
     private EmeraldVirusEvents() {}
 
@@ -73,7 +72,7 @@ public final class EmeraldVirusEvents {
 
     // --- Alien Slasher on-hit payload ------------------------------------------------------------
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
         Entity direct = event.getSource().getDirectEntity();
@@ -94,7 +93,7 @@ public final class EmeraldVirusEvents {
         // Virus respects immunity / one-shot rule; the rest of the payload always lands.
         EmeraldVirus.infect(target, meleeAmplifier);
         target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, SLOWNESS_TICKS, 3, false, true)); // Slowness IV
-        target.setSecondsOnFire(FIRE_SECONDS);
+        target.igniteForSeconds(FIRE_SECONDS);
         applyHugeKnockback(attacker, target);
     }
 
@@ -115,7 +114,7 @@ public final class EmeraldVirusEvents {
      * (fellow emeralds, the village, the vindictive) are never infected.
      */
     @SubscribeEvent
-    public static void onEmeraldAttack(LivingAttackEvent event) {
+    public static void onEmeraldAttack(LivingIncomingDamageEvent event) {
         if (event.getEntity().level().isClientSide() || !Config.mobInfectionEnabled()) return;
         if (!Factions.isEmerald(event.getSource().getEntity())) return;
         LivingEntity victim = event.getEntity();
@@ -156,8 +155,8 @@ public final class EmeraldVirusEvents {
 
     // --- per-host upkeep: tint growth + sync, contagion, ground-rot -------------------------------
     @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
-        LivingEntity e = event.getEntity();
+    public static void onLivingTick(EntityTickEvent.Post event) {
+        if (!(event.getEntity() instanceof LivingEntity e)) return;
         Level level = e.level();
         if (level.isClientSide()) return;
 
@@ -192,7 +191,7 @@ public final class EmeraldVirusEvents {
      *  contagion carries the HOST's own virus level, so a Virus II host (a stage-4 infection) spreads Virus II. A
      *  fresh contagion infection awards nearby players "What about social distancing?". */
     private static void spread(LivingEntity host, Level level) {
-        net.minecraft.world.effect.MobEffectInstance hv = host.getEffect(ModEffects.EMERALD_VIRUS.get());
+        net.minecraft.world.effect.MobEffectInstance hv = host.getEffect(ModEffects.EMERALD_VIRUS);
         int amp = hv != null ? hv.getAmplifier() : 0;
         AABB box = host.getBoundingBox().inflate(SPREAD_RANGE);
         double rangeSqr = SPREAD_RANGE * SPREAD_RANGE;
@@ -258,7 +257,7 @@ public final class EmeraldVirusEvents {
             // A host that died carrying Virus II (amplifier >= 1) -> an Emeraldger; a Virus-I death -> an emerald mite.
             // Virus II is dealt only at stage 4 (Alien Eradicator, stage-4 guard crossbow, stage-4 emerald units), so
             // emeraldgers only ever appear at stage 4.
-            net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS.get());
+            net.minecraft.world.effect.MobEffectInstance vinst = e.getEffect(ModEffects.EMERALD_VIRUS);
             boolean virusII = vinst != null && vinst.getAmplifier() >= 1;
             spawnKind = virusII ? SPAWN_EMERALDGER : SPAWN_MITE;
         }
@@ -302,15 +301,15 @@ public final class EmeraldVirusEvents {
     /** A virus host's experience is consumed along with its organic mass -> no XP orbs either (only when the
      *  feature is on; otherwise the virus is a plain debuff and XP drops normally). */
     @SubscribeEvent
-    public static void onXpDrop(net.minecraftforge.event.entity.living.LivingExperienceDropEvent event) {
+    public static void onXpDrop(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
         if (Config.mobInfectionEnabled() && EmeraldVirus.isActive(event.getEntity())) event.setCanceled(true);
     }
 
     private static final int MAX_DETONATIONS_PER_TICK = 8; // throttle so a backlog can't freeze a tick
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || PENDING.isEmpty()) return;
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (PENDING.isEmpty()) return;
         long _p = ModProfiler.now();
         // Drain a few due entries and remove them FIRST, then explode. We remove before exploding for two
         // reasons: (1) the blast kills nearby virus hosts whose onDeath re-adds to PENDING, so we must not be
@@ -353,11 +352,12 @@ public final class EmeraldVirusEvents {
 
     /** Raise an Emeraldger from a corpse: HP = 50% of the dead host, scaled body, armed as a stage-3 villager. */
     private static void spawnEmeraldger(ServerLevel level, double x, double y, double z, float deadMaxHp) {
+        if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled
         EmeraldgerEntity em = ModEntities.EMERALDGER.get().create(level);
         if (em == null) return;
         em.moveTo(x, y, z, level.getRandom().nextFloat() * 360.0F, 0.0F);
         em.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(x, y, z)),
-                net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null, null);
+                net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
         em.setBaby(false);                 // always an adult-bodied warrior (its size comes from HP, not age)
         UpgradeState.setUpgraded(em);      // emeraldgers are born as stage-3 combatants (VillageEvents arms them)
         em.initWithMaxHealthOfDead(deadMaxHp); // set HP/scale AFTER finalizeSpawn so it isn't overwritten

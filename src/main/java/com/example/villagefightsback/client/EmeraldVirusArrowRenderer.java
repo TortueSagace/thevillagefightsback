@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 /** Renders the Emerald Virus Arrow using the standard arrow geometry with a green arrow texture. */
 public class EmeraldVirusArrowRenderer extends ArrowRenderer<EmeraldVirusArrowEntity> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_virus_arrow.png");
+            TheVillageFightsBack.id("textures/entity/emerald_virus_arrow.png");
 
     public EmeraldVirusArrowRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

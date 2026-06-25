@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    "III",
+    " I "
+  ],
+  "key": {
+    "E": { "item": "thevillagefightsback:wall_defender" },
+    "I": { "item": "minecraft:iron_block" }
+  },
+  "result": { "id": "thevillagefightsback:defender_golem" }
+}

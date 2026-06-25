@@ -12,9 +12,9 @@ import net.minecraft.world.entity.monster.Witch;
  *  2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboWitchRenderer extends WitchRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_witch.png");
+            TheVillageFightsBack.id("textures/entity/limbo_witch.png");
     private static final ResourceLocation GLOW =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_witch_glow.png");
+            TheVillageFightsBack.id("textures/entity/limbo_witch_glow.png");
 
     public LimboWitchRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

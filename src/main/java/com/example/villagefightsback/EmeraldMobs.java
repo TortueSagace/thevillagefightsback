@@ -31,7 +31,7 @@ public final class EmeraldMobs {
         if (target instanceof Player p) {                    // (ii) a player only if the config opts in + Enemy of the Village
             return Config.emeraldMobsHostileToPlayer()
                     && !p.isCreative() && !p.isSpectator()
-                    && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+                    && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE);
         }
         if (isPlayerCompanion(target)) return false;         // (v) the player's potential mounts/pets are not hunted
         return true;                                         // everything else (hostiles + peaceful animals)

@@ -2,8 +2,6 @@ package com.example.villagefightsback;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -13,7 +11,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Wither: an EMERALD-faction WitherBoss that hunts every non-spared target and shoots skulls like
@@ -63,7 +60,7 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
      */
     @Override
     public boolean addEffect(MobEffectInstance inst, @Nullable Entity source) {
-        if (inst.getEffect() == MobEffects.GLOWING) {
+        if (inst.getEffect().is(MobEffects.GLOWING)) {
             glowUntil = level().getGameTime() + inst.getDuration();
             setGlowingTag(true);
             return true;
@@ -86,9 +83,4 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
 
     @Override
     public void stopSeenByPlayer(ServerPlayer p) {}
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

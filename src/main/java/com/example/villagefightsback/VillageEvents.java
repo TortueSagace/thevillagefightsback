@@ -40,27 +40,26 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.village.VillagerTradesEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Arms villagers, iron golems, and Guard Villagers guards, and wires the combat behaviour to them. As the
  * village evolves, defenders are upgraded (stage-3 villagers get the Alien Slasher, guards become emerald
  * knights, golems become gigachad golems) and the mod's ally-immunity keeps them from harming one another.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillageEvents {
     private VillageEvents() {}
 
@@ -76,7 +75,7 @@ public final class VillageEvents {
     private static final float MINIGUN_BONUS = 9.0F;    // 4  -> 13 (minigun also fades over range)
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     // Guards have a chance to drop our native Fire Grenade on death.
     private static final float GUARD_FIRE_GRENADE_DROP_CHANCE = 0.5F;
@@ -158,7 +157,7 @@ public final class VillageEvents {
         g.yBodyRot = old.yBodyRot;
         g.yHeadRot = old.yHeadRot;
         g.finalizeSpawn(sl, sl.getCurrentDifficultyAt(old.blockPosition()),
-                net.minecraft.world.entity.MobSpawnType.CONVERSION, null, null);
+                net.minecraft.world.entity.MobSpawnType.CONVERSION, null);
         UpgradeState.setUpgraded(g);
         sl.addFreshEntity(g);
         old.discard();
@@ -177,7 +176,7 @@ public final class VillageEvents {
         d.yBodyRot = old.yBodyRot;
         d.yHeadRot = old.yHeadRot;
         d.finalizeSpawn(sl, sl.getCurrentDifficultyAt(old.blockPosition()),
-                net.minecraft.world.entity.MobSpawnType.CONVERSION, null, null);
+                net.minecraft.world.entity.MobSpawnType.CONVERSION, null);
         sl.addFreshEntity(d);
         old.discard();
     }
@@ -265,25 +264,25 @@ public final class VillageEvents {
         }
     }
 
-    // Fixed UUID so re-applying the armour buff on world reload is idempotent.
-    private static final java.util.UUID VILLAGER_ARMOR_UUID =
-            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000002");
+    // Fixed id so re-applying the armour buff on world reload is idempotent.
+    private static final ResourceLocation VILLAGER_ARMOR_ID =
+            TheVillageFightsBack.id("alien_slasher_leather_armour");
     private static final double LEATHER_ARMOR = 7.0; // full leather set: helmet 1 + chest 3 + legs 2 + boots 1
 
     /**
      * Grant an upgraded villager the protection of a full leather set (+7 armour) as a permanent attribute
      * modifier. (Leather's armour TOUGHNESS is 0, so the meaningful "leather equivalent" is its armour value.)
-     * Idempotent: the fixed UUID means a reload won't stack a second copy.
+     * Idempotent: the fixed id means a reload won't stack a second copy.
      */
     private static void applyLeatherArmor(Villager villager) {
         net.minecraft.world.entity.ai.attributes.AttributeInstance inst =
                 villager.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
         if (inst == null) return;
         net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
-                new net.minecraft.world.entity.ai.attributes.AttributeModifier(VILLAGER_ARMOR_UUID,
-                        "alien slasher leather armour", LEATHER_ARMOR,
-                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
-        if (!inst.hasModifier(mod)) inst.addPermanentModifier(mod);
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(VILLAGER_ARMOR_ID,
+                        LEATHER_ARMOR,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE);
+        if (inst.getModifier(VILLAGER_ARMOR_ID) == null) inst.addPermanentModifier(mod);
     }
 
     /** Add the wall-build goal to a villager if it lacks it (idempotent) -- retrofits already-loaded villagers. */
@@ -340,26 +339,26 @@ public final class VillageEvents {
         golem.goalSelector.addGoal(0, new GolemRocketGoal(golem));
     }
 
-    // Fixed UUID so re-applying the gigachad armour buff on world reload is idempotent.
-    private static final java.util.UUID GOLEM_ARMOR_UUID =
-            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000003");
+    // Fixed id so re-applying the gigachad armour buff on world reload is idempotent.
+    private static final ResourceLocation GOLEM_ARMOR_ID =
+            TheVillageFightsBack.id("gigachad_iron_armour");
     private static final double IRON_ARMOR = 15.0; // full iron set: helmet 2 + chest 6 + legs 5 + boots 2
 
     /** Give a stage-3 ("gigachad") iron golem the armour of a full iron set (+15 armour) as a permanent
-     *  attribute modifier. Idempotent via the fixed UUID, so a reload never stacks a second copy. */
+     *  attribute modifier. Idempotent via the fixed id, so a reload never stacks a second copy. */
     private static void applyGolemArmor(IronGolem golem) {
         net.minecraft.world.entity.ai.attributes.AttributeInstance inst =
                 golem.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
         if (inst == null) return;
         net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
-                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_ARMOR_UUID,
-                        "gigachad iron armour", IRON_ARMOR,
-                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
-        if (!inst.hasModifier(mod)) inst.addPermanentModifier(mod);
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_ARMOR_ID,
+                        IRON_ARMOR,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE);
+        if (inst.getModifier(GOLEM_ARMOR_ID) == null) inst.addPermanentModifier(mod);
     }
 
-    private static final java.util.UUID GOLEM_HEALTH_UUID =
-            java.util.UUID.fromString("c0ffee00-0000-4000-8000-000000000004");
+    private static final ResourceLocation GOLEM_HEALTH_ID =
+            TheVillageFightsBack.id("gigachad_health");
     private static final double GOLEM_HEALTH_BONUS = 100.0; // base iron golem 100 -> gigachad 200
 
     /** Give a stage-3 ("gigachad") iron golem +100 max health (-> 200 total), as a permanent, idempotent
@@ -369,10 +368,10 @@ public final class VillageEvents {
                 golem.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
         if (inst == null) return;
         net.minecraft.world.entity.ai.attributes.AttributeModifier mod =
-                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_HEALTH_UUID,
-                        "gigachad health", GOLEM_HEALTH_BONUS,
-                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADDITION);
-        if (!inst.hasModifier(mod)) {
+                new net.minecraft.world.entity.ai.attributes.AttributeModifier(GOLEM_HEALTH_ID,
+                        GOLEM_HEALTH_BONUS,
+                        net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE);
+        if (inst.getModifier(GOLEM_HEALTH_ID) == null) {
             inst.addPermanentModifier(mod);
             golem.setHealth(golem.getMaxHealth()); // top up to the new 200 on first upgrade
         }
@@ -406,27 +405,33 @@ public final class VillageEvents {
         if (event.getType() != VillagerProfession.WEAPONSMITH) return;
         var trades = event.getTrades();
         // Journeyman (3): the Density book.
-        trades.get(3).add(bookTrade(ModEnchantments.DENSITY.get(), 5, 22, 2, 10));
+        trades.get(3).add(bookTrade(ModEnchantments.DENSITY, 5, 22, 2, 10));
         // Expert (4): wind charges in stacks, and the Breach book.
         trades.get(4).add(itemTrade(new ItemStack(ModItems.WIND_CHARGE.get(), 4), 8, 6, 12));
-        trades.get(4).add(bookTrade(ModEnchantments.BREACH.get(), 4, 30, 2, 15));
+        trades.get(4).add(bookTrade(ModEnchantments.BREACH, 4, 30, 2, 15));
         // Master (5): a plain mace, and the Wind Burst book.
         trades.get(5).add(itemTrade(new ItemStack(ModItems.MACE.get()), 48, 2, 30));
-        trades.get(5).add(bookTrade(ModEnchantments.WIND_BURST.get(), 3, 38, 2, 15));
+        trades.get(5).add(bookTrade(ModEnchantments.WIND_BURST, 3, 38, 2, 15));
     }
 
     /** A simple "N emeralds -> {@code result}" trade (no crafting recipe involved). */
     private static VillagerTrades.ItemListing itemTrade(ItemStack result, int emeralds, int maxUses, int xp) {
         return (trader, rand) -> new MerchantOffer(
-                new ItemStack(Items.EMERALD, emeralds), result.copy(), maxUses, xp, 0.05F);
+                new ItemCost(Items.EMERALD, emeralds), result.copy(), maxUses, xp, 0.05F);
     }
 
-    /** A "N emeralds -> enchanted book(enchant @ level)" trade. */
+    /** A "N emeralds -> enchanted book(enchant @ level)" trade. The enchantment key is resolved to a Holder
+     *  against the trader's registry access at offer-build time (1.21: EnchantmentInstance takes a Holder). */
     private static VillagerTrades.ItemListing bookTrade(
-            net.minecraft.world.item.enchantment.Enchantment ench, int level, int emeralds, int maxUses, int xp) {
-        ItemStack book = EnchantedBookItem.createForEnchantment(new EnchantmentInstance(ench, level));
-        return (trader, rand) -> new MerchantOffer(
-                new ItemStack(Items.EMERALD, emeralds), book.copy(), maxUses, xp, 0.05F);
+            net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> ench,
+            int level, int emeralds, int maxUses, int xp) {
+        return (trader, rand) -> {
+            net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> holder =
+                    ModEnchantments.holder(trader.level().registryAccess(), ench);
+            ItemStack book = EnchantedBookItem.createForEnchantment(new EnchantmentInstance(holder, level));
+            return new MerchantOffer(
+                    new ItemCost(Items.EMERALD, emeralds), book.copy(), maxUses, xp, 0.05F);
+        };
     }
 
     // --- Drops: the general 5% used-weapon rule + guard wind charges -----------------------------
@@ -471,7 +476,7 @@ public final class VillageEvents {
         if (item instanceof AxeItem || item instanceof SwordItem || item instanceof CrossbowItem) return true;
         if (item instanceof MaceItem || item instanceof AlienSlasherItem || item instanceof AlienEradicatorItem) return true;
         // generic fallback: anything that isn't food or a placeable block counts as a weapon.
-        return !(item instanceof BlockItem) && !stack.isEdible();
+        return !(item instanceof BlockItem) && !stack.has(net.minecraft.core.component.DataComponents.FOOD);
     }
 
     /** Gigachad golems + vindictive gigachads drop their rocket launcher + a few rockets when they die. */
@@ -495,7 +500,7 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity self = event.getEntity();
-        LivingEntity newTarget = event.getNewTarget();
+        LivingEntity newTarget = event.getNewAboutToBeSetTarget();
         if (isAlly(self) && newTarget != null && isAlly(newTarget)
                 && Factions.isInfected(self) == Factions.isInfected(newTarget)) {
             event.setCanceled(true);            // SAME-side allies never fight each other (a vindictive
@@ -554,8 +559,8 @@ public final class VillageEvents {
      *  fireballs). It does NOT block ordinary combat damage -- its protection is fire immunity plus the
      *  harmful-status-effect block below. */
     @SubscribeEvent
-    public static void onImmunityAttack(LivingAttackEvent event) {
-        if (event.getEntity().hasEffect(ModEffects.IMMUNITY.get())
+    public static void onImmunityAttack(LivingIncomingDamageEvent event) {
+        if (event.getEntity().hasEffect(ModEffects.IMMUNITY)
                 && event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
             event.setCanceled(true);
         }
@@ -564,18 +569,18 @@ public final class VillageEvents {
     /** Immunity also blocks every HARMFUL status effect (poison, wither, slowness, the emerald virus, ...)
      *  from ever landing on the holder. Beneficial effects (incl. Immunity itself) are unaffected. */
     @SubscribeEvent
-    public static void onImmunityEffect(net.minecraftforge.event.entity.living.MobEffectEvent.Applicable event) {
-        if (event.getEffectInstance().getEffect().getCategory()
+    public static void onImmunityEffect(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Applicable event) {
+        if (event.getEffectInstance().getEffect().value().getCategory()
                     == net.minecraft.world.effect.MobEffectCategory.HARMFUL
-                && event.getEntity().hasEffect(ModEffects.IMMUNITY.get())) {
-            event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+                && event.getEntity().hasEffect(ModEffects.IMMUNITY)) {
+            event.setResult(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Applicable.Result.DO_NOT_APPLY);
         }
     }
 
     /** Player hits a village defender -> the defender retaliates AND the player is branded an Enemy of the
      *  Village (status + nearby rally + warning), same as mining a node. */
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         if (event.getEntity().level().isClientSide()) return;
 
         // No friendly fire among SAME-side defenders (e.g. rocket splash hitting an allied golem/villager).
@@ -629,7 +634,7 @@ public final class VillageEvents {
             double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
             for (Player p : sl.players()) {
                 if (!p.isAlive() || p.isCreative() || p.isSpectator()) continue;
-                if (!p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get())) continue;
+                if (!p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE)) continue;
                 double dsq = p.distanceToSqr(mob);
                 if (dsq < bestSq) { bestSq = dsq; best = p; }
             }
@@ -644,13 +649,12 @@ public final class VillageEvents {
     public static final int ENEMY_STATUS_TICKS = 24000;      // Enemy of the Village lasts 20 minutes
     public static final int THIEF_STATUS_TICKS = 1200;       // a chest thief is an Enemy of the Village for 1 min
 
-    /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on, and EMPTY curative
-     *  items so milk can never cure it (it still clears on death). Shared by every ETV grant. */
+    /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on. It still clears on
+     *  death. (NeoForge removed per-instance curative items; milk-cure is governed by EffectCure now.) Shared
+     *  by every ETV grant. */
     private static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
-        net.minecraft.world.effect.MobEffectInstance inst = new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.ENEMY_OF_THE_VILLAGE.get(), ticks, 0, false, false, true);
-        inst.setCurativeItems(new ArrayList<>()); // milk cannot cure it
-        return inst;
+        return new net.minecraft.world.effect.MobEffectInstance(
+                ModEffects.ENEMY_OF_THE_VILLAGE, ticks, 0, false, false, true);
     }
 
     /**
@@ -686,7 +690,7 @@ public final class VillageEvents {
      */
     public static void markVillageEnemy(ServerLevel level, BlockPos center, Player player) {
         if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators excluded
-        boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+        boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE);
         // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD. Empty curative
         // items -> milk cannot cure it (it still clears on death). The MobEffectEvent.Added handler rallies
         // every defender the moment this lands (event-driven hostility, no per-tick scan).
@@ -736,8 +740,8 @@ public final class VillageEvents {
      * no matter HOW the status was applied (mining, hitting a defender, theft, ...). No per-tick verifier needed.
      */
     @SubscribeEvent
-    public static void onEnemyEffectAdded(net.minecraftforge.event.entity.living.MobEffectEvent.Added event) {
-        if (event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+    public static void onEnemyEffectAdded(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Added event) {
+        if (!event.getEffectInstance().getEffect().is(ModEffects.ENEMY_OF_THE_VILLAGE)) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
                 && player.level() instanceof ServerLevel sl) {
             aggroDefendersAgainst(sl, player);
@@ -746,8 +750,8 @@ public final class VillageEvents {
 
     /** When Enemy of the Village is removed early (e.g. it was cleared), stop the hunt immediately. */
     @SubscribeEvent
-    public static void onEnemyEffectRemoved(net.minecraftforge.event.entity.living.MobEffectEvent.Remove event) {
-        if (event.getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+    public static void onEnemyEffectRemoved(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Remove event) {
+        if (!event.getEffect().is(ModEffects.ENEMY_OF_THE_VILLAGE)) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
                 && player.level() instanceof ServerLevel sl) {
             clearEnemyTargets(sl, player);
@@ -756,9 +760,9 @@ public final class VillageEvents {
 
     /** When Enemy of the Village expires on its own, stop the hunt immediately (no polling). */
     @SubscribeEvent
-    public static void onEnemyEffectExpired(net.minecraftforge.event.entity.living.MobEffectEvent.Expired event) {
+    public static void onEnemyEffectExpired(net.neoforged.neoforge.event.entity.living.MobEffectEvent.Expired event) {
         if (event.getEffectInstance() == null
-                || event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
+                || !event.getEffectInstance().getEffect().is(ModEffects.ENEMY_OF_THE_VILLAGE)) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
                 && player.level() instanceof ServerLevel sl) {
             clearEnemyTargets(sl, player);
@@ -784,7 +788,7 @@ public final class VillageEvents {
     }
 
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the

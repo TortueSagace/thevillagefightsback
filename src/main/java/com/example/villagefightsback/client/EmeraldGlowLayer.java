@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
@@ -30,8 +29,8 @@ public class EmeraldGlowLayer<T extends LivingEntity, M extends EntityModel<T>> 
         super(parent);
         this.frames = new RenderType[FRAMES];
         for (int i = 0; i < FRAMES; i++) {
-            this.frames[i] = RenderType.eyes(new ResourceLocation(
-                    TheVillageFightsBack.MODID, "textures/entity/" + baseName + "_glow" + i + ".png"));
+            this.frames[i] = RenderType.eyes(TheVillageFightsBack.id(
+                    "textures/entity/" + baseName + "_glow" + i + ".png"));
         }
     }
 
@@ -41,6 +40,6 @@ public class EmeraldGlowLayer<T extends LivingEntity, M extends EntityModel<T>> 
         if (entity.isInvisible()) return;
         int frame = Math.floorMod((entity.tickCount + entity.getId() * 7) / FRAMETIME, FRAMES);
         VertexConsumer vc = buffer.getBuffer(this.frames[frame]);
-        this.getParentModel().renderToBuffer(poseStack, vc, 15728640, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        this.getParentModel().renderToBuffer(poseStack, vc, 15728640, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
     }
 }

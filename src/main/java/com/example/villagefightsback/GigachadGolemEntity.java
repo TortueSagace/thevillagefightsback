@@ -20,8 +20,8 @@ public class GigachadGolemEntity extends IronGolem {
     @Override
     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
             net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
-            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+            net.minecraft.world.entity.SpawnGroupData data) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data);
         VillageEvents.armGolemFull(this); // shared gigachad kit (rocket launcher, armour, 200 HP, rocket goal)
         return r;
     }

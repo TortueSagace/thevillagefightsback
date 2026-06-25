@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped",
+  "pattern": ["PPP"],
+  "key": { "P": { "item": "thevillagefightsback:fertile_planks" } },
+  "result": { "id": "thevillagefightsback:fertile_planks_slab", "count": 6 } }

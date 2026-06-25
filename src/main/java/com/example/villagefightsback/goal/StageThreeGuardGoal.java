@@ -7,6 +7,7 @@ import com.example.villagefightsback.ModBlocks;
 import com.example.villagefightsback.WindChargeEntity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -21,6 +22,7 @@ import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -151,7 +153,15 @@ public class StageThreeGuardGoal extends Goal {
 
     private void fireVirusArrow(LivingEntity t) {
         Level level = guard.level();
-        Arrow arrow = new Arrow(level, guard);
+        // green "poison-arrow" look: tint the vanilla tipped-arrow texture emerald (no vanilla potion attached).
+        // The Arrow now derives its color/effects from its pickup ItemStack's POTION_CONTENTS (the old
+        // setEffectsFromItem is gone), so build the tipped arrow first and hand it in as the pickup stack.
+        ItemStack tip = new ItemStack(Items.TIPPED_ARROW);
+        tip.set(DataComponents.POTION_CONTENTS,
+                new PotionContents(java.util.Optional.empty(), java.util.Optional.of(0x2ECC40), java.util.List.of()));
+        // Pass the (Piercing IV) crossbow as the firedFromWeapon so vanilla applies Piercing IV (the old
+        // setPierceLevel is now private; pierce comes from the firing weapon's Piercing enchant).
+        Arrow arrow = new Arrow(level, guard, tip, GuardWeapons.crossbow());
         double dx = t.getX() - guard.getX();
         double dy = t.getY(0.5) - arrow.getY();
         double dz = t.getZ() - guard.getZ();
@@ -160,13 +170,8 @@ public class StageThreeGuardGoal extends Goal {
         // scales with flight-time^2, so for our faster ARROW_SPEED the factor is 0.2 * (1.6/2.8)^2 ~= 0.065.
         // (The old 0.18 was tuned for a slow bow and lobbed every shot clean over the target's head.)
         arrow.shoot(dx, dy + dh * 0.065, dz, ARROW_SPEED, 1.0F);
-        arrow.setPierceLevel((byte) 4);                       // Piercing IV
         arrow.getPersistentData().putBoolean(NBT_VIRUS_ARROW, true); // applies Emerald Virus on hit
         arrow.setBaseDamage(arrow.getBaseDamage() + 2.0);     // a bit punchier than a plain arrow
-        // green "poison-arrow" look: tint the vanilla tipped-arrow texture emerald (no vanilla potion attached).
-        ItemStack tip = new ItemStack(Items.TIPPED_ARROW);
-        tip.getOrCreateTag().putInt("CustomPotionColor", 0x2ECC40);
-        arrow.setEffectsFromItem(tip);
         arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
         level.playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.CROSSBOW_SHOOT, SoundSource.HOSTILE, 1.0F, 1.0F);
@@ -213,7 +218,7 @@ public class StageThreeGuardGoal extends Goal {
         float fall = Math.min(guard.fallDistance, FALL_CAP);
         float dmg = MACE_BASE + fall * SMASH_PER_BLOCK; // my own Density-3 smash formula (mob-friendly)
         t.hurt(guard.damageSources().mobAttack(guard), dmg);
-        t.setSecondsOnFire(FIRE_ASPECT_SECONDS);
+        t.igniteForSeconds(FIRE_ASPECT_SECONDS);
         guard.swing(InteractionHand.MAIN_HAND);
         guard.level().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.8F, 1.4F);

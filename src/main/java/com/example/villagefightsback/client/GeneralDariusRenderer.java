@@ -21,7 +21,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class GeneralDariusRenderer extends MobRenderer<GeneralDariusEntity, DariusVillagerModel> {
     private static final ResourceLocation TEX =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/general_darius.png");
+            TheVillageFightsBack.id("textures/entity/general_darius.png");
 
     public GeneralDariusRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new DariusVillagerModel(ctx.bakeLayer(TheVillageFightsBackClient.DARIUS_LAYER)), 0.5F);

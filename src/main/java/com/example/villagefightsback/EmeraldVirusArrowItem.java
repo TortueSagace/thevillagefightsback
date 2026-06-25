@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ArrowItem;
@@ -20,7 +22,7 @@ public class EmeraldVirusArrowItem extends ArrowItem {
     }
 
     @Override
-    public AbstractArrow createArrow(Level level, ItemStack ammo, LivingEntity shooter) {
+    public AbstractArrow createArrow(Level level, ItemStack ammo, LivingEntity shooter, @Nullable ItemStack weapon) {
         EmeraldVirusArrowEntity arrow = new EmeraldVirusArrowEntity(level, shooter);
         arrow.setVirusAmplifier(amplifier);
         return arrow;

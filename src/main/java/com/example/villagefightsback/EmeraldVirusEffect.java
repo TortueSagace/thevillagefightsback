@@ -23,8 +23,7 @@ public class EmeraldVirusEffect extends MobEffect {
 
     /** Each second, refresh the (hidden) wither/slowness so they cover the whole virus length. */
     @Override
-    public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (entity.level().isClientSide()) return;
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         // Wither II only for Emerald Virus II (amplifier >= 1, i.e. a stage-4 guard/villager hit). The global
         // stage no longer auto-upgrades severity, so vindictive/contagion infections stay Virus I.
         if (amplifier >= 1) {
@@ -33,10 +32,11 @@ public class EmeraldVirusEffect extends MobEffect {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 0, false, false, false));          // Wither I
             entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, false)); // Slowness I
         }
+        return true;
     }
 
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration % 20 == 0; // once per second
     }
 }

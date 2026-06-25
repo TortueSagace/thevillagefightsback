@@ -1,13 +1,10 @@
 package com.example.villagefightsback;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Cat: a vanilla cat reskinned as an emerald-faction unit. It is passive (emeraldPassive() ==
@@ -33,10 +30,5 @@ public class EmeraldCat extends Cat implements EmeraldUnit {
     public static AttributeSupplier.Builder createAttributes() {
         // Large follow range so it detects infectable mobs from afar and goes hunting them.
         return Cat.createAttributes().add(Attributes.ATTACK_DAMAGE, 5.0D).add(Attributes.FOLLOW_RANGE, 48.0D);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

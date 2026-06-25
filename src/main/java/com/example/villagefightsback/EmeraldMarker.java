@@ -38,7 +38,7 @@ public final class EmeraldMarker {
     public static void mark(ServerLevel level, LivingEntity target) {
         MARKED.put(target, level.getGameTime() + DURATION);
         // visible=true on purpose, so the player sees the marked mob (unlike the mod's other, hidden effects).
-        target.addEffect(new MobEffectInstance(ModEffects.EMERALD_MARKER.get(), DURATION, 0, false, true, true));
+        target.addEffect(new MobEffectInstance(ModEffects.EMERALD_MARKER, DURATION, 0, false, true, true));
         // Also Glowing: a through-walls outline so the player can track the scented target. (request 1.1.4)
         target.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.GLOWING, DURATION, 0, false, true, true));
         joinScentTeam(level, target); // colour that outline lime
@@ -49,7 +49,7 @@ public final class EmeraldMarker {
     public static void unmark(LivingEntity target) {
         if (target == null) return;
         MARKED.remove(target);
-        target.removeEffect(ModEffects.EMERALD_MARKER.get());
+        target.removeEffect(ModEffects.EMERALD_MARKER);
         target.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
         leaveScentTeam(target);
     }

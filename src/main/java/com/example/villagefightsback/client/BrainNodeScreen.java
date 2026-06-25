@@ -86,7 +86,7 @@ public class BrainNodeScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
-        this.renderBackground(g);
+        this.renderBackground(g, mouseX, mouseY, partial);
 
         // Panel background + border.
         g.fill(leftPos - 1, topPos - 1, leftPos + PANEL_W + 1, topPos + panelH + 1, 0xFF1A1A1F);

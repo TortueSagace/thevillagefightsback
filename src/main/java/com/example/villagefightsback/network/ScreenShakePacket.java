@@ -1,34 +1,31 @@
 package com.example.villagefightsback.network;
 
-import java.util.function.Supplier;
+import com.example.villagefightsback.TheVillageFightsBack;
 
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Server -> client: shake the camera for {@code durationTicks} at {@code intensity} (degrees of jitter). */
-public class ScreenShakePacket {
-    public final float intensity;
-    public final int durationTicks;
+public record ScreenShakePacket(float intensity, int durationTicks) implements CustomPacketPayload {
+    public static final Type<ScreenShakePacket> TYPE =
+            new Type<>(TheVillageFightsBack.id("screen_shake"));
 
-    public ScreenShakePacket(float intensity, int durationTicks) {
-        this.intensity = intensity;
-        this.durationTicks = durationTicks;
+    public static final StreamCodec<RegistryFriendlyByteBuf, ScreenShakePacket> STREAM_CODEC =
+            StreamCodec.composite(
+                    ByteBufCodecs.FLOAT, ScreenShakePacket::intensity,
+                    ByteBufCodecs.VAR_INT, ScreenShakePacket::durationTicks,
+                    ScreenShakePacket::new);
+
+    @Override
+    public Type<ScreenShakePacket> type() {
+        return TYPE;
     }
 
-    public static void encode(ScreenShakePacket msg, FriendlyByteBuf buf) {
-        buf.writeFloat(msg.intensity);
-        buf.writeVarInt(msg.durationTicks);
-    }
-
-    public static ScreenShakePacket decode(FriendlyByteBuf buf) {
-        return new ScreenShakePacket(buf.readFloat(), buf.readVarInt());
-    }
-
-    public static void handle(ScreenShakePacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> com.example.villagefightsback.client.ScreenShakeClient.add(msg.intensity, msg.durationTicks)));
-        ctx.get().setPacketHandled(true);
+    public static void handle(ScreenShakePacket msg, IPayloadContext context) {
+        context.enqueueWork(() ->
+                com.example.villagefightsback.client.ScreenShakeClient.add(msg.intensity(), msg.durationTicks()));
     }
 }

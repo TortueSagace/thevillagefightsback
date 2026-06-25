@@ -53,7 +53,7 @@ public class WallDefenderModel extends EntityModel<WallDefenderEntity> {
 
     @Override
     public void renderToBuffer(PoseStack pose, VertexConsumer buffer, int packedLight, int packedOverlay,
-                               float r, float g, float b, float a) {
-        core.render(pose, buffer, packedLight, packedOverlay, r, g, b, a);
+                               int color) {
+        core.render(pose, buffer, packedLight, packedOverlay, color);
     }
 }

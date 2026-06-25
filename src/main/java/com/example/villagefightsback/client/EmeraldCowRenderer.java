@@ -17,12 +17,12 @@ import net.minecraft.world.entity.animal.Cow;
  */
 public class EmeraldCowRenderer extends CowRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_cow.png");
+            TheVillageFightsBack.id("textures/entity/emerald_cow.png");
 
     public EmeraldCowRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_cow_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_cow_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

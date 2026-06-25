@@ -8,10 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * A tiny built-in profiler for THIS mod's own work, so we can see which of our subsystems costs the most
@@ -25,7 +25,7 @@ import net.minecraftforge.fml.common.Mod;
  * In-game: {@code /gbtyw profile} prints a sorted breakdown, {@code /gbtyw profile reset} clears it,
  * {@code /gbtyw profile on|off} toggles measuring (overhead is a couple of nanoTime calls per section).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ModProfiler {
     private ModProfiler() {}
 
@@ -53,8 +53,8 @@ public final class ModProfiler {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent e) {
-        if (e.phase == TickEvent.Phase.END && enabled) ticks++;
+    public static void onServerTick(ServerTickEvent.Post e) {
+        if (enabled) ticks++;
     }
 
     @SubscribeEvent

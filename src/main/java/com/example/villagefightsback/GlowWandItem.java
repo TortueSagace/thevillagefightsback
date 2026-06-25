@@ -15,9 +15,9 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * The Glow Wand: right-click to give every unit of this mod within {@value #RADIUS} blocks the Glowing effect for
@@ -28,7 +28,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class GlowWandItem extends Item {
     private static final double RADIUS = 128.0;
     private static final int GLOW_TICKS = 20 * 3; // 3 seconds
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     public GlowWandItem(Properties props) {
         super(props);
@@ -73,7 +73,7 @@ public class GlowWandItem extends Item {
     private static boolean isModMob(LivingEntity e) {
         if (!e.isAlive()) return false;
         if (e instanceof Villager || e instanceof IronGolem) return true;
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id != null && (id.getNamespace().equals(TheVillageFightsBack.MODID) || GUARD_ID.equals(id));
     }
 }

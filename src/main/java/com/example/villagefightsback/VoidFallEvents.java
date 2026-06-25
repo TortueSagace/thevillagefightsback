@@ -9,10 +9,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
  * The void-fall chain. Falling out of the world no longer kills you outright -- you drop through into the next
@@ -22,12 +22,12 @@ import net.minecraftforge.fml.common.Mod;
  *   the End                                      ->  death (the only fatal world-fall)
  * So a careless step into the void becomes a long plunge: world -> Limbo -> End -> oblivion.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VoidFallEvents {
     private VoidFallEvents() {}
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onVoidDamage(LivingHurtEvent event) {
+    public static void onVoidDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) return;
         if (!(player.level() instanceof ServerLevel from)) return;

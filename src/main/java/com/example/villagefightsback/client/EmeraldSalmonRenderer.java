@@ -17,12 +17,12 @@ import net.minecraft.world.entity.animal.Salmon;
  */
 public class EmeraldSalmonRenderer extends SalmonRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_salmon.png");
+            TheVillageFightsBack.id("textures/entity/emerald_salmon.png");
 
     public EmeraldSalmonRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_salmon_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_salmon_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

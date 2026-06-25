@@ -13,7 +13,7 @@ public final class BrainNodeScreenHooks {
 
     public static void open(OpenBrainNodeScreenPacket msg) {
         Minecraft.getInstance().setScreen(new BrainNodeScreen(
-                msg.level, msg.maxLevel, msg.emeralds, msg.costNext,
-                msg.villagers, msg.guards, msg.golems, msg.fertilized, msg.organic, msg.reflexLog, msg.organicLog));
+                msg.level(), msg.maxLevel(), msg.emeralds(), msg.costNext(),
+                msg.villagers(), msg.guards(), msg.golems(), msg.fertilized(), msg.organic(), msg.reflexLog(), msg.organicLog()));
     }
 }

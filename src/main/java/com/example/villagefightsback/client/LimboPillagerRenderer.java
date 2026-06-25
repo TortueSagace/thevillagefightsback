@@ -12,9 +12,9 @@ import net.minecraft.world.entity.monster.Pillager;
  *  scaled 2x to match the baked hitbox, with glowing white eyes/markings in the dark. */
 public class LimboPillagerRenderer extends PillagerRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_pillager.png");
+            TheVillageFightsBack.id("textures/entity/limbo_pillager.png");
     private static final ResourceLocation GLOW =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/limbo_pillager_glow.png");
+            TheVillageFightsBack.id("textures/entity/limbo_pillager_glow.png");
 
     public LimboPillagerRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

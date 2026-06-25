@@ -5,23 +5,22 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client half of full-set bedrock phasing: the local player's collision is predicted client-side, so the
  * server-side noPhysics ({@link LimboGearEvents}) must be matched here or the player rubber-bands when trying
  * to walk through bedrock. Both sides compute the same condition (full set + box overlapping bedrock).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class LimboBedrockPhaseClient {
     private LimboBedrockPhaseClient() {}
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onClientTick(ClientTickEvent.Post event) {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null || p.isSpectator()) return;
         p.noPhysics = LimboGear.hasFullSet(p) && LimboGear.touchesBedrock(p);

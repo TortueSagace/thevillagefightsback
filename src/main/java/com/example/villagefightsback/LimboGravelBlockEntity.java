@@ -1,6 +1,7 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -43,8 +44,8 @@ public class LimboGravelBlockEntity extends BlockEntity {
     public long unstableUntil() { return unstableUntil; }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putString("type", typeId);
         tag.putString("holdName", holdName);
         tag.putBoolean("storm", stormPart);
@@ -52,8 +53,8 @@ public class LimboGravelBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         typeId = tag.getString("type");
         holdName = tag.getString("holdName");
         stormPart = tag.getBoolean("storm");
@@ -62,9 +63,9 @@ public class LimboGravelBlockEntity extends BlockEntity {
 
     // --- client sync (the renderer reads typeId/unstableUntil) ---
     @Override
-    public CompoundTag getUpdateTag() {
-        CompoundTag tag = super.getUpdateTag();
-        saveAdditional(tag);
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        saveAdditional(tag, registries);
         return tag;
     }
 
@@ -74,7 +75,7 @@ public class LimboGravelBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        load(tag);
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+        loadAdditional(tag, registries);
     }
 }

@@ -15,12 +15,12 @@ import net.minecraft.world.entity.monster.EnderMan;
  */
 public class EmeraldEndermanRenderer extends EndermanRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_enderman.png");
+            TheVillageFightsBack.id("textures/entity/emerald_enderman.png");
 
     public EmeraldEndermanRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_enderman_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_enderman_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

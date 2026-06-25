@@ -9,7 +9,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * Shared spawn helpers for the three node blocks: find a clear spot below (or above) a node, then spawn the
@@ -20,7 +20,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class NodeSpawns {
     private NodeSpawns() {}
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     private static final int GOLEM_CAP = 20;               // the Iron Factory halts at 20+ golems in the zone
     static double GOLEM_ZONE_RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100)
@@ -55,7 +55,7 @@ public final class NodeSpawns {
         float yaw = level.getRandom().nextFloat() * 360.0F;
         // 10% chance to also forge a stray EMERALD golem alongside the normal one, in the SAME stage-appropriate
         // form: emerald iron golem (stage 1), emerald Defender Golem (stage 2-3), emerald Gigachad Golem (stage 4+).
-        if (level.getRandom().nextFloat() < 0.10F) {
+        if (Config.emeraldMobsEnabled() && level.getRandom().nextFloat() < 0.10F) {
             BlockPos espot = belowOrAbove(level, node, 3);
             if (espot != null) {
                 EntityType<? extends net.minecraft.world.entity.Mob> etype = stage >= 4 ? ModEntities.EMERALD_GIGACHAD_GOLEM.get()
@@ -65,7 +65,7 @@ public final class NodeSpawns {
                 if (eg != null) {
                     eg.moveTo(espot.getX() + 0.5, espot.getY(), espot.getZ() + 0.5,
                             level.getRandom().nextFloat() * 360.0F, 0.0F);
-                    eg.finalizeSpawn(level, level.getCurrentDifficultyAt(espot), MobSpawnType.EVENT, null, null);
+                    eg.finalizeSpawn(level, level.getCurrentDifficultyAt(espot), MobSpawnType.EVENT, null);
                     if (eg instanceof EmeraldGigachadGolemEntity) UpgradeState.setUpgraded(eg); // born fully upgraded
                     level.addFreshEntity(eg);
                 }
@@ -75,14 +75,14 @@ public final class NodeSpawns {
             GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(level);
             if (g == null) return;
             g.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
-            g.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+            g.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null);
             UpgradeState.setUpgraded(g);                 // gigachad is born fully upgraded
             level.addFreshEntity(g);
         } else if (stage >= 2) {
             DefenderGolemEntity d = ModEntities.DEFENDER_GOLEM.get().create(level);
             if (d == null) return;
             d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
-            d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+            d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null);
             level.addFreshEntity(d);                     // defender golem carries its own kit by construction
         } else {
             EntityType.IRON_GOLEM.spawn(level, spot, MobSpawnType.EVENT); // stage 1: plain golem
@@ -91,7 +91,7 @@ public final class NodeSpawns {
 
     /** One guard below/above the node, armed to the brain node's stage (full kit at stage 3+). */
     public static void spawnGuard(ServerLevel level, BlockPos node, int stage) {
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        EntityType<?> guardType = BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
         if (guardType == null) return;
         BlockPos spot = belowOrAbove(level, node, 2);
         if (spot == null) return;
@@ -117,7 +117,7 @@ public final class NodeSpawns {
         d.setGunOnly(true); // never upgrade to rockets, even at stage 4 -- rockets would wreck the powder-snow trap
         d.moveTo(feet.getX() + 0.5, feet.getY() + 0.1, feet.getZ() + 0.5, 0.0F, 0.0F);
         // Finalize like the golem/guard (and spawn-egg) paths so the turret initialises properly and appears.
-        d.finalizeSpawn(level, level.getCurrentDifficultyAt(feet), MobSpawnType.EVENT, null, null);
+        d.finalizeSpawn(level, level.getCurrentDifficultyAt(feet), MobSpawnType.EVENT, null);
         level.addFreshEntity(d);
     }
 }

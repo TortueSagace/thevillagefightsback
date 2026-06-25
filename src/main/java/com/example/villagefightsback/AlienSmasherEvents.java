@@ -13,14 +13,14 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 /**
  * The Alien Smasher's two extra behaviours, both Forge-bus:
- *   - {@link #onSmasherHit(LivingHurtEvent)}: its signature triple block-and-fire blast. When an Alien Smasher
+ *   - {@link #onSmasherHit(LivingIncomingDamageEvent)}: its signature triple block-and-fire blast. When an Alien Smasher
  *     hits a target, it carves three TNT-sized holes straight DOWN beneath the victim (at y, y-2, y-4) so the
  *     enemy tumbles in. The blast is built BY HAND (never vanilla {@code Explosion#explode}, which hardcodes
  *     entity damage) so it destroys blocks + scatters fire but deals NO creature damage and NO knockback.
@@ -32,7 +32,7 @@ import net.minecraftforge.fml.common.Mod;
  * The guard-mace baseline itself (Density >= 3, Wind Burst launch >= level-3, Fire Aspect 2 burn) lives in
  * {@link MaceCombatEvents}, applied as a floor whenever the weapon is an Alien Smasher.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class AlienSmasherEvents {
     private AlienSmasherEvents() {}
 
@@ -45,7 +45,7 @@ public final class AlienSmasherEvents {
     private static final float RESISTANCE_CEILING = 600.0F;
 
     @SubscribeEvent
-    public static void onSmasherHit(LivingHurtEvent event) {
+    public static void onSmasherHit(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
@@ -104,9 +104,10 @@ public final class AlienSmasherEvents {
     public static void onCrafted(PlayerEvent.ItemCraftedEvent event) {
         ItemStack result = event.getCrafting();
         if (!(result.getItem() instanceof AlienSmasherItem)) return;
-        if (!EnchantmentHelper.getEnchantments(result).isEmpty()) return; // player kept their own enchants
-        result.enchant(ModEnchantments.DENSITY.get(), 3);
-        result.enchant(ModEnchantments.WIND_BURST.get(), 3);
-        result.enchant(Enchantments.FIRE_ASPECT, 2);
+        if (!EnchantmentHelper.getEnchantmentsForCrafting(result).isEmpty()) return; // player kept their own enchants (getEnchantmentsForCrafting reads the crafted stack's enchants)
+        net.minecraft.core.RegistryAccess access = event.getEntity().level().registryAccess();
+        result.enchant(ModEnchantments.holder(access, ModEnchantments.DENSITY), 3);
+        result.enchant(ModEnchantments.holder(access, ModEnchantments.WIND_BURST), 3);
+        result.enchant(ModEnchantments.holder(access, Enchantments.FIRE_ASPECT), 2);
     }
 }

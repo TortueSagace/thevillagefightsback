@@ -1,62 +1,61 @@
 package com.example.villagefightsback;
 
-import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.DamageEnchantment;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentCategory;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 /**
- * The three native mace enchantments (cloned from vanilla 1.21 so the mod owns them outright):
- *   - Density   (UNCOMMON, max 5): boosts the smash's fall-scaling bonus damage.
- *   - Breach    (RARE, max 4): ignores part of the target's armour.
- *   - Wind Burst(RARE treasure, max 3): launches the attacker upward on a successful smash.
- * All three only apply to our {@link MaceItem} (via a custom mace {@link EnchantmentCategory}); their effects
- * are applied by {@link MaceCombatEvents}. Registered in the {@link TheVillageFightsBack} constructor.
+ * The three mace enchantments (Density, Breach, Wind Burst) are VANILLA in 1.21.1, so the mod no longer
+ * registers its own clones. This class is now a thin holder-resolution helper around the vanilla enchantment
+ * {@link ResourceKey}s, plus the same numeric effect getters used by {@link MaceCombatEvents}. The custom
+ * {@code Enchantment} subclasses, the {@code MACE_CATEGORY}, and the {@code DeferredRegister<Enchantment>}
+ * were removed (data-driven enchantments cannot be subclassed in 1.21). Whether the mace can take these
+ * enchantments is now controlled by the {@code data/minecraft/tags/.../enchantable/mace.json} item tags.
  */
 public final class ModEnchantments {
     private ModEnchantments() {}
 
-    public static final DeferredRegister<Enchantment> ENCHANTMENTS =
-            DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, TheVillageFightsBack.MODID);
+    // Vanilla enchantment keys (resolved to Holders against the world's registry access at use time).
+    public static final ResourceKey<Enchantment> DENSITY = Enchantments.DENSITY;
+    public static final ResourceKey<Enchantment> BREACH = Enchantments.BREACH;
+    public static final ResourceKey<Enchantment> WIND_BURST = Enchantments.WIND_BURST;
 
-    /** Custom category: these enchantments only ever go on our mace. */
-    public static final EnchantmentCategory MACE_CATEGORY =
-            EnchantmentCategory.create("thevillagefightsback_mace", item -> item instanceof MaceItem);
+    /** Resolve a vanilla enchantment key to its Holder via a registry access. */
+    public static Holder<Enchantment> holder(RegistryAccess access, ResourceKey<Enchantment> key) {
+        return access.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(key);
+    }
 
-    private static final EquipmentSlot[] MAINHAND = { EquipmentSlot.MAINHAND };
+    /** Resolve a vanilla enchantment key to its Holder via a living entity's level. */
+    public static Holder<Enchantment> holder(LivingEntity holderEntity, ResourceKey<Enchantment> key) {
+        return holder(holderEntity.level().registryAccess(), key);
+    }
 
-    public static final RegistryObject<Enchantment> DENSITY =
-            ENCHANTMENTS.register("density", DensityEnchantment::new);
-    public static final RegistryObject<Enchantment> BREACH =
-            ENCHANTMENTS.register("breach", BreachEnchantment::new);
-    public static final RegistryObject<Enchantment> WIND_BURST =
-            ENCHANTMENTS.register("wind_burst", WindBurstEnchantment::new);
-
-    public static void register(IEventBus modBus) {
-        ENCHANTMENTS.register(modBus);
+    private static int levelOf(LivingEntity holderEntity, ResourceKey<Enchantment> key, ItemStack stack) {
+        return EnchantmentHelper.getItemEnchantmentLevel(holder(holderEntity, key), stack);
     }
 
     // --- effect helpers (read off a held stack) ----------------------------------------------------
 
     /** Density's extra smash damage PER block of fall distance (0.5 * level). 0 if not present. */
-    public static float getDensityBonusPerFall(ItemStack stack) {
-        return 0.5F * EnchantmentHelper.getItemEnchantmentLevel(DENSITY.get(), stack);
+    public static float getDensityBonusPerFall(LivingEntity holderEntity, ItemStack stack) {
+        return 0.5F * levelOf(holderEntity, DENSITY, stack);
     }
 
     /** Breach's armour-penetration fraction (0.15 * level). 0 if not present. */
-    public static float getBreachFraction(ItemStack stack) {
-        return 0.15F * EnchantmentHelper.getItemEnchantmentLevel(BREACH.get(), stack);
+    public static float getBreachFraction(LivingEntity holderEntity, ItemStack stack) {
+        return 0.15F * levelOf(holderEntity, BREACH, stack);
     }
 
     /** Wind Burst's upward launch strength for the attacker (level1=1.2, level2=1.75, level3=2.2). 0 if absent. */
-    public static double getWindBurstLaunch(ItemStack stack) {
-        int level = EnchantmentHelper.getItemEnchantmentLevel(WIND_BURST.get(), stack);
+    public static double getWindBurstLaunch(LivingEntity holderEntity, ItemStack stack) {
+        int level = levelOf(holderEntity, WIND_BURST, stack);
         return switch (level) {
             case 1 -> 1.2;
             case 2 -> 1.75;
@@ -65,51 +64,8 @@ public final class ModEnchantments {
         };
     }
 
-    // --- the three enchantments --------------------------------------------------------------------
-
-    /** Density: UNCOMMON, max 5, fall-based smash bonus. Incompatible with Breach + sharpness/smite/bane. */
-    public static final class DensityEnchantment extends Enchantment {
-        DensityEnchantment() {
-            super(Rarity.UNCOMMON, MACE_CATEGORY, MAINHAND);
-        }
-
-        @Override public int getMaxLevel() { return 5; }
-        @Override public int getMinCost(int level) { return 5 + (level - 1) * 8; }
-        @Override public int getMaxCost(int level) { return 25 + (level - 1) * 8; }
-
-        @Override
-        protected boolean checkCompatibility(Enchantment other) {
-            return super.checkCompatibility(other)
-                    && !(other instanceof BreachEnchantment)
-                    && !(other instanceof DamageEnchantment);
-        }
-    }
-
-    /** Breach: RARE, max 4, reduces target armour effectiveness. Incompatible with Density. */
-    public static final class BreachEnchantment extends Enchantment {
-        BreachEnchantment() {
-            super(Rarity.RARE, MACE_CATEGORY, MAINHAND);
-        }
-
-        @Override public int getMaxLevel() { return 4; }
-        @Override public int getMinCost(int level) { return 15 + (level - 1) * 9; }
-        @Override public int getMaxCost(int level) { return 65 + (level - 1) * 9; }
-
-        @Override
-        protected boolean checkCompatibility(Enchantment other) {
-            return super.checkCompatibility(other) && !(other instanceof DensityEnchantment);
-        }
-    }
-
-    /** Wind Burst: RARE treasure-only, max 3, launches the attacker up on a smash. Compatible with all. */
-    public static final class WindBurstEnchantment extends Enchantment {
-        WindBurstEnchantment() {
-            super(Rarity.RARE, MACE_CATEGORY, MAINHAND);
-        }
-
-        @Override public int getMaxLevel() { return 3; }
-        @Override public int getMinCost(int level) { return 15 + (level - 1) * 9; }
-        @Override public int getMaxCost(int level) { return 65 + (level - 1) * 9; }
-        @Override public boolean isTreasureOnly() { return true; }
+    /** Resolve a vanilla enchantment key to its Holder via a HolderLookup provider (e.g. for data setup). */
+    public static Holder<Enchantment> holder(HolderLookup.Provider provider, ResourceKey<Enchantment> key) {
+        return provider.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(key);
     }
 }

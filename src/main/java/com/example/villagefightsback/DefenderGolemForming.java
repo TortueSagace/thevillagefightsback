@@ -7,10 +7,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
  * Builds a Defender Golem from blocks, mirroring vanilla iron-golem assembly: place a Wall Defender where the
@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
  * an iron block is placed last (a wall defender is already hovering above the now-complete T). The
  * village-spawned wall defenders sit on protecting glass / nodes, never on an iron T, so they never trip this.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class DefenderGolemForming {
     private DefenderGolemForming() {}
 
@@ -81,7 +81,7 @@ public final class DefenderGolemForming {
         DefenderGolemEntity golem = ModEntities.DEFENDER_GOLEM.get().create(level);
         if (golem != null) {
             golem.moveTo(leg.getX() + 0.5, leg.getY() + 0.05, leg.getZ() + 0.5, 0.0F, 0.0F);
-            golem.finalizeSpawn(level, level.getCurrentDifficultyAt(leg), MobSpawnType.TRIGGERED, null, null);
+            golem.finalizeSpawn(level, level.getCurrentDifficultyAt(leg), MobSpawnType.TRIGGERED, null);
             level.addFreshEntity(golem);
         }
         wd.discard();

@@ -17,12 +17,12 @@ import net.minecraft.world.entity.animal.IronGolem;
  */
 public class EmeraldIronGolemRenderer extends IronGolemRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_iron_golem.png");
+            TheVillageFightsBack.id("textures/entity/emerald_iron_golem.png");
 
     public EmeraldIronGolemRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_iron_golem_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_iron_golem_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

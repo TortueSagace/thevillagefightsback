@@ -22,7 +22,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class EmeraldgerRenderer extends MobRenderer<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emeraldger.png");
+            TheVillageFightsBack.id("textures/entity/emeraldger.png");
 
     public EmeraldgerRenderer(EntityRendererProvider.Context ctx) {
         super(ctx, new VillagerModel<>(ctx.bakeLayer(ModelLayers.VILLAGER)), 0.5F);
@@ -44,7 +44,7 @@ public class EmeraldgerRenderer extends MobRenderer<EmeraldgerEntity, VillagerMo
     /** Fullbright green-eyes overlay mapped onto the villager head UV. */
     private static class GreenEyesLayer extends EyesLayer<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> {
         private static final RenderType EYES = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emeraldger_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emeraldger_eyes.png"));
 
         GreenEyesLayer(RenderLayerParent<EmeraldgerEntity, VillagerModel<EmeraldgerEntity>> parent) {
             super(parent);

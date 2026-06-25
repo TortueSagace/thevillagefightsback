@@ -5,7 +5,8 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 
 /**
@@ -19,10 +20,10 @@ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
  *   - blocks at least as tough as ancient debris ({@link LimboGear#ANCIENT_DEBRIS_HARDNESS}) or unbreakable
  *     (obsidian, ancient debris, reinforced deepslate, bedrock), which he cannot break anyway.
  *
- * {@code getBlockPathTypeRaw} is {@code static} in vanilla and cannot be overridden, so we override the
- * INSTANCE entry point {@link #getBlockPathType(BlockGetter, int, int, int)} instead (it is what every node
+ * {@code getPathTypeRaw} is {@code static} in vanilla and cannot be overridden, so we override the
+ * INSTANCE entry point {@link #getPathType(PathfindingContext, int, int, int)} instead (it is what every node
  * cost lookup funnels through). We first ask vanilla, then post-process: a block we cannot break / a village
- * block is forced to {@link BlockPathTypes#BLOCKED}; a generic solid obstacle that vanilla called
+ * block is forced to {@link PathType#BLOCKED}; a generic solid obstacle that vanilla called
  * {@code BLOCKED} (because it is a wall the mob cannot pass) is downgraded to {@code OPEN} so the navigator
  * plots a route straight through it (Darius then clears it physically by contact-break as he walks). Vanilla
  * hazards / specials (lava, fire, fences, doors, water, rails, damaging blocks, ...) are preserved.
@@ -30,22 +31,23 @@ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 public class DariusNodeEvaluator extends WalkNodeEvaluator {
 
     @Override
-    public BlockPathTypes getBlockPathType(BlockGetter level, int x, int y, int z) {
+    public PathType getPathType(PathfindingContext context, int x, int y, int z) {
         BlockPos pos = new BlockPos(x, y, z);
-        BlockState state = level.getBlockState(pos);
+        BlockGetter level = context.level();
+        BlockState state = context.getBlockState(pos);
 
         if (!state.isAir()) {
             // 1) Village blocks: route AROUND them (never treat as walkable/passable).
-            if (isVillageBlock(state)) return BlockPathTypes.BLOCKED;
+            if (isVillageBlock(state)) return PathType.BLOCKED;
             // 2) Too tough to break (or unbreakable): a real wall to Darius too.
-            if (isUnbreakableToDarius(level, pos, state)) return BlockPathTypes.BLOCKED;
+            if (isUnbreakableToDarius(level, pos, state)) return PathType.BLOCKED;
         }
 
-        BlockPathTypes vanilla = super.getBlockPathType(level, x, y, z);
+        PathType vanilla = super.getPathType(context, x, y, z);
         // 3) A generic solid obstacle vanilla calls BLOCKED is breakable terrain -> let Darius path through it.
-        if (vanilla == BlockPathTypes.BLOCKED && !state.isAir()
+        if (vanilla == PathType.BLOCKED && !state.isAir()
                 && !isVillageBlock(state) && !isUnbreakableToDarius(level, pos, state)) {
-            return BlockPathTypes.OPEN;
+            return PathType.OPEN;
         }
         return vanilla;
     }

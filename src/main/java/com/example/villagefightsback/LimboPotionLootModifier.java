@@ -1,7 +1,7 @@
 package com.example.villagefightsback;
 
-import com.google.common.base.Suppliers;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -9,10 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraftforge.common.loot.IGlobalLootModifier;
-import net.minecraftforge.common.loot.LootModifier;
-
-import java.util.function.Supplier;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.common.loot.LootModifier;
 
 /**
  * Global loot modifier: with a small {@code chance}, drops a Limbo Potion into any VILLAGE chest
@@ -21,10 +19,10 @@ import java.util.function.Supplier;
  * table id rather than relying on per-table conditions.
  */
 public class LimboPotionLootModifier extends LootModifier {
-    public static final Supplier<Codec<LimboPotionLootModifier>> CODEC = Suppliers.memoize(() ->
-            RecordCodecBuilder.create(inst -> LootModifier.codecStart(inst).and(
+    public static final MapCodec<LimboPotionLootModifier> CODEC =
+            RecordCodecBuilder.mapCodec(inst -> LootModifier.codecStart(inst).and(
                     Codec.FLOAT.fieldOf("chance").forGetter(m -> m.chance)
-            ).apply(inst, LimboPotionLootModifier::new)));
+            ).apply(inst, LimboPotionLootModifier::new));
 
     private final float chance;
 
@@ -48,7 +46,7 @@ public class LimboPotionLootModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
-        return CODEC.get();
+    public MapCodec<? extends IGlobalLootModifier> codec() {
+        return CODEC;
     }
 }

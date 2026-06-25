@@ -9,6 +9,8 @@ public final class ModTriggers {
     public static final BrainNodeStageTrigger BRAIN_NODE_STAGE = new BrainNodeStageTrigger();
 
     public static void register() {
-        CriteriaTriggers.register(BRAIN_NODE_STAGE);
+        // 1.21: CriteriaTriggers.register takes (String id, CriterionTrigger). The id is the trigger's
+        // serialized name (e.g. "thevillagefightsback:brain_node_stage").
+        CriteriaTriggers.register(BrainNodeStageTrigger.ID.toString(), BRAIN_NODE_STAGE);
     }
 }

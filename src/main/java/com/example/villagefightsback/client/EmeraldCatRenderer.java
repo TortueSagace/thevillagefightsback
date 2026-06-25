@@ -15,12 +15,12 @@ import net.minecraft.world.entity.animal.Cat;
  */
 public class EmeraldCatRenderer extends CatRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_cat.png");
+            TheVillageFightsBack.id("textures/entity/emerald_cat.png");
 
     public EmeraldCatRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_cat_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_cat_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

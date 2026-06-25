@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
  * only need a (never-sampled) texture location.
  */
 public class BulletRenderer extends EntityRenderer<BulletEntity> {
-    private static final ResourceLocation TEX = new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/bullet.png");
+    private static final ResourceLocation TEX = TheVillageFightsBack.id("textures/entity/bullet.png");
 
     public BulletRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);

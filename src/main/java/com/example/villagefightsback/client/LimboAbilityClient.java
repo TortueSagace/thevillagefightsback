@@ -3,20 +3,19 @@ package com.example.villagefightsback.client;
 import com.example.villagefightsback.LimboGear;
 import com.example.villagefightsback.TheVillageFightsBack;
 import com.example.villagefightsback.network.LimboBeamPacket;
-import com.example.villagefightsback.network.ModNetwork;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client side of the Limbo banish ability: on the keybind, asks the server to fire (the server gates it); and
  * keeps a local copy of the cooldown (server-synced on each use) for the HUD to draw down smoothly.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class LimboAbilityClient {
     private LimboAbilityClient() {}
 
@@ -32,8 +31,8 @@ public final class LimboAbilityClient {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && cooldownTicks > 0) cooldownTicks--;
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (cooldownTicks > 0) cooldownTicks--;
     }
 
     @SubscribeEvent
@@ -42,7 +41,7 @@ public final class LimboAbilityClient {
         if (mc.player == null || mc.screen != null) return;
         while (LimboAbilityKeybinds.LIMBO_BEAM.consumeClick()) {
             if (cooldownTicks > 0 || !LimboGear.hasFullSet(mc.player)) continue; // gated client-side too (no spam)
-            ModNetwork.CHANNEL.sendToServer(new LimboBeamPacket());
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(new LimboBeamPacket());
         }
     }
 }

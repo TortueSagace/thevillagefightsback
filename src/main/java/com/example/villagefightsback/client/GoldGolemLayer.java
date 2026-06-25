@@ -24,7 +24,7 @@ import net.minecraft.world.entity.animal.IronGolem;
  */
 public class GoldGolemLayer extends RenderLayer<IronGolem, IronGolemModel<IronGolem>> {
     private static final ResourceLocation GOLD =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/gold_golem.png");
+            TheVillageFightsBack.id("textures/entity/gold_golem.png");
     private static final float GROW = 1.02F; // 2% larger -> opaque gold shell covers the iron underneath
 
     public GoldGolemLayer(RenderLayerParent<IronGolem, IronGolemModel<IronGolem>> parent) {
@@ -42,7 +42,7 @@ public class GoldGolemLayer extends RenderLayer<IronGolem, IronGolemModel<IronGo
         pose.pushPose();
         pose.scale(GROW, GROW, GROW);
         // The parent model is already in this tick's animation pose, so just re-draw it in gold.
-        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F);
+        getParentModel().renderToBuffer(pose, vc, light, OverlayTexture.NO_OVERLAY, 0xFFFFFFFF);
         pose.popPose();
     }
 }

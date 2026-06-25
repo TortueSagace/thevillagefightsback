@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -9,35 +11,36 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.MobEffectEvent;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
+import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 
 /**
  * Drives the "Karat's Will" potion effect ({@link KaratsWillEffect}): while a creature holds it, it DEFLECTS the
  * whole attack -- combat damage is dealt to the attacker instead, and any harmful status effect an attacker
  * would inflict lands on the attacker instead. Also lets the priest (cleric) villager sell the potion.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class KaratsWillEvents {
     private KaratsWillEvents() {}
 
     /**
-     * Deflect the WHOLE attack onto the attacker. We cancel at ATTACK (the earliest hook), so the holder takes
-     * NO damage, NO knockback, and no invulnerability flicker, and the FULL incoming amount (before the holder's
-     * own armour) is dealt straight back to the attacker. Only attacks from a living attacker are deflected
-     * (fall / fire / drowning / cactus have no living attacker and pass through normally). Harmful status effects
-     * are bounced separately by {@link #onEffectAdded}.
+     * Deflect the WHOLE attack onto the attacker. We cancel at the earliest incoming-damage hook, so the holder
+     * takes NO damage, NO knockback, and no invulnerability flicker, and the FULL incoming amount (before the
+     * holder's own armour) is dealt straight back to the attacker. Only attacks from a living attacker are
+     * deflected (fall / fire / drowning / cactus have no living attacker and pass through normally). Harmful
+     * status effects are bounced separately by {@link #onEffectAdded}.
      */
     @SubscribeEvent
-    public static void onAttack(LivingAttackEvent event) {
+    public static void onAttack(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
-        if (!victim.hasEffect(ModEffects.KARATS_WILL.get())) return;
+        if (!victim.hasEffect(ModEffects.KARATS_WILL)) return;
         DamageSource source = event.getSource();
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) return;
         float amount = event.getAmount();
@@ -64,10 +67,10 @@ public final class KaratsWillEvents {
     public static void onEffectAdded(MobEffectEvent.Added event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
-        if (!target.hasEffect(ModEffects.KARATS_WILL.get())) return;
+        if (!target.hasEffect(ModEffects.KARATS_WILL)) return;
         MobEffectInstance inst = event.getEffectInstance();
-        MobEffect effect = inst.getEffect();
-        if (effect.getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
+        Holder<MobEffect> effect = inst.getEffect();
+        if (effect.value().getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
         if (!(event.getEffectSource() instanceof LivingEntity attacker) || attacker == target) return;
         MobEffectInstance copy = new MobEffectInstance(effect, inst.getDuration(), inst.getAmplifier(),
                 inst.isAmbient(), inst.isVisible(), inst.showIcon());
@@ -79,26 +82,27 @@ public final class KaratsWillEvents {
     @SubscribeEvent
     public static void onClericTrades(VillagerTradesEvent event) {
         if (event.getType() != VillagerProfession.CLERIC) return;
-        ItemStack potion = PotionUtils.setPotion(new ItemStack(Items.POTION), ModPotions.KARATS_WILL.get());
+        ItemStack potion = new ItemStack(Items.POTION);
+        potion.set(DataComponents.POTION_CONTENTS, new PotionContents(ModPotions.KARATS_WILL));
         VillagerTrades.ItemListing listing = (trader, rand) ->
-                new MerchantOffer(new ItemStack(Items.EMERALD, 18), potion.copy(), 3, 30, 0.05F);
+                new MerchantOffer(new ItemCost(Items.EMERALD, 18), potion.copy(), 3, 30, 0.05F);
         event.getTrades().get(5).add(listing); // 5 = master
     }
 
-    /** Cached handle to the protected {@code LivingEntity#die(DamageSource)} (SRG m_6667_). */
+    /** Cached handle to the protected {@code LivingEntity#die(DamageSource)}. */
     private static java.lang.reflect.Method dieMethod;
 
     /**
      * Kill {@code entity} through its real {@code die()} path so a boss with a custom death sequence (the
      * wither storm) plays its full death animation, rather than the silent {@code kill()} removal. {@code die}
-     * is protected, so we invoke it reflectively (Forge resolves the SRG name at runtime). Health is zeroed
+     * is protected, so we invoke it reflectively (runtime uses Mojang official names). Health is zeroed
      * first so the dying state is consistent; falls back to {@code kill()} if reflection ever fails.
      */
     private static void killWithDeathAnimation(LivingEntity entity, DamageSource source) {
         try {
             if (dieMethod == null) {
-                dieMethod = net.minecraftforge.fml.util.ObfuscationReflectionHelper.findMethod(
-                        LivingEntity.class, "m_6667_", DamageSource.class);
+                dieMethod = LivingEntity.class.getDeclaredMethod("die", DamageSource.class);
+                dieMethod.setAccessible(true);
             }
             entity.setHealth(0.0F);
             dieMethod.invoke(entity, source);

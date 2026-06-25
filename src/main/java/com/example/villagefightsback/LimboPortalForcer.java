@@ -1,7 +1,5 @@
 package com.example.villagefightsback;
 
-import java.util.function.Function;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
@@ -12,7 +10,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.common.util.ITeleporter;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Moves a creature through a Limbo Portal, applying the dimension's 16x space compression (twice the nether's)
@@ -79,15 +78,11 @@ public final class LimboPortalForcer {
             player.teleportTo(dest, x, y, z, player.getYRot(), player.getXRot());
             player.setPortalCooldown();
         } else {
-            Entity moved = entity.changeDimension(dest, new ITeleporter() {
-                @Override
-                public Entity placeEntity(Entity e, ServerLevel f, ServerLevel t, float yaw,
-                                          Function<Boolean, Entity> repositionEntity) {
-                    Entity m = repositionEntity.apply(false);
-                    m.moveTo(x, y, z, m.getYRot(), m.getXRot());
-                    return m;
-                }
-            });
+            // 1.21: the custom ITeleporter placement (move to x,y,z, keep current rotation, reset velocity) is now
+            // expressed as a DimensionTransition handed to changeDimension.
+            Entity moved = entity.changeDimension(new DimensionTransition(
+                    dest, new Vec3(x, y, z), Vec3.ZERO, entity.getYRot(), entity.getXRot(),
+                    DimensionTransition.DO_NOTHING));
             if (moved != null) moved.setPortalCooldown();
         }
     }

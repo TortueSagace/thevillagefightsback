@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * The "infected" faction: the unleashed Village Brain Node boss and the vindictive guards it makes. Members
@@ -48,11 +48,11 @@ public final class Factions {
     }
 
     /** The Crackers' Wither Storm boss entity id ({@code witherstormmod:wither_storm}); an optional soft dep. */
-    public static final ResourceLocation WITHER_STORM_ID = new ResourceLocation("witherstormmod", "wither_storm");
+    public static final ResourceLocation WITHER_STORM_ID = ResourceLocation.fromNamespaceAndPath("witherstormmod", "wither_storm");
 
     /** True for a wither storm. Matched by entity id, so the Wither Storm mod stays an optional soft dependency. */
     public static boolean isWitherStorm(Entity e) {
-        return WITHER_STORM_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return WITHER_STORM_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** The wither storm's BODY entities (the core + its heads, segments and tentacles) -- everything that makes
@@ -62,7 +62,7 @@ public final class Factions {
 
     /** True for any part of a wither storm's body (core / head / segment / tentacle). Used to banish the lot. */
     public static boolean isWitherStormPart(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return id != null && "witherstormmod".equals(id.getNamespace()) && WITHER_STORM_PARTS.contains(id.getPath());
     }
 
@@ -91,7 +91,7 @@ public final class Factions {
     }
 
     /** The Guard Villagers guard entity id (soft dep). */
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     /** True for the village's own (non-infected) defenders: villagers (incl. emeraldgers), iron golems, wall
      *  defenders, General Darius, and Guard Villagers guards. Vindictive units (infected) are NOT village. */
@@ -102,7 +102,7 @@ public final class Factions {
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
                 || e instanceof WallDefenderEntity
                 || e instanceof GeneralDariusEntity
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** The "emerald" faction (the v1.0.3 mob-infection units + the Emeraldger). Membership = the {@link EmeraldUnit}

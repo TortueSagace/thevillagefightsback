@@ -16,12 +16,12 @@ import net.minecraft.world.entity.animal.Pig;
  */
 public class EmeraldPigRenderer extends PigRenderer {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_pig.png");
+            TheVillageFightsBack.id("textures/entity/emerald_pig.png");
 
     public EmeraldPigRenderer(EntityRendererProvider.Context ctx) {
         super(ctx);
         final RenderType eyes = RenderType.eyes(
-                new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/emerald_pig_eyes.png"));
+                TheVillageFightsBack.id("textures/entity/emerald_pig_eyes.png"));
         this.addLayer(new EyesLayer<>(this) {
             @Override
             public RenderType renderType() {

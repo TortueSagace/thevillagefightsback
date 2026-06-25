@@ -107,8 +107,8 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(net.minecraft.world.level.ServerLevelAccessor lvl,
             net.minecraft.world.DifficultyInstance diff, net.minecraft.world.entity.MobSpawnType reason,
-            net.minecraft.world.entity.SpawnGroupData data, net.minecraft.nbt.CompoundTag tag) {
-        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data, tag);
+            net.minecraft.world.entity.SpawnGroupData data) {
+        net.minecraft.world.entity.SpawnGroupData r = super.finalizeSpawn(lvl, diff, reason, data);
         equipLimbo(EquipmentSlot.HEAD, ModArmor.LIMBO_HELMET.get());
         equipLimbo(EquipmentSlot.CHEST, ModArmor.LIMBO_ELYTRA_CHESTPLATE.get());
         equipLimbo(EquipmentSlot.LEGS, ModArmor.LIMBO_LEGGINGS.get());
@@ -126,8 +126,8 @@ public class GeneralDariusEntity extends Monster {
     /** On death Darius always drops the actual (used) Alien Smasher he wielded -- enchants + durability intact.
      *  The limbo armour never drops (drop chances are 0). Only fires on a real death, not the refund-despawn. */
     @Override
-    protected void dropCustomDeathLoot(net.minecraft.world.damagesource.DamageSource source, int looting, boolean recentlyHit) {
-        super.dropCustomDeathLoot(source, looting, recentlyHit);
+    protected void dropCustomDeathLoot(net.minecraft.server.level.ServerLevel level, net.minecraft.world.damagesource.DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
         net.minecraft.world.item.ItemStack smasher = getMainHandItem();
         if (!smasher.isEmpty()) {
             spawnAtLocation(smasher.copy());
@@ -145,8 +145,8 @@ public class GeneralDariusEntity extends Monster {
      *  (guards_spawning_with_general_darius). No-op if count &lt;= 0 or Guard Villagers isn't installed. */
     public void enrollEscort(net.minecraft.server.level.ServerLevel level, int count) {
         if (count <= 0) return;
-        net.minecraft.world.entity.EntityType<?> guardType = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
-                .getValue(new net.minecraft.resources.ResourceLocation("guardvillagers", "guard"));
+        net.minecraft.world.entity.EntityType<?> guardType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
+                .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard"));
         if (guardType == null) return; // soft dep absent
         for (int i = 0; i < count; i++) {
             net.minecraft.world.entity.Entity e = guardType.create(level);
@@ -156,7 +156,7 @@ public class GeneralDariusEntity extends Monster {
             m.moveTo(getX() + Math.cos(ang) * r, getY(), getZ() + Math.sin(ang) * r,
                     level.random.nextFloat() * 360.0F, 0.0F);
             m.finalizeSpawn(level, level.getCurrentDifficultyAt(m.blockPosition()),
-                    net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null, null);
+                    net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
             level.addFreshEntity(m);
             squad.add(m.getUUID());
         }
@@ -197,7 +197,7 @@ public class GeneralDariusEntity extends Monster {
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.REGENERATION, 600, 1, false, true, true));
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                        ModEffects.KARATS_WILL.get(), 200, 0, false, true, true));
+                        ModEffects.KARATS_WILL, 200, 0, false, true, true));
                 lowHpBuffed = true;
             }
         } else {
@@ -214,7 +214,7 @@ public class GeneralDariusEntity extends Monster {
     private void clearHarmfulEffects() {
         var harmful = getActiveEffects().stream()
                 .map(net.minecraft.world.effect.MobEffectInstance::getEffect)
-                .filter(eff -> eff.getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
+                .filter(eff -> eff.value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL)
                 .toList();
         for (var eff : harmful) removeEffect(eff);
     }
@@ -230,7 +230,7 @@ public class GeneralDariusEntity extends Monster {
     }
 
     @Override public boolean fireImmune() { return true; }
-    @Override public void setSecondsOnFire(int seconds) { /* fire-immune */ }
+    @Override public void igniteForTicks(int ticks) { /* fire-immune */ }
     @Override public boolean causeFallDamage(float distance, float multiplier,
             net.minecraft.world.damagesource.DamageSource source) { return false; }
     @Override public boolean removeWhenFarAway(double d) { return false; }
@@ -324,7 +324,7 @@ public class GeneralDariusEntity extends Monster {
         super.readAdditionalSaveData(tag);
         if (tag.contains(NBT_HOME_DIM) && tag.contains(NBT_HOME_POS)) {
             ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION,
-                    new ResourceLocation(tag.getString(NBT_HOME_DIM)));
+                    ResourceLocation.parse(tag.getString(NBT_HOME_DIM)));
             homeBrain = GlobalPos.of(dim, BlockPos.of(tag.getLong(NBT_HOME_POS)));
         }
         if (getCustomName() == null) { setCustomName(Component.literal("Darius")); setCustomNameVisible(true); }

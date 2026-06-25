@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChorusPlantBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * The Fertile Chorus Plant: the green-tinted body block our {@link FertileChorusFlowerBlock} grows. Vanilla
@@ -37,8 +36,8 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
 
     private static Block fertileEndStone() {
         if (fertileEndStone == null) {
-            fertileEndStone = ForgeRegistries.BLOCKS.getValue(
-                    new ResourceLocation(TheVillageFightsBack.MODID, "fertile_end_stone"));
+            fertileEndStone = BuiltInRegistries.BLOCK.get(
+                    TheVillageFightsBack.id("fertile_end_stone"));
         }
         return fertileEndStone;
     }
@@ -68,16 +67,17 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.getStateForPlacement(context.getLevel(), context.getClickedPos());
+        return this.getFertileStateForPlacement(context.getLevel(), context.getClickedPos());
     }
 
     /**
      * Compute the 6 directional connection booleans (the PipeBlock NORTH..DOWN properties) based on our
      * fertile chorus plant/flower neighbours; DOWN additionally connects to end stone / fertile end stone.
-     * Mirrors vanilla {@link ChorusPlantBlock#getStateForPlacement(BlockGetter, BlockPos)}.
+     * Mirrors vanilla {@code ChorusPlantBlock.getStateWithConnections(BlockGetter, BlockPos, BlockState)}.
+     * (1.21.1 dropped the overridable {@code getStateForPlacement(BlockGetter, BlockPos)}, so this is now
+     * our own helper rather than an override.)
      */
-    @Override
-    public BlockState getStateForPlacement(BlockGetter level, BlockPos pos) {
+    public BlockState getFertileStateForPlacement(BlockGetter level, BlockPos pos) {
         BlockState down = level.getBlockState(pos.below());
         BlockState up = level.getBlockState(pos.above());
         BlockState north = level.getBlockState(pos.north());
