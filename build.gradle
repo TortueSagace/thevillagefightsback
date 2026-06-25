@@ -191,6 +191,7 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs.addAll(['-Xmaxerrs', '2000', '-Xmaxwarns', '50'])
 }
 
 // --- Publishing to Modrinth (Minotaur) ---
@@ -210,7 +211,7 @@ modrinth {
     versionName = "${mod_name} ${mod_version}"
     versionType = 'release'
     uploadFile = jar                       // ForgeGradle reobfs this jar in place before upload
-    gameVersions = ['1.20.1']
+    gameVersions = ['1.19.2']
     loaders = ['forge']
     // changelog = file('CHANGELOG.md').text          // optional, if you keep a changelog
     dependencies {
