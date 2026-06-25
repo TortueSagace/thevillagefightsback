@@ -10,7 +10,9 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    // Include the Minecraft version in the jar name so the 1.20.1 and 1.19.2 builds never collide:
+    // thevillagefightsback-1.20.1-<ver>.jar  vs  thevillagefightsback-1.19.2-<ver>.jar
+    archivesName = "${mod_id}-${minecraft_version}"
 }
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.

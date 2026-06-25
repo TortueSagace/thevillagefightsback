@@ -351,6 +351,9 @@ public final class Config {
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }
+    /** Emerald MOBS spawn only when BOTH the mob-infection master gate AND the emerald-infestation toggle are on.
+     *  Turning off enable_emerald_infestation therefore stops every emerald mob (in addition to the block spread). */
+    public static boolean emeraldMobsEnabled()            { return ENABLE_MOB_INFECTION.get() && ENABLE_EMERALD_INFESTATION.get(); }
     public static boolean emeraldMobsHostileToPlayer()    { return EMERALD_MOBS_ARE_HOSTILE_TO_PLAYER.get(); }
     public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
     public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }

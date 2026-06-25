@@ -65,6 +65,7 @@ public class EmeraldMorphGoal extends Goal {
         }
         if (ticks < threshold) return;
         if (!(mob.getLevel() instanceof ServerLevel level)) return;
+        if (!com.example.villagefightsback.Config.emeraldMobsEnabled()) { ticks = 0; return; } // emerald faction disabled
         Mob morphed = target.get().create(level);
         if (morphed == null) { ticks = 0; return; }
         morphed.moveTo(mob.getX(), mob.getY(), mob.getZ(), mob.getYRot(), mob.getXRot());

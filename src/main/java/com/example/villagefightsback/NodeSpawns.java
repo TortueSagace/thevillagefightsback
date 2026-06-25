@@ -55,7 +55,7 @@ public final class NodeSpawns {
         float yaw = level.getRandom().nextFloat() * 360.0F;
         // 10% chance to also forge a stray EMERALD golem alongside the normal one, in the SAME stage-appropriate
         // form: emerald iron golem (stage 1), emerald Defender Golem (stage 2-3), emerald Gigachad Golem (stage 4+).
-        if (level.getRandom().nextFloat() < 0.10F) {
+        if (Config.emeraldMobsEnabled() && level.getRandom().nextFloat() < 0.10F) {
             BlockPos espot = belowOrAbove(level, node, 3);
             if (espot != null) {
                 EntityType<? extends net.minecraft.world.entity.Mob> etype = stage >= 4 ? ModEntities.EMERALD_GIGACHAD_GOLEM.get()

@@ -353,6 +353,7 @@ public final class EmeraldVirusEvents {
 
     /** Raise an Emeraldger from a corpse: HP = 50% of the dead host, scaled body, armed as a stage-3 villager. */
     private static void spawnEmeraldger(ServerLevel level, double x, double y, double z, float deadMaxHp) {
+        if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled
         EmeraldgerEntity em = ModEntities.EMERALDGER.get().create(level);
         if (em == null) return;
         em.moveTo(x, y, z, level.getRandom().nextFloat() * 360.0F, 0.0F);
