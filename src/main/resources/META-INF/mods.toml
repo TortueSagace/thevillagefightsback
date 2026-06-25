@@ -26,13 +26,13 @@ description='''${mod_description}'''
     side="BOTH"
 
 # Guard Villagers is required: the village's guards (and several reflexes) are built on its guard entity.
-# For the 1.19.2 build, install the 1.19.2 Guard Villagers jar. Version range is left broad because the
-# 1.19.2 line uses a different version sequence than the 1.20.1 (1.6.17) build; we load AFTER it so its
-# entity is registered first.
+# For the 1.19.2 build, install the 1.19.2 Guard Villagers jar (the 1.19.2 line is 1.5.x, e.g.
+# guardvillagers-1.19.2-1.5.9.jar -- a different sequence than the 1.20.1 1.6.17 build). We load AFTER
+# it so its guard entity is registered first.
 [[dependencies.${mod_id}]]
     modId="guardvillagers"
     mandatory=true
-    versionRange="[1.0,)"
+    versionRange="[1.5,)"
     ordering="AFTER"
     side="BOTH"
 
