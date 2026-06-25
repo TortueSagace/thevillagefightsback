@@ -121,7 +121,7 @@ The village keeps score of how you treat it, and it responds in kind.
 
 **Become an Enemy.** Cross the village and you are branded an **Enemy of the Village for 20 minutes**: strike a villager, guard, or golem, or steal from its stores. Any chest or barrel placed within a Brain Node's range is **claimed by the village**. Open one without Hero standing and you get a warning; take something anyway and the whole server hears that you are **stealing from the village**, your Hero standing is revoked, and every defender turns to hunt you. The mark sticks through milk and even the mod's own Immunity, and clears only when the timer runs out or you die.
 
-## Configs (version >= 1.0.2)
+## Configs
 
 Tune the village to taste. Every setting lives in a single commented file (`config/thevillagefightsback-common.toml`) and can also be changed live in-game with `/thevillagefightsback config <name> [value]` (read it with no value, set it as an operator). Multipliers default to `1.0`; most switches default on.
 
