@@ -33,8 +33,8 @@ public class BrainNodeData extends SavedData {
     public static final int MAX_LEVEL = 4;
     /** Emeralds may go this far into the red, but ONLY at level 1 (the village's max debt / last stand). */
     public static final int MIN_EMERALDS_LEVEL1 = -32;
-    /** Organic mass may dip this far below zero (a little deploy-on-credit buffer, like the emerald floor). */
-    public static final int ORGANIC_FLOOR = -32;
+    /** Organic mass is clamped to this floor everywhere; 0 forbids any negative organic-point balance. */
+    public static final int ORGANIC_FLOOR = 0;
     // costForNext(level) = emeralds needed to advance FROM that level. (Tunable.)
     private static final int[] COST_TO_ADVANCE = {0, 32, 256, 512}; // 1->2=32, 2->3=256, 3->4=512 (doubled)
 
@@ -82,8 +82,8 @@ public class BrainNodeData extends SavedData {
         /** Organic mass: the brain's unit-spawn budget (1.1.2 organic system). Fully independent of emeralds/level. */
         public int getOrganicPoints() { return organicPoints; }
         public void addOrganicPoints(int n) { organicPoints = Math.max(ORGANIC_FLOOR, organicPoints + n); setDirty(); }
-        /** Spend {@code n} organic points on a unit; the balance may dip to {@link #ORGANIC_FLOOR} (deploy on a
-         *  little credit, like the emerald economy). Returns the amount actually spent. */
+        /** Spend {@code n} organic points on a unit; the balance is clamped at {@link #ORGANIC_FLOOR} (0) so it
+         *  can never go negative. Returns the amount actually spent. */
         public int spendOrganicPoints(int n) {
             if (n <= 0) return 0;
             int before = organicPoints;
@@ -263,7 +263,7 @@ public class BrainNodeData extends SavedData {
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
             e.emeralds = c.getInt("emeralds");
-            e.organicPoints = c.getInt("organic");
+            e.organicPoints = Math.max(ORGANIC_FLOOR, c.getInt("organic"));
             e.lastIncomeDay = c.contains("income") ? c.getLong("income") : Long.MIN_VALUE;
             d.econs.put(key, e);
         }

@@ -146,6 +146,7 @@ public final class EmeraldConversion {
      *  No UNCAPPED_TAG, so the population cap applies (EmeraldPopulation absorbs/cancels it when at cap, and the
      *  enable_mob_infection master gate cancels it when the feature is off). */
     static void spawnAt(ServerLevel level, BlockPos pos, EntityType<?> type, ItemStack tool) {
+        if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled
         Entity e = type.create(level);
         if (!(e instanceof LivingEntity unit)) return;
         unit.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);

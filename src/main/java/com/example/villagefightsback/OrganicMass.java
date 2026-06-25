@@ -46,11 +46,11 @@ public final class OrganicMass {
     private static final int PREY_SCAN_CAP = 16;
     private static final double DEFEND_THRESHOLD = 2.0;   // threat >= this -> DEFEND
     private static final double BOSS_THREAT = 6.0;        // threat >= this (+ rich bank) -> BOSS
-    private static final int BOSS_COST = 300;
-    private static final int ELITE_COST = 150;
+    private static final int BOSS_COST = 600;
+    private static final int ELITE_COST = 300;
     private static final double DEFEND_FRAC = 0.75;
     private static final double HARVEST_FRAC = 0.30;
-    private static final int MIN_SPAWN_COST = 3;          // cheapest unit (salmon)
+    private static final int MIN_SPAWN_COST = 6;          // cheapest unit (salmon)
     private static final int EXPLORER_TARGET = 3;         // early game: keep this many scouts (cat/mite) roaming
     private static final double SCOUT_FRAC = 0.5;         // exploration spend fraction
     private static final double MARK_MIN_DIST = 24.0;     // only Emerald-Marker prey at least this far from the node
@@ -371,6 +371,7 @@ public final class OrganicMass {
     /** Spawn an emerald unit just above {@code anchor}, bypassing the lag cap (the field cap governs us instead),
      *  with a lime emergence particle burst. */
     private static void spawn(ServerLevel level, EntityType<?> type, BlockPos anchor) {
+        if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled -> never deploy an emerald unit
         Entity e = type.create(level);
         if (!(e instanceof Mob mob)) return;
         BlockPos at = anchor.above();
@@ -404,45 +405,45 @@ public final class OrganicMass {
             // SCOUT: a cat (land explorer) to find new prey; a salmon (water explorer) to sweep nearby water when
             // there's water to deploy into; mite as a cheap roaming combat scout.
             leaves[SCOUT] = List.of(
-                    new Cand(ModEntities.EMERALD_CAT.get(), 10, 8.0, false),        // the roaming LAND explorer
-                    new Cand(ModEntities.EMERALD_SALMON.get(), 3, 4.0, true),       // the roaming WATER explorer (aquatic)
-                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 4.0, false));  // cheap roaming combat scout
+                    new Cand(ModEntities.EMERALD_CAT.get(), 20, 8.0, false),        // the roaming LAND explorer
+                    new Cand(ModEntities.EMERALD_SALMON.get(), 6, 4.0, true),       // the roaming WATER explorer (aquatic)
+                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 16, 4.0, false)); // cheap roaming combat scout
                     // (bat dropped: it can't roam-explore -- it just flutters. It still appears as a CHEAP_CONVERTER.)
             // CHEAP_CONVERTER: harvest passive food cheaply. Mite dominates; animals are deliberately rare.
             leaves[CHEAP_CONVERTER] = List.of(
-                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 8, 5.0, false),
-                    new Cand(ModEntities.EMERALD_BAT.get(), 6, 1.0, false),
-                    new Cand(ModEntities.EMERALD_WOLF.get(), 8, 0.8, false),
-                    new Cand(ModEntities.EMERALD_CHICKEN.get(), 4, 0.6, false),
-                    new Cand(ModEntities.EMERALD_COW.get(), 10, 0.6, false),
-                    new Cand(ModEntities.EMERALD_PIG.get(), 10, 0.6, false),
-                    new Cand(ModEntities.RICH_SHEEP.get(), 8, 0.5, false),
-                    new Cand(ModEntities.EMERALD_SALMON.get(), 3, 1.5, true));
+                    new Cand(ModEntities.EMERALD_ENDERMITE.get(), 16, 5.0, false),
+                    new Cand(ModEntities.EMERALD_BAT.get(), 12, 1.0, false),
+                    new Cand(ModEntities.EMERALD_WOLF.get(), 16, 0.8, false),
+                    new Cand(ModEntities.EMERALD_CHICKEN.get(), 8, 0.6, false),
+                    new Cand(ModEntities.EMERALD_COW.get(), 20, 0.6, false),
+                    new Cand(ModEntities.EMERALD_PIG.get(), 20, 0.6, false),
+                    new Cand(ModEntities.RICH_SHEEP.get(), 16, 0.5, false),
+                    new Cand(ModEntities.EMERALD_SALMON.get(), 6, 1.5, true));
             // HUNTER: mid-cost combat to chase down hostiles; cheap zombie tanks + ranged skeletons lead.
             leaves[HUNTER] = List.of(
-                    new Cand(ModEntities.EMERALD_ZOMBIE.get(), 10, 5.0, false),
-                    new Cand(ModEntities.EMERALD_SKELETON.get(), 20, 5.0, false),
-                    new Cand(ModEntities.EMERALD_PHANTOM.get(), 20, 3.0, false),
-                    new Cand(ModEntities.EMERALD_WOLF.get(), 8, 0.8, false),
-                    new Cand(ModEntities.EMERALD_HORSE.get(), 15, 0.8, false),
-                    new Cand(ModEntities.EMERALD_GUARDIAN.get(), 30, 2.0, true));
-            // SWARM_COMBAT: many cheap combat units under attack. Zombie (10) is the cheap tank, skeleton the ranged core.
+                    new Cand(ModEntities.EMERALD_ZOMBIE.get(), 20, 5.0, false),
+                    new Cand(ModEntities.EMERALD_SKELETON.get(), 40, 5.0, false),
+                    new Cand(ModEntities.EMERALD_PHANTOM.get(), 40, 3.0, false),
+                    new Cand(ModEntities.EMERALD_WOLF.get(), 16, 0.8, false),
+                    new Cand(ModEntities.EMERALD_HORSE.get(), 30, 0.8, false),
+                    new Cand(ModEntities.EMERALD_GUARDIAN.get(), 60, 2.0, true));
+            // SWARM_COMBAT: many cheap combat units under attack. Zombie (20) is the cheap tank, skeleton the ranged core.
             leaves[SWARM_COMBAT] = List.of(
-                    new Cand(ModEntities.EMERALD_ZOMBIE.get(), 10, 5.0, false),
-                    new Cand(ModEntities.EMERALD_SKELETON.get(), 20, 5.0, false),
-                    new Cand(ModEntities.EMERALD_CREEPER.get(), 20, 4.0, false),
-                    new Cand(ModEntities.EMERALD_PHANTOM.get(), 20, 3.0, false));
+                    new Cand(ModEntities.EMERALD_ZOMBIE.get(), 20, 5.0, false),
+                    new Cand(ModEntities.EMERALD_SKELETON.get(), 40, 5.0, false),
+                    new Cand(ModEntities.EMERALD_CREEPER.get(), 40, 4.0, false),
+                    new Cand(ModEntities.EMERALD_PHANTOM.get(), 40, 3.0, false));
             // ELITE: a few expensive tanks/bruisers when the bank is fat.
             leaves[ELITE] = List.of(
-                    new Cand(ModEntities.EMERALD_ENDERMAN.get(), 40, 3.0, false),
-                    new Cand(ModEntities.EMERALD_IRON_GOLEM.get(), 100, 3.0, false),
-                    new Cand(ModEntities.EMERALD_DEFENDER_GOLEM.get(), 150, 2.5, false),
-                    new Cand(ModEntities.EMERALD_GIGACHAD_GOLEM.get(), 200, 2.0, false),
-                    new Cand(ModEntities.EMERALD_ELDER_GUARDIAN.get(), 80, 1.5, true));
+                    new Cand(ModEntities.EMERALD_ENDERMAN.get(), 80, 3.0, false),
+                    new Cand(ModEntities.EMERALD_IRON_GOLEM.get(), 200, 3.0, false),
+                    new Cand(ModEntities.EMERALD_DEFENDER_GOLEM.get(), 300, 2.5, false),
+                    new Cand(ModEntities.EMERALD_GIGACHAD_GOLEM.get(), 400, 2.0, false),
+                    new Cand(ModEntities.EMERALD_ELDER_GUARDIAN.get(), 160, 1.5, true));
             // BOSS: the saved-up haymaker.
             leaves[BOSS] = List.of(
-                    new Cand(ModEntities.EMERALD_WITHER.get(), 300, 6.0, false),
-                    new Cand(ModEntities.EMERALD_GIGACHAD_GOLEM.get(), 200, 2.0, false));
+                    new Cand(ModEntities.EMERALD_WITHER.get(), 600, 6.0, false),
+                    new Cand(ModEntities.EMERALD_GIGACHAD_GOLEM.get(), 400, 2.0, false));
         }
         return leaves[leaf];
     }
