@@ -119,8 +119,11 @@ public final class HousePlacer {
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int dx = 0; dx < sx; dx++)
             for (int dy = 0; dy < sy; dy++)
-                for (int dz = 0; dz < sz; dz++)
-                    level.setBlock(m.set(ox + dx, oy + dy, oz + dz), air, HouseBuildManager.FLAGS);
+                for (int dz = 0; dz < sz; dz++) {
+                    m.set(ox + dx, oy + dy, oz + dz);
+                    if (isProtectedNode(level.getBlockState(m))) continue; // never carve a brain/node block to air
+                    level.setBlock(m, air, HouseBuildManager.FLAGS);
+                }
 
         // 2) transform the template's blocks and split into structure vs. sensitive
 
@@ -139,6 +142,7 @@ public final class HousePlacer {
             if (state.getBlock() instanceof BlueTntBlock || state.getBlock() instanceof GreenTntBlock) continue;
             CompoundTag nbt = b.contains("nbt") ? b.getCompound("nbt") : null;
             BlockPos world = StructureTemplate.calculateRelativePosition(settings, local).offset(offset);
+            if (isProtectedNode(level.getBlockState(world))) continue; // don't overwrite the brain/node block we preserved
             boolean def = HouseBuildManager.isDeferred(state);
             (def ? deferred : structure).add(new HouseBuildManager.Placement(world, state, nbt, def));
         }
@@ -156,6 +160,15 @@ public final class HousePlacer {
                 : new ArrayList<>(); // entity transform is only implemented for unrotated structures (the tower)
         HouseBuildManager.submit(level, order, loot, entities);
         return true;
+    }
+
+    /** A block a structure build must never bulldoze: the Village Brain Node and every node structure (golem
+     *  factory / barracks / lure tower). A build that happens to overlap one -- e.g. a death-fallback settler TNT
+     *  dropped near the centre -- leaves the node intact (the structure just builds around it) instead of carving
+     *  it to air and wiping out the village. */
+    private static boolean isProtectedNode(BlockState s) {
+        Block b = s.getBlock();
+        return b instanceof VillageBrainNodeBlock || b instanceof AbstractNodeBlock;
     }
 
     /** Decorative entities placed with the build (paintings, frames, armor stands); living mobs are skipped. */
