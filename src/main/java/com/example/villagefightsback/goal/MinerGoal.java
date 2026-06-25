@@ -70,7 +70,7 @@ public class MinerGoal extends Goal {
         setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
-    private Level level() { return villager.level(); }
+    private Level level() { return villager.level; }
     private boolean fighting() { return villager.getTarget() != null && villager.getTarget().isAlive(); }
 
     @Override
@@ -339,7 +339,7 @@ public class MinerGoal extends Goal {
     /** A block the miner may break to clear a path: solid, breakable, NOT cobblestone (walls), not our own
      *  infection/structure blocks, and not a rich block (those are mined the normal way for the emerald). */
     private static boolean canDigObstacle(BlockState s, Level level, BlockPos pos) {
-        if (s.isAir() || !s.blocksMotion()) return false;
+        if (s.isAir() || !s.getMaterial().blocksMotion()) return false;
         if (BlockMatcher.isInfection(s)) return false;       // don't chew our own spread / rich blocks
         net.minecraft.world.level.block.Block b = s.getBlock();
         net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(b);

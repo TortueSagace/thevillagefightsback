@@ -15,7 +15,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
@@ -46,7 +46,7 @@ public final class WallDefenderItemRenderer extends BlockEntityWithoutLevelRende
     }
 
     @Override
-    public void renderByItem(ItemStack stack, ItemDisplayContext ctx, PoseStack pose, MultiBufferSource buf,
+    public void renderByItem(ItemStack stack, ItemTransforms.TransformType ctx, PoseStack pose, MultiBufferSource buf,
                              int light, int overlay) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;

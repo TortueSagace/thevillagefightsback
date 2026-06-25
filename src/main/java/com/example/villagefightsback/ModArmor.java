@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -15,25 +16,25 @@ public final class ModArmor {
             DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
 
     public static final RegistryObject<Item> EMERALD_HELMET = ITEMS.register("emerald_helmet",
-            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties()));
+            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, EquipmentSlot.HEAD, new Item.Properties()));
     public static final RegistryObject<Item> EMERALD_CHESTPLATE = ITEMS.register("emerald_chestplate",
-            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties()));
+            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, EquipmentSlot.CHEST, new Item.Properties()));
     public static final RegistryObject<Item> EMERALD_LEGGINGS = ITEMS.register("emerald_leggings",
-            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties()));
+            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, EquipmentSlot.LEGS, new Item.Properties()));
     public static final RegistryObject<Item> EMERALD_BOOTS = ITEMS.register("emerald_boots",
-            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties()));
+            () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, EquipmentSlot.FEET, new Item.Properties()));
 
     // --- Limbo gear: smithed from netherite + a Limbo Ingot + a Limbo Smithing Template. Better than
     //     netherite, full knockback immunity (material), and -- as a worn SET -- the bonuses in LimboGearEvents.
     //     Pieces are fireResistant() so they survive lava like netherite. ---
     public static final RegistryObject<Item> LIMBO_HELMET = ITEMS.register("limbo_helmet",
-            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, EquipmentSlot.HEAD, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_CHESTPLATE = ITEMS.register("limbo_chestplate",
-            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, EquipmentSlot.CHEST, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_LEGGINGS = ITEMS.register("limbo_leggings",
-            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, EquipmentSlot.LEGS, new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> LIMBO_BOOTS = ITEMS.register("limbo_boots",
-            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new Item.Properties().fireResistant()));
+            () -> new LimboArmorItem(LimboArmorMaterial.INSTANCE, EquipmentSlot.FEET, new Item.Properties().fireResistant()));
 
     // A Limbo chestplate that also glides like an elytra (combine a Limbo Chestplate + an Elytra). Counts as
     // the chest piece of the Limbo set (LimboGear). Wings render via the vanilla ElytraLayer (canElytraFly).

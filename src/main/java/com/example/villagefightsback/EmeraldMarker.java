@@ -68,7 +68,7 @@ public final class EmeraldMarker {
 
     /** Remove {@code target} from the scent team (its outline reverts to the default) when its mark ends. */
     private static void leaveScentTeam(LivingEntity target) {
-        if (!(target.level() instanceof ServerLevel level)) return;
+        if (!(target.level instanceof ServerLevel level)) return;
         Scoreboard sb = level.getScoreboard();
         PlayerTeam team = sb.getPlayerTeam(SCENT_TEAM);
         if (team != null && team.getPlayers().contains(target.getScoreboardName())) {
@@ -78,12 +78,12 @@ public final class EmeraldMarker {
 
     public static boolean isMarked(LivingEntity t) {
         Long exp = MARKED.get(t);
-        return exp != null && t.isAlive() && t.level().getGameTime() <= exp;
+        return exp != null && t.isAlive() && t.level.getGameTime() <= exp;
     }
 
     /** Nearest live marked target to {@code from} within {@code range} in the same level (null if none). Self-prunes. */
     public static LivingEntity nearest(LivingEntity from, double range) {
-        long now = from.level().getGameTime();
+        long now = from.level.getGameTime();
         double best = range * range;
         LivingEntity result = null;
         Iterator<Map.Entry<LivingEntity, Long>> it = MARKED.entrySet().iterator();
@@ -91,7 +91,7 @@ public final class EmeraldMarker {
             Map.Entry<LivingEntity, Long> e = it.next();
             LivingEntity t = e.getKey();
             if (t == null || !t.isAlive() || now > e.getValue()) { if (t != null) leaveScentTeam(t); it.remove(); continue; }
-            if (t.level() != from.level()) continue;
+            if (t.level != from.level) continue;
             double d = t.distanceToSqr(from);
             if (d <= best) { best = d; result = t; }
         }
@@ -107,7 +107,7 @@ public final class EmeraldMarker {
             Map.Entry<LivingEntity, Long> e = it.next();
             LivingEntity t = e.getKey();
             if (t == null || !t.isAlive() || now > e.getValue()) { if (t != null) leaveScentTeam(t); it.remove(); continue; }
-            if (t.level() == level) n++;
+            if (t.level == level) n++;
         }
         return n;
     }

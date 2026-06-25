@@ -30,7 +30,7 @@ public final class LimboBanishFx {
 
     /** Lime spiral colour for the emerald-conversion variant (black smoke at the base -> lime up the column). */
     private static final net.minecraft.core.particles.DustParticleOptions LIME_DUST =
-            new net.minecraft.core.particles.DustParticleOptions(new org.joml.Vector3f(0.40F, 1.0F, 0.25F), 1.5F);
+            new net.minecraft.core.particles.DustParticleOptions(new com.mojang.math.Vector3f(0.40F, 1.0F, 0.25F), 1.5F);
 
     private record Fx(ServerLevel level, double cx, double bottom, double cz, double radius, double height, long end,
                       boolean lime) {}
@@ -50,7 +50,7 @@ public final class LimboBanishFx {
     }
 
     private static void add(Entity e, boolean lime) {
-        if (!(e.level() instanceof ServerLevel sl) || ACTIVE.size() >= MAX_ACTIVE) return;
+        if (!(e.level instanceof ServerLevel sl) || ACTIVE.size() >= MAX_ACTIVE) return;
         AABB b = e.getBoundingBox();
         double radius = Math.max(0.6, Math.max(b.getXsize(), b.getZsize()) * 0.65);
         double height = Math.max(1.2, b.getYsize());

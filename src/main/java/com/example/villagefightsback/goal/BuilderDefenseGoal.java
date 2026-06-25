@@ -91,7 +91,7 @@ public class BuilderDefenseGoal extends Goal {
         if (attackCooldown > 0) attackCooldown--;
         if (villager.distanceToSqr(t) <= REACH_SQR && attackCooldown <= 0) {
             villager.swing(InteractionHand.MAIN_HAND);
-            t.hurt(villager.level().damageSources().mobAttack(villager), DAMAGE);
+            t.hurt(net.minecraft.world.damagesource.DamageSource.mobAttack(villager), DAMAGE);
             attackCooldown = ATTACK_COOLDOWN;
         }
     }
@@ -101,7 +101,7 @@ public class BuilderDefenseGoal extends Goal {
         AABB box = villager.getBoundingBox().inflate(radius);
         LivingEntity nearest = null;
         double best = radius * radius;
-        for (LivingEntity e : villager.level().getEntitiesOfClass(LivingEntity.class, box,
+        for (LivingEntity e : villager.level.getEntitiesOfClass(LivingEntity.class, box,
                 x -> (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && !(x instanceof Creeper) && x.isAlive() && x != villager)) {

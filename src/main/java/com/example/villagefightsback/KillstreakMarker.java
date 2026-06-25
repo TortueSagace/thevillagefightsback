@@ -38,7 +38,7 @@ public final class KillstreakMarker {
     public static void onDeath(LivingDeathEvent event) {
         if (!Config.mobInfectionEnabled()) return;
         LivingEntity victim = event.getEntity();
-        if (!(victim.level() instanceof ServerLevel level)) return;
+        if (!(victim.level instanceof ServerLevel level)) return;
         // Only the deaths of the village's defenders + emerald units count toward a killstreak.
         if (!Factions.isVillage(victim) && !Factions.isEmerald(victim)) return;
         // getEntity() is the responsible killer (the shooter for a projectile, not the arrow).

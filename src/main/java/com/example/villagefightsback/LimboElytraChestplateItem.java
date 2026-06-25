@@ -22,7 +22,7 @@ import net.minecraft.world.level.Level;
  */
 public class LimboElytraChestplateItem extends LimboArmorItem {
     public LimboElytraChestplateItem(ArmorMaterial material, Properties properties) {
-        super(material, Type.CHESTPLATE, properties);
+        super(material, EquipmentSlot.CHEST, properties);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class LimboElytraChestplateItem extends LimboArmorItem {
 
     @Override
     public boolean elytraFlightTick(ItemStack stack, LivingEntity entity, int flightTicks) {
-        if (!entity.level().isClientSide()) {
+        if (!entity.level.isClientSide()) {
             int next = flightTicks + 1;
             if (next % 20 == 0) {
                 stack.hurtAndBreak(1, entity, e -> e.broadcastBreakEvent(EquipmentSlot.CHEST));

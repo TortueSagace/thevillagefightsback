@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -36,28 +35,28 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
      * future change to the launch (muzzle effect, animation hook, sound) automatically applies to both.
      */
     public static void fire(net.minecraft.world.entity.Mob shooter, LivingEntity target) {
-        if (shooter.level().isClientSide()) return;
-        RocketEntity rocket = new RocketEntity(shooter.level(), shooter);
+        if (shooter.level.isClientSide()) return;
+        RocketEntity rocket = new RocketEntity(shooter.level, shooter);
         net.minecraft.world.phys.Vec3 from = rocket.position();
         net.minecraft.world.phys.Vec3 dir = target.getBoundingBox().getCenter().subtract(from).normalize();
         rocket.setDeltaMovement(dir.scale(SPEED));
         rocket.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
         rocket.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
-        shooter.level().addFreshEntity(rocket);
-        shooter.level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+        shooter.level.addFreshEntity(rocket);
+        shooter.level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
                 net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.HOSTILE, 1.4F, 0.7F);
     }
 
     /** Player-style fire: launch a rocket along the shooter's look direction (no locked target). */
     public static void fireFromLook(LivingEntity shooter) {
-        if (shooter.level().isClientSide()) return;
-        RocketEntity rocket = new RocketEntity(shooter.level(), shooter);
+        if (shooter.level.isClientSide()) return;
+        RocketEntity rocket = new RocketEntity(shooter.level, shooter);
         net.minecraft.world.phys.Vec3 look = shooter.getViewVector(1.0F);
         rocket.setDeltaMovement(look.scale(SPEED));
         rocket.setYRot(shooter.getYRot());
         rocket.setXRot(shooter.getXRot());
-        shooter.level().addFreshEntity(rocket);
-        shooter.level().playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
+        shooter.level.addFreshEntity(rocket);
+        shooter.level.playSound(null, shooter.getX(), shooter.getY(), shooter.getZ(),
                 net.minecraft.sounds.SoundEvents.FIREWORK_ROCKET_LAUNCH, net.minecraft.sounds.SoundSource.PLAYERS, 1.4F, 0.8F);
     }
 
@@ -103,9 +102,9 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         long _p = ModProfiler.now();
         // Air-strike drops fall at a constant speed: re-assert the downward velocity BEFORE the move so the
         // 0.99 air-drag in ThrowableProjectile#tick can't decelerate them and strand them above the target.
-        if (airStrike && !level().isClientSide()) setDeltaMovement(0.0, -SPEED, 0.0);
+        if (airStrike && !level.isClientSide()) setDeltaMovement(0.0, -SPEED, 0.0);
         super.tick();
-        if (level() instanceof net.minecraft.server.level.ServerLevel sl) {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl) {
             // A bright, continuous fiery beam along this tick's flight path. We space the particles a fixed
             // fraction of a block apart (not a fixed step count) so the streak stays solid no matter how fast
             // the rocket moves: a tight FLAME core for the glowing beam, plus SMOKE for the contrail.
@@ -126,7 +125,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
                 sl.sendParticles(pl, net.minecraft.core.particles.ParticleTypes.FIREWORK, true, now.x, now.y, now.z, 2, 0.05, 0.05, 0.05, 0.02);
             }
         }
-        if (!level().isClientSide() && tickCount > (airStrike ? AIRSTRIKE_LIFETIME : MAX_LIFETIME)) {
+        if (!level.isClientSide() && tickCount > (airStrike ? AIRSTRIKE_LIFETIME : MAX_LIFETIME)) {
             discard();
         }
         ModProfiler.add("rocket", _p);
@@ -136,10 +135,10 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (level().isClientSide()) return;
+        if (level.isClientSide()) return;
         Entity owner = getOwner();
         result.getEntity().hurt(
-                damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null),
+                net.minecraft.world.damagesource.DamageSource.indirectMobAttack(this, owner instanceof LivingEntity le ? le : null),
                 DIRECT_DAMAGE);
         result.getEntity().setSecondsOnFire(5); // the blast sets the struck unit alight regardless of the block-fire config
     }
@@ -148,7 +147,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!(level() instanceof net.minecraft.server.level.ServerLevel sl)) return;
+        if (!(level instanceof net.minecraft.server.level.ServerLevel sl)) return;
         Entity owner = getOwner();
         // Same damage + block-breaking as a TNT blast (mobGriefing-gated), but built by hand so we DON'T send
         // the vanilla explosion packet -- that lets us show JEG's big-explosion animation instead of the
@@ -162,8 +161,8 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         boolean setFire = airStrike ? Config.airStrikeSetsFire() : Config.creatureRocketSetsFire();
         net.minecraft.world.level.Explosion ex = new net.minecraft.world.level.Explosion(sl, owner, null, null,
                 getX(), getY(), getZ(), EXPLOSION_RADIUS, false,
-                destroyBlocks ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY
-                      : net.minecraft.world.level.Explosion.BlockInteraction.KEEP);
+                destroyBlocks ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY
+                      : net.minecraft.world.level.Explosion.BlockInteraction.NONE);
         ex.explode();
         ex.finalizeExplosion(false);
         // Engine fire only ignites blocks it DESTROYS, so scatter our own fire when the fire switch is on
@@ -187,7 +186,7 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this); // carry velocity to the client
     }
 }

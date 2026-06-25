@@ -47,10 +47,10 @@ public final class AlienSmasherEvents {
     @SubscribeEvent
     public static void onSmasherHit(LivingHurtEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.level.isClientSide()) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
         if (!(attacker.getMainHandItem().getItem() instanceof AlienSmasherItem)) return;
-        if (!(victim.level() instanceof ServerLevel sl)) return;
+        if (!(victim.level instanceof ServerLevel sl)) return;
 
         boolean grief = sl.getGameRules().getBoolean(GameRules.RULE_MOBGRIEFING);
         // Three blasts straight down beneath the target: at its feet and two/four blocks lower, so it falls in.

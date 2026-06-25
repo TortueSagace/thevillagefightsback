@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.Level;
@@ -34,7 +33,7 @@ public class EmeraldGigachadGolemEntity extends GigachadGolemEntity implements E
     // GolemRocketGoal). The rocket goal is faction-aware and fires at whatever the emerald goals target.
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

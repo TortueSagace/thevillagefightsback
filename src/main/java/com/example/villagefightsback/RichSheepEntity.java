@@ -2,7 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -68,7 +67,7 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
     public java.util.List<net.minecraft.world.item.ItemStack> onSheared(
             net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack item,
             Level level, BlockPos pos, int fortune) {
-        this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR,
+        this.level.playSound(null, this, SoundEvents.SHEEP_SHEAR,
                 player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS, 1.0F, 1.0F);
         this.setSheared(true);
         int count = 1 + this.random.nextInt(3);
@@ -87,7 +86,7 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
     @Override
     public void shear(SoundSource soundSource) {
         // Replicates vanilla Sheep.shear, but drops 1-3 LIME_WOOL AND 1 EMERALD.
-        this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR, soundSource, 1.0F, 1.0F);
+        this.level.playSound(null, this, SoundEvents.SHEEP_SHEAR, soundSource, 1.0F, 1.0F);
         this.setSheared(true);
         int count = 1 + this.random.nextInt(3);
         for (int j = 0; j < count; ++j) {
@@ -103,7 +102,7 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return net.minecraftforge.network.NetworkHooks.getEntitySpawningPacket(this);
     }
 

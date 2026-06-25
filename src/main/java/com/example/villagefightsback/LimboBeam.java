@@ -31,7 +31,7 @@ public final class LimboBeam {
      * and the shooter is always spared. Server-side; no-op off a ServerLevel.
      */
     public static void fireFrom(LivingEntity shooter, Vec3 origin, Vec3 dir, SoundSource sound) {
-        if (!(shooter.level() instanceof ServerLevel sl)) return;
+        if (!(shooter.level instanceof ServerLevel sl)) return;
         dir = dir.normalize();
 
         // green sonic-boom trail along the beam line

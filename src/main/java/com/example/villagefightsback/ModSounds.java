@@ -16,7 +16,7 @@ public final class ModSounds {
 
     /** The revolver's gunshot (a local copy of JEG's revolver fire sound). */
     public static final RegistryObject<SoundEvent> REVOLVER_FIRE = SOUNDS.register("revolver_fire",
-            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(TheVillageFightsBack.MODID, "revolver_fire")));
+            () -> new SoundEvent(new ResourceLocation(TheVillageFightsBack.MODID, "revolver_fire")));
 
     public static void register(IEventBus modBus) {
         SOUNDS.register(modBus);

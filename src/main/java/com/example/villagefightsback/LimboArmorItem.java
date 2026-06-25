@@ -18,8 +18,8 @@ import net.minecraft.world.level.Level;
  *  looks shiny on the icon, in hand, and worn (on top of the animated green-glint texture). Every piece also
  *  carries a two-line description of its strength and the full-set special attack. */
 public class LimboArmorItem extends ArmorItem {
-    public LimboArmorItem(ArmorMaterial material, Type type, Properties properties) {
-        super(material, type, properties);
+    public LimboArmorItem(ArmorMaterial material, EquipmentSlot slot, Properties properties) {
+        super(material, slot, properties);
     }
 
     @Override
@@ -38,7 +38,7 @@ public class LimboArmorItem extends ArmorItem {
     public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
         if (type != null) return null;                       // no "overlay" layer for our gear
         int layer = (slot == EquipmentSlot.LEGS) ? 2 : 1;    // leggings use layer 2, everything else layer 1
-        long time = (entity != null) ? entity.level().getGameTime() : 0L;
+        long time = (entity != null) ? entity.level.getGameTime() : 0L;
         int frame = (int) ((time / ANIM_FRAME_TICKS) % ANIM_FRAMES);
         return TheVillageFightsBack.MODID + ":textures/models/armor/limbo_layer_" + layer + "_" + frame + ".png";
     }

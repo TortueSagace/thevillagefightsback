@@ -2,7 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -72,7 +71,7 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     @Override
     public void tick() {
         super.tick();
-        if (!level().isClientSide() && tickCount > MAX_LIFETIME) {
+        if (!level.isClientSide() && tickCount > MAX_LIFETIME) {
             discard();
         }
     }
@@ -81,10 +80,10 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (level().isClientSide() || cosmetic) return; // cosmetic charges deal no direct damage
+        if (level.isClientSide() || cosmetic) return; // cosmetic charges deal no direct damage
         Entity owner = getOwner();
         result.getEntity().hurt(
-                damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null), DIRECT_DAMAGE);
+                net.minecraft.world.damagesource.DamageSource.indirectMobAttack(this, owner instanceof LivingEntity le ? le : null), DIRECT_DAMAGE);
     }
 
     /**
@@ -95,7 +94,7 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
         double x = getX(), y = getY(), z = getZ();
         if (!cosmetic) { // cosmetic charges are a visual gust only -- no knockback
             for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
@@ -121,7 +120,7 @@ public class WindChargeEntity extends AbstractHurtingProjectile implements ItemS
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this); // carry velocity to the client
     }
 }

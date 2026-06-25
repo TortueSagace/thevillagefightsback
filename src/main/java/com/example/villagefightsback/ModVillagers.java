@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import com.google.common.collect.ImmutableSet;
 
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -32,7 +32,7 @@ public final class ModVillagers {
 
     /** The POI's registry key, used by the profession predicates (a sage works/acquires only at this POI). */
     public static final ResourceKey<PoiType> LIMBO_SAGE_POI_KEY = ResourceKey.create(
-            Registries.POINT_OF_INTEREST_TYPE, new ResourceLocation(TheVillageFightsBack.MODID, "limbo_sage"));
+            Registry.POINT_OF_INTEREST_TYPE_REGISTRY, new ResourceLocation(TheVillageFightsBack.MODID, "limbo_sage"));
 
     /**
      * The Limbo Sage POI: the brain node block. maxTickets = 1 (one sage per node = one per village),

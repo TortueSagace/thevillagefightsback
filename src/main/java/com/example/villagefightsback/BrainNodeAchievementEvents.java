@@ -42,7 +42,7 @@ public final class BrainNodeAchievementEvents {
             // Players near THIS brain (same dimension, within range).
             List<ServerPlayer> near = new ArrayList<>();
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                if (!gp.dimension().equals(player.level().dimension())) continue;
+                if (!gp.dimension().equals(player.level.dimension())) continue;
                 if (gp.pos().distToCenterSqr(player.getX(), player.getY(), player.getZ()) > RANGE_SQR) continue;
                 near.add(player);
             }

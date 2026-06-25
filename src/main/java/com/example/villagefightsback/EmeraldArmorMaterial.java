@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -22,23 +22,25 @@ public final class EmeraldArmorMaterial implements ArmorMaterial {
     private EmeraldArmorMaterial() {}
 
     @Override
-    public int getDurabilityForType(ArmorItem.Type type) {
-        int base = switch (type) {
-            case BOOTS -> 13;
-            case LEGGINGS -> 15;
-            case CHESTPLATE -> 16;
-            case HELMET -> 11;
+    public int getDurabilityForSlot(EquipmentSlot slot) {
+        int base = switch (slot) {
+            case FEET -> 13;
+            case LEGS -> 15;
+            case CHEST -> 16;
+            case HEAD -> 11;
+            default -> 0;
         };
         return base * DURABILITY_MULT;
     }
 
     @Override
-    public int getDefenseForType(ArmorItem.Type type) {
-        return switch (type) {
-            case BOOTS -> 2;
-            case LEGGINGS -> 5;
-            case CHESTPLATE -> 7;
-            case HELMET -> 2;
+    public int getDefenseForSlot(EquipmentSlot slot) {
+        return switch (slot) {
+            case FEET -> 2;
+            case LEGS -> 5;
+            case CHEST -> 7;
+            case HEAD -> 2;
+            default -> 0;
         };
     }
 

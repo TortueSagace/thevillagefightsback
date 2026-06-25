@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -46,7 +45,7 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (this.level().isClientSide()) return;
+        if (this.level.isClientSide()) return;
         LivingEntity target = this.getTarget();
         if (target == null || !target.isAlive()) return;
         net.minecraft.world.phys.Vec3 to = target.position()
@@ -62,7 +61,7 @@ public class EmeraldBat extends Bat implements EmeraldUnit {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

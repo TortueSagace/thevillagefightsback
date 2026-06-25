@@ -75,7 +75,7 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         LivingEntity target = event.getEntity();
-        if (target.level().isClientSide()) return;
+        if (target.level.isClientSide()) return;
         Entity direct = event.getSource().getDirectEntity();
         // Emerald-virus tipped arrow (a stage-3 guard's crossbow): infect on hit, nothing else.
         if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow
@@ -116,11 +116,11 @@ public final class EmeraldVirusEvents {
      */
     @SubscribeEvent
     public static void onEmeraldAttack(LivingAttackEvent event) {
-        if (event.getEntity().level().isClientSide() || !Config.mobInfectionEnabled()) return;
+        if (event.getEntity().level.isClientSide() || !Config.mobInfectionEnabled()) return;
         if (!Factions.isEmerald(event.getSource().getEntity())) return;
         LivingEntity victim = event.getEntity();
         if (Factions.isEmerald(victim) || Factions.isVillage(victim) || Factions.isInfected(victim)) return;
-        if (!(victim.level() instanceof ServerLevel sl)) return;
+        if (!(victim.level instanceof ServerLevel sl)) return;
         EmeraldVirus.infect(victim, stage4Village(sl, victim.blockPosition()) ? 1 : 0); // stage 4 -> Virus II
     }
 
@@ -158,7 +158,7 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity e = event.getEntity();
-        Level level = e.level();
+        Level level = e.level;
         if (level.isClientSide()) return;
 
         // Reject the no-op path (uninfected entities -- nearly all of them) BEFORE touching the profiler:
@@ -209,7 +209,7 @@ public final class EmeraldVirusEvents {
 
     /** A moving host rots the soft, solid block it walks on into a dirt path (50% per 5s). */
     private static void rotGroundUnder(LivingEntity e, Level level) {
-        if (!e.onGround()) return;
+        if (!e.isOnGround()) return;
         double moved = Math.abs(e.getX() - e.xOld) + Math.abs(e.getZ() - e.zOld);
         if (moved < 1.0E-3) return; // standing still
 
@@ -239,7 +239,7 @@ public final class EmeraldVirusEvents {
         // An emeraldger that just got a kill renews its 5-minute no-kill lifespan.
         if (event.getSource().getEntity() instanceof EmeraldgerEntity killer) killer.markKill();
 
-        if (!(e.level() instanceof ServerLevel sl)) return;
+        if (!(e.level instanceof ServerLevel sl)) return;
         if (Factions.isEmerald(e)) return;     // emerald units: their death is handled by EmeraldConversion.onEmeraldDeath
         if (!EmeraldVirus.isActive(e)) return; // only hosts that die WHILE carrying the virus
 
@@ -268,7 +268,7 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onDrops(LivingDropsEvent event) {
         LivingEntity e = event.getEntity();
-        if (e.level().isClientSide() || !EmeraldVirus.isActive(e)) return;
+        if (e.level.isClientSide() || !EmeraldVirus.isActive(e)) return;
         // A host that dies carrying the virus has its whole body banked as organic mass by the nearest brain node
         // (see onDeath), so the corpse leaves NOTHING -- no emeralds, no vanilla loot. Only true emerald-faction
         // units drop an emerald, and they do so via their own loot tables (they are immune to the virus, so they
@@ -290,11 +290,11 @@ public final class EmeraldVirusEvents {
     @SubscribeEvent
     public static void onEmeraldGemDrop(LivingDropsEvent event) {
         LivingEntity e = event.getEntity();
-        if (e.level().isClientSide() || !Factions.isEmerald(e)) return;
+        if (e.level.isClientSide() || !Factions.isEmerald(e)) return;
         if (e instanceof EmeraldEndermite) return; // emerald mites are transient swarm units -> never drop an emerald
         float chance = Math.min(1.0F, e.getMaxHealth() * EMERALD_DROP_PER_HP);
         if (e.getRandom().nextFloat() >= chance) return;
-        ItemEntity gem = new ItemEntity(e.level(), e.getX(), e.getY() + 0.5, e.getZ(), new ItemStack(Items.EMERALD));
+        ItemEntity gem = new ItemEntity(e.level, e.getX(), e.getY() + 0.5, e.getZ(), new ItemStack(Items.EMERALD));
         gem.setDefaultPickUpDelay();
         event.getDrops().add(gem);
     }
@@ -321,7 +321,7 @@ public final class EmeraldVirusEvents {
         while (it.hasNext() && due.size() < MAX_DETONATIONS_PER_TICK) {
             Pending p = it.next();
             if (p.level.getGameTime() < p.when) continue;          // timer not up yet -> leave it queued
-            BlockPos at = BlockPos.containing(p.corpse.getX(), p.corpse.getY() + 0.5, p.corpse.getZ());
+            BlockPos at = new BlockPos(p.corpse.getX(), p.corpse.getY() + 0.5, p.corpse.getZ());
             // Never explode into an unloaded chunk: Explosion#explode reads block states across the blast,
             // which force-loads chunks via a blocking join() and can deadlock the server tick. Nobody is near
             // an unloaded chunk to see it anyway, so just drop the entry.
@@ -339,13 +339,13 @@ public final class EmeraldVirusEvents {
             // EmeraldPopulation.absorbInto), so banking here too would be a second reward from a single death.
             if (p.spawnKind != SPAWN_NONE
                     && !EmeraldPopulation.atCap(p.level, new net.minecraft.world.phys.Vec3(x, y, z))) {
-                OrganicMass.addToNearestBrain(p.level, BlockPos.containing(x, y, z), Math.round(p.deadMaxHp));
+                OrganicMass.addToNearestBrain(p.level, new BlockPos(x, y, z), Math.round(p.deadMaxHp));
             }
             if (p.spawnKind == SPAWN_EMERALDGER) {
                 spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
             } else if (p.spawnKind == SPAWN_MITE) {
                 // Virus I -> an emerald mite (capped: EmeraldPopulation absorbs/cancels it when already at the cap).
-                EmeraldConversion.spawnAt(p.level, BlockPos.containing(x, y, z), ModEntities.EMERALD_ENDERMITE.get(), null);
+                EmeraldConversion.spawnAt(p.level, new BlockPos(x, y, z), ModEntities.EMERALD_ENDERMITE.get(), null);
             }
         }
         ModProfiler.add("virus.explode", _p);
@@ -356,7 +356,7 @@ public final class EmeraldVirusEvents {
         EmeraldgerEntity em = ModEntities.EMERALDGER.get().create(level);
         if (em == null) return;
         em.moveTo(x, y, z, level.getRandom().nextFloat() * 360.0F, 0.0F);
-        em.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(x, y, z)),
+        em.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos(x, y, z)),
                 net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null, null);
         em.setBaby(false);                 // always an adult-bodied warrior (its size comes from HP, not age)
         UpgradeState.setUpgraded(em);      // emeraldgers are born as stage-3 combatants (VillageEvents arms them)
@@ -368,9 +368,9 @@ public final class EmeraldVirusEvents {
      *  blast range on fire are independently config-gated (emerald_virus_explosion_destroy_blocks / _set_blocks_on_fire). */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
         // NONE still damages entities but destroys no blocks; TNT also destroys blocks.
-        Level.ExplosionInteraction interaction = Config.emeraldVirusDestroysBlocks()
-                ? Level.ExplosionInteraction.TNT : Level.ExplosionInteraction.NONE;
+        net.minecraft.world.level.Explosion.BlockInteraction interaction = Config.emeraldVirusDestroysBlocks()
+                ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY : net.minecraft.world.level.Explosion.BlockInteraction.NONE;
         level.explode(null, x, y, z, BLAST_RADIUS, false, interaction); // engine fire off; we scorch separately
-        if (Config.emeraldVirusSetsFire()) ModExplosions.scorch(level, BlockPos.containing(x, y, z), FIRE_PASS_RADIUS);
+        if (Config.emeraldVirusSetsFire()) ModExplosions.scorch(level, new BlockPos(x, y, z), FIRE_PASS_RADIUS);
     }
 }

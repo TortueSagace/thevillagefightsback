@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -30,7 +29,7 @@ public class EmeraldChicken extends Chicken implements EmeraldUnit {
      *  {@code --eggTime} never reaches 0 (and thus never drops a vanilla egg). */
     @Override
     public void aiStep() {
-        if (!this.level().isClientSide() && this.isAlive() && !this.isBaby() && !this.isChickenJockey()
+        if (!this.level.isClientSide() && this.isAlive() && !this.isBaby() && !this.isChickenJockey()
                 && this.eggTime <= 1) {
             this.playSound(SoundEvents.CHICKEN_EGG, 1.0F,
                     (this.random.nextFloat() - this.random.nextFloat()) * 0.2F + 1.0F);
@@ -51,7 +50,7 @@ public class EmeraldChicken extends Chicken implements EmeraldUnit {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

@@ -36,7 +36,7 @@ public final class KaratsWillEvents {
     @SubscribeEvent
     public static void onAttack(LivingAttackEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.level.isClientSide()) return;
         if (!victim.hasEffect(ModEffects.KARATS_WILL.get())) return;
         DamageSource source = event.getSource();
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) return;
@@ -63,7 +63,7 @@ public final class KaratsWillEvents {
     @SubscribeEvent
     public static void onEffectAdded(MobEffectEvent.Added event) {
         LivingEntity target = event.getEntity();
-        if (target.level().isClientSide()) return;
+        if (target.level.isClientSide()) return;
         if (!target.hasEffect(ModEffects.KARATS_WILL.get())) return;
         MobEffectInstance inst = event.getEffectInstance();
         MobEffect effect = inst.getEffect();

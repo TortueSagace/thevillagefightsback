@@ -84,7 +84,7 @@ public class WallDefenderEntity extends Mob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (level().isClientSide) return;
+        if (level.isClientSide) return;
         if (fireCooldown > 0) fireCooldown--;
         if (retargetCooldown > 0) retargetCooldown--;
 
@@ -129,7 +129,7 @@ public class WallDefenderEntity extends Mob {
     private boolean isStage4() {
         if (gunOnly) return false;
         if (forcedStage4) return true;
-        if (!(level() instanceof ServerLevel sl)) return false;
+        if (!(level instanceof ServerLevel sl)) return false;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos nearest = null;
         double best = Double.MAX_VALUE;
@@ -158,7 +158,7 @@ public class WallDefenderEntity extends Mob {
         AABB box = getBoundingBox().inflate(RANGE);
         LivingEntity best = null;
         double bestD = Double.MAX_VALUE;
-        for (LivingEntity e : level().getEntitiesOfClass(LivingEntity.class, box,
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
                 x -> (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && x.isAlive() && x != this)) {
@@ -178,7 +178,7 @@ public class WallDefenderEntity extends Mob {
         double len = dir.length();
         if (len < 2.0) return true;
         Vec3 start = from.add(dir.scale(2.0 / len));
-        return level().clip(new ClipContext(start, te,
+        return level.clip(new ClipContext(start, te,
                 ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType() == HitResult.Type.MISS;
     }
 

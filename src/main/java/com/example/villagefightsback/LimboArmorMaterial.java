@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -21,24 +21,26 @@ public final class LimboArmorMaterial implements ArmorMaterial {
     private LimboArmorMaterial() {}
 
     @Override
-    public int getDurabilityForType(ArmorItem.Type type) {
-        int base = switch (type) {
-            case BOOTS -> 13;
-            case LEGGINGS -> 15;
-            case CHESTPLATE -> 16;
-            case HELMET -> 11;
+    public int getDurabilityForSlot(EquipmentSlot slot) {
+        int base = switch (slot) {
+            case FEET -> 13;
+            case LEGS -> 15;
+            case CHEST -> 16;
+            case HEAD -> 11;
+            default -> 0;
         };
         return base * DURABILITY_MULT;
     }
 
     @Override
-    public int getDefenseForType(ArmorItem.Type type) {
+    public int getDefenseForSlot(EquipmentSlot slot) {
         // Stronger than netherite (3/6/8/3 = 20); limbo is 4/7/9/4 = 24.
-        return switch (type) {
-            case BOOTS -> 4;
-            case LEGGINGS -> 7;
-            case CHESTPLATE -> 9;
-            case HELMET -> 4;
+        return switch (slot) {
+            case FEET -> 4;
+            case LEGS -> 7;
+            case CHEST -> 9;
+            case HEAD -> 4;
+            default -> 0;
         };
     }
 

@@ -38,7 +38,7 @@ public class DefenderGolemEntity extends IronGolem {
     @Override
     public void aiStep() {
         super.aiStep();                       // keep the full iron golem behaviour (melee, look, offer flower)
-        if (level().isClientSide) return;
+        if (level.isClientSide) return;
         if (fireCooldown > 0) { fireCooldown--; return; }
         // Fire from the head turret at whatever the inherited iron-golem target goals picked (hostiles, and
         // Enemy-of-the-Village players the village rallies it against). Independent of the melee goal.

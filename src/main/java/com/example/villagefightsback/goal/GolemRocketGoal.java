@@ -106,7 +106,7 @@ public class GolemRocketGoal extends Goal {
         if (allyScanTick < 0 || now - allyScanTick >= ALLY_SCAN_INTERVAL) {
             allyScanTick = now;
             AABB box = t.getBoundingBox().inflate(ALLY_RADIUS);
-            allyClear = golem.level().getEntitiesOfClass(LivingEntity.class, box,
+            allyClear = golem.level.getEntitiesOfClass(LivingEntity.class, box,
                     e -> e != golem && e.isAlive() && (e instanceof Villager || e instanceof IronGolem)).isEmpty();
         }
         return allyClear;
@@ -173,7 +173,7 @@ public class GolemRocketGoal extends Goal {
         if (cooldown <= 0) {
             CombatUtil.aimAt(golem, t);
             if (windup == 0) {
-                golem.level().broadcastEntityEvent(golem, (byte) 4); // native golem attack anim -> arm lifts
+                golem.level.broadcastEntityEvent(golem, (byte) 4); // native golem attack anim -> arm lifts
                 windup = WINDUP_TICKS;
             } else if (--windup == 0) {
                 fireRocket(t);
@@ -208,7 +208,7 @@ public class GolemRocketGoal extends Goal {
             if (apex && t != null && isValidHostile(t)
                     && golem.getSensing().hasLineOfSight(t) && noAllyNearTarget(t)) {
                 CombatUtil.aimAt(golem, t);
-                golem.level().broadcastEntityEvent(golem, (byte) 4); // arm-raise animation
+                golem.level.broadcastEntityEvent(golem, (byte) 4); // arm-raise animation
                 fireRocket(t); // fire down at the target from the apex
                 cooldown = ROCKET_COOLDOWN;
             }
