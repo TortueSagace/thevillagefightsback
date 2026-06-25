@@ -252,7 +252,9 @@ public final class EmeraldVirusEvents {
         if (Config.mobInfectionEnabled()) {
             LimboBanishFx.startLime(e);                              // green death swirl
             EmeraldConversion.placeInfestedPathUnder(sl, e);        // infested path under the corpse
-            OrganicMass.addToNearestBrain(sl, e.blockPosition(), Math.round(e.getMaxHealth())); // bank organic mass
+            // Organic mass is banked when the CORPSE UNIT actually erupts (see onServerTick), and ONLY if the area
+            // is below the cap. At the cap the corpse unit's HP is poured into the nearest emerald instead, so the
+            // brain must not ALSO bank organic mass -- one death yields one reward, not two.
             // A host that died carrying Virus II (amplifier >= 1) -> an Emeraldger; a Virus-I death -> an emerald mite.
             // Virus II is dealt only at stage 4 (Alien Eradicator, stage-4 guard crossbow, stage-4 emerald units), so
             // emeraldgers only ever appear at stage 4.
@@ -332,6 +334,13 @@ public final class EmeraldVirusEvents {
             // animation), not where it died. After removal the entity still reports its last position.
             double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
             if (Config.emeraldVirusExplosion()) explodeWithFire(p.level, x, y, z); // master switch (no boom if off)
+            // Bank the host's organic mass for the nearest brain -- but ONLY if its corpse unit will really spawn.
+            // At the population cap the corpse unit can't spawn (its HP is poured into the nearest emerald by
+            // EmeraldPopulation.absorbInto), so banking here too would be a second reward from a single death.
+            if (p.spawnKind != SPAWN_NONE
+                    && !EmeraldPopulation.atCap(p.level, new net.minecraft.world.phys.Vec3(x, y, z))) {
+                OrganicMass.addToNearestBrain(p.level, BlockPos.containing(x, y, z), Math.round(p.deadMaxHp));
+            }
             if (p.spawnKind == SPAWN_EMERALDGER) {
                 spawnEmeraldger(p.level, x, y, z, p.deadMaxHp);
             } else if (p.spawnKind == SPAWN_MITE) {
