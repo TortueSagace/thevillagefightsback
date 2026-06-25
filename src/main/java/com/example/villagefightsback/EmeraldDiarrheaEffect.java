@@ -40,7 +40,7 @@ public class EmeraldDiarrheaEffect extends MobEffect {
         player.drop(new ItemStack(Items.EMERALD), true);
 
         // A funny, undignified sound.
-        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+        player.level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.LLAMA_SPIT, SoundSource.PLAYERS, 1.0F, 0.6F);
 
         // Award the achievement.

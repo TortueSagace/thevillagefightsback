@@ -39,7 +39,7 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
     protected void setupRotations(LimboPhantomEntity entity, PoseStack pose, float ageInTicks, float yBodyRot,
                                   float partialTicks) {
         super.setupRotations(entity, pose, ageInTicks, yBodyRot, partialTicks);
-        pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(entity.getXRot())); // pitch like a diving phantom
+        pose.mulPose(com.mojang.math.Vector3f.XP.rotationDegrees(entity.getXRot())); // pitch like a diving phantom
     }
 
     @Override

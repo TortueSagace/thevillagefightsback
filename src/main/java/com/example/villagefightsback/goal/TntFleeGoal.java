@@ -62,7 +62,7 @@ public class TntFleeGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        long now = villager.level().getGameTime();
+        long now = villager.level.getGameTime();
         if (now < fleeUntil()) return true;          // flee state already set (by us or a neighbour)
         if (now < nextScan) return false;            // throttle the block check
         nextScan = now + SCAN_INTERVAL;
@@ -75,7 +75,7 @@ public class TntFleeGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return villager.level().getGameTime() < fleeUntil();
+        return villager.level.getGameTime() < fleeUntil();
     }
 
     @Override
@@ -120,7 +120,7 @@ public class TntFleeGoal extends Goal {
         data().putLong(NBT_TNT_CD, now + TNT_COOLDOWN);
 
         AABB box = villager.getBoundingBox().inflate(ALERT_RADIUS);
-        for (Villager other : villager.level().getEntitiesOfClass(Villager.class, box)) {
+        for (Villager other : villager.level.getEntitiesOfClass(Villager.class, box)) {
             if (other == villager || isFighting(other)) continue; // fighters hold their ground
             setFlee(other, until, danger);
         }

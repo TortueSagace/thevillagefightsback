@@ -55,7 +55,7 @@ public class LimboPhantomEntity extends Phantom {
         // Replace the vanilla "target nearest PLAYER" goal so the phantom hunts the whole village: any non-limbo
         // living creature -- players, villagers, guards, iron golems, other mobs. mustSee=false so it engages
         // reliably in the dark/structured Limbo (it can also see through bedrock anyway).
-        this.targetSelector.removeAllGoals(g -> true);
+        this.targetSelector.removeAllGoals();
         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 10, false, false,
                 e -> e != this && e.isAlive() && !Factions.isLimbo(e) && (e instanceof Player || e instanceof Mob)
                         && !(e instanceof Player p && LimboGear.hasFullSet(p)))); // neutral to a full-set wearer
@@ -68,7 +68,7 @@ public class LimboPhantomEntity extends Phantom {
         // drift out of (or into) a sealed cube; collide normally everywhere else.
         this.noPhysics = touchingBedrock();
         super.tick();
-        if (!level().isClientSide()) {
+        if (!getLevel().isClientSide()) {
             tickGrab();
             tickMelee();
         }
@@ -115,7 +115,7 @@ public class LimboPhantomEntity extends Phantom {
     private void tickGrab() {
         if (grabCooldown > 0) grabCooldown--;
         if (grabbed == null) return;
-        if (!grabbed.isAlive() || grabbed.level() != level() || grabTicks-- <= 0) { releaseGrab(); return; }
+        if (!grabbed.isAlive() || grabbed.getLevel() != getLevel() || grabTicks-- <= 0) { releaseGrab(); return; }
         // Drag the prey beneath us, phasing it through bedrock too, so we can carry it out of a cube.
         grabbed.noPhysics = true;
         grabbed.fallDistance = 0.0F;
@@ -141,10 +141,10 @@ public class LimboPhantomEntity extends Phantom {
     /** Does our bounding box overlap any bedrock block right now? */
     private boolean touchingBedrock() {
         AABB box = getBoundingBox();
-        BlockPos min = BlockPos.containing(box.minX, box.minY, box.minZ);
-        BlockPos max = BlockPos.containing(box.maxX, box.maxY, box.maxZ);
+        BlockPos min = new BlockPos(box.minX, box.minY, box.minZ);
+        BlockPos max = new BlockPos(box.maxX, box.maxY, box.maxZ);
         for (BlockPos p : BlockPos.betweenClosed(min, max)) {
-            if (level().getBlockState(p).is(Blocks.BEDROCK)) return true;
+            if (getLevel().getBlockState(p).is(Blocks.BEDROCK)) return true;
         }
         return false;
     }
@@ -167,9 +167,9 @@ public class LimboPhantomEntity extends Phantom {
         for (int i = 0; i < n; i++) {
             p = p.add(step);
             m.set(p.x, p.y, p.z);
-            BlockState s = level().getBlockState(m);
+            BlockState s = getLevel().getBlockState(m);
             if (s.is(Blocks.BEDROCK) || s.isAir()) continue; // bedrock is transparent to us
-            if (s.isViewBlocking(level(), m)) return false;   // a real wall blocks the view
+            if (s.isViewBlocking(getLevel(), m)) return false;   // a real wall blocks the view
         }
         return true;
     }

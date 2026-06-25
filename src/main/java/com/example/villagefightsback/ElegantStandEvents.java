@@ -24,7 +24,7 @@ public final class ElegantStandEvents {
 
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
-        if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide) return;
+        if (!(event.getEntity() instanceof Mob mob) || mob.level.isClientSide) return;
         if (mob instanceof UnleashedBrainNodeEntity) return;          // never freeze the boss
         boolean onStand = isOnStand(mob);
         boolean displayed = mob.getPersistentData().getBoolean(NBT_DISPLAYED);
@@ -44,14 +44,14 @@ public final class ElegantStandEvents {
 
     /** On a stand if the block its feet rest on is an Elegant Stand (works for a bottom or top slab). */
     private static boolean isOnStand(Mob mob) {
-        BlockPos feet = BlockPos.containing(mob.getX(), mob.getBoundingBox().minY - 0.1, mob.getZ());
-        return mob.level().getBlockState(feet).is(ModBlocks.ELEGANT_STAND.get());
+        BlockPos feet = new BlockPos(mob.getX(), mob.getBoundingBox().minY - 0.1, mob.getZ());
+        return mob.level.getBlockState(feet).is(ModBlocks.ELEGANT_STAND.get());
     }
 
     /** Turn the whole body + head + pitch toward the nearest player and stay perfectly still; no-op if none near. */
     private static void facePlayer(Mob mob) {
         mob.setDeltaMovement(0.0, 0.0, 0.0);
-        Player p = mob.level().getNearestPlayer(mob, FACE_RANGE);
+        Player p = mob.level.getNearestPlayer(mob, FACE_RANGE);
         if (p == null) return;
         double dx = p.getX() - mob.getX();
         double dz = p.getZ() - mob.getZ();

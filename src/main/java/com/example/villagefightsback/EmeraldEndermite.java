@@ -58,7 +58,7 @@ public class EmeraldEndermite extends Monster implements EmeraldUnit {
     @Override
     public void aiStep() {
         super.aiStep(); // Monster.aiStep -> full movement/AI, and (unlike Endermite) spawns NO particles
-        if (!this.level().isClientSide() && this.tickCount >= LIFETIME_TICKS) {
+        if (!this.level.isClientSide() && this.tickCount >= LIFETIME_TICKS) {
             this.discard(); // silent despawn after 1 minute (no death effects, no drops)
         }
     }

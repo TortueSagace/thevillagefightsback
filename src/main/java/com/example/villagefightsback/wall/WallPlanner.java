@@ -118,7 +118,7 @@ public final class WallPlanner {
             if (!obsidian && Math.abs(sy - brainNode.pos().getY()) > MAX_WALL_ELEVATION) { skip[i] = true; continue; }
             // What the column would rest on: an OPEN fluid surface (not a waterlogged solid, which is real ground).
             BlockState ground = level.getBlockState(new BlockPos(col.x, sy, col.z));
-            if (!ground.blocksMotion()) {
+            if (!ground.getMaterial().blocksMotion()) {
                 if (ground.getFluidState().is(net.minecraft.tags.FluidTags.LAVA)) fluid[i] = 2;
                 else if (ground.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) fluid[i] = 1;
             }
@@ -286,7 +286,7 @@ public final class WallPlanner {
         // on a fertile tree's canopy (or treat fertile grass as ground), leaving a hole beneath it.
         if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES)
                 || isFertileFoliage(s)) return false;
-        return s.blocksMotion() || !s.getFluidState().isEmpty();
+        return s.getMaterial().blocksMotion() || !s.getFluidState().isEmpty();
     }
 
     /** True for our fertile/rich LOG or LEAVES blocks, and Fertile Grass -- none of which are real ground a wall

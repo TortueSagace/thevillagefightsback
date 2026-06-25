@@ -3,8 +3,8 @@ package com.example.villagefightsback;
 import com.google.gson.JsonObject;
 
 import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
-import net.minecraft.advancements.critereon.ContextAwarePredicate;
 import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.SerializationContext;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
 import net.minecraft.resources.ResourceLocation;
@@ -25,7 +25,7 @@ public class BrainNodeStageTrigger extends SimpleCriterionTrigger<BrainNodeStage
     }
 
     @Override
-    protected Instance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext ctx) {
+    protected Instance createInstance(JsonObject json, EntityPredicate.Composite player, DeserializationContext ctx) {
         return new Instance(player, GsonHelper.getAsInt(json, "stage", 1));
     }
 
@@ -37,7 +37,7 @@ public class BrainNodeStageTrigger extends SimpleCriterionTrigger<BrainNodeStage
     public static class Instance extends AbstractCriterionTriggerInstance {
         private final int minStage;
 
-        public Instance(ContextAwarePredicate player, int minStage) {
+        public Instance(EntityPredicate.Composite player, int minStage) {
             super(ID, player);
             this.minStage = minStage;
         }

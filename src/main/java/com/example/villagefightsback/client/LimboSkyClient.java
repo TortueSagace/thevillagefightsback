@@ -22,7 +22,7 @@ public final class LimboSkyClient {
     @SubscribeEvent
     public static void onFogColor(ViewportEvent.ComputeFogColor event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null && LimboDimension.LIMBO.equals(mc.player.level().dimension())) {
+        if (mc.player != null && LimboDimension.LIMBO.equals(mc.player.level.dimension())) {
             event.setRed(0.06F);
             event.setGreen(0.28F);
             event.setBlue(0.13F);

@@ -52,7 +52,7 @@ public class ExpansionSettlerGoal extends Goal {
     @Override
     public boolean canUse() {
         return !done
-                && villager.level() instanceof ServerLevel
+                && villager.getLevel() instanceof ServerLevel
                 && villager.getPersistentData().getBoolean(ExpansionManager.NBT_EXPANSION);
     }
 
@@ -73,7 +73,7 @@ public class ExpansionSettlerGoal extends Goal {
 
     @Override
     public void tick() {
-        ServerLevel level = (ServerLevel) villager.level();
+        ServerLevel level = (ServerLevel) villager.getLevel();
         int elapsed = villager.tickCount - startTick;
         BlockPos target = columnAt(wallRadius + BUILD_RING + extraOut);
 

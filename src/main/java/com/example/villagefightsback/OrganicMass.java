@@ -262,7 +262,7 @@ public final class OrganicMass {
 
     /** Record that an emerald unit just dealt damage (resets its idle-reclaim clock). Called from the damage hook. */
     public static void noteDamageDealt(LivingEntity attacker) {
-        if (attacker.level() instanceof ServerLevel sl) {
+        if (attacker.level instanceof ServerLevel sl) {
             attacker.getPersistentData().putLong(LAST_DMG_TAG, sl.getGameTime());
         }
     }

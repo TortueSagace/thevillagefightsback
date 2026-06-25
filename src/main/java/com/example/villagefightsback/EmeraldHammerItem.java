@@ -141,7 +141,7 @@ public class EmeraldHammerItem extends PickaxeItem {
             // Refine to the precise face the player is looking at as the block breaks (most accurate moment).
             Vec3 eye = player.getEyePosition(1.0F);
             Vec3 end = eye.add(player.getViewVector(1.0F).scale(REACH));
-            net.minecraft.world.phys.HitResult hr = player.level().clip(new net.minecraft.world.level.ClipContext(
+            net.minecraft.world.phys.HitResult hr = player.level.clip(new net.minecraft.world.level.ClipContext(
                     eye, end, net.minecraft.world.level.ClipContext.Block.OUTLINE,
                     net.minecraft.world.level.ClipContext.Fluid.NONE, player));
             if (hr instanceof net.minecraft.world.phys.BlockHitResult bhr
@@ -150,7 +150,7 @@ public class EmeraldHammerItem extends PickaxeItem {
             }
             // CREATIVE: vanilla never calls Item.mineBlock in creative, so drive the 3x3 from here. Survival is
             // handled by mineBlock (which also charges the single durability hit); creative spends none.
-            if (player.isCreative() && player.level() instanceof ServerLevel sl && player instanceof ServerPlayer sp) {
+            if (player.isCreative() && player.level instanceof ServerLevel sl && player instanceof ServerPlayer sp) {
                 breakArea(sl, event.getPos(), sp, axisFor(sp));
             }
         }

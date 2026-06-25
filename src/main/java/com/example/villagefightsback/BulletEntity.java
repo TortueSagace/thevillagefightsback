@@ -2,7 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -15,7 +14,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
-import org.joml.Vector3f;
+import com.mojang.math.Vector3f;
 
 /**
  * A native bullet -- a JEG-free clone of the revolver round, so the wall defender no longer needs JEG at
@@ -57,7 +56,7 @@ public class BulletEntity extends ThrowableProjectile {
     public void tick() {
         Vec3 before = position();
         super.tick();
-        if (level() instanceof ServerLevel sl && isAlive()) {
+        if (level instanceof ServerLevel sl && isAlive()) {
             // A glowing tracer along the path travelled this tick (the bullet itself is invisible): a fat yellow
             // dust core + an END_ROD that stays bright in the dark, both forced so it reads from far away.
             Vec3 seg = position().subtract(before);
@@ -68,7 +67,7 @@ public class BulletEntity extends ThrowableProjectile {
                 forced(sl, net.minecraft.core.particles.ParticleTypes.END_ROD, p);
             }
         }
-        if (!level().isClientSide() && tickCount > LIFE) discard();
+        if (!level.isClientSide() && tickCount > LIFE) discard();
     }
 
     /** Send one particle to every player in the level with force=true, so the tracer shows past the normal
@@ -81,24 +80,24 @@ public class BulletEntity extends ThrowableProjectile {
 
     @Override
     protected void onHitEntity(EntityHitResult result) {
-        if (level().isClientSide()) return;
+        if (level.isClientSide()) return;
         Entity target = result.getEntity();
         float dmg = damage * Math.max(0.0F, (float) (LIFE - tickCount) / LIFE); // falloff over the bullet's life
         double frac = (result.getLocation().y - target.getY()) / Math.max(0.1, target.getBbHeight());
         if (frac >= 0.75) dmg *= HEADSHOT; // headshot: hit the upper quarter
         Entity owner = getOwner();
-        target.hurt(damageSources().mobProjectile(this, owner instanceof LivingEntity le ? le : null), dmg);
+        target.hurt(net.minecraft.world.damagesource.DamageSource.indirectMobAttack(this, owner instanceof LivingEntity le ? le : null), dmg);
         discard();
     }
 
     @Override
     protected void onHitBlock(BlockHitResult result) {
         super.onHitBlock(result);
-        if (!level().isClientSide()) discard();
+        if (!level.isClientSide()) discard();
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 
@@ -110,16 +109,16 @@ public class BulletEntity extends ThrowableProjectile {
     /** Like {@link #fire} but launched from an explicit {@code origin} (e.g. a turret head higher than the
      *  shooter's eyes, so the visible tracer leaves the head, not the chest). */
     public static void fireFrom(Mob shooter, Vec3 origin, LivingEntity target, float damage) {
-        if (shooter.level().isClientSide()) return;
-        BulletEntity bullet = new BulletEntity(shooter.level(), shooter);
+        if (shooter.level.isClientSide()) return;
+        BulletEntity bullet = new BulletEntity(shooter.level, shooter);
         bullet.setPos(origin.x, origin.y, origin.z);
         bullet.damage = damage;
         Vec3 dir = target.getBoundingBox().getCenter().subtract(origin).normalize();
         bullet.setDeltaMovement(dir.scale(SPEED));
         bullet.setYRot((float) (Math.atan2(dir.x, dir.z) * (180.0 / Math.PI)));
         bullet.setXRot((float) (Math.atan2(dir.y, Math.sqrt(dir.x * dir.x + dir.z * dir.z)) * (180.0 / Math.PI)));
-        shooter.level().addFreshEntity(bullet);
-        shooter.level().playSound(null, origin.x, origin.y, origin.z,
+        shooter.level.addFreshEntity(bullet);
+        shooter.level.playSound(null, origin.x, origin.y, origin.z,
                 ModSounds.REVOLVER_FIRE.get(), SoundSource.HOSTILE, 1.0F, 1.0F);
     }
 }

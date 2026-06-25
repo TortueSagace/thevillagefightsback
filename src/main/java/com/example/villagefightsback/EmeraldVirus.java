@@ -99,7 +99,7 @@ public final class EmeraldVirus {
      *  ({@link #canInfect}). Server-side only; harmlessly no-ops for immune / already-infected hosts, so it is
      *  safe to call every tick from a block's {@code entityInside}. */
     public static void touch(LivingEntity e) {
-        if (e.level().isClientSide()) return;
+        if (e.level.isClientSide()) return;
         infect(e, 0, CONTACT_TICKS);
     }
 

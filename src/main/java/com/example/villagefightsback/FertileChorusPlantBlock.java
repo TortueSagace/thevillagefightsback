@@ -53,7 +53,7 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
         if (s.is(Blocks.END_STONE)) return true;
         Block fes = fertileEndStone();
         if (fes != null && s.is(fes)) return true;
-        return !s.isAir() && s.blocksMotion();
+        return !s.isAir() && s.getMaterial().blocksMotion();
     }
 
     /** Our chorus FLOWER (the top this plant connects up to). */

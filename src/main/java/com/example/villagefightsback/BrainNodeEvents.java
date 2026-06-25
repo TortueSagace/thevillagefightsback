@@ -203,7 +203,7 @@ public final class BrainNodeEvents {
     @SubscribeEvent
     public static void onAllyAttacked(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
         LivingEntity victim = event.getEntity();
-        if (!isVillageAlly(victim) || !(victim.level() instanceof ServerLevel sl)) return;
+        if (!isVillageAlly(victim) || !(victim.level instanceof ServerLevel sl)) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         long now = sl.getGameTime();
         BlockPos vp = victim.blockPosition();
@@ -612,7 +612,7 @@ public final class BrainNodeEvents {
             if (wb == null) { com.example.villagefightsback.wall.WallBuild.clearAbandon(plan.brainNode(), pos); continue; }
             // Only seal genuine gaps: if it's already built, or blocked by a real obstacle, leave it and stop
             // counting it (satisfied() treats both as done).
-            if (plan.satisfied(level, wb) || !level.getBlockState(pos).canBeReplaced()) {
+            if (plan.satisfied(level, wb) || !level.getBlockState(pos).getMaterial().isReplaceable()) {
                 com.example.villagefightsback.wall.WallBuild.clearAbandon(plan.brainNode(), pos);
                 continue;
             }
@@ -885,7 +885,7 @@ public final class BrainNodeEvents {
             for (int dz = -3; dz <= 3; dz++) {
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
                 if (Math.abs(surface.getY() - center.getY()) > 5) continue;                   // skip roofs / cliffs
-                if (!level.getBlockState(surface).canBeReplaced()) continue;                   // open spot
+                if (!level.getBlockState(surface).getMaterial().isReplaceable()) continue;                   // open spot
                 if (!level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) continue;
                 if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
             }
@@ -1052,7 +1052,7 @@ public final class BrainNodeEvents {
     private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
         BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall) : null;
         if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
-        Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
+        Entity e = type.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false);
         if (e instanceof Villager v) v.setBaby(false);
     }
 
@@ -1063,7 +1063,7 @@ public final class BrainNodeEvents {
         BlockPos.MutableBlockPos m = node.mutable().move(Direction.DOWN);
         int floor = level.getMinBuildHeight();
         int scanned = 0;
-        while (m.getY() > floor && scanned < 160 && !level.getBlockState(m).blocksMotion()) {
+        while (m.getY() > floor && scanned < 160 && !level.getBlockState(m).getMaterial().blocksMotion()) {
             m.move(Direction.DOWN);
             scanned++;
         }
@@ -1258,7 +1258,7 @@ public final class BrainNodeEvents {
             int collected = 0;
             for (net.minecraft.world.entity.item.ItemEntity ie : loose) {
                 boolean nearNode = ie.distanceToSqr(center) <= near2;
-                boolean onInfection = ie.onGround()
+                boolean onInfection = ie.onGround
                         && com.example.villagefightsback.infection.BlockMatcher.isInfection(ie.getBlockStateOn());
                 if (!nearNode && !onInfection) continue;
                 collected += ie.getItem().getCount();

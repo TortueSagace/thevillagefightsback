@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -45,7 +44,7 @@ public class FireGrenadeEntity extends ThrowableItemProjectile {
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
         double x = getX(), y = getY(), z = getZ();
         // the burst
         sl.sendParticles(ParticleTypes.FLAME, x, y, z, 70, 1.6, 1.0, 1.6, 0.06);
@@ -76,7 +75,7 @@ public class FireGrenadeEntity extends ThrowableItemProjectile {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

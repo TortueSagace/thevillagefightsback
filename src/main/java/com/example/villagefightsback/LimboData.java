@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -186,7 +186,7 @@ public class LimboData extends SavedData {
             CompoundTag c = list.getCompound(i);
             UUID token = c.hasUUID("token") ? c.getUUID("token") : UUID.randomUUID();
             UUID creature = c.getUUID("uuid");
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(c.getString("dim")));
             BlockPos pos = BlockPos.of(c.getLong("pos"));
             UUID marker = c.hasUUID("marker") ? c.getUUID("marker") : null;
             Entry e = new Entry(token, creature, dim, pos, c.getLong("time"), c.getString("name"), marker,

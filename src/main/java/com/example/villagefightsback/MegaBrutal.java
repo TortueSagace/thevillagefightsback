@@ -69,7 +69,7 @@ public final class MegaBrutal {
     public static void onEmeraldTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent event) {
         if (!Config.megaBrutalMode()) return;
         LivingEntity e = event.getEntity();
-        if (e.level().isClientSide() || !(e instanceof EmeraldUnit) || e.tickCount % INTERVAL != 0) return;
+        if (e.level.isClientSide() || !(e instanceof EmeraldUnit) || e.tickCount % INTERVAL != 0) return;
         buff(e);
         if (e instanceof IronGolem golem) teleportToTarget(golem);
     }
@@ -105,7 +105,7 @@ public final class MegaBrutal {
             double ty = t.getY();
             double tz = t.getZ() + (golem.getRandom().nextDouble() - 0.5) * 5.0;
             if (golem.randomTeleport(tx, ty, tz, true)) {
-                golem.level().playSound(null, golem.getX(), golem.getY(), golem.getZ(),
+                golem.level.playSound(null, golem.getX(), golem.getY(), golem.getZ(),
                         SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0F, 0.7F);
                 return;
             }

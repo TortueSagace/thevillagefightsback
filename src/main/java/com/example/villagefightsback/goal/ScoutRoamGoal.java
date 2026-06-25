@@ -36,7 +36,7 @@ public class ScoutRoamGoal extends WaterAvoidingRandomStrollGoal {
 
     /** Horizontal unit vector pointing AWAY from the nearest brain node in this dimension (null if none or on it). */
     private Vec3 outwardDir() {
-        if (!(this.mob.level() instanceof ServerLevel sl)) return null;
+        if (!(this.mob.getLevel() instanceof ServerLevel sl)) return null;
         BlockPos nearest = null;
         double best = Double.MAX_VALUE;
         for (GlobalPos gp : BrainNodeData.get(sl.getServer()).blocks()) {

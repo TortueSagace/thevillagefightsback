@@ -47,6 +47,13 @@ public class LimboPortalBlock extends Block {
         builder.add(AXIS);
     }
 
+    /** Pistons can't shove the portal around. 1.19.2 has no Properties.pushReaction builder, so
+     *  immovability is enforced with this override (also inherited by {@link ChunkPortalBlock}). */
+    @Override
+    public net.minecraft.world.level.material.PushReaction getPistonPushReaction(BlockState state) {
+        return net.minecraft.world.level.material.PushReaction.BLOCK;
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
         return state.getValue(AXIS) == Direction.Axis.Z ? Z_SHAPE : X_SHAPE;

@@ -121,7 +121,7 @@ public final class EmeraldConversion {
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
-        if (!(victim.level() instanceof ServerLevel level)) return;
+        if (!(victim.level instanceof ServerLevel level)) return;
         if (!Config.mobInfectionEnabled()) return;                   // feature off -> no death effects
         // Only an EMERALD unit's death does anything here (mites + buff). A non-emerald mob that dies carrying the
         // virus is handled by EmeraldVirusEvents (mite/emeraldger spawn, organic mass, swirl, infested path).
@@ -134,7 +134,7 @@ public final class EmeraldConversion {
         net.minecraft.core.BlockPos.MutableBlockPos p = victim.blockPosition().mutable().move(0, -1, 0);
         for (int i = 0; i < 16 && level.isLoaded(p); i++) {
             net.minecraft.world.level.block.state.BlockState s = level.getBlockState(p);
-            if (!s.isAir() && !s.canBeReplaced() && !s.getCollisionShape(level, p).isEmpty()) {
+            if (!s.isAir() && !s.getMaterial().isReplaceable() && !s.getCollisionShape(level, p).isEmpty()) {
                 InfectionManager.placeInfestedPath(level, p.immutable());
                 return;
             }

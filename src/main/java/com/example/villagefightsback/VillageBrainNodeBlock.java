@@ -175,7 +175,7 @@ public class VillageBrainNodeBlock extends Block {
 
     /** Drops the brain node ONLY on a silk-touch break; any other break consumes it (it becomes the boss). */
     @Override
-    public List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootParams.Builder params) {
+    public List<ItemStack> getDrops(BlockState state, net.minecraft.world.level.storage.loot.LootContext.Builder params) {
         ItemStack tool = params.getOptionalParameter(
                 net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL);
         int silk = tool == null ? 0 : net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(

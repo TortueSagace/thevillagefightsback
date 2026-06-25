@@ -41,7 +41,7 @@ public final class BuilderRole {
     public static void demote(Villager v) {
         if (!isBuilder(v)) return;
         v.getPersistentData().putBoolean(NBT_BUILDER, false);
-        v.getPersistentData().putLong(NBT_COOLDOWN, v.level().getGameTime() + DEMOTE_COOLDOWN);
+        v.getPersistentData().putLong(NBT_COOLDOWN, v.level.getGameTime() + DEMOTE_COOLDOWN);
         if (v.getCustomName() != null && BUILDER_NAME.equals(v.getCustomName().getString())) {
             v.setCustomName(null);
             v.setCustomNameVisible(false);
@@ -52,7 +52,7 @@ public final class BuilderRole {
      *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
         return !(v instanceof EmeraldgerEntity) && !isLimboSage(v)
-                && !isBuilder(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+                && !isBuilder(v) && v.level.getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
     }
 
     /** The Limbo Sage works at the brain node and must never be drafted as a builder. */

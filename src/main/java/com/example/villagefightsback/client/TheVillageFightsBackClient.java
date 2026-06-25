@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
@@ -45,11 +44,16 @@ public final class TheVillageFightsBackClient {
     /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
     @SubscribeEvent
     public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
-        event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
-                ModItems.ROCKET_LAUNCHER.get(),
-                new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
-                (stack, level, entity, seed) ->
-                        (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F));
+        event.enqueueWork(() -> {
+            net.minecraft.client.renderer.item.ItemProperties.register(
+                    ModItems.ROCKET_LAUNCHER.get(),
+                    new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
+                    (stack, level, entity, seed) ->
+                            (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F);
+            // 1.19.2: GUI overlays register via OverlayRegistry from client setup (no RegisterGuiOverlaysEvent).
+            LimboAbilityHud.register();
+            VillageDiscoveryHud.register();
+        });
     }
 
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
@@ -89,13 +93,13 @@ public final class TheVillageFightsBackClient {
     @SubscribeEvent
     public static void onRegisterParticles(net.minecraftforge.client.event.RegisterParticleProvidersEvent event) {
         // Our green sonic-boom reuses the vanilla SonicBoomParticle renderer with green sprites.
-        event.registerSpriteSet(com.example.villagefightsback.ModParticles.GREEN_SONIC_BOOM.get(),
+        event.register(com.example.villagefightsback.ModParticles.GREEN_SONIC_BOOM.get(),
                 net.minecraft.client.particle.SonicBoomParticle.Provider::new);
         // JEG-style big explosion animation (scaled-up ExplodeParticle with our fireball sprites).
-        event.registerSpriteSet(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION.get(),
+        event.register(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION.get(),
                 GigachadExplosionParticle.Provider::new);
         // The same animation in green, for the emerald gigachad golem's rockets.
-        event.registerSpriteSet(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION_GREEN.get(),
+        event.register(com.example.villagefightsback.ModParticles.GIGACHAD_EXPLOSION_GREEN.get(),
                 GigachadExplosionParticle.Provider::new);
     }
 

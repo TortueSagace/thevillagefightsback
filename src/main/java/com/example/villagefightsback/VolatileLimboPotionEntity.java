@@ -2,7 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -40,7 +39,7 @@ public class VolatileLimboPotionEntity extends ThrowableItemProjectile {
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result);
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
         double x = getX(), y = getY(), z = getZ();
         // the burst (soul + portal swirl, like a small banishment)
         sl.sendParticles(ParticleTypes.SOUL, x, y, z, 40, 1.4, 0.8, 1.4, 0.05);
@@ -58,7 +57,7 @@ public class VolatileLimboPotionEntity extends ThrowableItemProjectile {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

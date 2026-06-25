@@ -10,7 +10,7 @@ import com.example.villagefightsback.wall.WallPlan;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -258,7 +258,7 @@ public class BrainNodeData extends SavedData {
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(c.getString("dim")));
             GlobalPos key = GlobalPos.of(dim, BlockPos.of(c.getLong("pos")));
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
@@ -288,7 +288,7 @@ public class BrainNodeData extends SavedData {
         ListTag bells = tag.getList("bellPlacers", Tag.TAG_COMPOUND);
         for (int i = 0; i < bells.size(); i++) {
             CompoundTag c = bells.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(c.getString("dim")));
             d.bellPlacers.put(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))), c.getUUID("player"));
         }
         return d;
@@ -349,7 +349,7 @@ public class BrainNodeData extends SavedData {
         ListTag list = tag.getList(key, Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            ResourceKey<Level> dim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(c.getString("dim")));
             out.add(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))));
         }
     }

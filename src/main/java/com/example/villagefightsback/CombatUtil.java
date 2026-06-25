@@ -52,11 +52,11 @@ public final class CombatUtil {
      * caller, since iron golems' knockback resistance would otherwise shrug off the burst.
      */
     public static boolean throwWindChargeDown(Mob shooter) {
-        if (shooter.level().isClientSide()) return false;
-        WindChargeEntity proj = new WindChargeEntity(shooter.level(), shooter);
+        if (shooter.level.isClientSide()) return false;
+        WindChargeEntity proj = new WindChargeEntity(shooter.level, shooter);
         proj.moveTo(shooter.getX(), shooter.getY() + 0.5, shooter.getZ(), shooter.getYRot(), 90.0F);
         proj.shootFromRotation(shooter, 90.0F, shooter.getYRot(), 0.0F, 1.5F, 0.0F); // 90 pitch = straight down
-        shooter.level().addFreshEntity(proj);
+        shooter.level.addFreshEntity(proj);
         return true;
     }
 
@@ -83,7 +83,7 @@ public final class CombatUtil {
         // Faction-aware: a boss-minion (vindictive) mob hunts anyone not in its own faction; a village mob
         // hunts vanilla hostiles AND the boss faction (so the village fights back against the vindictive).
         boolean mobInfected = Factions.isInfected(mob);
-        List<LivingEntity> candidates = mob.level().getEntitiesOfClass(LivingEntity.class, box,
+        List<LivingEntity> candidates = mob.level.getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
                                   : (e instanceof Enemy || Factions.isInfected(e)))
                         && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
@@ -107,7 +107,7 @@ public final class CombatUtil {
         double rangeSqr = range * range;
         AABB box = mob.getBoundingBox().inflate(range);
         boolean mobInfected = Factions.isInfected(mob);
-        return mob.level().getEntitiesOfClass(LivingEntity.class, box,
+        return mob.level.getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
                                   : (e instanceof Enemy || Factions.isInfected(e)))
                         && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
@@ -121,7 +121,7 @@ public final class CombatUtil {
      * namespace so FAW stays a non-dependency; no-ops when FAW is not installed.
      */
     public static boolean isOnFawBlock(Entity e) {
-        Level level = e.level();
+        Level level = e.level;
         return isFawBlock(e.getBlockStateOn()) || isFawBlock(level.getBlockState(e.blockPosition()));
     }
 
@@ -137,7 +137,7 @@ public final class CombatUtil {
      * {@code onLivingHurt} spares fellow defenders while the blast still hurts hostiles and clears blocks.
      */
     public static void primeTnt(LivingEntity igniter, int fuse) {
-        Level level = igniter.level();
+        Level level = igniter.level;
         if (level.isClientSide()) return;
         PrimedTnt tnt = new PrimedTnt(level, igniter.getX(), igniter.getY(), igniter.getZ(), igniter);
         tnt.setFuse(fuse);

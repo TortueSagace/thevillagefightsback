@@ -112,7 +112,7 @@ public final class BrainReflexes {
     public static void onVillagerHurt(LivingHurtEvent event) {
         LivingEntity v = event.getEntity();
         if (!(v instanceof Villager) || v instanceof EmeraldgerEntity) return;
-        if (!(v.level() instanceof ServerLevel sl)) return;
+        if (!(v.level instanceof ServerLevel sl)) return;
         // Only a REAL attack arms the golem-factory reflex: the damage must come from an attacker entity
         // (a hostile mob or a player, directly or via a projectile). Wall suffocation, fire, and fall damage
         // are sourceless (no attacker entity), so they do NOT count as an attack.
@@ -128,7 +128,7 @@ public final class BrainReflexes {
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity v = event.getEntity();
-        if (!(v.level() instanceof ServerLevel sl)) return;
+        if (!(v.level instanceof ServerLevel sl)) return;
         boolean villager = v instanceof Villager && !(v instanceof EmeraldgerEntity);
         boolean golem = v instanceof IronGolem;
         boolean guard = GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(v.getType()));
@@ -397,7 +397,7 @@ public final class BrainReflexes {
     private static void spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
         if (type == null) return;
         BlockPos spot = findInsideSpot(level, brain);
-        Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
+        Entity e = type.spawn(level, (net.minecraft.nbt.CompoundTag) null, (java.util.function.Consumer) null, spot, MobSpawnType.EVENT, false, false);
         if (e instanceof Villager v) v.setBaby(false);
     }
 

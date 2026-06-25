@@ -2,7 +2,7 @@ package com.example.villagefightsback.client;
 
 import com.example.villagefightsback.TheVillageFightsBack;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
+import com.mojang.math.Vector3f;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -41,14 +41,14 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
     private final ResourceLocation gunId;
     private final String bone;
     private final float dx, dy, dz, rx, ry, rz, scale;
-    private final ItemDisplayContext context;
+    private final ItemTransforms.TransformType context;
     private final Gate gate;
     private ItemStack stack = ItemStack.EMPTY;
     private boolean disabled = false;
 
     public HeldWeaponLayer(RenderLayerParent<T, M> parent, ResourceLocation gunId, String bone,
                         float dx, float dy, float dz, float rx, float ry, float rz, float scale,
-                        ItemDisplayContext context, Gate gate) {
+                        ItemTransforms.TransformType context, Gate gate) {
         super(parent);
         this.gunId = gunId;
         this.bone = bone;
@@ -93,13 +93,13 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
                 part.translateAndRotate(pose);
             }
             pose.translate(dx, dy, dz);
-            pose.mulPose(Axis.XP.rotationDegrees(rx));
-            pose.mulPose(Axis.YP.rotationDegrees(ry));
-            pose.mulPose(Axis.ZP.rotationDegrees(rz));
+            pose.mulPose(Vector3f.XP.rotationDegrees(rx));
+            pose.mulPose(Vector3f.YP.rotationDegrees(ry));
+            pose.mulPose(Vector3f.ZP.rotationDegrees(rz));
             pose.scale(scale, scale, scale);
             Minecraft.getInstance().getItemRenderer().renderStatic(
                     stack, context, packedLight, OverlayTexture.NO_OVERLAY, pose, buffer,
-                    entity.level(), entity.getId());
+                    entity.level, entity.getId());
         } catch (Throwable t) {
             // If JEG's gun item renderer can't handle a non-player holder, give up rather than
             // crash the client every frame.

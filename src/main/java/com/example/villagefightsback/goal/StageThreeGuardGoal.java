@@ -83,7 +83,7 @@ public class StageThreeGuardGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return (target != null && target.isAlive()) || !guard.onGround(); // stay active mid-bounce
+        return (target != null && target.isAlive()) || !guard.isOnGround(); // stay active mid-bounce
     }
 
     @Override
@@ -113,7 +113,7 @@ public class StageThreeGuardGoal extends Goal {
         if (guard.tickCount % RETARGET_INTERVAL == 0) refreshTarget();
         LivingEntity t = target;
         if (t == null) {                       // nothing to fight: just clutch a landing if we were bouncing
-            if (!guard.onGround()) maybeWaterClutch();
+            if (!guard.isOnGround()) maybeWaterClutch();
             return;
         }
         guard.setTarget(t);
@@ -126,7 +126,7 @@ public class StageThreeGuardGoal extends Goal {
         double dist = guard.distanceTo(t);
         if (t instanceof Creeper) {            // never melee a creeper -- shoot it with the crossbow at any range
             crossbow(t, dist);
-        } else if (hasMace && !guard.onGround()) { // already airborne -> keep diving / smashing / clutching
+        } else if (hasMace && !guard.isOnGround()) { // already airborne -> keep diving / smashing / clutching
             diveAndSmash(t);
         } else if (dist > CROSSBOW_RANGE) {
             crossbow(t, dist);
@@ -150,7 +150,7 @@ public class StageThreeGuardGoal extends Goal {
     }
 
     private void fireVirusArrow(LivingEntity t) {
-        Level level = guard.level();
+        Level level = guard.getLevel();
         Arrow arrow = new Arrow(level, guard);
         double dx = t.getX() - guard.getX();
         double dy = t.getY(0.5) - arrow.getY();
@@ -187,7 +187,7 @@ public class StageThreeGuardGoal extends Goal {
         guard.hurtMarked = true;
         guard.fallDistance = 0.0F;
         launchCooldown = LAUNCH_COOLDOWN;
-        guard.level().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
+        guard.getLevel().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 1.2F, 0.7F);
         throwLaunchWindCharge(); // a gust visibly bursts under the guard as it leaps (visual only)
     }
@@ -212,10 +212,10 @@ public class StageThreeGuardGoal extends Goal {
     private void smash(LivingEntity t) {
         float fall = Math.min(guard.fallDistance, FALL_CAP);
         float dmg = MACE_BASE + fall * SMASH_PER_BLOCK; // my own Density-3 smash formula (mob-friendly)
-        t.hurt(guard.damageSources().mobAttack(guard), dmg);
+        t.hurt(net.minecraft.world.damagesource.DamageSource.mobAttack(guard), dmg);
         t.setSecondsOnFire(FIRE_ASPECT_SECONDS);
         guard.swing(InteractionHand.MAIN_HAND);
-        guard.level().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
+        guard.getLevel().playSound(null, guard.getX(), guard.getY(), guard.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.8F, 1.4F);
         guard.fallDistance = 0.0F;
         // Wind Burst 3: bounce toward the next live target, else fall and clutch.
@@ -236,7 +236,7 @@ public class StageThreeGuardGoal extends Goal {
     private void maybeWaterClutch() {
         if (clutchPos != null || guard.fallDistance <= SAFE_FALL) return;
         BlockPos feet = guard.blockPosition();
-        Level level = guard.level();
+        Level level = guard.getLevel();
         // only when the ground is close below (about to land)
         BlockPos ground = feet;
         for (int i = 0; i <= 2; i++) {
@@ -244,7 +244,7 @@ public class StageThreeGuardGoal extends Goal {
             ground = ground.below();
         }
         if (feet.getY() - ground.getY() > 2) return; // still high up -> keep falling
-        if (!level.getBlockState(feet).canBeReplaced()) return;
+        if (!level.getBlockState(feet).getMaterial().isReplaceable()) return;
         level.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
         clutchPos = feet.immutable();
         clutchTimer = CLUTCH_REMOVE_TICKS;
@@ -255,8 +255,8 @@ public class StageThreeGuardGoal extends Goal {
     private void extinguishWithWater() {
         if (clutchPos != null) return; // a clutch (landing or fire) is already down
         BlockPos feet = guard.blockPosition();
-        Level level = guard.level();
-        if (!level.getBlockState(feet).canBeReplaced()) return;
+        Level level = guard.getLevel();
+        if (!level.getBlockState(feet).getMaterial().isReplaceable()) return;
         level.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
         clutchPos = feet.immutable();
         clutchTimer = CLUTCH_REMOVE_TICKS;
@@ -272,8 +272,8 @@ public class StageThreeGuardGoal extends Goal {
 
     private void removeClutch() {
         if (clutchPos == null) return;
-        if (guard.level().getBlockState(clutchPos).is(Blocks.WATER)) {
-            guard.level().setBlock(clutchPos, Blocks.AIR.defaultBlockState(), 3);
+        if (guard.getLevel().getBlockState(clutchPos).is(Blocks.WATER)) {
+            guard.getLevel().setBlock(clutchPos, Blocks.AIR.defaultBlockState(), 3);
         }
         clutchPos = null;
     }
@@ -302,10 +302,10 @@ public class StageThreeGuardGoal extends Goal {
             return;
         }
         if (climbCooldown > 0) return;
-        Level level = guard.level();
+        Level level = guard.getLevel();
         BlockPos feet = new BlockPos(gx, gy, gz);
-        if (level.getBlockState(feet.above()).blocksMotion()) { crossbow(t, dist); return; } // capped above -> shoot it
-        if (level.getBlockState(feet).canBeReplaced()) {
+        if (level.getBlockState(feet.above()).getMaterial().blocksMotion()) { crossbow(t, dist); return; } // capped above -> shoot it
+        if (level.getBlockState(feet).getMaterial().isReplaceable()) {
             level.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
         }
         guard.getNavigation().stop();
@@ -322,7 +322,7 @@ public class StageThreeGuardGoal extends Goal {
      * the guard and bursts on the ground a tick or two later.
      */
     private void throwLaunchWindCharge() {
-        Level level = guard.level();
+        Level level = guard.getLevel();
         if (level.isClientSide()) return;
         WindChargeEntity charge = new WindChargeEntity(level, guard).setCosmetic(true);
         // Spawn at the FEET (not the eyes) and fire straight down, so the gust bursts directly below the guard.
@@ -341,9 +341,9 @@ public class StageThreeGuardGoal extends Goal {
 
     private boolean hasHeadroom() {
         if (!GuardWeapons.hasMace()) return false; // no mace -> never "bounce"; melee instead
-        BlockPos head = BlockPos.containing(guard.getX(), guard.getEyeY(), guard.getZ());
+        BlockPos head = new BlockPos(guard.getX(), guard.getEyeY(), guard.getZ());
         for (int i = 1; i <= MIN_HEADROOM; i++) {
-            if (!guard.level().getBlockState(head.above(i)).isAir()) return false;
+            if (!guard.getLevel().getBlockState(head.above(i)).isAir()) return false;
         }
         return true;
     }
@@ -368,7 +368,7 @@ public class StageThreeGuardGoal extends Goal {
         AABB box = guard.getBoundingBox().inflate(radius);
         LivingEntity best = null;
         double bestD = radius * radius;
-        for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
+        for (LivingEntity e : guard.getLevel().getEntitiesOfClass(LivingEntity.class, box,
                 x -> x != guard && x != exclude
                         && (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
@@ -383,6 +383,6 @@ public class StageThreeGuardGoal extends Goal {
     /** Cast helper kept for clarity where a ServerLevel is genuinely required. */
     @SuppressWarnings("unused")
     private ServerLevel server() {
-        return (ServerLevel) guard.level();
+        return (ServerLevel) guard.getLevel();
     }
 }

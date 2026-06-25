@@ -88,7 +88,7 @@ public class GeneralDariusGoal extends Goal {
 
     @Override
     public void tick() {
-        if (!(darius.level() instanceof ServerLevel sl)) return;
+        if (!(darius.getLevel() instanceof ServerLevel sl)) return;
         if (meleeCooldown > 0) meleeCooldown--;
         if (launchCooldown > 0) launchCooldown--;
         if (scaffoldCooldown > 0) scaffoldCooldown--;
@@ -138,7 +138,7 @@ public class GeneralDariusGoal extends Goal {
             darius.tryFireBeamAt(t);
         }
 
-        if (!darius.onGround()) {                 // airborne -> steer + dive-smash
+        if (!darius.isOnGround()) {                 // airborne -> steer + dive-smash
             diveAndSmash(t);
             return;
         }
@@ -199,7 +199,7 @@ public class GeneralDariusGoal extends Goal {
     private boolean isBoxedBelowSurface(ServerLevel sl) {
         BlockPos head = darius.blockPosition().above((int) Math.ceil(darius.getBbHeight()) - 1);
         // capped above (cannot just jump out) and not under open sky -> treat as a pit
-        return sl.getBlockState(head.above()).blocksMotion() || !sl.canSeeSky(darius.blockPosition());
+        return sl.getBlockState(head.above()).getMaterial().blocksMotion() || !sl.canSeeSky(darius.blockPosition());
     }
 
     /** Pillar up on Cheap Scaffolds (like the limbo raiders) and hop, to climb out of a pit. */
@@ -207,7 +207,7 @@ public class GeneralDariusGoal extends Goal {
         if (scaffoldCooldown > 0) return;
         int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
         BlockPos feet = new BlockPos(gx, gy, gz);
-        if (sl.getBlockState(feet).canBeReplaced()) {
+        if (sl.getBlockState(feet).getMaterial().isReplaceable()) {
             sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
             CheapScaffoldManager.track(sl, feet);
         }
@@ -251,7 +251,7 @@ public class GeneralDariusGoal extends Goal {
         if (com.example.villagefightsback.LimboGear.isPhaseDoor(s)) return false; // not the gate doors
         sl.destroyBlock(head, false);
         BlockPos feet = new BlockPos(gx, gy, gz);
-        if (sl.getBlockState(feet).canBeReplaced()) {
+        if (sl.getBlockState(feet).getMaterial().isReplaceable()) {
             sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
             CheapScaffoldManager.track(sl, feet);
         }
@@ -271,7 +271,7 @@ public class GeneralDariusGoal extends Goal {
         darius.hurtMarked = true;
         darius.fallDistance = 0.0F;
         launchCooldown = LAUNCH_COOLDOWN;
-        darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
+        darius.getLevel().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 1.3F, 0.6F);
     }
 
@@ -291,10 +291,10 @@ public class GeneralDariusGoal extends Goal {
     private void smash(LivingEntity t) {
         float fall = Math.min(darius.fallDistance, FALL_CAP);
         float dmg = SMASH_BASE + fall * SMASH_PER_BLOCK;
-        t.hurt(darius.damageSources().mobAttack(darius), dmg);
+        t.hurt(net.minecraft.world.damagesource.DamageSource.mobAttack(darius), dmg);
         t.setSecondsOnFire(FIRE_ASPECT_SECONDS);
         darius.swing(InteractionHand.MAIN_HAND);
-        darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
+        darius.getLevel().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.9F, 1.3F);
         darius.fallDistance = 0.0F;
     }

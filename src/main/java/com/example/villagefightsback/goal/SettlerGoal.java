@@ -42,7 +42,7 @@ public class SettlerGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (!(villager.level() instanceof ServerLevel level)) return false;
+        if (!(villager.getLevel() instanceof ServerLevel level)) return false;
         if (villager.isBaby() || villager.isSleeping()) return false;
         if (com.example.villagefightsback.BuilderRole.isBuilder(villager)) return false; // builders belong to a village
         if (villager.getPersistentData().getBoolean(NBT_SETTLED)) return false;
@@ -65,7 +65,7 @@ public class SettlerGoal extends Goal {
 
     @Override
     public void start() {
-        ServerLevel level = (ServerLevel) villager.level();
+        ServerLevel level = (ServerLevel) villager.getLevel();
         BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, doorFacing);
         level.setBlock(tntPos, tnt, 3); // detonates instantly on placement -> builds the house

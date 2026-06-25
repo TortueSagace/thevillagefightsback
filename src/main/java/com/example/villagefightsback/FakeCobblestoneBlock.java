@@ -58,8 +58,8 @@ public class FakeCobblestoneBlock extends Block {
                 // a 3-high gate (capped or not) works too. Only the BOTTOM block of a stack can be a floor.
                 BlockState below = level.getBlockState(pos.below());
                 BlockState above = level.getBlockState(pos.above());
-                boolean openAbove = above.isAir() || above.canBeReplaced();
-                boolean realFloor = openAbove && !below.is(this) && !below.isAir() && !below.canBeReplaced();
+                boolean openAbove = above.isAir() || above.getMaterial().isReplaceable();
+                boolean realFloor = openAbove && !below.is(this) && !below.isAir() && !below.getMaterial().isReplaceable();
                 return realFloor ? Shapes.block() : Shapes.empty();
             }
         }

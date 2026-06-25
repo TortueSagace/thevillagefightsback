@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -102,7 +102,7 @@ public class CheapScaffoldManager extends SavedData {
         for (int i = 0; i < list.size(); i++) {
             CompoundTag c = list.getCompound(i);
             Batch b = new Batch();
-            b.dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(c.getString("dim")));
+            b.dim = ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(c.getString("dim")));
             b.expiry = c.getLong("expiry");
             b.openUntil = c.getLong("openUntil");
             for (long l : c.getLongArray("pos")) b.positions.add(l);

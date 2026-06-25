@@ -3,8 +3,9 @@ package com.example.villagefightsback.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,7 +33,7 @@ public final class GuiEntityIcons {
      * scale. Returns false (so the caller draws a fallback icon) when there is no client level yet or entity
      * rendering has been disabled by a prior failure.
      */
-    public static boolean render(GuiGraphics g, int iconX, int iconY, EntityType<?> type, int scale) {
+    public static boolean render(PoseStack ps, int iconX, int iconY, EntityType<?> type, int scale) {
         if (disabled) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return false;
@@ -47,7 +48,8 @@ public final class GuiEntityIcons {
             age += SPIN_RATE;        // advance the model animation slowly (the wall defender's spin reads ageInTicks)
             e.tickCount = (int) age;
             // Centre the entity horizontally; ICON_DROP lowers the feet anchor so the spinning core sits mid-slot.
-            InventoryScreen.renderEntityInInventoryFollowsMouse(g, iconX + 8, iconY + ICON_DROP, scale, 0.0F, 0.0F, e);
+            // 1.19.2 InventoryScreen.renderEntityInInventory takes no PoseStack/GuiGraphics arg (uses the global modelview pose).
+            InventoryScreen.renderEntityInInventory(iconX + 8, iconY + ICON_DROP, scale, 0.0F, 0.0F, e);
             return true;
         } catch (Throwable t) {
             disabled = true;

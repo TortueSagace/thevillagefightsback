@@ -151,7 +151,7 @@ public final class VillageEvents {
      *  arms itself in finalizeSpawn. Used when a village golem first reaches a level-3 brainNode. */
     public static void convertToGigachad(IronGolem old) {
         if (old instanceof GigachadGolemEntity) return;
-        if (!(old.level() instanceof ServerLevel sl)) return;
+        if (!(old.level instanceof ServerLevel sl)) return;
         GigachadGolemEntity g = ModEntities.GIGACHAD_GOLEM.get().create(sl);
         if (g == null) return;
         g.moveTo(old.getX(), old.getY(), old.getZ(), old.getYRot(), old.getXRot());
@@ -170,7 +170,7 @@ public final class VillageEvents {
      *  {@link #convertToGigachad}. */
     public static void convertToDefenderGolem(IronGolem old) {
         if (old instanceof DefenderGolemEntity || old instanceof GigachadGolemEntity) return;
-        if (!(old.level() instanceof ServerLevel sl)) return;
+        if (!(old.level instanceof ServerLevel sl)) return;
         DefenderGolemEntity d = ModEntities.DEFENDER_GOLEM.get().create(sl);
         if (d == null) return;
         d.moveTo(old.getX(), old.getY(), old.getZ(), old.getYRot(), old.getXRot());
@@ -391,9 +391,9 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onGuardDeathDrops(LivingDropsEvent event) {
         LivingEntity dead = event.getEntity();
-        if (dead.level().isClientSide() || !isGuard(dead)) return;
+        if (dead.level.isClientSide() || !isGuard(dead)) return;
         if (dead.getRandom().nextFloat() >= GUARD_FIRE_GRENADE_DROP_CHANCE) return;
-        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level,
                 dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.FIRE_GRENADE.get())));
     }
 
@@ -445,7 +445,7 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onUsedWeaponDrops(LivingDropsEvent event) {
         LivingEntity dead = event.getEntity();
-        if (dead.level().isClientSide()) return;
+        if (dead.level.isClientSide()) return;
         boolean villager = dead instanceof Villager;
         boolean guard = isGuard(dead) || dead instanceof VindictiveGuardEntity;
         if (!villager && !guard) return;
@@ -453,14 +453,14 @@ public final class VillageEvents {
         // 5% chance: drop the real held weapon.
         ItemStack held = dead.getMainHandItem();
         if (!held.isEmpty() && isWeapon(held) && dead.getRandom().nextFloat() < USED_WEAPON_DROP_CHANCE) {
-            event.getDrops().add(new ItemEntity(dead.level(),
+            event.getDrops().add(new ItemEntity(dead.level,
                     dead.getX(), dead.getY(), dead.getZ(), held.copy()));
         }
 
         // Guards / vindictive guards also drop 1-5 wind charges.
         if (guard) {
             int charges = 1 + dead.getRandom().nextInt(GUARD_WIND_CHARGE_MAX);
-            event.getDrops().add(new ItemEntity(dead.level(),
+            event.getDrops().add(new ItemEntity(dead.level,
                     dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.WIND_CHARGE.get(), charges)));
         }
     }
@@ -478,12 +478,12 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onGigachadDrops(LivingDropsEvent event) {
         LivingEntity dead = event.getEntity();
-        if (dead.level().isClientSide() || !(dead instanceof GigachadGolemEntity)) return; // covers the vindictive subclass
-        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+        if (dead.level.isClientSide() || !(dead instanceof GigachadGolemEntity)) return; // covers the vindictive subclass
+        event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level,
                 dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET_LAUNCHER.get())));
         int rockets = dead.getRandom().nextInt(3); // 0 to 2 rockets
         if (rockets > 0) {
-            event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level(),
+            event.getDrops().add(new net.minecraft.world.entity.item.ItemEntity(dead.level,
                     dead.getX(), dead.getY(), dead.getZ(), new ItemStack(ModItems.ROCKET.get(), rockets)));
         }
     }
@@ -524,7 +524,7 @@ public final class VillageEvents {
      */
     public static boolean beyondHomeWall(LivingEntity self, LivingEntity target) {
         if (target == null || target instanceof Player) return false;
-        if (!(self.level() instanceof ServerLevel sl)) return false;
+        if (!(self.level instanceof ServerLevel sl)) return false;
         WallPlan wall = WallBuild.enclosingPlan(sl, self.blockPosition());
         return wall != null && !wall.contains(target.blockPosition());
     }
@@ -535,7 +535,7 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onMobKilledByGuard(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Enemy) && !Factions.isInfected(event.getEntity())) return; // hostile / boss-minion kills count
-        if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
+        if (!(event.getEntity().level instanceof ServerLevel sl)) return;
         Entity killer = event.getSource().getEntity();
         if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard
         BrainNodeData data = BrainNodeData.get(sl.getServer());
@@ -556,7 +556,7 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onImmunityAttack(LivingAttackEvent event) {
         if (event.getEntity().hasEffect(ModEffects.IMMUNITY.get())
-                && event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
+                && event.getSource().isFire()) {
             event.setCanceled(true);
         }
     }
@@ -576,7 +576,7 @@ public final class VillageEvents {
      *  Village (status + nearby rally + warning), same as mining a node. */
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
-        if (event.getEntity().level().isClientSide()) return;
+        if (event.getEntity().level.isClientSide()) return;
 
         // No friendly fire among SAME-side defenders (e.g. rocket splash hitting an allied golem/villager).
         // A vindictive gigachad is an IronGolem (so isAlly), but it's a boss-faction enemy -- the faction
@@ -603,7 +603,7 @@ public final class VillageEvents {
         DamageSource src = event.getSource();
         if (src.getEntity() instanceof Player player
                 && isAlly(event.getEntity()) && !Factions.isInfected(event.getEntity())
-                && event.getEntity().level() instanceof ServerLevel sl) {
+                && event.getEntity().level instanceof ServerLevel sl) {
             markVillageEnemy(sl, event.getEntity().blockPosition(), player);
             // Immediate personal retaliation for the hurt villager / wall defender (snappier than the rally throttle).
             if (event.getEntity() instanceof Villager || event.getEntity() instanceof WallDefenderEntity) {
@@ -618,13 +618,13 @@ public final class VillageEvents {
      *  nearest "Enemy of the Village" player within {@link #NODE_DEFEND_RADIUS}. Null if none. */
     public static Player getAggroPlayer(Mob mob) {
         CompoundTag data = mob.getPersistentData();
-        if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
-            Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
+        if (data.hasUUID(NBT_AGGRO_UUID) && mob.level.getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
+            Player p = mob.level.getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
             if (p != null && p.isAlive()) return p;
         }
         // Any nearby player carrying the Enemy of the Village status is hunted on sight (the status itself
         // expires after 20 min or on death, so no separate bookkeeping is needed here).
-        if (mob.level() instanceof ServerLevel sl) {
+        if (mob.level instanceof ServerLevel sl) {
             Player best = null;
             double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
             for (Player p : sl.players()) {
@@ -739,7 +739,7 @@ public final class VillageEvents {
     public static void onEnemyEffectAdded(net.minecraftforge.event.entity.living.MobEffectEvent.Added event) {
         if (event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
-                && player.level() instanceof ServerLevel sl) {
+                && player.level instanceof ServerLevel sl) {
             aggroDefendersAgainst(sl, player);
         }
     }
@@ -749,7 +749,7 @@ public final class VillageEvents {
     public static void onEnemyEffectRemoved(net.minecraftforge.event.entity.living.MobEffectEvent.Remove event) {
         if (event.getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
-                && player.level() instanceof ServerLevel sl) {
+                && player.level instanceof ServerLevel sl) {
             clearEnemyTargets(sl, player);
         }
     }
@@ -760,7 +760,7 @@ public final class VillageEvents {
         if (event.getEffectInstance() == null
                 || event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
-                && player.level() instanceof ServerLevel sl) {
+                && player.level instanceof ServerLevel sl) {
             clearEnemyTargets(sl, player);
         }
     }

@@ -34,7 +34,7 @@ public final class NavThrottle {
     /** Walk to a fixed spot (e.g. a build/settle position), throttled. Stops pathing once basically there. */
     public static void goTo(Mob mob, double x, double y, double z, double speed) {
         if (mob.distanceToSqr(x, y, z) <= GOAL_CLOSE_SQR) { stopIfMoving(mob); return; }
-        if (shouldRepath(mob, BlockPos.containing(x, y, z))) mob.getNavigation().moveTo(x, y, z, speed);
+        if (shouldRepath(mob, new BlockPos(x, y, z))) mob.getNavigation().moveTo(x, y, z, speed);
     }
 
     private static void stopIfMoving(Mob mob) {
@@ -42,7 +42,7 @@ public final class NavThrottle {
     }
 
     private static boolean shouldRepath(Mob mob, BlockPos dest) {
-        long gt = mob.level().getGameTime();
+        long gt = mob.level.getGameTime();
         long[] l = LAST.get(mob);
         if (l == null) {
             LAST.put(mob, new long[]{gt, dest.asLong()});

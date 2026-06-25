@@ -19,6 +19,13 @@ import net.minecraft.world.level.block.state.BlockState;
 public abstract class AbstractNodeBlock extends Block {
     protected AbstractNodeBlock(Properties properties) { super(properties); }
 
+    /** Pistons can't shove a node around (which would otherwise re-fire its spawn). 1.19.2 has no
+     *  Properties.pushReaction builder, so immovability is enforced with this override. */
+    @Override
+    public net.minecraft.world.level.material.PushReaction getPistonPushReaction(BlockState state) {
+        return net.minecraft.world.level.material.PushReaction.BLOCK;
+    }
+
     /** Spawn this node's reinforcement at/near {@code node}, given the in-range brain node's {@code stage} (1..4). */
     public abstract void spawnPayload(ServerLevel level, BlockPos node, int stage);
 

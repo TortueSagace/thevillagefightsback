@@ -71,7 +71,7 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
         if (below.is(Blocks.END_STONE)) return true;
         Block fes = fertileEndStone();
         if (fes != null && below.is(fes)) return true;
-        return !below.isAir() && below.blocksMotion();
+        return !below.isAir() && below.getMaterial().blocksMotion();
     }
 
     @Override

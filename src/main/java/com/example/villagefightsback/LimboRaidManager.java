@@ -107,7 +107,7 @@ public final class LimboRaidManager {
             if (!vanilla.isAlive()) continue;
             Raid raid = vanilla.getCurrentRaid();
             if (raid == null || !limboRaids.containsKey(raid)) continue;
-            if (!(vanilla.level() instanceof ServerLevel level)) continue;
+            if (!(vanilla.level instanceof ServerLevel level)) continue;
             EntityType<? extends Mob> type = limboType(vanilla);
             if (type == null) continue;
             Mob created = type.create(level);
@@ -143,7 +143,7 @@ public final class LimboRaidManager {
     /** Track time-in-Limbo (-> the omen) and watch for omen-carriers returning to a village (-> a Limbo raid). */
     private static void scanPlayers(MinecraftServer server) {
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            ServerLevel level = p.serverLevel();
+            ServerLevel level = p.getLevel();
             UUID id = p.getUUID();
             if (LimboDimension.LIMBO.equals(level.dimension())) {
                 int t = limboTime.merge(id, 20, Integer::sum);

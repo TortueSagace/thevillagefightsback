@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,7 +32,7 @@ public final class LimboGearEvents {
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!(event.player instanceof ServerPlayer sp) || sp.level().isClientSide()) return;
+        if (!(event.player instanceof ServerPlayer sp) || sp.getLevel().isClientSide()) return;
 
         boolean full = LimboGear.wornCount(sp) >= 4;
 
@@ -76,8 +75,8 @@ public final class LimboGearEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onHurt(LivingHurtEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
-        if (player.level().isClientSide() || !LimboGear.hasFullSet(player)) return;
-        if (event.getSource().is(DamageTypeTags.IS_FIRE) || event.getSource().is(DamageTypeTags.IS_FALL)) {
+        if (player.getLevel().isClientSide() || !LimboGear.hasFullSet(player)) return;
+        if (event.getSource().isFire() || event.getSource().isFall()) {
             event.setCanceled(true); // fire + fall immunity only
         }
     }

@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -31,7 +30,7 @@ public final class GuardDeathExplosionEvents {
     public static void onGuardDeath(LivingDeathEvent event) {
         if (!Config.guardsDropFireGrenadeUponDeath()) return;                            // config: off = guards die quietly
         LivingEntity e = event.getEntity();
-        if (!(e.level() instanceof ServerLevel level)) return;
+        if (!(e.level instanceof ServerLevel level)) return;
         if (!GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) return; // Guard Villagers guard only
         if (!UpgradeState.isUpgraded(e)) return;                                         // stage-3 only
         Entity killer = event.getSource().getEntity();
@@ -41,8 +40,8 @@ public final class GuardDeathExplosionEvents {
 
     /** TNT-strength explosion that also leaves the whole blast range on fire. */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
-        level.explode(null, x, y, z, BLAST_RADIUS, true, Level.ExplosionInteraction.TNT);
-        BlockPos center = BlockPos.containing(x, y, z);
+        level.explode(null, x, y, z, BLAST_RADIUS, true, net.minecraft.world.level.Explosion.BlockInteraction.DESTROY);
+        BlockPos center = new BlockPos(x, y, z);
         int r = FIRE_RADIUS;
         for (BlockPos bp : BlockPos.betweenClosed(center.offset(-r, -r, -r), center.offset(r, r, r))) {
             if (center.distSqr(bp) > (long) r * r) continue;

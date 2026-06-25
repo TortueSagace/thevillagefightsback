@@ -96,7 +96,7 @@ public final class VillageChestProtection {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         Snapshot snap = openSnapshots.remove(player.getUUID()); // clear the snapshot either way
         if (snap == null) return;
-        if (!(player.level() instanceof ServerLevel level)) return;
+        if (!(player.level instanceof ServerLevel level)) return;
         if (hasHero(player)) return; // gained hero while the chest was open -> no longer a thief
 
         BlockEntity be = level.getBlockEntity(snap.pos());

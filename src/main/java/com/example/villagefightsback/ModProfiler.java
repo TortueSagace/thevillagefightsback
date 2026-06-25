@@ -64,17 +64,17 @@ public final class ModProfiler {
                         .executes(c -> { printReport(c.getSource()); return 1; })
                         .then(Commands.literal("reset").executes(c -> {
                             reset();
-                            c.getSource().sendSuccess(() -> Component.literal("§6[GBTYW] profiler reset"), false);
+                            c.getSource().sendSuccess(Component.literal("§6[GBTYW] profiler reset"), false);
                             return 1;
                         }))
                         .then(Commands.literal("on").executes(c -> {
                             enabled = true; reset();
-                            c.getSource().sendSuccess(() -> Component.literal("§a[GBTYW] profiler ON (reset)"), false);
+                            c.getSource().sendSuccess(Component.literal("§a[GBTYW] profiler ON (reset)"), false);
                             return 1;
                         }))
                         .then(Commands.literal("off").executes(c -> {
                             enabled = false;
-                            c.getSource().sendSuccess(() -> Component.literal("§c[GBTYW] profiler OFF"), false);
+                            c.getSource().sendSuccess(Component.literal("§c[GBTYW] profiler OFF"), false);
                             return 1;
                         }))));
     }
@@ -88,11 +88,11 @@ public final class ModProfiler {
         for (Map.Entry<String, long[]> e : list) total += e.getValue()[0];
         final long tot = Math.max(1L, total);
 
-        src.sendSuccess(() -> Component.literal(
+        src.sendSuccess(Component.literal(
                 "§6=== The Village Fights Back profiler -- " + ticks + " ticks "
                         + (enabled ? "" : "§c(OFF) ") + "§6==="), false);
         if (list.isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§7(no samples yet. Play a bit, then run /gbtyw profile)"), false);
+            src.sendSuccess(Component.literal("§7(no samples yet. Play a bit, then run /gbtyw profile)"), false);
             return;
         }
         for (Map.Entry<String, long[]> e : list) {
@@ -100,10 +100,10 @@ public final class ModProfiler {
             long calls = e.getValue()[1];
             String line = String.format("§e%-18s §f%7.1f µs/tick §7(%4.1f%%)  total %dms  calls %d",
                     e.getKey(), nanos / 1000.0 / t, nanos * 100.0 / tot, nanos / 1_000_000L, calls);
-            src.sendSuccess(() -> Component.literal(line), false);
+            src.sendSuccess(Component.literal(line), false);
         }
         String totalLine = String.format("§6TOTAL measured: %.1f µs/tick  (%.1f ms total over %d ticks)",
                 total / 1000.0 / t, total / 1_000_000.0, ticks);
-        src.sendSuccess(() -> Component.literal(totalLine), false);
+        src.sendSuccess(Component.literal(totalLine), false);
     }
 }

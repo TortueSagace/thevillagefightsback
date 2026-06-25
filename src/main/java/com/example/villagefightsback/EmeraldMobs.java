@@ -51,7 +51,7 @@ public final class EmeraldMobs {
      *  gets a melee attack (its damage = 50% of max health, set on the entity's attributes). Call AFTER
      *  super.registerGoals() so the species keeps its movement/attack goals but not its target selection. */
     public static void addEmeraldGoals(Mob mob, boolean passive) {
-        mob.targetSelector.removeAllGoals(g -> true); // replace vanilla targeting with the emerald-faction rules
+        mob.targetSelector.removeAllGoals(); // replace vanilla targeting with the emerald-faction rules
         // mustSee=false: hunt prey even with no line of sight (line of sight is a collision raycast that GLASS and
         // walls block, so otherwise an enclosed pig in a glass dome is ignored). mustReach=false: target it even
         // when there is no walking path -- the dig goal then breaks through to reach it.
@@ -70,7 +70,7 @@ public final class EmeraldMobs {
             if (passive) {
                 // An infected passive species is an AGGRESSOR, not prey: drop its flee-when-hurt goal and give the
                 // melee a HIGH priority so it commits to the kill instead of wandering/breeding/fleeing.
-                pm.goalSelector.removeAllGoals(g -> g instanceof net.minecraft.world.entity.ai.goal.PanicGoal);
+                pm.goalSelector.getAvailableGoals().removeIf(wrapped -> wrapped.getGoal() instanceof net.minecraft.world.entity.ai.goal.PanicGoal);
                 pm.goalSelector.addGoal(1, new MeleeAttackGoal(pm, 1.25D, true));
                 // Environment morph (green swirl on change): an emerald salmon stranded on DRY land 5s becomes an
                 // emerald chicken; any other emerald animal that stays IN WATER 10s becomes an emerald salmon.

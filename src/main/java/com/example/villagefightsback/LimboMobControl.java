@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraftforge.event.entity.living.MobSpawnEvent;
+import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -17,15 +17,15 @@ public final class LimboMobControl {
     private LimboMobControl() {}
 
     @SubscribeEvent
-    public static void onFinalizeSpawn(MobSpawnEvent.FinalizeSpawn event) {
-        ServerLevel level = event.getLevel().getLevel();
+    public static void onFinalizeSpawn(LivingSpawnEvent.SpecialSpawn event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!LimboDimension.LIMBO.equals(level.dimension())) return;
         if (event.getEntity() instanceof LimboPhantomEntity) return; // our natives are welcome
-        MobSpawnType reason = event.getSpawnType();
+        MobSpawnType reason = event.getSpawnReason();
         if (reason == MobSpawnType.NATURAL || reason == MobSpawnType.CHUNK_GENERATION
                 || reason == MobSpawnType.STRUCTURE || reason == MobSpawnType.PATROL
                 || reason == MobSpawnType.JOCKEY || reason == MobSpawnType.REINFORCEMENT) {
-            event.setSpawnCancelled(true);
+            event.setCanceled(true);
         }
     }
 }

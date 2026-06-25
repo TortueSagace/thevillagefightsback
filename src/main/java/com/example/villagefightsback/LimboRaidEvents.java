@@ -31,13 +31,13 @@ public final class LimboRaidEvents {
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         if (!(event.getEntity() instanceof LimboRaider) || !(event.getEntity() instanceof Mob mob)) return;
-        if (mob.level().isClientSide() || (mob.tickCount & 3) != 0) return;          // throttle: every 4 ticks
+        if (mob.level.isClientSide() || (mob.tickCount & 3) != 0) return;          // throttle: every 4 ticks
         if (mob.getTarget() == null || !mob.horizontalCollision) return;             // only dig when blocked en route
-        ServerLevel level = (ServerLevel) mob.level();
+        ServerLevel level = (ServerLevel) mob.level;
         AABB box = mob.getBoundingBox().inflate(0.2);
         int feetY = Mth.floor(mob.getY());                                            // keep the floor it stands on
-        BlockPos min = BlockPos.containing(box.minX, box.minY, box.minZ);
-        BlockPos max = BlockPos.containing(box.maxX, box.maxY, box.maxZ);
+        BlockPos min = new BlockPos(box.minX, box.minY, box.minZ);
+        BlockPos max = new BlockPos(box.maxX, box.maxY, box.maxZ);
         for (BlockPos p : BlockPos.betweenClosed(min, max)) {
             if (p.getY() < feetY) continue;                                           // never dig out the floor
             BlockState s = level.getBlockState(p);
@@ -59,7 +59,7 @@ public final class LimboRaidEvents {
         BlockPos feet = mob.blockPosition();
         if (isSolid(level, feet.above()) || isSolid(level, feet.above(2))) return;   // no headroom to rise
         BlockState at = level.getBlockState(feet);
-        if (at.canBeReplaced()) {
+        if (at.getMaterial().isReplaceable()) {
             level.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3); // auto-expires (~30s)
         } else if (!at.is(ModBlocks.CHEAP_SCAFFOLD.get())) {
             return;                                                                   // feet space blocked by something solid
@@ -69,7 +69,7 @@ public final class LimboRaidEvents {
     }
 
     private static boolean isSolid(ServerLevel level, BlockPos p) {
-        return level.getBlockState(p).blocksMotion();
+        return level.getBlockState(p).getMaterial().blocksMotion();
     }
 
     /** 3x strength: triple any damage whose ultimate cause is a Limbo raider (covers projectiles + spells).
@@ -77,8 +77,8 @@ public final class LimboRaidEvents {
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
         if (event.getEntity() instanceof LimboRaider
-                && (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.IN_WALL)
-                    || event.getSource().is(net.minecraft.world.damagesource.DamageTypes.CRAMMING))) {
+                && (event.getSource() == net.minecraft.world.damagesource.DamageSource.IN_WALL
+                    || event.getSource() == net.minecraft.world.damagesource.DamageSource.CRAMMING)) {
             event.setCanceled(true);
             return;
         }

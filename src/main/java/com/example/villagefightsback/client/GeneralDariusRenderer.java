@@ -27,8 +27,7 @@ public class GeneralDariusRenderer extends MobRenderer<GeneralDariusEntity, Dari
         super(ctx, new DariusVillagerModel(ctx.bakeLayer(TheVillageFightsBackClient.DARIUS_LAYER)), 0.5F);
         addLayer(new DariusArmorLayer(this,
                 new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
-                new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
-                ctx.getModelManager()));
+                new HumanoidModel<>(ctx.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR))));
         addLayer(new ItemInHandLayer<>(this, ctx.getItemInHandRenderer()));
         addLayer(new LimboHelmetSpikesLayer<>(this, ctx.getModelSet()));
     }

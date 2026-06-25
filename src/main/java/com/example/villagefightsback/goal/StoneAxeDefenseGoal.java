@@ -54,7 +54,7 @@ public class StoneAxeDefenseGoal extends Goal {
     /** Nearest living hostile (Enemy) that is NOT a creeper, in range and line of sight. */
     private LivingEntity findTarget() {
         AABB box = villager.getBoundingBox().inflate(SEE_RANGE);
-        List<LivingEntity> candidates = villager.level().getEntitiesOfClass(LivingEntity.class, box,
+        List<LivingEntity> candidates = villager.level.getEntitiesOfClass(LivingEntity.class, box,
                 e -> (e instanceof Enemy || com.example.villagefightsback.Factions.isInfected(e))
                         && !com.example.villagefightsback.Factions.isSparedByVillage(e) // never Darius or the friendly Vindictive Village Spirit
                         && !(e instanceof Creeper) && e.isAlive() && e != villager
@@ -122,7 +122,7 @@ public class StoneAxeDefenseGoal extends Goal {
         if (attackCooldown > 0) attackCooldown--;
         if (villager.distanceToSqr(t) <= REACH_SQR && attackCooldown <= 0) {
             villager.swing(InteractionHand.MAIN_HAND);
-            t.hurt(villager.level().damageSources().mobAttack(villager), AXE_DAMAGE);
+            t.hurt(net.minecraft.world.damagesource.DamageSource.mobAttack(villager), AXE_DAMAGE);
             attackCooldown = ATTACK_COOLDOWN;
         }
     }

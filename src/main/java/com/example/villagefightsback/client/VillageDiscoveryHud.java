@@ -1,14 +1,11 @@
 package com.example.villagefightsback.client;
 
-import com.example.villagefightsback.TheVillageFightsBack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraftforge.client.gui.ForgeIngameGui;
+import net.minecraftforge.client.gui.OverlayRegistry;
 
 /**
  * Draws the two-line "village discovered" message at the bottom of the screen (above the hotbar, NOT in chat)
@@ -17,7 +14,6 @@ import net.minecraftforge.fml.common.Mod;
  * client-tick timer ({@link VillageDiscoveryTicker} decrements it each unpaused tick) so it ALWAYS expires,
  * independent of world/dimension game-time.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillageDiscoveryHud {
     private VillageDiscoveryHud() {}
 
@@ -39,23 +35,23 @@ public final class VillageDiscoveryHud {
         if (ticksLeft > 0) ticksLeft--;
     }
 
-    @SubscribeEvent
-    public static void onRegister(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "village_discovery_message",
-                (gui, g, partialTick, w, h) -> draw(g, w, h));
+    /** Registered from client setup (1.19.2 has no RegisterGuiOverlaysEvent). */
+    public static void register() {
+        OverlayRegistry.registerOverlayAbove(ForgeIngameGui.HOTBAR_ELEMENT, "village_discovery_message",
+                (gui, ps, partialTick, w, h) -> draw(ps, w, h));
     }
 
-    private static void draw(GuiGraphics g, int w, int h) {
+    private static void draw(PoseStack ps, int w, int h) {
         if (ticksLeft <= 0) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
         int alpha = ticksLeft < FADE_TICKS ? Math.max(16, 255 * ticksLeft / FADE_TICKS) : 255;
         int top = h - 72, bot = h - 60;
-        line(g, mc, LINE1, w / 2, top, (alpha << 24) | GREEN);
-        line(g, mc, LINE2, w / 2, bot, (alpha << 24) | RED);
+        line(ps, mc, LINE1, w / 2, top, (alpha << 24) | GREEN);
+        line(ps, mc, LINE2, w / 2, bot, (alpha << 24) | RED);
     }
 
-    private static void line(GuiGraphics g, Minecraft mc, String s, int cx, int y, int color) {
-        g.drawString(mc.font, s, cx - mc.font.width(s) / 2, y, color, true);
+    private static void line(PoseStack ps, Minecraft mc, String s, int cx, int y, int color) {
+        GuiComponent.drawString(ps, mc.font, s, cx - mc.font.width(s) / 2, y, color);
     }
 }

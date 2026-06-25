@@ -37,7 +37,7 @@ public class ReturnToVillageGoal extends Goal {
     @Override
     public boolean canUse() {
         if (villager.tickCount % RECHECK != 0) return false;
-        if (!(villager.level() instanceof ServerLevel sl)) return false;
+        if (!(villager.getLevel() instanceof ServerLevel sl)) return false;
         if (WallBuild.enclosingPlan(sl, villager.blockPosition()) != null) return false; // already inside a wall
         this.home = nearestWalledNode(sl);
         return home != null;
@@ -45,7 +45,7 @@ public class ReturnToVillageGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        if (home == null || !(villager.level() instanceof ServerLevel sl)) return false;
+        if (home == null || !(villager.getLevel() instanceof ServerLevel sl)) return false;
         return WallBuild.enclosingPlan(sl, villager.blockPosition()) == null; // stop once back inside the wall
     }
 

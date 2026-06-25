@@ -8,7 +8,7 @@ import com.example.villagefightsback.goal.GeneralDariusGoal;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -172,7 +172,7 @@ public class GeneralDariusEntity extends Monster {
     @Nullable
     public BlockPos getHomeBrainPos() {
         if (homeBrain == null) return null;
-        if (level().dimension() != homeBrain.dimension()) return null;
+        if (level.dimension() != homeBrain.dimension()) return null;
         return homeBrain.pos();
     }
 
@@ -180,7 +180,7 @@ public class GeneralDariusEntity extends Monster {
     @Override
     protected void customServerAiStep() {
         super.customServerAiStep();
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
 
         // Full-set Limbo advantages (LimboGearEvents only handles players, so apply them here to Darius).
         clearFire();
@@ -222,8 +222,8 @@ public class GeneralDariusEntity extends Monster {
     // --- full-set damage immunity (fire + fall), mirroring LimboGearEvents.onHurt for the player --------
     @Override
     public boolean hurt(net.minecraft.world.damagesource.DamageSource source, float amount) {
-        if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)
-                || source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)) {
+        if (source.isFire()
+                || source == net.minecraft.world.damagesource.DamageSource.FALL) {
             return false; // fire + fall immunity
         }
         return super.hurt(source, amount);
@@ -244,7 +244,7 @@ public class GeneralDariusEntity extends Monster {
      */
     @Nullable
     public LivingEntity pickBiggestThreat() {
-        if (!(level() instanceof ServerLevel sl)) return null;
+        if (!(level instanceof ServerLevel sl)) return null;
         LivingEntity best = null;
         double bestHp = -1.0;
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
@@ -280,7 +280,7 @@ public class GeneralDariusEntity extends Monster {
     public void refundAndDespawn() {
         if (despawning) return;
         despawning = true;
-        if (level() instanceof ServerLevel sl) {
+        if (level instanceof ServerLevel sl) {
             DariusSquad.release(sl, squad);
             if (homeBrain != null) {
                 BrainNodeData data = BrainNodeData.get(sl.getServer());
@@ -305,7 +305,7 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public void remove(RemovalReason reason) {
         bossBar.removeAllPlayers();
-        if (level() instanceof ServerLevel sl) DariusSquad.release(sl, squad);
+        if (level instanceof ServerLevel sl) DariusSquad.release(sl, squad);
         super.remove(reason);
     }
 
@@ -323,7 +323,7 @@ public class GeneralDariusEntity extends Monster {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains(NBT_HOME_DIM) && tag.contains(NBT_HOME_POS)) {
-            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION,
+            ResourceKey<Level> dim = ResourceKey.create(Registry.DIMENSION_REGISTRY,
                     new ResourceLocation(tag.getString(NBT_HOME_DIM)));
             homeBrain = GlobalPos.of(dim, BlockPos.of(tag.getLong(NBT_HOME_POS)));
         }

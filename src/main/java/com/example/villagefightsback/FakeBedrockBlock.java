@@ -33,7 +33,7 @@ public class FakeBedrockBlock extends Block {
             // A surface (open space above) is solid so creatures stand on it; a covered block (wall interior) is
             // fully passable, so any creature walks through the walls of a cube but not down through its floor.
             BlockState above = level.getBlockState(pos.above());
-            boolean openAbove = above.isAir() || above.canBeReplaced();
+            boolean openAbove = above.isAir() || above.getMaterial().isReplaceable();
             return openAbove ? Shapes.block() : Shapes.empty();
         }
         return Shapes.block(); // non-entity contexts (support / redstone / the per-state cache): solid
@@ -45,7 +45,7 @@ public class FakeBedrockBlock extends Block {
         // Match the collision: a covered block is open to pathfinding (mobs route through walls); a surface is
         // left to vanilla (a solid block they stand on top of).
         BlockState above = level.getBlockState(pos.above());
-        boolean openAbove = above.isAir() || above.canBeReplaced();
+        boolean openAbove = above.isAir() || above.getMaterial().isReplaceable();
         return openAbove ? null : BlockPathTypes.OPEN;
     }
 }

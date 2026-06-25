@@ -7,7 +7,7 @@ import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -165,7 +165,7 @@ public final class WallPlan {
     public boolean satisfied(Level level, WallBlock wb) {
         BlockState world = level.getBlockState(wb.pos());
         if (wb.matches(world)) return true;             // already built
-        if (world.canBeReplaced()) return false;         // empty/replaceable -> still to build
+        if (world.getMaterial().isReplaceable()) return false;         // empty/replaceable -> still to build
         float hardness = world.getDestroySpeed(level, wb.pos());
         return hardness < 0 || hardness >= 25.0F;        // too tough to dig -> leave a gap (counts as done)
     }
@@ -251,8 +251,8 @@ public final class WallPlan {
                 if (!level.isLoaded(pos) || satisfied(level, wb)) continue;
                 // A standing torch needs the cap below it (placed earlier this same pass) -- skip till it's there.
                 if (wb.type() == WallBlock.BlockType.STANDING_TORCH
-                        && level.getBlockState(pos.below()).canBeReplaced()) continue;
-                if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
+                        && level.getBlockState(pos.below()).getMaterial().isReplaceable()) continue;
+                if (!level.getBlockState(pos).getMaterial().isReplaceable()) level.destroyBlock(pos, false); // clear soft terrain
                 level.setBlock(pos,
                         net.minecraft.world.level.block.Block.updateFromNeighbourShapes(wb.toState(), level, pos), 3);
                 placed++;
@@ -284,8 +284,8 @@ public final class WallPlan {
             BlockPos pos = wb.pos();
             if (!level.isLoaded(pos) || satisfied(level, wb)) continue;
             if (wb.type() == WallBlock.BlockType.STANDING_TORCH
-                    && level.getBlockState(pos.below()).canBeReplaced()) continue; // wait for the cap below it
-            if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
+                    && level.getBlockState(pos.below()).getMaterial().isReplaceable()) continue; // wait for the cap below it
+            if (!level.getBlockState(pos).getMaterial().isReplaceable()) level.destroyBlock(pos, false); // clear soft terrain
             level.setBlock(pos,
                     net.minecraft.world.level.block.Block.updateFromNeighbourShapes(wb.toState(), level, pos), 3);
             placed++;
@@ -303,7 +303,7 @@ public final class WallPlan {
     private boolean hasSupport(Level level, WallBlock wb) {
         if (wb.course() == 0) return true;
         if (wb.type() == WallBlock.BlockType.LADDER || wb.type() == WallBlock.BlockType.TORCH) return true;
-        return !level.getBlockState(wb.pos().below()).canBeReplaced(); // course below must already be there
+        return !level.getBlockState(wb.pos().below()).getMaterial().isReplaceable(); // course below must already be there
     }
 
     /**
@@ -436,7 +436,7 @@ public final class WallPlan {
 
     public static WallPlan load(CompoundTag tag) {
         ResourceKey<Level> dim = ResourceKey.create(
-                Registries.DIMENSION, new ResourceLocation(tag.getString("gm_dim")));
+                Registry.DIMENSION_REGISTRY, new ResourceLocation(tag.getString("gm_dim")));
         GlobalPos gm = GlobalPos.of(dim, BlockPos.of(tag.getLong("gm_pos")));
         java.util.TreeMap<Integer, List<WallBlock>> byColumn = new java.util.TreeMap<>();
         ListTag list = tag.getList("blocks", Tag.TAG_COMPOUND);

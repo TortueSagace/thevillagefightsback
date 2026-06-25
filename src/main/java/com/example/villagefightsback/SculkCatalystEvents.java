@@ -32,7 +32,7 @@ public final class SculkCatalystEvents {
 
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
+        if (!(event.getEntity().level instanceof ServerLevel sl)) return;
         BlockPos death = event.getEntity().blockPosition();
         Block fertile = ModBlocks.FERTILE_SCULK_CATALYST.get(), rich = ModBlocks.RICH_SCULK_CATALYST.get();
 
@@ -93,9 +93,9 @@ public final class SculkCatalystEvents {
             BlockPos g = p.above(dy);
             if (!level.isLoaded(g)) continue;
             BlockState s = level.getBlockState(g);
-            if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) continue;
+            if (s.isAir() || !s.getFluidState().isEmpty() || !s.getMaterial().blocksMotion()) continue;
             BlockState above = level.getBlockState(g.above());
-            if (above.isAir() || above.canBeReplaced()) return g;
+            if (above.isAir() || above.getMaterial().isReplaceable()) return g;
         }
         return null;
     }

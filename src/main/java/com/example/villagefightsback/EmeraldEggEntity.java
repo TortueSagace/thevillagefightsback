@@ -36,7 +36,7 @@ public class EmeraldEggEntity extends ThrowableItemProjectile {
     @Override
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
-        if (!level().isClientSide() && result.getEntity() instanceof LivingEntity victim) {
+        if (!level.isClientSide() && result.getEntity() instanceof LivingEntity victim) {
             EmeraldVirus.infect(victim, 0); // Emerald Virus I -> spawns a mite on death (gated by enable_mob_infection)
             if (getOwner() instanceof net.minecraft.server.level.ServerPlayer thrower) {
                 Achievements.award(thrower, "brain_node/a_very_bad_speech"); // landed an emerald egg on a target
@@ -47,7 +47,7 @@ public class EmeraldEggEntity extends ThrowableItemProjectile {
     @Override
     protected void onHit(HitResult result) {
         super.onHit(result); // dispatches to onHitEntity / onHitBlock
-        if (level() instanceof ServerLevel sl) {
+        if (level instanceof ServerLevel sl) {
             sl.sendParticles(ParticleTypes.HAPPY_VILLAGER, getX(), getY(), getZ(), 12, 0.3, 0.3, 0.3, 0.0);
             sl.playSound(null, getX(), getY(), getZ(), SoundEvents.SLIME_SQUISH, SoundSource.NEUTRAL, 0.7F, 1.4F);
             discard();

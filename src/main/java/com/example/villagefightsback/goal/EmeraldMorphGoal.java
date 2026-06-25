@@ -64,7 +64,7 @@ public class EmeraldMorphGoal extends Goal {
             ticks = 0; // truly left the element -> reset the timer
         }
         if (ticks < threshold) return;
-        if (!(mob.level() instanceof ServerLevel level)) return;
+        if (!(mob.getLevel() instanceof ServerLevel level)) return;
         Mob morphed = target.get().create(level);
         if (morphed == null) { ticks = 0; return; }
         morphed.moveTo(mob.getX(), mob.getY(), mob.getZ(), mob.getYRot(), mob.getXRot());

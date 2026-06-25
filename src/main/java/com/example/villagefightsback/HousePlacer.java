@@ -7,9 +7,7 @@ import java.util.Optional;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
@@ -206,13 +204,12 @@ public final class HousePlacer {
 
     /** Read the (single) block-state palette from a saved structure tag. */
     private static BlockState[] readPalette(CompoundTag data) {
-        HolderGetter<Block> lookup = BuiltInRegistries.BLOCK.asLookup();
         ListTag paletteTag = data.contains("palette")
                 ? data.getList("palette", Tag.TAG_COMPOUND)
                 : data.getList("palettes", Tag.TAG_LIST).getList(0);
         BlockState[] palette = new BlockState[paletteTag.size()];
         for (int i = 0; i < paletteTag.size(); i++) {
-            palette[i] = NbtUtils.readBlockState(lookup, paletteTag.getCompound(i));
+            palette[i] = NbtUtils.readBlockState(paletteTag.getCompound(i));
         }
         return palette;
     }

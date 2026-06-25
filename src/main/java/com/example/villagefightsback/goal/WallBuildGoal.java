@@ -91,7 +91,7 @@ public class WallBuildGoal extends Goal {
         return villager.getTarget() != null && villager.getTarget().isAlive();
     }
 
-    private Level level() { return villager.level(); }
+    private Level level() { return villager.level; }
 
     @Override
     public boolean canUse() {
@@ -317,7 +317,7 @@ public class WallBuildGoal extends Goal {
     }
 
     private boolean isSolid(int x, int y, int z) {
-        return level().getBlockState(new BlockPos(x, y, z)).blocksMotion();
+        return level().getBlockState(new BlockPos(x, y, z)).getMaterial().blocksMotion();
     }
 
     /**
@@ -329,7 +329,7 @@ public class WallBuildGoal extends Goal {
     }
 
     private void placeScaffold(BlockPos pos) {
-        if (level().getBlockState(pos).canBeReplaced()) {
+        if (level().getBlockState(pos).getMaterial().isReplaceable()) {
             level().setBlock(pos, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
             plan.addScaffold(pos);
         }
@@ -337,7 +337,7 @@ public class WallBuildGoal extends Goal {
 
     private boolean isStandable(BlockPos pos) {
         BlockState s = level().getBlockState(pos);
-        return s.blocksMotion() || s.is(ModBlocks.CHEAP_SCAFFOLD.get());
+        return s.getMaterial().blocksMotion() || s.is(ModBlocks.CHEAP_SCAFFOLD.get());
     }
 
     private void tickPlace() {
@@ -408,7 +408,7 @@ public class WallBuildGoal extends Goal {
 
     private void tickDig() {
         BlockState s = level().getBlockState(digPos);
-        if (s.canBeReplaced()) { finishDig(); return; } // already gone
+        if (s.getMaterial().isReplaceable()) { finishDig(); return; } // already gone
         digTicks++;
         int stage = (int) Math.min(9, (digTicks * 10L) / Math.max(1, digTotal));
         level().destroyBlockProgress(villager.getId(), digPos, stage);
@@ -448,7 +448,7 @@ public class WallBuildGoal extends Goal {
     /** True if a solid block here is too hard to dig through (obsidian, bedrock, reinforced deepslate, ...). */
     private boolean tooToughToDig(BlockPos pos) {
         BlockState s = level().getBlockState(pos);
-        if (s.canBeReplaced()) return false;
+        if (s.getMaterial().isReplaceable()) return false;
         float hardness = s.getDestroySpeed(level(), pos);
         return hardness < 0 || hardness >= TOUGH_HARDNESS;
     }
@@ -476,7 +476,7 @@ public class WallBuildGoal extends Goal {
             bridgeSteps++;
             return true;
         }
-        if (floorS.canBeReplaced() && floorS.getFluidState().isEmpty()) { // empty gap -> disposable scaffold
+        if (floorS.getMaterial().isReplaceable() && floorS.getFluidState().isEmpty()) { // empty gap -> disposable scaffold
             bridgeWithScaffold(floor);
             bridgeSteps++;
             return true;
@@ -491,8 +491,8 @@ public class WallBuildGoal extends Goal {
         BlockPos p = floor.below();
         for (int i = 0; i < 8; i++) {
             BlockState s = level().getBlockState(p);
-            if (s.blocksMotion()) break;        // reached a base -> the column above is now supported
-            if (!s.canBeReplaced()) break;       // fluid / something else -> stop
+            if (s.getMaterial().blocksMotion()) break;        // reached a base -> the column above is now supported
+            if (!s.getMaterial().isReplaceable()) break;       // fluid / something else -> stop
             placeScaffold(p);
             p = p.below();
         }
@@ -500,7 +500,7 @@ public class WallBuildGoal extends Goal {
 
     private boolean placeable(BlockPos pos) {
         BlockState s = level().getBlockState(pos);
-        return s.canBeReplaced()                          // air / water / short grass / ferns / snow layer / ...
+        return s.getMaterial().isReplaceable()                          // air / water / short grass / ferns / snow layer / ...
                 || s.getBlock() instanceof net.minecraft.world.level.block.BushBlock // flowers, saplings, crops, mushrooms, ...
                 || s.is(net.minecraft.tags.BlockTags.LEAVES)   // build straight through overgrowth
                 || s.is(net.minecraft.tags.BlockTags.LOGS)     // build straight through tree trunks
@@ -533,7 +533,7 @@ public class WallBuildGoal extends Goal {
         int y = villager.getBlockY();
         for (int i = 0; i < 64 && y > lvl.getMinBuildHeight(); i++, y--) {
             BlockState s = lvl.getBlockState(new BlockPos(col.getX(), y - 1, col.getZ()));
-            if (s.blocksMotion() && !s.is(ModBlocks.CHEAP_SCAFFOLD.get())) return y;
+            if (s.getMaterial().blocksMotion() && !s.is(ModBlocks.CHEAP_SCAFFOLD.get())) return y;
         }
         return y;
     }

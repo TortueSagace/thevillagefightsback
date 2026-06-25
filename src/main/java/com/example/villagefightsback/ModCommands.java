@@ -100,23 +100,23 @@ public final class ModCommands {
     }
 
     private static int getConfig(CommandSourceStack src, String key, ForgeConfigSpec.ConfigValue<?> value) {
-        src.sendSuccess(() -> Component.literal("§6" + key + " §7= §e" + value.get()), false);
+        src.sendSuccess(Component.literal("§6" + key + " §7= §e" + value.get()), false);
         return 1;
     }
 
     private static <T> int setConfig(CommandSourceStack src, String key, ForgeConfigSpec.ConfigValue<T> value, T newValue) {
         value.set(newValue);
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
-        src.sendSuccess(() -> Component.literal("§a" + key + " §7set to §e" + newValue), true);
+        src.sendSuccess(Component.literal("§a" + key + " §7set to §e" + newValue), true);
         return 1;
     }
 
     private static void listConfig(CommandSourceStack src) {
-        src.sendSuccess(() -> Component.literal("§6=== The Village Fights Back -- config ==="), false);
+        src.sendSuccess(Component.literal("§6=== The Village Fights Back -- config ==="), false);
         Config.INDEX.forEach((k, v) ->
-                src.sendSuccess(() -> Component.literal("§7" + k + " §8= §f" + v.get()), false));
-        src.sendSuccess(() -> Component.literal("§8Set with /thevillagefightsback config <key> <value>"), false);
-        src.sendSuccess(() -> Component.literal("§8Reset all with /thevillagefightsback config reset_default_configs"), false);
+                src.sendSuccess(Component.literal("§7" + k + " §8= §f" + v.get()), false));
+        src.sendSuccess(Component.literal("§8Set with /thevillagefightsback config <key> <value>"), false);
+        src.sendSuccess(Component.literal("§8Reset all with /thevillagefightsback config reset_default_configs"), false);
     }
 
     /** Restore EVERY tunable option to its default value (the value passed to define(...) when the spec was built). */
@@ -125,7 +125,7 @@ public final class ModCommands {
         for (ForgeConfigSpec.ConfigValue<?> v : Config.INDEX.values()) { resetOne(v); n++; }
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         final int count = n;
-        src.sendSuccess(() -> Component.literal("§aReset §e" + count
+        src.sendSuccess(Component.literal("§aReset §e" + count
                 + "§a config option(s) to their default values."), true);
         return 1;
     }
@@ -142,7 +142,7 @@ public final class ModCommands {
         GlobalPos best = null;
         double bestSqr = Double.MAX_VALUE;
         for (GlobalPos gp : data.blocks()) {
-            if (!gp.dimension().equals(player.level().dimension())) continue;
+            if (!gp.dimension().equals(player.level.dimension())) continue;
             double d = gp.pos().distSqr(here);
             if (d < bestSqr) { bestSqr = d; best = gp; }
         }
@@ -154,7 +154,7 @@ public final class ModCommands {
         GlobalPos brain = nearestBrain(player);
         if (brain == null) { src.sendFailure(Component.literal("No Village Brain Node found in this dimension.")); return 0; }
         int stage = BrainNodeData.get(player.getServer()).econ(brain).getLevel();
-        src.sendSuccess(() -> Component.literal("§7Nearest brain node stage: §e" + stage + " §7/ §e" + BrainNodeData.MAX_LEVEL), false);
+        src.sendSuccess(Component.literal("§7Nearest brain node stage: §e" + stage + " §7/ §e" + BrainNodeData.MAX_LEVEL), false);
         return 1;
     }
 
@@ -163,19 +163,19 @@ public final class ModCommands {
         GlobalPos brain = nearestBrain(player);
         if (brain == null) { src.sendFailure(Component.literal("No Village Brain Node found in this dimension.")); return 0; }
         BrainNodeData.get(player.getServer()).econ(brain).setLevel(stage);
-        src.sendSuccess(() -> Component.literal("§aNearest brain node stage set to §e" + stage), true);
+        src.sendSuccess(Component.literal("§aNearest brain node stage set to §e" + stage), true);
         return 1;
     }
 
     private static int clearForcedChunks(CommandSourceStack src) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        net.minecraft.server.level.ServerLevel level = src.getPlayerOrException().serverLevel();
+        net.minecraft.server.level.ServerLevel level = src.getPlayerOrException().getLevel();
         java.util.List<Long> forced = new java.util.ArrayList<>(level.getForcedChunks());
         for (long key : forced) {
             net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(key);
             level.setChunkForced(cp.x, cp.z, false);
         }
         int count = forced.size();
-        src.sendSuccess(() -> Component.literal("§aReleased §e" + count
+        src.sendSuccess(Component.literal("§aReleased §e" + count
                 + "§a force-loaded chunk(s) in this dimension."), true);
         return 1;
     }
@@ -185,8 +185,8 @@ public final class ModCommands {
         GlobalPos brain = nearestBrain(player);
         if (brain == null) { src.sendFailure(Component.literal("No Village Brain Node found in this dimension.")); return 0; }
         BlockPos p = brain.pos();
-        player.teleportTo(player.serverLevel(), p.getX() + 0.5, p.getY() + 1.0, p.getZ() + 0.5, player.getYRot(), player.getXRot());
-        src.sendSuccess(() -> Component.literal("§aTeleported above the nearest brain node at §e"
+        player.teleportTo(player.getLevel(), p.getX() + 0.5, p.getY() + 1.0, p.getZ() + 0.5, player.getYRot(), player.getXRot());
+        src.sendSuccess(Component.literal("§aTeleported above the nearest brain node at §e"
                 + p.getX() + ", " + (p.getY() + 1) + ", " + p.getZ()), false);
         return 1;
     }

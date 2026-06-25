@@ -179,7 +179,7 @@ public final class LimboDriftEvents {
         }
         for (net.minecraft.world.entity.Entity e : units) {
             double nx = e.getX() + sx * 16.0, nz = e.getZ() + sz * 16.0;
-            LimboDimension.ensureFloorUnder(limbo, BlockPos.containing(nx, e.getY(), nz));
+            LimboDimension.ensureFloorUnder(limbo, new BlockPos(nx, e.getY(), nz));
             e.teleportTo(nx, e.getY(), nz);
         }
     }

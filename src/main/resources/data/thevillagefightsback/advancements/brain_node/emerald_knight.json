@@ -11,17 +11,42 @@
     "hidden": false
   },
   "criteria": {
-    "have": {
+    "helmet": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": [
-              "thevillagefightsback:emerald_helmet",
-              "thevillagefightsback:emerald_chestplate",
-              "thevillagefightsback:emerald_leggings",
-              "thevillagefightsback:emerald_boots"
-            ]
+            "item": "thevillagefightsback:emerald_helmet"
+          }
+        ]
+      }
+    },
+    "chestplate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "thevillagefightsback:emerald_chestplate"
+          }
+        ]
+      }
+    },
+    "leggings": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "thevillagefightsback:emerald_leggings"
+          }
+        ]
+      }
+    },
+    "boots": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "thevillagefightsback:emerald_boots"
           }
         ]
       }
@@ -29,7 +54,10 @@
   },
   "requirements": [
     [
-      "have"
+      "helmet",
+      "chestplate",
+      "leggings",
+      "boots"
     ]
   ],
   "parent": "thevillagefightsback:brain_node/root"

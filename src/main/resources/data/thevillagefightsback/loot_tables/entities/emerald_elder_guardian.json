@@ -143,7 +143,7 @@
         },
         {
           "type": "minecraft:item",
-          "name": "minecraft:tide_armor_trim_smithing_template"
+          "name": "minecraft:wet_sponge"
         }
       ],
       "rolls": 1.0

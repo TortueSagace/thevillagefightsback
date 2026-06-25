@@ -193,7 +193,7 @@ public final class ExpansionManager {
     public static void onSettlerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Villager v)) return;
         if (!v.getPersistentData().getBoolean(NBT_EXPANSION)) return; // already placed / not a settler
-        if (!(v.level() instanceof ServerLevel level)) return;
+        if (!(v.level instanceof ServerLevel level)) return;
         int color = v.getPersistentData().getInt(NBT_TNT);
         BlockPos gm = BlockPos.of(v.getPersistentData().getLong(NBT_BRAIN_NODE));
         v.getPersistentData().remove(NBT_EXPANSION); // consume so it can't fire twice

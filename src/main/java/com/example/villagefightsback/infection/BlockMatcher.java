@@ -202,7 +202,7 @@ public final class BlockMatcher {
         if (b == Blocks.IRON_DOOR || b == Blocks.IRON_TRAPDOOR) return false; // iron doors are immune
         // Wooden doors convert to the fertile door even when open (no solid collision then) -> handle first.
         if (b instanceof net.minecraft.world.level.block.DoorBlock) return hasAirContact(level, pos);
-        if (s.isAir() || !s.getFluidState().isEmpty() || !s.blocksMotion()) return false; // must be solid
+        if (s.isAir() || !s.getFluidState().isEmpty() || !s.getMaterial().blocksMotion()) return false; // must be solid
         if (b == Blocks.POWDER_SNOW) return false;                     // powder snow is immune to conversion
         if (b == Blocks.FARMLAND) return false;
         // Crafting tables and furnaces ARE convertible (they're not villager job sites). Allowed explicitly,
@@ -212,7 +212,7 @@ public final class BlockMatcher {
         if (b instanceof net.minecraft.world.level.block.ChestBlock
                 || b instanceof net.minecraft.world.level.block.EnderChestBlock
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
-        if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
+        if (b == Blocks.BOOKSHELF) return false; // keep bookshelves
         if (s.is(BlockTags.WOOL)) return false;                        // keep wool (all colours)
         if (s.is(Tags.Blocks.GLASS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
         if (s.is(BlockTags.STONE_BRICKS)) return false;                // keep stone bricks (+ chiseled/mossy/cracked)

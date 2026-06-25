@@ -10,7 +10,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.Level;
 
-import org.joml.Matrix4f;
+import com.mojang.math.Matrix4f;
 
 /**
  * Makes a &gt;150 HP "unstable" Limbo gravel GLOW purple: an additive purple shell drawn over the whole block

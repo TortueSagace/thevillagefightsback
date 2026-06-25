@@ -28,7 +28,7 @@ public final class VillageStatusCommand {
 
     public static int report(CommandSourceStack src) throws CommandSyntaxException {
         ServerPlayer player = src.getPlayerOrException();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.getLevel();
         BrainNodeData data = BrainNodeData.get(level.getServer());
 
         // The "current" brain node = the nearest one in this dimension.
@@ -51,21 +51,21 @@ public final class VillageStatusCommand {
         final int[] def = BrainNodeEvents.countDefenderTypes(level, pos); // [villagers, guards, golems] in radius
         final int dist = (int) Math.round(Math.sqrt(bestSqr));
 
-        src.sendSuccess(() -> Component.literal("§6=== Village Status Report ==="), false);
-        src.sendSuccess(() -> Component.literal("§7Brain Node at §f"
+        src.sendSuccess(Component.literal("§6=== Village Status Report ==="), false);
+        src.sendSuccess(Component.literal("§7Brain Node at §f"
                 + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()
                 + " §7(§a" + dist + "§7 blocks away)"), false);
-        src.sendSuccess(() -> Component.literal("§7Stage: §e" + econ.getLevel()
+        src.sendSuccess(Component.literal("§7Stage: §e" + econ.getLevel()
                 + " §7/ §e" + BrainNodeData.MAX_LEVEL), false);
         if (econ.isMaxLevel()) {
-            src.sendSuccess(() -> Component.literal("§7Emeralds: §aMax stage reached §7("
+            src.sendSuccess(Component.literal("§7Emeralds: §aMax stage reached §7("
                     + econ.getEmeralds() + " stored)"), false);
         } else {
             final int remaining = Math.max(0, econ.costForNext() - econ.getEmeralds());
-            src.sendSuccess(() -> Component.literal("§7Emeralds to next stage: §a" + remaining
+            src.sendSuccess(Component.literal("§7Emeralds to next stage: §a" + remaining
                     + " §7(" + econ.getEmeralds() + "§7/§a" + econ.costForNext() + "§7)"), false);
         }
-        src.sendSuccess(() -> Component.literal("§7Villagers: §a" + def[0]
+        src.sendSuccess(Component.literal("§7Villagers: §a" + def[0]
                 + "   §7Guards: §a" + def[1] + "   §7Golems: §a" + def[2]), false);
         return 1;
     }

@@ -16,7 +16,6 @@ import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
@@ -121,20 +120,20 @@ public final class UnleashedManager {
     @SubscribeEvent
     public static void onHurt(LivingHurtEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.level.isClientSide()) return;
         if (!Factions.isInfected(victim)) return;
         // no friendly fire within the infected faction
         Entity src = event.getSource().getEntity();
         if (src != null && Factions.isInfected(src)) { event.setCanceled(true); return; }
         // boss + vindictive guards absorb 90% of explosion damage
-        if (event.getSource().is(DamageTypeTags.IS_EXPLOSION)) event.setAmount(event.getAmount() * 0.1F);
+        if (event.getSource().isExplosion()) event.setAmount(event.getAmount() * 0.1F);
     }
 
     // --- a creature slain by a DIRECT boss hit becomes a vindictive guard ------------------------
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.level.isClientSide()) return;
         if (!(event.getSource().getEntity() instanceof UnleashedBrainNodeEntity boss)) return;
         if (victim instanceof Player) return;        // players die normally (the boss doesn't recruit players)
         if (Factions.isInfected(victim)) return;     // never convert faction-mates

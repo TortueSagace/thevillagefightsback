@@ -190,7 +190,7 @@ public final class ChunkPortalManager {
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dy = 1; dy <= WALL_HEIGHT; dy++) {
             m.set(x, baseY + dy, z);
-            if (level.getBlockState(m).canBeReplaced()) level.setBlock(m, pane, 2);
+            if (level.getBlockState(m).getMaterial().isReplaceable()) level.setBlock(m, pane, 2);
         }
     }
 
@@ -266,7 +266,7 @@ public final class ChunkPortalManager {
         } else if (LimboDimension.LIMBO.equals(from.dimension())) {
             ServerLevel overworld = server.overworld();
             int y = overworld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                    BlockPos.containing(x, 0, z)).getY();
+                    new BlockPos((int) x, 0, (int) z)).getY();
             sp.teleportTo(overworld, x, y, z, sp.getYRot(), sp.getXRot());
         }
     }

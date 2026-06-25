@@ -6,7 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -29,8 +29,8 @@ public final class VoidFallEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onVoidDamage(LivingHurtEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) return;
-        if (!(player.level() instanceof ServerLevel from)) return;
+        if (event.getSource() != DamageSource.OUT_OF_WORLD) return;
+        if (!(player.level instanceof ServerLevel from)) return;
 
         MinecraftServer server = from.getServer();
         ServerLevel dest;

@@ -140,7 +140,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     // --- AI: drive everything ourselves; the Warden brain is registered but never ticked ---------
     @Override
     protected void customServerAiStep() {
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
         // The unleashed boss pulses the Warden's heartbeat FAST (an angry warden), the whole time it's loose.
         if (--heartbeatTimer <= 0) { playSound(SoundEvents.WARDEN_HEARTBEAT, 4.0F, 1.0F); heartbeatTimer = BOSS_HEARTBEAT_INTERVAL; }
         if (glowTicks > 0) { setGlowingTag(true); if (--glowTicks == 0) setGlowingTag(false); } // ~3s spawn glow
@@ -239,7 +239,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
 
     private void tickJump(ServerLevel sl) {
         jumpWatch++;
-        if (jumpWatch > 6 && onGround()) { jumpLand(sl); jumping = false; }
+        if (jumpWatch > 6 && onGround) { jumpLand(sl); jumping = false; }
         else if (jumpWatch > 100) jumping = false; // safety
     }
 
@@ -249,7 +249,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 0.6F);
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(10.0), this::isHostileTarget)) {
             if (distanceToSqr(e) > 100.0) continue;
-            e.hurt(damageSources().magic(), 18.0F); // armour-bypassing -> a clean 18
+            e.hurt(net.minecraft.world.damagesource.DamageSource.MAGIC, 18.0F); // armour-bypassing -> a clean 18
             EmeraldVirus.infect(e, 0);
             e.setDeltaMovement(e.getDeltaMovement().x, PROPEL_VELOCITY, e.getDeltaMovement().z);
             e.hasImpulse = true;
@@ -280,7 +280,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             double along = c.subtract(origin).dot(dir);
             if (along < 0 || along > range) continue;
             if (origin.add(dir.scale(along)).distanceTo(c) > 1.6) continue;
-            e.hurt(damageSources().sonicBoom(this), 10.0F); // normal sculk-wave damage
+            e.hurt(net.minecraft.world.damagesource.DamageSource.sonicBoom(this), 10.0F); // normal sculk-wave damage
             EmeraldVirus.infect(e, 0);
         }
         spinAngle += 15.0F;
@@ -383,13 +383,13 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
     /** True if there is room for another vindictive guard (fewer than {@value #MAX_GUARDS} within the boss's
      *  reach). When false, a killed creature just dies normally instead of converting. */
     public boolean canMakeGuard() {
-        if (!(level() instanceof ServerLevel sl)) return false;
+        if (!(level instanceof ServerLevel sl)) return false;
         return sl.getEntitiesOfClass(VindictiveGuardEntity.class, getBoundingBox().inflate(DETECT_RANGE)).size() < MAX_GUARDS;
     }
 
     /** Called from {@link UnleashedManager} when a creature dies to a DIRECT hit from this boss. */
     public void onDirectKill(LivingEntity victim) {
-        if (!(level() instanceof ServerLevel sl)) return;
+        if (!(level instanceof ServerLevel sl)) return;
         spawnVindictiveGuard(sl, victim.blockPosition());
         registerKill();
     }
@@ -401,7 +401,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         if (reverted) return;
         killCount++;
         bossBar.setName(Component.literal("Vindictive Village Spirit  (" + killCount + "/" + KILLS_TO_WIN + ")"));
-        if (killCount >= KILLS_TO_WIN && level() instanceof ServerLevel sl) { reverted = true; winAndRevert(sl); }
+        if (killCount >= KILLS_TO_WIN && level instanceof ServerLevel sl) { reverted = true; winAndRevert(sl); }
     }
 
     public int getKillCount() { return killCount; }
@@ -527,7 +527,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
         bossBar.removeAllPlayers();
         // The instant the LAST spirit truly leaves the dimension (killed / discarded / win-revert -- NOT a chunk
         // unload or dimension change), its whole vindictive faction reverts to village units.
-        if (reason.shouldDestroy() && level() instanceof ServerLevel sl && isLastSpiritIn(sl)) {
+        if (reason.shouldDestroy() && level instanceof ServerLevel sl && isLastSpiritIn(sl)) {
             revertAllVindictive(sl);
         }
         super.remove(reason);

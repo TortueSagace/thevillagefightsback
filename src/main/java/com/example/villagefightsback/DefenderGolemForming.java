@@ -30,7 +30,7 @@ public final class DefenderGolemForming {
     @SubscribeEvent
     public static void onWallDefenderJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
-        if (event.getEntity() instanceof WallDefenderEntity wd && wd.level() instanceof ServerLevel sl) {
+        if (event.getEntity() instanceof WallDefenderEntity wd && wd.level instanceof ServerLevel sl) {
             if (tryForm(sl, wd)) event.setCanceled(true);
         }
     }

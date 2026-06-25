@@ -130,7 +130,7 @@ public final class LimboDrift {
     public static void resend(ServerLevel limbo, LevelChunk chunk) {
         chunk.setUnsaved(true);
         ClientboundLevelChunkWithLightPacket pkt =
-                new ClientboundLevelChunkWithLightPacket(chunk, limbo.getLightEngine(), null, null);
+                new ClientboundLevelChunkWithLightPacket(chunk, limbo.getLightEngine(), null, null, true);
         int viewDist = limbo.getServer().getPlayerList().getViewDistance() + 1;
         ChunkPos cp = chunk.getPos();
         for (ServerPlayer p : limbo.players()) {

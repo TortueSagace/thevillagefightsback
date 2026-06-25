@@ -238,7 +238,7 @@ public final class InfectionManager {
     /** A non-villager mob destroying an infection block (e.g. griefing) is an ATTACK. */
     @SubscribeEvent
     public static void onMobDestroyBlock(net.minecraftforge.event.entity.living.LivingDestroyBlockEvent event) {
-        if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
+        if (!(event.getEntity().level instanceof ServerLevel sl)) return;
         if (!BlockMatcher.isInfection(event.getState())) return;
         InfectionData inf = InfectionData.get(sl);
         long key = event.getPos().asLong();
@@ -299,7 +299,7 @@ public final class InfectionManager {
             for (WallBlock wb : plan.blocks()) {
                 BlockPos p = wb.pos();
                 if (!level.isLoaded(p)) continue;
-                if (!plan.satisfied(level, wb) && level.getBlockState(p).canBeReplaced()) {
+                if (!plan.satisfied(level, wb) && level.getBlockState(p).getMaterial().isReplaceable()) {
                     level.setBlock(p, wb.toState(), 3);                 // finish remaining gaps (no bulldozing)
                 }
                 if (wb.course() == 0) seedWallPath(level, inf, p, center); // path just outside the foundation
@@ -336,10 +336,10 @@ public final class InfectionManager {
             BlockPos g = new BlockPos(ex, y, ez);
             if (!level.isLoaded(g)) continue;
             BlockState gs = level.getBlockState(g);
-            if (gs.isAir() || !gs.getFluidState().isEmpty() || !gs.blocksMotion()) continue; // need solid ground
+            if (gs.isAir() || !gs.getFluidState().isEmpty() || !gs.getMaterial().blocksMotion()) continue; // need solid ground
             if (BlockMatcher.isInfection(gs)) return;                  // already ours
             BlockState above = level.getBlockState(g.above());
-            if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
+            if (above.isAir() || !above.getFluidState().isEmpty() || !above.getMaterial().blocksMotion()) {
                 level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
                 inf.addPathHead(g.asLong());
                 return;
@@ -432,7 +432,7 @@ public final class InfectionManager {
             BlockState gs = level.getBlockState(g);
             if (!BlockMatcher.isPathGround(gs)) continue;            // must be dirt-like ground (not already a path)
             BlockState above = level.getBlockState(g.above());
-            if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) return g; // walkable surface
+            if (above.isAir() || !above.getFluidState().isEmpty() || !above.getMaterial().blocksMotion()) return g; // walkable surface
         }
         return null;
     }

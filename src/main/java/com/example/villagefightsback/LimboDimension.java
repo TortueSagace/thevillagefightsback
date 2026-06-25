@@ -1,7 +1,7 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -32,7 +32,7 @@ public final class LimboDimension {
     private LimboDimension() {}
 
     public static final ResourceKey<Level> LIMBO =
-            ResourceKey.create(Registries.DIMENSION, new ResourceLocation(TheVillageFightsBack.MODID, "limbo"));
+            ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(TheVillageFightsBack.MODID, "limbo"));
 
     // Outer cube bounds (inclusive) -> 22 blocks on every axis, centred on the (0,0) column.
     private static final int MIN_X = -11, MAX_X = 10;
@@ -71,10 +71,10 @@ public final class LimboDimension {
      * instance in Limbo). Server-side only; no-op on the client or if Limbo isn't loaded.
      */
     public static Entity sendToLimbo(Entity e) {
-        if (e.level().isClientSide()) return e;
+        if (e.getLevel().isClientSide()) return e;
         // TOGGLE: an entity ALREADY in Limbo, hit by a beam/potion (or a player drinking one), returns to the
         // overworld instead of being banished again.
-        if (LIMBO.equals(e.level().dimension())) {
+        if (LIMBO.equals(e.getLevel().dimension())) {
             LimboManager.sendBackToOverworld(e);
             return e;
         }
@@ -119,7 +119,7 @@ public final class LimboDimension {
      * ({@link LimboManager#registerWitherStorm} / {@link LimboManager#onGravelDestroyed}).
      */
     private static void banishWitherStorm(Entity storm) {
-        if (!(storm.level() instanceof ServerLevel sl)) return;
+        if (!(storm.getLevel() instanceof ServerLevel sl)) return;
         MinecraftServer server = sl.getServer();
         ServerLevel limbo = server == null ? null : server.getLevel(LIMBO);
         if (limbo == null) return;
@@ -144,7 +144,17 @@ public final class LimboDimension {
         ensureCube(limbo);
         ensureFloorUnder(limbo, SPAWN); // solid ground under the arrival spot, even if the floor cell was destroyed
         double x = SPAWN.getX() + 0.5, y = SPAWN.getY(), z = SPAWN.getZ() + 0.5;
-        storm.teleportTo(limbo, x, y, z, java.util.Set.of(), storm.getYRot(), storm.getXRot());
+        // 1.19.2 has no cross-dimension teleportTo on Entity: relocate the core via changeDimension (same UUID),
+        // repositioning it onto the Limbo spawn cell. This keeps the core coherent (no destroy/respawn).
+        storm.changeDimension(limbo, new net.minecraftforge.common.util.ITeleporter() {
+            @Override
+            public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
+                    java.util.function.Function<Boolean, Entity> repositionEntity) {
+                Entity moved = repositionEntity.apply(false);
+                moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
+                return moved;
+            }
+        });
         // Pin the relocated core so it doesn't despawn, and confirm it actually landed in Limbo (a soft-dep boss
         // could refuse the teleport -- if so, the storm was NOT banished and we must not drop phantom gravels).
         Entity core = limbo.getEntity(creature);

@@ -41,7 +41,7 @@ public class FoundingSettlerGoal extends Goal {
     @Override
     public boolean canUse() {
         return !placed
-                && villager.level() instanceof ServerLevel
+                && villager.getLevel() instanceof ServerLevel
                 && villager.getPersistentData().getBoolean(FoundingManager.NBT_FOUNDING);
     }
 
@@ -100,7 +100,7 @@ public class FoundingSettlerGoal extends Goal {
     }
 
     private Villager nearestOtherSettler() {
-        List<Villager> others = villager.level().getEntitiesOfClass(Villager.class,
+        List<Villager> others = villager.getLevel().getEntitiesOfClass(Villager.class,
                 villager.getBoundingBox().inflate(8.0),
                 v -> v != villager && v.isAlive() && v.getPersistentData().getBoolean(FoundingManager.NBT_FOUNDING));
         Villager best = null;
@@ -113,7 +113,7 @@ public class FoundingSettlerGoal extends Goal {
     }
 
     private void placeTnt() {
-        ServerLevel level = (ServerLevel) villager.level();
+        ServerLevel level = (ServerLevel) villager.getLevel();
         BlockPos pos = keepClearOfBrainNode(villager.blockPosition());
         // door faces the brain node (village centre)
         Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());

@@ -41,14 +41,14 @@ public class LimboWitchEntity extends Witch implements LimboRaider {
             double dy = target.getEyeY() - 1.1 - getY();
             double dz = target.getZ() + v.z - getZ();
             double dh = Math.sqrt(dx * dx + dz * dz);
-            VolatileLimboPotionEntity pot = new VolatileLimboPotionEntity(level(), this);
+            VolatileLimboPotionEntity pot = new VolatileLimboPotionEntity(level, this);
             pot.setXRot(pot.getXRot() - 20.0F);
             pot.shoot(dx, dy + dh * 0.2, dz, 0.75F, 8.0F);
             if (!isSilent()) {
-                level().playSound((Player) null, getX(), getY(), getZ(), SoundEvents.WITCH_THROW,
+                level.playSound((Player) null, getX(), getY(), getZ(), SoundEvents.WITCH_THROW,
                         getSoundSource(), 1.0F, 0.8F + getRandom().nextFloat() * 0.4F);
             }
-            level().addFreshEntity(pot);
+            level.addFreshEntity(pot);
         } else {
             super.performRangedAttack(target, velocity);
         }

@@ -45,7 +45,7 @@ public class EmeraldDigGoal extends Goal {
     @Override
     public boolean canUse() {
         LivingEntity target = mob.getTarget();
-        if (target == null || !target.isAlive() || !mob.onGround()) return false;
+        if (target == null || !target.isAlive() || !mob.isOnGround()) return false;
         // Only dig once the mob has actually WALKED to the end of its path (it is stuck), never mid-stride -- this is
         // what stops it gouging random holes in the floor on the way to reachable prey.
         if (!mob.getNavigation().isDone()) return false;
@@ -58,7 +58,7 @@ public class EmeraldDigGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         LivingEntity target = mob.getTarget();
-        if (target == null || !target.isAlive() || dig == null || !isDiggable(mob.level(), dig)) return false;
+        if (target == null || !target.isAlive() || dig == null || !isDiggable(mob.level, dig)) return false;
         if (stuckCheckDue() && canReachTarget(target)) return false; // a path opened up -> stop digging and walk it
         return true;
     }
@@ -80,7 +80,7 @@ public class EmeraldDigGoal extends Goal {
     /** The first block to dig, toward the prey: straight DOWN (if the prey is below), then the front column (one per
      *  body level), then the block above the head, then DOWN as a fallback (only if that block is itself diggable). */
     private BlockPos findDiggable(LivingEntity target) {
-        Level level = mob.level();
+        Level level = mob.level;
         BlockPos feet = mob.blockPosition();
         int h = Math.max(1, Mth.ceil(mob.getBbHeight())); // 2 for a 2-tall unit, 3 for a 3-tall one
         Direction dir = Direction.getNearest(
@@ -114,7 +114,7 @@ public class EmeraldDigGoal extends Goal {
      *  (cobblestone, fake/wall blocks, chests, ore, glass, brain node, bedrock, ...) are excluded by isCandidate. */
     private static boolean isDiggable(Level level, BlockPos pos) {
         BlockState s = level.getBlockState(pos);
-        if (s.isAir() || !s.blocksMotion()) return false;          // only solid obstructions
+        if (s.isAir() || !s.getMaterial().blocksMotion()) return false;          // only solid obstructions
         if (s.getDestroySpeed(level, pos) < 0.0F) return false;    // unbreakable (bedrock / fake bedrock)
         if (BlockMatcher.isCandidate(level, pos, s)) return true;  // any infectable obstruction (incl. foreign soft blocks)
         if (BlockMatcher.isInfection(s)) {                         // exception: dig through our OWN fertile terrain
@@ -134,7 +134,7 @@ public class EmeraldDigGoal extends Goal {
     @Override
     public void tick() {
         if (dig == null) return;
-        Level level = mob.level();
+        Level level = mob.level;
         mob.getLookControl().setLookAt(dig.getX() + 0.5, dig.getY() + 0.5, dig.getZ() + 0.5);
 
         BlockState s = level.getBlockState(dig);
@@ -165,7 +165,7 @@ public class EmeraldDigGoal extends Goal {
     }
 
     private void clearProgress() {
-        if (dig != null) mob.level().destroyBlockProgress(mob.getId(), dig, -1); // clear the cracking overlay
+        if (dig != null) mob.level.destroyBlockProgress(mob.getId(), dig, -1); // clear the cracking overlay
         progress = 0.0F;
         shownStage = -1;
     }

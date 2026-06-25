@@ -56,11 +56,11 @@ public final class LimboGravelItemEvents {
                 if (reason == null || !reason.shouldDestroy()) continue;
                 // KILLED / DISCARDED -> destroyed in lava/void, OR picked up / hopper'd into storage. Free only
                 // if no player is now carrying this soul gravel (a successful pickup keeps the creature banished).
-                if (ie.level() instanceof ServerLevel sl && !LimboManager.isTokenCarried(sl.getServer(), t.token())) {
+                if (ie.getLevel() instanceof ServerLevel sl && !LimboManager.isTokenCarried(sl.getServer(), t.token())) {
                     freeAt(sl, ie, t.token());
                 }
             } else if (ie.getAge() >= FREE_DELAY) {
-                if (ie.level() instanceof ServerLevel sl) freeAt(sl, ie, t.token()); // loose 3s -> free here
+                if (ie.getLevel() instanceof ServerLevel sl) freeAt(sl, ie, t.token()); // loose 3s -> free here
                 ie.discard();
                 it.remove();
             }

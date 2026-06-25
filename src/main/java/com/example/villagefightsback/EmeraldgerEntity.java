@@ -59,7 +59,7 @@ public class EmeraldgerEntity extends Villager {
         setHealth(hp);
         // Body size tracks HP only when emeraldgers_size_variation is on; otherwise a uniform default villager size.
         setEmeraldgerScale(Config.emeraldgerSizeVariation() ? scaleForHp(hp) : 1.0F);
-        this.despawnAt = level().getGameTime() + NO_KILL_TICKS;
+        this.despawnAt = level.getGameTime() + NO_KILL_TICKS;
     }
 
     @Override
@@ -96,13 +96,13 @@ public class EmeraldgerEntity extends Villager {
 
     /** Renew the 5-minute window whenever this emeraldger kills something. */
     public void markKill() {
-        this.despawnAt = level().getGameTime() + NO_KILL_TICKS;
+        this.despawnAt = level.getGameTime() + NO_KILL_TICKS;
     }
 
     @Override
     public void aiStep() {
         super.aiStep();
-        if (!level().isClientSide() && level().getGameTime() >= despawnAt) {
+        if (!level.isClientSide() && level.getGameTime() >= despawnAt) {
             discard(); // 5 minutes with no kills -> gone
         }
     }

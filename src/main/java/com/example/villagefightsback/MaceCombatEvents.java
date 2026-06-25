@@ -33,7 +33,7 @@ public final class MaceCombatEvents {
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.level.isClientSide()) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
         ItemStack weapon = attacker.getMainHandItem();
         if (!MaceItem.isMace(weapon)) return;
@@ -85,7 +85,7 @@ public final class MaceCombatEvents {
         boolean heavy = fall > 5.0F;
         attacker.fallDistance = 0.0F;
 
-        if (!(victim.level() instanceof ServerLevel sl)) return;
+        if (!(victim.level instanceof ServerLevel sl)) return;
 
         // Area knockback: shove every OTHER living entity near the smash outward (skip the target, the
         // attacker, teammates, spectators), power scaled by distance + a heavy-smash multiplier.

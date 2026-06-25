@@ -90,7 +90,7 @@ public final class FertileFlora {
         for (Direction d : Direction.Plane.HORIZONTAL) {
             BlockPos side = floor.relative(d);
             if (!level.isLoaded(side)) return false;
-            if (!level.getBlockState(side).blocksMotion()) return false; // ground must continue (flat, not an edge)
+            if (!level.getBlockState(side).getMaterial().blocksMotion()) return false; // ground must continue (flat, not an edge)
             if (!level.getBlockState(side.above()).isAir()) return false; // and stay open beside us
         }
         return true;

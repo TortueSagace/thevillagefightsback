@@ -1,8 +1,5 @@
 {
-  "type": "minecraft:smithing_transform",
-  "template": {
-    "item": "thevillagefightsback:limbo_smithing_template"
-  },
+  "type": "minecraft:smithing",
   "base": {
     "item": "minecraft:netherite_sword"
   },

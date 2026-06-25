@@ -55,7 +55,7 @@ public class SageVolatileThrowGoal extends Goal {
         AABB box = sage.getBoundingBox().inflate(RANGE);
         LivingEntity best = null;
         double bestD = Double.MAX_VALUE;
-        for (LivingEntity e : sage.level().getEntitiesOfClass(LivingEntity.class, box, this::isValidTarget)) {
+        for (LivingEntity e : sage.getLevel().getEntitiesOfClass(LivingEntity.class, box, this::isValidTarget)) {
             double d = sage.distanceToSqr(e);
             if (d < bestD) { bestD = d; best = e; }
         }
@@ -90,14 +90,14 @@ public class SageVolatileThrowGoal extends Goal {
         double dy = t.getEyeY() - 1.1 - sage.getY();
         double dz = t.getZ() + v.z - sage.getZ();
         double dh = Math.sqrt(dx * dx + dz * dz);
-        VolatileLimboPotionEntity pot = new VolatileLimboPotionEntity(sage.level(), sage);
+        VolatileLimboPotionEntity pot = new VolatileLimboPotionEntity(sage.getLevel(), sage);
         pot.setXRot(pot.getXRot() - 20.0F);
         pot.shoot(dx, dy + dh * 0.2, dz, 0.75F, 8.0F);
         if (!sage.isSilent()) {
-            sage.level().playSound((Player) null, sage.getX(), sage.getY(), sage.getZ(),
+            sage.getLevel().playSound((Player) null, sage.getX(), sage.getY(), sage.getZ(),
                     SoundEvents.WITCH_THROW, SoundSource.NEUTRAL,
                     1.0F, 0.8F + sage.getRandom().nextFloat() * 0.4F);
         }
-        sage.level().addFreshEntity(pot);
+        sage.getLevel().addFreshEntity(pot);
     }
 }

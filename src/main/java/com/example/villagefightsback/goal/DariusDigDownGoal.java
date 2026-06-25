@@ -39,7 +39,7 @@ public class DariusDigDownGoal extends Goal {
     @Override
     public boolean canUse() {
         LivingEntity t = darius.getTarget();
-        if (t == null || !t.isAlive() || !darius.onGround()) return false;
+        if (t == null || !t.isAlive() || !darius.isOnGround()) return false;
         if (t.getY() >= darius.getY() - 1.5) return false;   // only when the target is clearly BELOW
         if (!stuckCheckDue()) return false;                  // throttle the costly pathfind
         if (canReach(t)) return false;                       // a walkable path exists -> walk it, don't dig
@@ -49,7 +49,7 @@ public class DariusDigDownGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         LivingEntity t = darius.getTarget();
-        if (t == null || !t.isAlive() || !darius.onGround()) return false;
+        if (t == null || !t.isAlive() || !darius.isOnGround()) return false;
         if (t.getY() >= darius.getY() - 1.0) return false;   // reached the target's level -> stop digging
         if (stuckCheckDue() && canReach(t)) return false;    // a path opened up -> walk it
         return hasDiggableBelow();
@@ -66,7 +66,7 @@ public class DariusDigDownGoal extends Goal {
 
     @Override
     public void tick() {
-        if (!(darius.level() instanceof ServerLevel sl)) return;
+        if (!(darius.level instanceof ServerLevel sl)) return;
         AABB box = darius.getBoundingBox();
         int y = Mth.floor(box.minY) - 1;                     // the layer directly beneath his feet
         int minX = Mth.floor(box.minX + 0.01), maxX = Mth.floor(box.maxX - 0.01);
@@ -84,7 +84,7 @@ public class DariusDigDownGoal extends Goal {
 
     /** True if any block in the footprint directly below his feet can be dug. */
     private boolean hasDiggableBelow() {
-        if (!(darius.level() instanceof ServerLevel sl)) return false;
+        if (!(darius.level instanceof ServerLevel sl)) return false;
         AABB box = darius.getBoundingBox();
         int y = Mth.floor(box.minY) - 1;
         int minX = Mth.floor(box.minX + 0.01), maxX = Mth.floor(box.maxX - 0.01);

@@ -63,9 +63,9 @@ public final class LimboManager {
     public static void onTravel(EntityTravelToDimensionEvent event) {
         if (!LimboDimension.LIMBO.equals(event.getDimension())) return;
         Entity e = event.getEntity();
-        if (e.level().isClientSide() || !(e instanceof LivingEntity)) return;
-        if (LimboDimension.LIMBO.equals(e.level().dimension())) return;
-        PENDING.put(e.getUUID(), new PendingOrigin(e.level().dimension(), e.blockPosition(), e.level().getGameTime()));
+        if (e.getLevel().isClientSide() || !(e instanceof LivingEntity)) return;
+        if (LimboDimension.LIMBO.equals(e.getLevel().dimension())) return;
+        PENDING.put(e.getUUID(), new PendingOrigin(e.getLevel().dimension(), e.blockPosition(), e.getLevel().getGameTime()));
     }
 
     @SubscribeEvent
@@ -73,20 +73,20 @@ public final class LimboManager {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer sp)) return;
         UUID id = sp.getUUID();
-        if (LimboDimension.LIMBO.equals(sp.level().dimension())) {
+        if (LimboDimension.LIMBO.equals(sp.getLevel().dimension())) {
             if (LIMBO_PLAYERS.add(id)) {
                 sp.sendSystemMessage(Component.literal("Get out. Now.").withStyle(ChatFormatting.DARK_RED));
             }
         } else {
             LIMBO_PLAYERS.remove(id);
-            PENDING.put(id, new PendingOrigin(sp.level().dimension(), sp.blockPosition(), sp.level().getGameTime()));
+            PENDING.put(id, new PendingOrigin(sp.getLevel().dimension(), sp.blockPosition(), sp.getLevel().getGameTime()));
         }
     }
 
     // --- a creature that dies IN Limbo: drop all its leashes (markers + blocks + carried items), no return ---
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
+        if (!(event.getEntity().getLevel() instanceof ServerLevel sl)) return;
         if (!LimboDimension.LIMBO.equals(sl.dimension())) return;
         releaseCreatureNoReturn(sl.getServer(), event.getEntity().getUUID());
     }
@@ -176,7 +176,7 @@ public final class LimboManager {
             if (limbo.getEntity(entry.creature) == null) {
                 Entity elsewhere = findAnywhere(server, entry.creature);
                 String where = elsewhere == null ? "no (dead/unloaded)"
-                        : elsewhere.level().dimension().location() + " @ " + elsewhere.blockPosition();
+                        : elsewhere.getLevel().dimension().location() + " @ " + elsewhere.blockPosition();
                 TheVillageFightsBack.LOGGER.info("[Limbo] forgetting creature {} ({}t after entry); found elsewhere: {}",
                         entry.creature, now - entry.entryTime, where);
                 releaseCreatureNoReturn(server, entry.creature);
@@ -382,7 +382,7 @@ public final class LimboManager {
     /** Banish toggle: an entity ALREADY in Limbo that is hit by a beam/potion (or drinks one) returns to the
      *  overworld. Tracked creatures go back via their leash; an untracked one is dropped at the overworld spawn. */
     public static boolean sendBackToOverworld(Entity e) {
-        if (!(e.level() instanceof ServerLevel sl) || !LimboDimension.LIMBO.equals(sl.dimension())) return false;
+        if (!(e.getLevel() instanceof ServerLevel sl) || !LimboDimension.LIMBO.equals(sl.dimension())) return false;
         MinecraftServer server = sl.getServer();
         LimboData data = LimboData.get(server);
         LimboData.Entry leash = firstLeash(data, e.getUUID());
@@ -396,7 +396,7 @@ public final class LimboManager {
         BlockPos sp = overworld.getSharedSpawnPos();
         double x = sp.getX() + 0.5, y = sp.getY(), z = sp.getZ() + 0.5;
         if (e instanceof ServerPlayer p) p.teleportTo(overworld, x, y, z, p.getYRot(), p.getXRot());
-        else e.teleportTo(overworld, x, y, z, java.util.Set.of(), e.getYRot(), e.getXRot());
+        else crossDimension(e, overworld, x, y, z);
         return true;
     }
 
@@ -454,9 +454,23 @@ public final class LimboManager {
         if (e instanceof ServerPlayer sp) {
             sp.teleportTo(dest, x, y, z, sp.getYRot(), sp.getXRot());
         } else {
-            e.teleportTo(dest, x, y, z, java.util.Set.of(), e.getYRot(), e.getXRot());
+            crossDimension(e, dest, x, y, z);
         }
         return true;
+    }
+
+    /** 1.19.2 has no cross-dimension {@code teleportTo} on Entity: relocate a non-player entity to {@code dest}
+     *  at (x,y,z) via changeDimension (same UUID), repositioning it onto the target cell with no portal logic. */
+    private static void crossDimension(Entity e, ServerLevel dest, double x, double y, double z) {
+        e.changeDimension(dest, new net.minecraftforge.common.util.ITeleporter() {
+            @Override
+            public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
+                    java.util.function.Function<Boolean, Entity> repositionEntity) {
+                Entity moved = repositionEntity.apply(false);
+                moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
+                return moved;
+            }
+        });
     }
 
     /** True if any online player is currently carrying a soul-gravel item for {@code token} (so a removed loose

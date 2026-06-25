@@ -3,7 +3,6 @@ package com.example.villagefightsback;
 import javax.annotation.Nullable;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -64,7 +63,7 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
     @Override
     public boolean addEffect(MobEffectInstance inst, @Nullable Entity source) {
         if (inst.getEffect() == MobEffects.GLOWING) {
-            glowUntil = level().getGameTime() + inst.getDuration();
+            glowUntil = level.getGameTime() + inst.getDuration();
             setGlowingTag(true);
             return true;
         }
@@ -74,7 +73,7 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
     @Override
     public void tick() {
         super.tick();
-        if (glowUntil > 0L && level().getGameTime() >= glowUntil) { // forced glow expired -> clear it
+        if (glowUntil > 0L && level.getGameTime() >= glowUntil) { // forced glow expired -> clear it
             glowUntil = 0L;
             setGlowingTag(false);
         }
@@ -88,7 +87,7 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
     public void stopSeenByPlayer(ServerPlayer p) {}
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+    public Packet<?> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
     }
 }

@@ -13,7 +13,7 @@ import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ScaffoldingBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 /**
@@ -61,7 +61,7 @@ public class CheapScaffoldBlock extends ScaffoldingBlock {
      * nothing. This overrides the loot table entirely. Mirrors {@link VillageBrainNodeBlock#getDrops}.
      */
     @Override
-    public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
+    public List<ItemStack> getDrops(BlockState state, LootContext.Builder params) {
         ItemStack tool = params.getOptionalParameter(LootContextParams.TOOL);
         int silk = tool == null ? 0 : EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool);
         return silk > 0 ? List.of(new ItemStack(this)) : List.of();
