@@ -33,7 +33,7 @@ public class ModeSelectScreen extends Screen {
 
     /** Native sizes of the two textures above (needed by blit, and neither is a power of two). */
     private static final int BG_W = 1280, BG_H = 755;
-    private static final int LOGO_W = 1024, LOGO_H = 298;
+    private static final int LOGO_W = 1276, LOGO_H = 313;
 
     private static final int BUTTON_W = 260;
     private static final int BUTTON_H = 20;
