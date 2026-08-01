@@ -51,6 +51,16 @@ public final class ModNetwork {
                 .decoder(VillageDiscoveryPacket::decode)
                 .consumerMainThread(VillageDiscoveryPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(OpenModeSelectPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenModeSelectPacket::encode)
+                .decoder(OpenModeSelectPacket::decode)
+                .consumerMainThread(OpenModeSelectPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(ChooseModePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ChooseModePacket::encode)
+                .decoder(ChooseModePacket::decode)
+                .consumerMainThread(ChooseModePacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */

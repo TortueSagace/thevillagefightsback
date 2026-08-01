@@ -106,6 +106,9 @@ public final class ModCommands {
 
     private static <T> int setConfig(CommandSourceStack src, String key, ForgeConfigSpec.ConfigValue<T> value, T newValue) {
         value.set(newValue);
+        // The three infection switches are ALSO stored per world (the mode picked at world creation), so mirror
+        // the change there or the next world load would put the original choice straight back.
+        WorldModeData.onConfigCommandSet(src.getServer(), key, newValue);
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         src.sendSuccess(() -> Component.literal("§a" + key + " §7set to §e" + newValue), true);
         return 1;
@@ -123,6 +126,7 @@ public final class ModCommands {
     private static int resetConfigs(CommandSourceStack src) {
         int n = 0;
         for (ForgeConfigSpec.ConfigValue<?> v : Config.INDEX.values()) { resetOne(v); n++; }
+        WorldModeData.clear(src.getServer()); // drop this world's mode override too, so the defaults really apply
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         final int count = n;
         src.sendSuccess(() -> Component.literal("§aReset §e" + count
