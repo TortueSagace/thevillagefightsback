@@ -314,6 +314,50 @@ public final class Config {
         return b.comment(comment).defineInRange(key, MULT_DEFAULT, MULT_MIN, MULT_MAX);
     }
 
+    // --- per-world game mode ------------------------------------------------------------------------
+    // This is a COMMON config, i.e. one shared file for every world. The mode screen shown when a world is
+    // created ({@link WorldMode} / {@link WorldModeData}) must not let one world silently re-configure another,
+    // so the three infection switches are overridden IN MEMORY for as long as that world is loaded, and the
+    // file's own values are put back when the server stops. The .toml itself is never written by this path.
+
+    /** The .toml's own {block, mob, infestation} values, held while a world overrides them; null when none is. */
+    private static boolean[] infectionSnapshot;
+
+    /** Remember the file's infection flags (server start), so {@link #restoreInfectionFlags()} can put them back. */
+    public static void snapshotInfectionFlags() {
+        if (infectionSnapshot == null) {
+            infectionSnapshot = new boolean[] {
+                    ENABLE_BLOCK_INFECTION.get(), ENABLE_MOB_INFECTION.get(), ENABLE_EMERALD_INFESTATION.get() };
+        }
+    }
+
+    /** Put the file's infection flags back (server stop), so the next world starts from the file, not the last world. */
+    public static void restoreInfectionFlags() {
+        if (infectionSnapshot == null) return;
+        ENABLE_BLOCK_INFECTION.set(infectionSnapshot[0]);
+        ENABLE_MOB_INFECTION.set(infectionSnapshot[1]);
+        ENABLE_EMERALD_INFESTATION.set(infectionSnapshot[2]);
+        infectionSnapshot = null;
+    }
+
+    /** Push a world's stored mode over the live values. In memory only -- the .toml file is not touched. */
+    public static void applyInfectionFlags(boolean block, boolean mob, boolean infestation) {
+        ENABLE_BLOCK_INFECTION.set(block);
+        ENABLE_MOB_INFECTION.set(mob);
+        ENABLE_EMERALD_INFESTATION.set(infestation);
+    }
+
+    /** A config command changed one of the three: keep the snapshot in step so the stop-restore cannot undo it. */
+    public static void noteInfectionFlag(String key, boolean value) {
+        if (infectionSnapshot == null) return;
+        switch (key) {
+            case "enable_block_infection" -> infectionSnapshot[0] = value;
+            case "enable_mob_infection" -> infectionSnapshot[1] = value;
+            case "enable_emerald_infestation" -> infectionSnapshot[2] = value;
+            default -> { }
+        }
+    }
+
     /** Push the loaded config into the systems that cache it. Called on config (re)load via ModConfigEvent. */
     public static void apply() {
         LimboDrift.overworldChance = DRIFT_OVERWORLD_CHANCE.get();
