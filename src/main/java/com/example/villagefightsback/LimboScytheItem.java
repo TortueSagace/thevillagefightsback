@@ -15,9 +15,9 @@ import net.minecraft.world.level.Level;
 /**
  * The Limbo Scythe: the reaper's tool, in the shape of a Limbo hoe.
  *
- * <p>It cannot be crafted. Each Limbo creature (a Limbo Phantom or any of the Limbo raiders) has a small chance
- * of dropping one when it falls, so the only way to hold a scythe is to go into the Limbo and take it from the
- * things that live there.
+ * <p>Crafted from a Limbo hoe: amethyst blocks at the four corners, a golden apple above it and soul sand to
+ * either side and below. The Limbo hoe itself is smithed from netherite, so a scythe still costs a trip to the
+ * Limbo for the membrane behind it.
  *
  * <p>It works by SOULS. Reap a creature of {@value #SOUL_HEALTH_MIN} maximum health or more with it and the
  * scythe keeps that soul; spend a soul on a grave and the villager buried there walks out of it. Small creatures

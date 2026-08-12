@@ -1,38 +1,19 @@
 package com.example.villagefightsback;
 
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * The two ways the Limbo Scythe enters and charges: it drops from the creatures of the Limbo, and it takes a
- * soul from anything substantial it kills. See {@link LimboScytheItem}.
+ * How the Limbo Scythe charges: it takes a soul from anything substantial it kills. See
+ * {@link LimboScytheItem}. (It is crafted rather than dropped, so there is no drop hook here.)
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboScytheEvents {
     private LimboScytheEvents() {}
 
-    /** Chance a slain Limbo creature gives up its scythe. Deliberately small: it is the only source there is. */
-    private static final float DROP_CHANCE = 0.01F;
-
-    /**
-     * A Limbo creature has a small chance of dropping the scythe. Added to the death drops rather than to a loot
-     * table, because the Limbo raiders and the Limbo Phantom are this mod's own entities and share no table.
-     */
-    @SubscribeEvent
-    public static void onLimboDrops(LivingDropsEvent event) {
-        LivingEntity dead = event.getEntity();
-        if (!Factions.isLimbo(dead)) return;
-        if (dead.level().isClientSide()) return;
-        if (dead.getRandom().nextFloat() >= DROP_CHANCE) return;
-
-        ItemStack scythe = new ItemStack(ModItems.LIMBO_SCYTHE.get());
-        event.getDrops().add(new ItemEntity(dead.level(), dead.getX(), dead.getY(), dead.getZ(), scythe));
-    }
 
     /**
      * Reaping a creature of at least {@link LimboScytheItem#SOUL_HEALTH_MIN} maximum health stores its soul in

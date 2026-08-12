@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AGA",
+    "SHS",
+    "ASA"
+  ],
+  "key": {
+    "A": { "item": "minecraft:amethyst_block" },
+    "G": { "item": "minecraft:golden_apple" },
+    "S": { "item": "minecraft:soul_sand" },
+    "H": { "item": "thevillagefightsback:limbo_hoe" }
+  },
+  "result": { "item": "thevillagefightsback:limbo_scythe" }
+}
