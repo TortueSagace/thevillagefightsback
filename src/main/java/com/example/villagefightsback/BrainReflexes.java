@@ -314,7 +314,8 @@ public final class BrainReflexes {
         //                (blue TNT) outside. 5 gems, 10-min cooldown, off at 100+ beds.
         if (stage >= 1 && now >= s.cdPeacetime && beds < BED_CAP && (now - s.lastVillagerKill) > WIN_10M
                 && econ.spendEmeralds(5)) {
-            spawnInside(level, brain, EntityType.VILLAGER);
+            spawnInside(level, brain, com.example.villagefightsback.compat.MCACompat
+                    .villagerType(level.getRandom()));
             ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_BLUE);
             s.cdPeacetime = now + cd(CD_10M);
             log(s, level, "Villager + house settler (-5)");

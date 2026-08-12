@@ -1052,7 +1052,11 @@ public final class BrainNodeEvents {
                 h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
-            for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
+            // villagerType() is called PER villager so a batch comes out mixed-gender under MCA Reborn.
+            for (int i = 0; i < villagersToSpawn; i++) {
+                spawnDefender(level, pos, com.example.villagefightsback.compat.MCACompat
+                        .villagerType(level.getRandom()), outside);
+            }
             // (Emerald cats are NOT a sunset reinforcement -- they spawn once when the brain node is BORN, see
             //  scheduleBirthScouts. The recurring sunset emerald scout is the BAT, in handleSunsetIncome.)
         }

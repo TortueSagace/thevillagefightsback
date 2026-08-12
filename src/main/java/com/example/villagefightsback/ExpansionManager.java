@@ -13,7 +13,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
@@ -112,7 +111,8 @@ public final class ExpansionManager {
     // --- spawning ------------------------------------------------------------------------------------
     private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos gm,
                                      double angle, double wallRadius, int color, int delay) {
-        Villager v = EntityType.VILLAGER.create(level);
+        // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
+        Villager v = com.example.villagefightsback.compat.MCACompat.createVillager(level);
         if (v == null) return;
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
@@ -120,6 +120,7 @@ public final class ExpansionManager {
         v.getPersistentData().putBoolean(NBT_EXPANSION, true);
         v.getPersistentData().putInt(NBT_TNT, color);
         v.getPersistentData().putLong(NBT_BRAIN_NODE, gm.asLong());
+        com.example.villagefightsback.compat.VillagerRoleTags.mirror(v); // survive an MCA replacement we did not cause
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant villager goals
         v.goalSelector.addGoal(1, new ExpansionSettlerGoal(v, gm, angle, wallRadius, color, delay));
     }

@@ -87,6 +87,13 @@ public final class VillageEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof PathfinderMob mob)) return;
 
+        // MCA Reborn only: re-hydrate any role flag that survived a villager replacement as a scoreboard tag,
+        // BEFORE the stage flags are read below. No-op without MCA installed, and it never overwrites data
+        // that came through intact -- it only fills gaps. Then re-mirror, so a villager whose data IS intact
+        // refreshes its tags on every load.
+        com.example.villagefightsback.compat.VillagerRoleTags.restore(mob);
+        com.example.villagefightsback.compat.VillagerRoleTags.mirror(mob);
+
         // Let village defenders (and all iron golems) PATH through fake-cobblestone "doors": flip our
         // custom passable type's malus to 0 for them only (others keep the -1 default = blocked). This
         // mirrors FakeCobblestoneBlock.isPhaser, which lets the same set physically walk through.

@@ -34,4 +34,14 @@ description='''${mod_description}'''
     ordering="AFTER"
     side="BOTH"
 
+# Minecraft Comes Alive (MCA Reborn) is OPTIONAL. When it is present we spawn its human villagers instead of
+# vanilla ones so the village is uniformly MCA (see compat/MCACompat.java); when it is absent nothing changes.
+# We load AFTER it so its villager entity types are registered before our spawn code can look them up.
+[[dependencies.${mod_id}]]
+    modId="mca"
+    mandatory=false
+    versionRange="[7.6,)"
+    ordering="AFTER"
+    side="BOTH"
+
 # (Just Enough Guns + framework dependencies removed -- guns/ammo/explosions are all native now.)

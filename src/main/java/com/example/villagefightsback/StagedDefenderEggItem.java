@@ -48,9 +48,11 @@ public class StagedDefenderEggItem extends Item {
         return layer == 0 ? primaryColor : secondaryColor;
     }
 
-    private EntityType<?> entityType() {
+    /** {@code sl} only supplies the RNG that picks an MCA villager's gender; it is unused for the other kinds. */
+    private EntityType<?> entityType(ServerLevel sl) {
         return switch (kind) {
-            case VILLAGER -> EntityType.VILLAGER;
+            // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
+            case VILLAGER -> com.example.villagefightsback.compat.MCACompat.villagerType(sl.getRandom());
             case GOLEM -> golemTypeForStage();
             case GUARD -> ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); // null if Guard Villagers absent
         };
@@ -72,7 +74,7 @@ public class StagedDefenderEggItem extends Item {
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
         if (!(level instanceof ServerLevel sl)) return InteractionResult.SUCCESS;
-        EntityType<?> type = entityType();
+        EntityType<?> type = entityType(sl);
         if (type == null) return InteractionResult.FAIL; // e.g. Guard Villagers not installed
 
         BlockPos clicked = ctx.getClickedPos();

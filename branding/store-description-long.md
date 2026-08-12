@@ -162,6 +162,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - `player_is_hostile`: you are permanently an Enemy of the Village and can never be its Hero
 - `mega_expansion_mode`: the Brain Node founds a new building every minute
 - `mega_brutal_mode`: every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
+- `mca_compat`: Minecraft Comes Alive (MCA Reborn) integration; no effect unless MCA is installed. On (the default), every villager this mod spawns is an MCA human, so the village is uniformly MCA instead of a mix of MCA humans and vanilla villagers. Off spawns plain vanilla villagers alongside MCA's
 
 **Handy commands:** `/thevillagefightsback brain_stage_get` and `brain_stage_set <1-4>`, `village_status_report` (the nearest Brain Node's report), and `tp_to_nearest_node` (warp above the nearest Brain Node).
 
@@ -170,5 +171,6 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 - **Minecraft:** 1.20.1
 - **Mod loader:** Forge
 - **Required dependency:** **Guard Villagers** (the village's guards are built on it). Playtested with guardvillagers-1.20.1-1.6.17.
+- **Optional dependency:** **Minecraft Comes Alive (MCA Reborn)**. Install it and the whole village becomes MCA humans -- settlers, brain-node reinforcements and spawn-egg defenders all spawn as MCA villagers, and they take the mod's roles, weapons, walls and virus exactly as vanilla villagers do. Nothing changes if you do not install it. Tested against minecraft-comes-alive-7.7.0-beta.2+1.20.1.
 - **Author:** Alexandre Le Mercier
 - **License:** All Rights Reserved
