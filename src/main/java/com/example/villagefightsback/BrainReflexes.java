@@ -263,7 +263,7 @@ public final class BrainReflexes {
         if (stage >= 1 && s.pendingVillagerKill) {
             s.pendingVillagerKill = false;
             if (now >= s.cdGuard && econ.spendEmeralds(3)) {
-                com.example.villagefightsback.compat.MCACompat.makeGuard(spawnInside(level, brain, guardType(level)));
+                spawnInside(level, brain, guardType(level), com.example.villagefightsback.compat.MCACompat::makeGuard);
                 s.cdGuard = now + cd(CD_10M);
                 log(s, level, "Guard raised (-3)");
             }
@@ -395,11 +395,25 @@ public final class BrainReflexes {
     /** Spawn one entity just inside the wall near the brain node, at its OWN Y level so it never lands on the
      *  stage-4 dome roof. It auto-arms (and stage-adapts) through the normal entity-join handler. */
     private static Entity spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
+        return spawnInside(level, brain, type, null);
+    }
+
+    /** As above, but {@code beforeJoin} stamps the entity BEFORE it joins, so the join handler sees it (a guard
+     *  professioned afterwards joined as a civilian and got the villager roles by mistake). */
+    private static Entity spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type,
+                                      java.util.function.Consumer<Entity> beforeJoin) {
         if (type == null) return null;
         BlockPos spot = findInsideSpot(level, brain, type);
         if (spot == null) return null; // nowhere it fits inside the wall -> skip; the reflex retries next pass
-        Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
+        Entity e = type.create(level);
+        if (e == null) return null;
+        e.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
+        if (e instanceof net.minecraft.world.entity.Mob mob) {
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+        }
         if (e instanceof Villager v) v.setBaby(false);
+        if (beforeJoin != null) beforeJoin.accept(e);
+        level.addFreshEntity(e);
         return e;
     }
 

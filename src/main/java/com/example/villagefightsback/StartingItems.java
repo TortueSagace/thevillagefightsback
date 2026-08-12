@@ -46,16 +46,27 @@ public final class StartingItems {
         // Spawned away from any village: nudge them about what the bell is FOR. Queued rather than sent now,
         // because at login the client is usually still on the loading screen and would never see it.
         boolean away = !inVillage(player);
-        if (away) pendingHint.put(player.getUUID(), HINT_DELAY_TICKS);
+        if (away) pendingHint.put(player.getUUID(), player.position());
         TheVillageFightsBack.LOGGER.info("[The Village Fights Back] starter bell given to {}; {}.",
                 player.getGameProfile().getName(),
                 away ? "spawned away from a village, so the bell hint is queued"
                      : "spawned in a village, so no bell hint");
     }
 
-    /** Ticks left before each player's starter-bell hint is sent. Session-only: an unsent hint is not worth saving. */
-    private static final java.util.Map<java.util.UUID, Integer> pendingHint = new java.util.HashMap<>();
-    private static final int HINT_DELAY_TICKS = 40; // ~2s after joining, so it lands after the loading screen
+    /**
+     * Where each waiting player stood when they were handed the bell. The hint is held until they MOVE.
+     *
+     * <p>A timer was tried first and did not work: on a new world the player spends an unknown stretch on the
+     * game-mode and send-off screens, so any fixed delay either fires behind them or guesses wrong. Movement is
+     * the one signal that means the player is genuinely in the world and in control -- you cannot walk while a
+     * screen is open -- so it needs no guess about how long they take to click through.
+     *
+     * <p>Session-only: an unsent hint is not worth persisting.
+     */
+    private static final java.util.Map<java.util.UUID, net.minecraft.world.phys.Vec3> pendingHint =
+            new java.util.HashMap<>();
+    /** How far the player must move from the spot they spawned on before the hint is shown. */
+    private static final double MOVE_TRIGGER_SQR = 1.0;
     private static final int HINT_TICKS = 60;       // 3s on screen, then it fades out
 
     /**
@@ -87,16 +98,14 @@ public final class StartingItems {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.player instanceof ServerPlayer player)) return;
 
-        // The queued starter-bell hint, counted down here so it lands once the player is actually in the world.
-        Integer left = pendingHint.get(player.getUUID());
-        if (left != null) {
-            if (left <= 1) {
-                pendingHint.remove(player.getUUID());
-                ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                        new com.example.villagefightsback.network.SpawnHintPacket(HINT_TICKS));
-            } else {
-                pendingHint.put(player.getUUID(), left - 1);
-            }
+        // The queued starter-bell hint, released the moment the player takes their first steps.
+        net.minecraft.world.phys.Vec3 from = pendingHint.get(player.getUUID());
+        if (from != null && player.distanceToSqr(from.x, from.y, from.z) > MOVE_TRIGGER_SQR) {
+            pendingHint.remove(player.getUUID());
+            ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new com.example.villagefightsback.network.SpawnHintPacket(HINT_TICKS));
+            TheVillageFightsBack.LOGGER.info("[The Village Fights Back] bell hint sent to {} (first movement).",
+                    player.getGameProfile().getName());
         }
 
         if (!Config.playerIsHostile()) return;

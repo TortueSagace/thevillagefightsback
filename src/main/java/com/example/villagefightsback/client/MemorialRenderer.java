@@ -27,11 +27,13 @@ public class MemorialRenderer implements BlockEntityRenderer<MemorialBlockEntity
     /** Font units per block, close to the scale vanilla uses for sign text so it reads at the same distance. */
     private static final float SCALE = 0.010F;
 
-    /** How far in front of the slab face the text sits. The slab face is 0.125 from the block centre, so this
-     *  clears it by a hair: enough not to z-fight, not so much that the words float off the stone. */
-    private static final float FACE_OFFSET = 0.14F;
-    /** Width of the inscription in font units before it wraps. */
-    private static final int WRAP = 90;
+    /** How far in front of the slab face the text sits. The face is 0.125 from the block centre, so this
+     *  stands clearly OFF it. 0.14 was tried and left the words embedded in the stone and unreadable: at 0.015
+     *  of clearance the glyphs simply intersect the slab. */
+    private static final float FACE_OFFSET = 0.20F;
+    /** Width of the inscription in font units before it wraps. 90 was wider than the stone itself: at the
+     *  draw scale it spanned 0.9 blocks against a 0.625-wide slab, so the text hung off both edges. */
+    private static final int WRAP = 55;
     private static final int COLOUR = 0xFFDDDDDD;
 
     private final Font font;

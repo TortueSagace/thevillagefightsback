@@ -1213,11 +1213,32 @@ public final class BrainNodeEvents {
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
      *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
     private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
+        return spawnDefender(level, center, type, outsideWall, null);
+    }
+
+    /**
+     * As above, but {@code beforeJoin} runs on the new entity BEFORE it is added to the level.
+     *
+     * <p>That ordering matters. EntityType.spawn adds the entity itself, so anything stamped on afterwards is
+     * too late for the entity-join handler, which is where this mod decides what a creature IS and arms it
+     * accordingly. A guard whose profession was set after the fact therefore joined as a CIVILIAN and was given
+     * the villager roles -- including the goal that walks a strayed villager home, which then fought MCA's own
+     * guard AI for control and left the guard visibly dithering between fleeing and fighting.
+     */
+    private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type,
+                                        WallPlan outsideWall, java.util.function.Consumer<Entity> beforeJoin) {
         BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall, type) : null;
         if (spot == null) spot = findSpawnSpot(level, center, type); // no wall / no valid outside spot
         if (spot == null) return null; // nowhere this creature actually fits -> skip; the next pass retries
-        Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
+        Entity e = type.create(level);
+        if (e == null) return null;
+        e.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+        if (e instanceof net.minecraft.world.entity.Mob mob) {
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+        }
         if (e instanceof Villager v) v.setBaby(false);
+        if (beforeJoin != null) beforeJoin.accept(e);   // stamped BEFORE the join handler reads it
+        level.addFreshEntity(e);
         return e;
     }
 

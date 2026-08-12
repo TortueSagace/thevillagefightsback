@@ -99,6 +99,7 @@ public class LimboScytheItem extends HoeItem {
         net.minecraft.nbt.CompoundTag occupant = grave.takeOccupant();
         if (occupant == null) return false;
         if (!Graves.spawnFromNbt(level, pos, occupant)) return false;
+        com.example.villagefightsback.compat.MCATombstones.unregisterGrave(level, pos);
         level.destroyBlock(pos, false);   // the grave has given up its occupant
         return true;
     }

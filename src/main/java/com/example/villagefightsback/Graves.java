@@ -64,6 +64,8 @@ public final class Graves {
         if (type == null) { level.removeBlock(spot, false); return false; }
         snapshot.putString("id", type.toString());
         grave.bury(snapshot, epitaph.getString());
+        // Let MCA index it, so its villagers can find this grave and mourn at it like one of their own.
+        com.example.villagefightsback.compat.MCATombstones.registerGrave(level, spot);
         return true;
     }
 

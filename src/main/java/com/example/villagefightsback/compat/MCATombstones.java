@@ -1,6 +1,7 @@
 package com.example.villagefightsback.compat;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Optional;
 
 import com.example.villagefightsback.TheVillageFightsBack;
@@ -141,4 +142,65 @@ public final class MCATombstones {
         return be != null && dataClass.isInstance(be);
     }
 
+    // --- our memorial, seen by MCA -------------------------------------------------------------------
+    // Our stone is in MCA's mca:tombstones block tag (see data/mca/tags/blocks/tombstones.json), which is what
+    // makes a cluster of them register as an MCA GRAVEYARD building. Telling MCA's GraveyardManager about each
+    // individual grave is the other half: that index is what its mourning tasks search to find somewhere to
+    // grieve, so without it a graveyard would be recognised but never visited.
+
+    private static Method graveyardGet;
+    private static Method setTombstoneState;
+    private static Method removeTombstoneState;
+    private static Object stateFilled;
+    private static boolean graveyardResolved;
+    private static boolean graveyardUsable;
+
+    private static synchronized boolean graveyardAvailable() {
+        if (graveyardResolved) return graveyardUsable;
+        graveyardResolved = true;
+        if (MCACompat.present()) {
+            for (String p : PREFIXES) {
+                try {
+                    Class<?> mgr = Class.forName(p + "server.world.data.GraveyardManager");
+                    Class<?> state = Class.forName(p + "server.world.data.GraveyardManager$TombstoneState");
+                    graveyardGet = mgr.getMethod("get", ServerLevel.class);
+                    setTombstoneState = mgr.getMethod("setTombstoneState", BlockPos.class, state);
+                    removeTombstoneState = mgr.getMethod("removeTombstoneState", BlockPos.class);
+                    stateFilled = enumValue(state, "FILLED");
+                    graveyardUsable = true;
+                    break;
+                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                    // wrong prefix or MCA changed shape: fall through and simply do not register graves
+                }
+            }
+        }
+        return graveyardUsable;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object enumValue(Class<?> type, String name) {
+        return Enum.valueOf((Class<Enum>) type.asSubclass(Enum.class), name);
+    }
+
+    /** Tell MCA a grave stands here, so its villagers can find it and mourn. No-op without MCA. */
+    public static void registerGrave(ServerLevel level, BlockPos pos) {
+        if (!graveyardAvailable()) return;
+        try {
+            setTombstoneState.invoke(graveyardGet.invoke(null, level), pos, stateFilled);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            graveyardUsable = false;
+            TheVillageFightsBack.LOGGER.warn("[The Village Fights Back] could not register a grave with MCA: {}",
+                    e.toString());
+        }
+    }
+
+    /** Tell MCA the grave here is gone (its occupant was raised, or the stone was broken). No-op without MCA. */
+    public static void unregisterGrave(ServerLevel level, BlockPos pos) {
+        if (!graveyardAvailable()) return;
+        try {
+            removeTombstoneState.invoke(graveyardGet.invoke(null, level), pos);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            graveyardUsable = false;
+        }
+    }
 }
