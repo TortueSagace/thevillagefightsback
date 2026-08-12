@@ -72,16 +72,18 @@ public class LimboScytheItem extends HoeItem {
         BlockPos pos = ctx.getClickedPos();
         ItemStack stack = ctx.getItemInHand();
 
-        boolean grave = com.example.villagefightsback.compat.MCATombstones.isOccupiedGrave(sl, pos);
-        if (!grave) return InteractionResult.PASS;   // not a grave: fall through to normal hoe behaviour
+        boolean mcaGrave = com.example.villagefightsback.compat.MCATombstones.isOccupiedGrave(sl, pos);
+        boolean ourGrave = sl.getBlockEntity(pos) instanceof MemorialBlockEntity m && m.hasOccupant();
+        if (!mcaGrave && !ourGrave) return InteractionResult.PASS; // not a grave: normal hoe behaviour
 
         if (souls(stack) <= 0) {
             tell(ctx, "The scythe holds no soul. Reap something worthy first.", ChatFormatting.GRAY);
             return InteractionResult.CONSUME;
         }
-        if (!com.example.villagefightsback.compat.MCATombstones.raise(sl, pos)) {
-            return InteractionResult.PASS;
-        }
+        boolean raised = mcaGrave
+                ? com.example.villagefightsback.compat.MCATombstones.raise(sl, pos)
+                : raiseFromMemorial(sl, pos);
+        if (!raised) return InteractionResult.PASS;
 
         spendSoul(stack);
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
@@ -89,6 +91,16 @@ public class LimboScytheItem extends HoeItem {
         sl.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0F, 1.4F);
         tell(ctx, "A soul returns to the village.", ChatFormatting.GREEN);
         return InteractionResult.CONSUME;
+    }
+
+    /** Empty this mod's own memorial and release whoever lies in it. */
+    private static boolean raiseFromMemorial(ServerLevel level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof MemorialBlockEntity grave)) return false;
+        net.minecraft.nbt.CompoundTag occupant = grave.takeOccupant();
+        if (occupant == null) return false;
+        if (!Graves.spawnFromNbt(level, pos, occupant)) return false;
+        level.destroyBlock(pos, false);   // the grave has given up its occupant
+        return true;
     }
 
     private static void tell(UseOnContext ctx, String msg, ChatFormatting colour) {

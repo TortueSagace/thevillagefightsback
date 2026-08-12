@@ -6,7 +6,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
@@ -31,9 +30,6 @@ import net.minecraftforge.fml.common.Mod;
 public final class Graves {
     private Graves() {}
 
-    /** Marks a stored snapshot as General Darius, so a later spawn can find and clear his old grave. */
-    public static final String NBT_DARIUS_GRAVE = "vgun_darius_grave";
-
     /**
      * Bury {@code deceased} at its death site. Silently does nothing when there is no room or no grave system
      * available, since failing to bury someone must never interrupt their death.
@@ -45,8 +41,29 @@ public final class Graves {
                 level, deceased.blockPosition());
         if (spot == null) return false;
         // MCA's own tombstone when it is installed: a grave its graveyards, its mourners and its Scythe all
-        // understand. Our memorial block is only the fallback for a pack without MCA.
-        return com.example.villagefightsback.compat.MCATombstones.bury(level, spot, deceased, epitaph);
+        // understand. Our memorial block is the fallback for a pack without MCA.
+        if (com.example.villagefightsback.compat.MCATombstones.bury(level, spot, deceased, epitaph)) return true;
+        return buryInMemorial(level, spot, deceased, epitaph);
+    }
+
+    /** Bury {@code deceased} in this mod's own memorial, facing away from the body so the words read outward. */
+    private static boolean buryInMemorial(ServerLevel level, BlockPos spot, LivingEntity deceased, Component epitaph) {
+        net.minecraft.world.level.block.state.BlockState stone = ModBlocks.MEMORIAL.get().defaultBlockState()
+                .setValue(MemorialBlock.FACING, deceased.getDirection().getOpposite());
+        level.setBlock(spot, stone, 3);
+        if (!(level.getBlockEntity(spot) instanceof MemorialBlockEntity grave)) {
+            level.removeBlock(spot, false);
+            return false;
+        }
+        CompoundTag snapshot = new CompoundTag();
+        // saveWithoutId omits the entity id, which EntityType.create needs to rebuild it, so put it back.
+        deceased.saveWithoutId(snapshot);
+        net.minecraft.resources.ResourceLocation type = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
+                .getKey(deceased.getType());
+        if (type == null) { level.removeBlock(spot, false); return false; }
+        snapshot.putString("id", type.toString());
+        grave.bury(snapshot, epitaph.getString());
+        return true;
     }
 
     /**
@@ -94,8 +111,11 @@ public final class Graves {
         for (BlockPos p : BlockPos.betweenClosed(around.offset(-radius, -4, -radius),
                                                  around.offset(radius, 4, radius))) {
             if (!level.isLoaded(p)) continue;
-            if (!com.example.villagefightsback.compat.MCATombstones.isTombstone(level, p)) continue;
-            if (!com.example.villagefightsback.compat.MCATombstones.holdsDarius(level, p)) continue;
+            boolean mcaGrave = com.example.villagefightsback.compat.MCATombstones.isTombstone(level, p)
+                    && com.example.villagefightsback.compat.MCATombstones.holdsDarius(level, p);
+            boolean ourGrave = level.getBlockEntity(p) instanceof MemorialBlockEntity m
+                    && m.hasOccupant() && isDariusNbt(m.peekOccupant());
+            if (!mcaGrave && !ourGrave) continue;
             level.destroyBlock(p.immutable(), false);
             return;   // at most one champion's grave per village
         }
@@ -106,10 +126,5 @@ public final class Graves {
         String id = nbt.getString("id");
         return id.equals(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
                 .getKey(ModEntities.GENERAL_DARIUS.get()).toString());
-    }
-
-    /** Convenience for callers holding an entity rather than a snapshot. */
-    public static boolean isDarius(Entity e) {
-        return e instanceof GeneralDariusEntity;
     }
 }

@@ -99,6 +99,8 @@ public final class TheVillageFightsBackClient {
 
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(com.example.villagefightsback.ModBlocks.MEMORIAL_BE.get(),
+                MemorialRenderer::new);
         // The Limbo gravel's purple instability glow (a block-entity renderer).
         event.registerBlockEntityRenderer(com.example.villagefightsback.ModBlocks.LIMBO_GRAVEL_BE.get(),
                 LimboGravelRenderer::new);

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "thevillagefightsback:block/memorial" },
+    "facing=east":  { "model": "thevillagefightsback:block/memorial", "y": 90 },
+    "facing=south": { "model": "thevillagefightsback:block/memorial", "y": 180 },
+    "facing=west":  { "model": "thevillagefightsback:block/memorial", "y": 270 }
+  }
+}

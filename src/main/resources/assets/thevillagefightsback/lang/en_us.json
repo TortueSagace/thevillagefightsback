@@ -278,6 +278,8 @@
   "item.thevillagefightsback.limbo_axe": "Limbo Axe",
   "item.thevillagefightsback.limbo_shovel": "Limbo Shovel",
   "item.thevillagefightsback.limbo_hoe": "Limbo Hoe",
+  "block.thevillagefightsback.memorial": "Village Memorial",
+  "block.thevillagefightsback.memorial.desc": "A headstone for a fallen defender. Raise the one buried here with a Limbo Scythe.",
   "item.thevillagefightsback.limbo_scythe": "Limbo Scythe",
   "item.thevillagefightsback.limbo_scythe.desc": "Reaps the soul of any creature with 20 or more health. Spend a soul on a grave to raise the defender buried there. Dropped only by the creatures of the Limbo.",
   "item.thevillagefightsback.limbo_sword": "Limbo Sword",
