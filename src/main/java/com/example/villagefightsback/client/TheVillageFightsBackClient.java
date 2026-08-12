@@ -31,13 +31,15 @@ public final class TheVillageFightsBackClient {
     public static final ModelLayerLocation LIMBO_HELMET_SPIKES =
             new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "limbo_helmet_spikes"), "main");
 
-    // General Darius no longer needs a model layer of his own: he renders on the vanilla player model now,
-    // so his old villager-nosed layer definition is gone along with DariusVillagerModel.
+    /** General Darius's body: a humanoid model with the villager nose (see {@link DariusVillagerModel}). */
+    public static final ModelLayerLocation DARIUS_LAYER =
+            new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "general_darius"), "main");
 
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
         event.registerLayerDefinition(LIMBO_HELMET_SPIKES, LimboHelmetSpikesLayer::createSpikesLayer);
+        event.registerLayerDefinition(DARIUS_LAYER, DariusVillagerModel::createBodyLayer);
     }
 
     /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
