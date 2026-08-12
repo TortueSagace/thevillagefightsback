@@ -16,9 +16,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
- * The "settler" behaviour: a villager far from every Village Brain Node founds a new home. It drops a
- * Blue TNT on flat ground, lights it, and flees; the TNT then builds a random house with the door
- * facing the fled villager (see {@link BlueTntBlock}/{@link com.example.villagefightsback.HousePlacer}).
+ * The "settler" behaviour: a villager far from every Village Brain Node -- but in a dimension that HAS at
+ * least one -- founds a new home. It drops a Blue TNT on flat ground, lights it, and flees; the TNT then
+ * builds a random house with the door facing the fled villager
+ * (see {@link BlueTntBlock}/{@link com.example.villagefightsback.HousePlacer}).
  *
  * A villager settles at most once (a persistent NBT flag), so wanderers seed new houses without spamming
  * the world. Cheap to evaluate: the distance/flatness checks only run on a throttle, and a villager near
@@ -77,15 +78,27 @@ public class SettlerGoal extends Goal {
         tntPos = null;
     }
 
+    /**
+     * True when this dimension holds at least one Village Brain Node and the villager is far enough from all of
+     * them to found a home of its own.
+     *
+     * <p>The "at least one" half matters: settling is meant to seed a NEW village away from the existing ones,
+     * which presupposes there are existing ones. In a dimension with no brain node at all there is nothing to
+     * settle away from, so nobody settles -- otherwise every villager in the Nether, the End, Limbo, or an
+     * overworld where no node has been founded yet would qualify at once and start dropping houses.
+     */
     private boolean farFromBrainNodes(ServerLevel level) {
         BrainNodeData data = BrainNodeData.get(level.getServer());
         BlockPos p = villager.blockPosition();
+        boolean anyHere = false;
         double minSqr = Double.MAX_VALUE;
         for (GlobalPos gp : data.blocks()) {
             if (gp.dimension().equals(level.dimension())) {
+                anyHere = true;
                 minSqr = Math.min(minSqr, gp.pos().distSqr(p));
             }
         }
+        if (!anyHere) return false;
         return minSqr > MIN_DIST_FROM_BRAIN_NODE * MIN_DIST_FROM_BRAIN_NODE;
     }
 
