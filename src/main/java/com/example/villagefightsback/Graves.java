@@ -37,12 +37,13 @@ public final class Graves {
      * @return true if a grave was raised
      */
     public static boolean bury(ServerLevel level, LivingEntity deceased, Component epitaph) {
-        BlockPos spot = com.example.villagefightsback.compat.MCATombstones.findGraveSpot(
-                level, deceased.blockPosition());
+        BlockPos spot = findGraveSpot(level, deceased.blockPosition());
         if (spot == null) return false;
-        // MCA's own tombstone when it is installed: a grave its graveyards, its mourners and its Scythe all
-        // understand. Our memorial block is the fallback for a pack without MCA.
-        if (com.example.villagefightsback.compat.MCATombstones.bury(level, spot, deceased, epitaph)) return true;
+        // ALWAYS this mod's own memorial, MCA installed or not. MCA's flat headstone was tried first at one
+        // point, but its stone carries MCA's own header and footer around our line and reads far too long, and
+        // the village's dead belong under the village's own stone. Our memorial is also immune to the fertile
+        // spread by construction (BlockMatcher never converts this mod's namespace), so a grave cannot be eaten.
+        // Graves MCA itself dug are still recognised and can still be raised with the Limbo Scythe.
         return buryInMemorial(level, spot, deceased, epitaph);
     }
 
@@ -64,6 +65,27 @@ public final class Graves {
         snapshot.putString("id", type.toString());
         grave.bury(snapshot, epitaph.getString());
         return true;
+    }
+
+    /** A free, supported cell at or near {@code around} where a headstone can stand. Null if the ground is full. */
+    public static BlockPos findGraveSpot(ServerLevel level, BlockPos around) {
+        for (int r = 0; r <= 3; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
+                    for (int dy = 1; dy >= -2; dy--) {
+                        BlockPos p = around.offset(dx, dy, dz);
+                        if (!level.isLoaded(p)) continue;
+                        if (!level.getBlockState(p).canBeReplaced()) continue;
+                        BlockPos below = p.below();
+                        if (!level.getBlockState(below).isFaceSturdy(level, below,
+                                net.minecraft.core.Direction.UP)) continue;
+                        return p;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
