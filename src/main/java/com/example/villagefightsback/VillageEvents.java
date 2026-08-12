@@ -110,10 +110,13 @@ public final class VillageEvents {
         // settler/builder) or profession. So skip every role goal for them -- they still get the stage-3
         // combat loadout below (they spawn pre-upgraded).
         boolean emeraldger = mob instanceof EmeraldgerEntity;
+        // An MCA Reborn guard/archer is a Villager doing a SOLDIER's job. It takes the guard kit further down,
+        // and none of the civilian roles below: a guard has no business settling, building walls or mining.
+        boolean soldier = com.example.villagefightsback.compat.MCACompat.isMcaGuard(mob);
 
         // A villager far from every brainNode can found a new home with a Blue TNT (independent of the
         // combat upgrade). Idempotent: goals are re-added on every load; the goal settles at most once.
-        if (!emeraldger && mob instanceof Villager settler
+        if (!emeraldger && !soldier && mob instanceof Villager settler
                 && !hasGoal(settler, com.example.villagefightsback.goal.SettlerGoal.class)) {
             settler.goalSelector.addGoal(6, new com.example.villagefightsback.goal.SettlerGoal(settler));
         }
@@ -121,7 +124,7 @@ public final class VillageEvents {
         // A villager stranded OUTSIDE its wall heads back toward the brain node when it isn't fighting (low
         // priority, so combat preempts it). Villagers never CROSS the wall to chase -- this only brings home
         // one that is already out. Idempotent.
-        if (!emeraldger && mob instanceof Villager strayed
+        if (!emeraldger && !soldier && mob instanceof Villager strayed
                 && !hasGoal(strayed, com.example.villagefightsback.goal.ReturnToVillageGoal.class)) {
             strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
         }
@@ -129,14 +132,14 @@ public final class VillageEvents {
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
-        if (!emeraldger && mob instanceof Villager defender
+        if (!emeraldger && !soldier && mob instanceof Villager defender
                 && !hasGoal(defender, com.example.villagefightsback.goal.BuilderDefenseGoal.class)) {
             defender.goalSelector.addGoal(2, new com.example.villagefightsback.goal.BuilderDefenseGoal(defender));
         }
 
         // Every villager carries the (dormant) miner goal; it only runs once the brain node tags it a miner
         // (level-2 infection). Idempotent. (Emeraldgers can't be miners, so they don't need it.)
-        if (!emeraldger && mob instanceof Villager v) {
+        if (!emeraldger && !soldier && mob instanceof Villager v) {
             com.example.villagefightsback.infection.InfectionManager.ensureMinerGoal(v);
         }
 
@@ -149,13 +152,14 @@ public final class VillageEvents {
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
             // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 brainNode.
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
-        } else if (mob instanceof Villager villager) {
-            if (upgraded) armVillagerFull(villager);
-            else armVillagerNerfed(villager);
         } else if (isGuard(mob)) {
+            // BEFORE the Villager branch: an MCA guard/archer is a Villager too, and must take the guard kit.
             if (upgraded) armGuardFull(mob);                       // stage 3+: full emerald knight (mace-bounce)
             else if (UpgradeState.isStage2(mob)) armGuardStage2(mob); // stage 2: virus archer (no mace)
             // else: normal guard
+        } else if (mob instanceof Villager villager) {
+            if (upgraded) armVillagerFull(villager);
+            else armVillagerNerfed(villager);
         }
     }
 
@@ -196,14 +200,15 @@ public final class VillageEvents {
 
     /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 brainNode). */
     public static void applyUpgrade(LivingEntity e) {
-        if (e instanceof Villager villager) {
+        if (e instanceof PathfinderMob soldier && isGuard(soldier)) {
+            // Checked first: an MCA guard is a Villager as well, and must upgrade to the GUARD kit.
+            if (UpgradeState.isUpgraded(soldier)) armGuardFull(soldier);
+            else if (UpgradeState.isStage2(soldier)) armGuardStage2(soldier);
+        } else if (e instanceof Villager villager) {
             removeGoal(villager, StoneAxeDefenseGoal.class);
             armVillagerFull(villager); // replaces the stone axe with the revolver
         } else if (e instanceof IronGolem golem) {
             if (!golem.isPlayerCreated()) armGolemFull(golem);
-        } else if (e instanceof PathfinderMob pm && isGuard(pm)) {
-            if (UpgradeState.isUpgraded(pm)) armGuardFull(pm);
-            else if (UpgradeState.isStage2(pm)) armGuardStage2(pm);
         }
     }
 
@@ -795,8 +800,11 @@ public final class VillageEvents {
         }
     }
 
+    /** A village GUARD: a Guard Villagers guard entity, or an MCA Reborn villager whose profession is a
+     *  soldier's one (mca:guard / mca:archer). Both get the guard kit rather than the civilian villager kit. */
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))
+                || com.example.villagefightsback.compat.MCACompat.isMcaGuard(e);
     }
 
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the

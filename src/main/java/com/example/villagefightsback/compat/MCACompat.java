@@ -87,6 +87,27 @@ public final class MCACompat {
         return EntityType.VILLAGER.create(level);
     }
 
+    /**
+     * MCA's SOLDIER professions. Matches MCA's own {@code VillagerEntityMCA.isGuard()}, which is exactly
+     * {@code profession == GUARD || profession == ARCHER} -- so this mod's idea of "that villager is a guard"
+     * cannot drift from MCA's.
+     */
+    private static final java.util.Set<ResourceLocation> GUARD_PROFESSIONS = java.util.Set.of(
+            new ResourceLocation(MODID, "guard"),
+            new ResourceLocation(MODID, "archer"));
+
+    /**
+     * True for an MCA villager doing a guard's job. They are Villagers, so without this they would be armed as
+     * CIVILIANS and handed the villager stage kit (the Alien Slasher) while MCA also runs its own crossbow
+     * behaviour on them. They are the village's soldiers, so this mod gives them the GUARD kit instead and keeps
+     * them out of the civilian roles (settler / builder / miner).
+     */
+    public static boolean isMcaGuard(Entity e) {
+        if (!(e instanceof Villager v)) return false;
+        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        return id != null && GUARD_PROFESSIONS.contains(id);
+    }
+
     /** MCA's own "who should this guard attack" memory, resolved by registry id so MCA stays a soft dep. */
     private static final ResourceLocation GUARD_ENEMY_MEMORY = new ResourceLocation(MODID, "nearest_guard_enemy");
 
