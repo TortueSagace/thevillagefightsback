@@ -93,6 +93,21 @@ public final class Factions {
     /** The Guard Villagers guard entity id (soft dep). */
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
+    /**
+     * The single definition of "this is one of the village's GUARDS", in either of the two forms a guard can
+     * take: the Guard Villagers guard entity, or an MCA Reborn villager wearing a soldier profession
+     * ({@code mca:guard} / {@code mca:archer}).
+     *
+     * <p>The MCA form is why this exists. An MCA guard is a {@link net.minecraft.world.entity.npc.Villager}, so
+     * any code testing the guard ENTITY ID alone silently demotes it to a civilian: it was counted as a villager
+     * in the brain node's report ("Guards: 0" with a full garrison), skipped by the stage-2 guard upgrade, and
+     * passed over by the mega-brutal buff and by Darius when he conscripts a squad.
+     */
+    public static boolean isGuard(Entity e) {
+        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))
+                || com.example.villagefightsback.compat.MCACompat.isMcaGuard(e);
+    }
+
     /** True for the village's own (non-infected) defenders: villagers (incl. emeraldgers), iron golems, wall
      *  defenders, General Darius, and Guard Villagers guards. Vindictive units (infected) are NOT village. */
     public static boolean isVillage(Entity e) {

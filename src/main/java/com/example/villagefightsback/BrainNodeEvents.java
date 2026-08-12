@@ -844,7 +844,14 @@ public final class BrainNodeEvents {
         BlockPos spot = (!keepBell && isGoodNodeSpot(level, bell, true))
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
-        if (spot == null) return; // no good spot yet; retry next scan
+        if (spot == null) {
+            // Nowhere usable around this bell yet. Not marked serviced, so the next scan tries again, but log it:
+            // a village silently never getting a node is otherwise invisible to diagnose.
+            TheVillageFightsBack.LOGGER.warn(
+                    "[The Village Fights Back] no usable brain node spot around the village centre at {}; will retry.",
+                    bell);
+            return;
+        }
 
         // Respawn grace: if a brain node was destroyed near here within the last ~5s (and so summoned the boss),
         // wait. Once the grace elapses, the boss-nearby guard below decides -- a new node rises ONLY if the boss
@@ -967,16 +974,26 @@ public final class BrainNodeEvents {
      *
      * @param replacingBell true for the bell's own cell, which we intend to overwrite, so its occupancy is fine
      */
-    private static boolean isGoodNodeSpot(ServerLevel level, BlockPos spot, boolean replacingBell) {
-        if (!replacingBell && !level.getBlockState(spot).canBeReplaced()) return false;
-
-        BlockPos support = spot.below();
+    /**
+     * Is {@code feet} standing on REAL GROUND rather than on a roof or a platform? A building's roof is solid
+     * and has open air above it, so every "is this a valid surface" test passes on it; what gives it away is the
+     * hollow underneath. Shared by node placement and by the spawn finders, because the surface heightmap
+     * reports the top of a BUILDING for any column that passes through one.
+     */
+    static boolean onRealGround(ServerLevel level, BlockPos feet) {
+        BlockPos support = feet.below();
         if (!level.getBlockState(support).isFaceSturdy(level, support, Direction.UP)) return false;
         for (int d = 1; d <= GROUND_PROBE; d++) {                 // a roof/platform has open space under it
             BlockPos under = support.below(d);
             if (!level.isLoaded(under)) break;
             if (!level.getBlockState(under).blocksMotion()) return false;
         }
+        return true;
+    }
+
+    private static boolean isGoodNodeSpot(ServerLevel level, BlockPos spot, boolean replacingBell) {
+        if (!replacingBell && !level.getBlockState(spot).canBeReplaced()) return false;
+        if (!onRealGround(level, spot)) return false;
 
         for (int dy = 1; dy <= NODE_HEADROOM; dy++) {
             if (level.getBlockState(spot.above(dy)).blocksMotion()) return false;
@@ -1004,13 +1021,28 @@ public final class BrainNodeEvents {
      * safe to use when MCA's Town Center bell has to survive. Prefers the spot nearest the centre.
      */
     private static BlockPos findBrainNodeSpot(ServerLevel level, BlockPos center) {
+        BlockPos best = search(level, center, true);
+        // A village centre can legitimately be cramped: a bell boxed in by fences, lanterns and its own posts can
+        // fail the "room to summon" ring on every candidate, and returning null there means the village NEVER
+        // gets a brain node at all, which is far worse than a tight one. So relax the ring requirement and take
+        // any real, open, ground-level spot. The roof and burial tests are NOT relaxed, since landing on a roof
+        // strands everything the node summons.
+        return best != null ? best : search(level, center, false);
+    }
+
+    /** Best spot near {@code center}; {@code roomy} also demands the summoning ring, see {@link #isGoodNodeSpot}. */
+    private static BlockPos search(ServerLevel level, BlockPos center, boolean roomy) {
         BlockPos best = null;
         for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
             for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
                 if (dx == 0 && dz == 0) continue;                 // leave the bell's own cell alone
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
                 if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
-                if (!isGoodNodeSpot(level, surface, false)) continue;
+                boolean ok = roomy ? isGoodNodeSpot(level, surface, false)
+                        : (level.getBlockState(surface).canBeReplaced()
+                                && onRealGround(level, surface)
+                                && !level.getBlockState(surface.above()).blocksMotion());
+                if (!ok) continue;
                 if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
             }
         }
@@ -1215,8 +1247,15 @@ public final class BrainNodeEvents {
         for (int i = 0; i < 12; i++) {
             BlockPos col = center.offset(level.getRandom().nextInt(9) - 4, 0, level.getRandom().nextInt(9) - 4);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, col);
+            // getHeightmapPos DISCARDS the Y it is given and returns the top of the column, which for a column
+            // through a building is the cell above its ROOF. Unguarded, that is how summons ended up standing on
+            // the town hall. Two tests fix it: stay near the node's own height, and be on real ground, not a roof.
+            if (Math.abs(surface.getY() - center.getY()) > SPAWN_Y_TOLERANCE) continue;
+            if (!onRealGround(level, surface)) continue;
             if (fits(level, surface, type)) return surface;
         }
+        // nearestFit is already safe here: it walks rings at the node's own Y (and one or two steps down), so it
+        // cannot wander onto a roof the way an unbounded heightmap lookup can.
         return nearestFit(level, center, type, FIT_SEARCH_RADIUS);
     }
 
@@ -1238,6 +1277,7 @@ public final class BrainNodeEvents {
             int tz = (int) Math.floor(gate.getZ() + 0.5 + oz * dist + ox * jitter);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(tx, gate.getY(), tz));
             if (plan.contains(surface)) continue;                       // still inside the ring -> push further next try
+            if (!onRealGround(level, surface)) continue;                // same heightmap trap: never muster on a roof
             if (fits(level, surface, type)) return surface;
         }
         return null;
@@ -1265,6 +1305,9 @@ public final class BrainNodeEvents {
 
     /** How far out {@link #nearestFit} will look for somewhere a summoned creature fits. */
     private static final int FIT_SEARCH_RADIUS = 5;
+
+    /** How far above or below the node a heightmap-picked spawn spot may sit. Keeps summons off nearby roofs. */
+    private static final int SPAWN_Y_TOLERANCE = 4;
 
     /**
      * The nearest cell to {@code center} where {@code type} fits, searched as growing square rings so a closer
@@ -1378,9 +1421,11 @@ public final class BrainNodeEvents {
         int villagers = 0, guards = 0, golems = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (e instanceof EmeraldgerEntity) continue;
-            if (e instanceof Villager) villagers++;
+            // Guards FIRST: an MCA guard is a Villager too, so the villager branch would swallow it and the
+            // report would show a full garrison as "Guards: 0".
+            if (Factions.isGuard(e)) guards++;
+            else if (e instanceof Villager) villagers++;
             else if (e instanceof net.minecraft.world.entity.animal.IronGolem) golems++;
-            else if (GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) guards++;
         }
         return new int[]{villagers, guards, golems};
     }

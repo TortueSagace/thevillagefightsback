@@ -44,7 +44,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class BrainReflexes {
     private BrainReflexes() {}
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
     static double RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100, == INCOME_RADIUS)
     private static final double WITHER_RADIUS = 200.0; // detect a wither storm to summon Darius within this
 
@@ -131,7 +130,7 @@ public final class BrainReflexes {
         if (!(v.level() instanceof ServerLevel sl)) return;
         boolean villager = v instanceof Villager && !(v instanceof EmeraldgerEntity);
         boolean golem = v instanceof IronGolem;
-        boolean guard = GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(v.getType()));
+        boolean guard = com.example.villagefightsback.Factions.isGuard(v);
         if (!villager && !golem && !guard) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
         GlobalPos node = BrainNodeEvents.nearestBrainNode(data, sl, v.blockPosition(), RADIUS);

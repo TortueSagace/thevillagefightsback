@@ -77,7 +77,6 @@ public final class VillageEvents {
     private static final float MINIGUN_BONUS = 9.0F;    // 4  -> 13 (minigun also fades over range)
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     // Guards have a chance to drop our native Fire Grenade on death.
     private static final float GUARD_FIRE_GRENADE_DROP_CHANCE = 0.5F;
@@ -857,8 +856,7 @@ public final class VillageEvents {
     /** A village GUARD: a Guard Villagers guard entity, or an MCA Reborn villager whose profession is a
      *  soldier's one (mca:guard / mca:archer). Both get the guard kit rather than the civilian villager kit. */
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))
-                || com.example.villagefightsback.compat.MCACompat.isMcaGuard(e);
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the

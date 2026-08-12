@@ -38,7 +38,6 @@ public final class MegaBrutal {
     private static final int EFFECT_TICKS = 60;
     private static final int AMP_III = 2;                   // amplifier 2 == level III
     private static final double TELEPORT_MIN = 16.0;        // golems blink only when this far from their target
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -82,7 +81,7 @@ public final class MegaBrutal {
     }
 
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 
     private static void buff(LivingEntity e) {
