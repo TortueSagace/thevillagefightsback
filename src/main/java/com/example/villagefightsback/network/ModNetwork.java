@@ -51,6 +51,11 @@ public final class ModNetwork {
                 .decoder(VillageDiscoveryPacket::decode)
                 .consumerMainThread(VillageDiscoveryPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(SpawnHintPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SpawnHintPacket::encode)
+                .decoder(SpawnHintPacket::decode)
+                .consumerMainThread(SpawnHintPacket::handle)
+                .add();
         CHANNEL.messageBuilder(OpenModeSelectPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(OpenModeSelectPacket::encode)
                 .decoder(OpenModeSelectPacket::decode)
