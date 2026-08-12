@@ -87,6 +87,42 @@ public final class MCACompat {
         return EntityType.VILLAGER.create(level);
     }
 
+    /** MCA's own "who should this guard attack" memory, resolved by registry id so MCA stays a soft dep. */
+    private static final ResourceLocation GUARD_ENEMY_MEMORY = new ResourceLocation(MODID, "nearest_guard_enemy");
+
+    /**
+     * Make {@code villager} forget an emerald-faction target.
+     *
+     * <p>Needed because MCA's combat villagers (guards and archers) do NOT pick targets through
+     * {@code Mob.setTarget}: a sensor writes MCA's {@code nearest_guard_enemy} memory and a brain task promotes
+     * it to the vanilla {@code ATTACK_TARGET} memory. Forge only fires {@code LivingChangeTargetEvent} from
+     * {@code Mob.setTarget}, so the emerald non-aggression cancel in EmeraldConversion never sees them, and an
+     * MCA guard would chase emerald units forever (swinging for zero damage, since the faction damage-immunity
+     * handler cancels the hits). Clearing both memories is what actually calls the guard off.
+     *
+     * <p>Cheap and safe with MCA absent: the vanilla memory is always checked, and MCA's is looked up in the
+     * registry and simply skipped when it is not there.
+     */
+    public static void forgetEmeraldTarget(net.minecraft.world.entity.LivingEntity villager) {
+        net.minecraft.world.entity.ai.Brain<?> brain = villager.getBrain();
+
+        brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET)
+                .filter(com.example.villagefightsback.Factions::isEmerald)
+                .ifPresent(t -> brain.eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET));
+
+        net.minecraft.core.registries.BuiltInRegistries.MEMORY_MODULE_TYPE
+                .getOptional(GUARD_ENEMY_MEMORY)
+                .ifPresent(type -> {
+                    @SuppressWarnings("unchecked")
+                    net.minecraft.world.entity.ai.memory.MemoryModuleType<net.minecraft.world.entity.LivingEntity> m =
+                            (net.minecraft.world.entity.ai.memory.MemoryModuleType<net.minecraft.world.entity.LivingEntity>) type;
+                    if (!brain.checkMemory(m, net.minecraft.world.entity.ai.memory.MemoryStatus.REGISTERED)) return;
+                    brain.getMemory(m)
+                            .filter(com.example.villagefightsback.Factions::isEmerald)
+                            .ifPresent(t -> brain.eraseMemory(m));
+                });
+    }
+
     /** True for an MCA villager specifically (either gender). Vanilla villagers and Emeraldgers return false. */
     public static boolean isMcaVillager(Entity e) {
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
