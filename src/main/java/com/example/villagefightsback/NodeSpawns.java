@@ -25,42 +25,49 @@ public final class NodeSpawns {
     private static final int GOLEM_CAP = 20;               // the Iron Factory halts at 20+ golems in the zone
     static double GOLEM_ZONE_RADIUS = 100.0;  // brain influence radius (set from Config.apply(); base 100)
 
-    /** A clear feet position with {@code height} non-colliding blocks: prefer the gap just BELOW the node, else
-     *  just ABOVE it. Null if neither side has room. */
-    public static BlockPos belowOrAbove(ServerLevel level, BlockPos node, int height) {
+    /**
+     * A feet position where {@code type} fits: the gap just BELOW the node, else just ABOVE it, else BESIDE it.
+     *
+     * <p>The old version measured a fixed number of cells in a 1x1 COLUMN, which is wrong twice over for the
+     * golems this mostly spawns: an iron/Defender/Gigachad golem is 2.7 tall (so 3 cells is right) but also 1.4
+     * WIDE, so it does not fit a 1-block shaft at all and was being forged into the walls. Testing the real
+     * hitbox fixes both, and the beside-the-node fallback means a tight factory still produces its golem instead
+     * of silently producing nothing.
+     */
+    public static BlockPos spawnSpotFor(ServerLevel level, BlockPos node, EntityType<?> type) {
+        int height = net.minecraft.util.Mth.ceil(type.getHeight());
         BlockPos below = node.below(height);     // the mob's TOP block ends just under the node
-        if (clear(level, below, height)) return below;
+        if (BrainNodeEvents.fitsFreely(level, below, type)) return below;
         BlockPos above = node.above();           // feet directly above the node
-        if (clear(level, above, height)) return above;
-        return null;
-    }
-
-    public static boolean clear(ServerLevel level, BlockPos feet, int height) {
-        for (int i = 0; i < height; i++) {
-            BlockPos p = feet.above(i);
-            if (!level.getBlockState(p).getCollisionShape(level, p).isEmpty()) return false;
-        }
-        return true;
+        if (BrainNodeEvents.fitsFreely(level, above, type)) return above;
+        return BrainNodeEvents.nearestFit(level, node, type, 4); // beside it, nearest first
     }
 
     /** A golem below/above the node, in the stage-appropriate form: iron (stage 1), Defender Golem (stage 2-3),
      *  or Gigachad Golem (stage 4+). The upgraded forms are spawned directly so the result is immediate. */
+    /** The golem form this stage forges, so the spot search can measure the RIGHT hitbox before spawning it. */
+    private static EntityType<? extends net.minecraft.world.entity.Mob> golemType(int stage) {
+        if (stage >= 4) return ModEntities.GIGACHAD_GOLEM.get();
+        if (stage >= 2) return ModEntities.DEFENDER_GOLEM.get();
+        return EntityType.IRON_GOLEM;
+    }
+
     public static void spawnGolem(ServerLevel level, BlockPos node, int stage) {
         // Halt the Iron Factory once the zone is saturated: stop spawning when 20+ golems (iron / defender /
         // gigachad, village or player) are already alive within the income radius of the factory node.
         AABB zone = new AABB(node).inflate(GOLEM_ZONE_RADIUS);
         if (level.getEntitiesOfClass(IronGolem.class, zone, g -> g.isAlive()).size() >= GOLEM_CAP) return;
-        BlockPos spot = belowOrAbove(level, node, 3);
+        BlockPos spot = spawnSpotFor(level, node, golemType(stage));
         if (spot == null) return;
         float yaw = level.getRandom().nextFloat() * 360.0F;
         // 10% chance to also forge a stray EMERALD golem alongside the normal one, in the SAME stage-appropriate
         // form: emerald iron golem (stage 1), emerald Defender Golem (stage 2-3), emerald Gigachad Golem (stage 4+).
         if (Config.emeraldMobsEnabled() && level.getRandom().nextFloat() < 0.10F) {
-            BlockPos espot = belowOrAbove(level, node, 3);
+            EntityType<? extends net.minecraft.world.entity.Mob> etype = stage >= 4 ? ModEntities.EMERALD_GIGACHAD_GOLEM.get()
+                    : stage >= 2 ? ModEntities.EMERALD_DEFENDER_GOLEM.get()
+                    : ModEntities.EMERALD_IRON_GOLEM.get();
+            BlockPos espot = spawnSpotFor(level, node, etype);
             if (espot != null) {
-                EntityType<? extends net.minecraft.world.entity.Mob> etype = stage >= 4 ? ModEntities.EMERALD_GIGACHAD_GOLEM.get()
-                        : stage >= 2 ? ModEntities.EMERALD_DEFENDER_GOLEM.get()
-                        : ModEntities.EMERALD_IRON_GOLEM.get();
                 net.minecraft.world.entity.Mob eg = etype.create(level);
                 if (eg != null) {
                     eg.moveTo(espot.getX() + 0.5, espot.getY(), espot.getZ() + 0.5,
@@ -93,7 +100,7 @@ public final class NodeSpawns {
     public static void spawnGuard(ServerLevel level, BlockPos node, int stage) {
         EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
         if (guardType == null) return;
-        BlockPos spot = belowOrAbove(level, node, 2);
+        BlockPos spot = spawnSpotFor(level, node, guardType);
         if (spot == null) return;
         Entity guard = guardType.spawn(level, spot, MobSpawnType.EVENT);
         if (stage >= 3 && guard instanceof PathfinderMob pm) {
@@ -108,7 +115,7 @@ public final class NodeSpawns {
         BlockPos feet = node.above();
         AABB column = new AABB(feet.getX(), feet.getY(), feet.getZ(), feet.getX() + 1, feet.getY() + 4, feet.getZ() + 1);
         if (!level.getEntitiesOfClass(WallDefenderEntity.class, column).isEmpty()) return; // already one above
-        if (!clear(level, feet, 2)) return;
+        if (!BrainNodeEvents.fitsFreely(level, feet, ModEntities.WALL_DEFENDER.get())) return;
         // ALWAYS the base (gun) wall defender here, NEVER the stage-4 rocket one -- regardless of village stage.
         // A rocket turret's explosions would destroy the powder-snow trap under the lure tower, and the lure
         // only works while enemies keep walking onto that snow.

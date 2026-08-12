@@ -374,7 +374,13 @@ public final class OrganicMass {
         if (!Config.emeraldMobsEnabled()) return; // emerald faction disabled -> never deploy an emerald unit
         Entity e = type.create(level);
         if (!(e instanceof Mob mob)) return;
+        // The brain node itself is an anchor, and this had no space check at all: an emerald enderman (2.9 tall)
+        // or emerald golem (1.4 x 2.7) deployed straight above a node under a canopy was spawned inside the roof.
         BlockPos at = anchor.above();
+        if (!BrainNodeEvents.fitsFreely(level, at, type)) {
+            at = BrainNodeEvents.nearestFit(level, anchor, type, 4); // beside the anchor instead
+            if (at == null) return;                                  // nowhere it fits -> skip this deployment
+        }
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
         mob.getPersistentData().putLong(LAST_DMG_TAG, level.getGameTime()); // start its idle-reclaim clock at spawn

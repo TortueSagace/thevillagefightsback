@@ -397,7 +397,8 @@ public final class BrainReflexes {
      *  stage-4 dome roof. It auto-arms (and stage-adapts) through the normal entity-join handler. */
     private static void spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
         if (type == null) return;
-        BlockPos spot = findInsideSpot(level, brain);
+        BlockPos spot = findInsideSpot(level, brain, type);
+        if (spot == null) return; // nowhere it fits inside the wall -> skip; the reflex retries next pass
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
     }
@@ -430,7 +431,8 @@ public final class BrainReflexes {
     private static void spawnDarius(ServerLevel level, GlobalPos node, BlockPos brain) {
         GeneralDariusEntity d = ModEntities.GENERAL_DARIUS.get().create(level);
         if (d == null) return;
-        BlockPos spot = findInsideSpot(level, brain);
+        BlockPos spot = findInsideSpot(level, brain, ModEntities.GENERAL_DARIUS.get());
+        if (spot == null) return; // no room for him yet; the reflex retries (cdDarius is only set on success)
         d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
         d.setHomeBrain(node);
@@ -442,23 +444,24 @@ public final class BrainReflexes {
                 net.minecraft.sounds.SoundSource.HOSTILE, 1.2F, 0.6F);
     }
 
-    /** A standable spot near the brain node, searched around its OWN Y (so it's under the dome, not on it). */
-    private static BlockPos findInsideSpot(ServerLevel level, BlockPos brain) {
+    /**
+     * A spot near the brain node where {@code type} genuinely fits, searched around its OWN Y (so it's under the
+     * dome, not on it). Falls back to the nearest fitting cell in growing rings, which is what puts a BIG unit
+     * (a 2.7-tall golem, or Darius) BESIDE the node when the column above it is too tight.
+     *
+     * <p>Returns null when nothing fits. The old code returned an unchecked {@code brain.above()} here, and with
+     * only one guaranteed clear block over a node that is exactly how a summon ended up with its head in stone.
+     */
+    private static BlockPos findInsideSpot(ServerLevel level, BlockPos brain, EntityType<?> type) {
         for (int i = 0; i < 32; i++) {
             int dx = level.random.nextInt(13) - 6, dz = level.random.nextInt(13) - 6;
             if (dx == 0 && dz == 0) continue;
             for (int dy = 2; dy >= -3; dy--) {
                 BlockPos p = brain.offset(dx, dy, dz);
-                if (standableAt(level, p)) return p;
+                if (BrainNodeEvents.fits(level, p, type)) return p;
             }
         }
-        return brain.above();
-    }
-
-    private static boolean standableAt(ServerLevel level, BlockPos p) {
-        return level.getBlockState(p).getCollisionShape(level, p).isEmpty()
-                && level.getBlockState(p.above()).getCollisionShape(level, p.above()).isEmpty()
-                && level.getBlockState(p.below()).isFaceSturdy(level, p.below(), Direction.UP);
+        return BrainNodeEvents.nearestFit(level, brain, type, 5);
     }
 
     private static void log(State s, ServerLevel level, String msg) {

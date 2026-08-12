@@ -952,6 +952,7 @@ public final class BrainNodeEvents {
                 BlockPos n = spot.offset(dx, 0, dz);
                 if (!level.isLoaded(n)) continue;
                 if (level.getBlockState(n).blocksMotion()) continue;            // blocked at node level
+                if (level.getBlockState(n.above()).blocksMotion()) continue;    // 1-high crawlspace: nothing can stand
                 BlockPos below = n.below();
                 if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue; // nowhere to stand
                 clear++;
@@ -1030,7 +1031,7 @@ public final class BrainNodeEvents {
             // brain spawn) so it reliably appears even in a crowded area.
             int scouts = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
             if (Config.mobInfectionEnabled()) {
-                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, gp.pos()));
+                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, gp.pos(), ModEntities.EMERALD_CAT.get()));
             }
 
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
@@ -1090,7 +1091,7 @@ public final class BrainNodeEvents {
             AABB box = new AABB(pos).inflate(INCOME_RADIUS);
             if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
             for (int i = 0; i < pc.count(); i++) {
-                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, pos)); // on the ground below an elevated node
+                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, pos, ModEntities.EMERALD_CAT.get())); // on the ground below an elevated node
             }
         }
     }
@@ -1098,6 +1099,7 @@ public final class BrainNodeEvents {
     /** Spawn one emerald scout of {@code type} at {@code at}, bypassing the emerald LAG cap (it is a DELIBERATE
      *  brain spawn -- the flag is set before the join event fires). */
     private static void spawnUncappedScout(ServerLevel level, net.minecraft.world.entity.EntityType<?> type, BlockPos at) {
+        if (at == null) return; // nowhere it fits -> skip rather than bury it
         if (!(type.create(level) instanceof net.minecraft.world.entity.Mob mob)) return;
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
@@ -1140,8 +1142,9 @@ public final class BrainNodeEvents {
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
      *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
     private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
-        BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall) : null;
-        if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
+        BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall, type) : null;
+        if (spot == null) spot = findSpawnSpot(level, center, type); // no wall / no valid outside spot
+        if (spot == null) return; // nowhere this creature actually fits -> skip; the next pass retries
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
     }
@@ -1149,7 +1152,7 @@ public final class BrainNodeEvents {
     /** Where a brain-summoned emerald unit should appear. If the brain node is MORE THAN ONE BLOCK above the
      *  nearest solid ground (it floats, or sits on a thin perch), the unit spawns down on that ground so it isn't
      *  stranded on top of the node with no way down; otherwise it uses the normal nearby-surface spot. */
-    private static BlockPos emeraldSpawnPos(ServerLevel level, BlockPos node) {
+    private static BlockPos emeraldSpawnPos(ServerLevel level, BlockPos node, EntityType<?> type) {
         BlockPos.MutableBlockPos m = node.mutable().move(Direction.DOWN);
         int floor = level.getMinBuildHeight();
         int scanned = 0;
@@ -1158,21 +1161,28 @@ public final class BrainNodeEvents {
             scanned++;
         }
         BlockPos ground = m.above(); // the open cell on top of the first solid block below the node
-        return (node.getY() - ground.getY() > 1) ? ground : findSpawnSpot(level, node);
+        if (node.getY() - ground.getY() > 1) {
+            return fits(level, ground, type) ? ground : nearestFit(level, ground, type, FIT_SEARCH_RADIUS);
+        }
+        return findSpawnSpot(level, node, type);
     }
 
-    private static BlockPos findSpawnSpot(ServerLevel level, BlockPos center) {
+    /** A surface spot near {@code center} where {@code type} genuinely fits: 12 random columns first (the old
+     *  scatter, which keeps reinforcements from stacking), then the nearest fitting cell in growing rings so a
+     *  big unit lands BESIDE a cramped node rather than in its ceiling. Null when nowhere fits -- the old code
+     *  returned an unchecked {@code center.above()} here, which is exactly how summons ended up inside blocks. */
+    private static BlockPos findSpawnSpot(ServerLevel level, BlockPos center, EntityType<?> type) {
         for (int i = 0; i < 12; i++) {
             BlockPos col = center.offset(level.getRandom().nextInt(9) - 4, 0, level.getRandom().nextInt(9) - 4);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, col);
-            if (spawnableSurface(level, surface)) return surface;
+            if (fits(level, surface, type)) return surface;
         }
-        return center.above();
+        return nearestFit(level, center, type, FIT_SEARCH_RADIUS);
     }
 
     /** Pick a ground spot a few blocks OUTSIDE the inner wall, fanning out past a (random) gate so stage-4
      *  reinforcements muster between the inner and outer walls instead of on top of the dome. Null if none found. */
-    private static BlockPos findSpawnSpotOutsideWall(ServerLevel level, WallPlan plan) {
+    private static BlockPos findSpawnSpotOutsideWall(ServerLevel level, WallPlan plan, EntityType<?> type) {
         List<BlockPos> gates = plan.gates();
         if (gates.isEmpty()) return null;
         BlockPos centre = plan.brainNode().pos();
@@ -1188,16 +1198,58 @@ public final class BrainNodeEvents {
             int tz = (int) Math.floor(gate.getZ() + 0.5 + oz * dist + ox * jitter);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(tx, gate.getY(), tz));
             if (plan.contains(surface)) continue;                       // still inside the ring -> push further next try
-            if (spawnableSurface(level, surface)) return surface;
+            if (fits(level, surface, type)) return surface;
         }
         return null;
     }
 
-    /** A standable open surface: feet + head clear, solid floor below. */
-    private static boolean spawnableSurface(ServerLevel level, BlockPos surface) {
-        return level.getBlockState(surface).getCollisionShape(level, surface).isEmpty()
-                && level.getBlockState(surface.above()).getCollisionShape(level, surface.above()).isEmpty()
-                && level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP);
+    /**
+     * Does {@code type}'s FULL hitbox fit with its feet at {@code feet}? Tests the entity's real AABB rather than
+     * counting block cells, which is the only way to be right for every creature the village summons: an iron
+     * golem is 1.4 wide and 2.7 tall (three cells, and wider than a 1-block shaft), an emerald enderman is 2.9
+     * tall, a villager 1.95. The old two-cell test passed a golem into a 2-high pocket and buried its head.
+     *
+     * <p>No floor requirement -- see {@link #fits} for the surface variant. A creature spawned over air simply
+     * falls, which is harmless; being spawned INSIDE blocks is what suffocates it.
+     */
+    static boolean fitsFreely(ServerLevel level, BlockPos feet, EntityType<?> type) {
+        return level.noCollision(type.getAABB(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5));
+    }
+
+    /** {@link #fitsFreely} plus a sturdy floor: a spot the creature can actually stand on. */
+    static boolean fits(ServerLevel level, BlockPos feet, EntityType<?> type) {
+        BlockPos below = feet.below();
+        return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)
+                && fitsFreely(level, feet, type);
+    }
+
+    /** How far out {@link #nearestFit} will look for somewhere a summoned creature fits. */
+    private static final int FIT_SEARCH_RADIUS = 5;
+
+    /**
+     * The nearest cell to {@code center} where {@code type} fits, searched as growing square rings so a closer
+     * spot always wins. This is what lets a BIG unit appear BESIDE the brain node when the column above it is
+     * too tight: a 2.7-tall golem rarely fits directly over a node tucked under a canopy, but almost always fits
+     * a block or two to the side. Each ring tries the node's own level first, then a step or two down for
+     * sloping ground, then one up.
+     *
+     * @return null when nothing within {@code max} fits, so the caller can SKIP the spawn instead of choking it
+     */
+    static BlockPos nearestFit(ServerLevel level, BlockPos center, EntityType<?> type, int max) {
+        int[] dys = {0, -1, -2, 1};
+        for (int r = 1; r <= max; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue; // walk the ring shell only
+                    for (int dy : dys) {
+                        BlockPos p = center.offset(dx, dy, dz);
+                        if (!level.isLoaded(p)) continue;
+                        if (fits(level, p, type)) return p;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /** Alive villagers/guards within {@value #INCOME_RADIUS} blocks of one brainNode. */
