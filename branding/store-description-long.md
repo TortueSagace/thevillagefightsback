@@ -2,6 +2,8 @@
 
 ![A village, shortly after the Brain Node reached stage 3](https://cdn.modrinth.com/data/cached_images/5857592891609249fd4dd96f632ec5b6e8a74980.jpeg)
 
+<div style="background-color:#ff8c00; color:#1a1a1a; padding:12px; border-radius:8px; text-align:center; font-size:1.25em; font-weight:bold;">Now compatible with MCA Reborn!</div>
+
 **The Village Fights Back** turns ordinary villages into self-organizing strongholds. At the heart of every village sits the **Village Brain Node**, an AI that spends the village's emeralds to arm its people, raise walls, and evolve its defenders across **4 stages**, until the village can strike back at whatever threatens it, players included.
 
 Built to stand against the harshest infection mods, the village answers with its own: a contagious counter-infection, **12 weapons**, **17 new creatures** (two of them bosses), **3 potions**, **17 structures** it raises by itself, and a whole **new dimension** to chase the fight into.
@@ -32,11 +34,11 @@ As the Brain evolves, so does their gear. Higher stages hand defenders steadily 
 
 **The arsenal the village forges includes:**
 
-- **Alien Slasher** and **Alien Eradicator**, blades that spread the Emerald Virus (I and II) on hit
-- a native **Mace** with its three enchantments (Density, Breach, Wind Burst), and its Limbo-forged upgrade the **Alien Smasher**
-- the **Rocket Launcher**, **Wind Charge**, and **Fire Grenade**
-- **Emerald Virus Arrows** (I and II)
-- full **Emerald** and **Limbo** gear lines, tools and armor alike, including the **Emerald Hammer** and a **Limbo chestplate that doubles as an elytra**
+*   **Alien Slasher** and **Alien Eradicator**, blades that spread the Emerald Virus (I and II) on hit
+*   a native **Mace** with its three enchantments (Density, Breach, Wind Burst), and its Limbo-forged upgrade the **Alien Smasher**
+*   the **Rocket Launcher**, **Wind Charge**, and **Fire Grenade**
+*   **Emerald Virus Arrows** (I and II)
+*   full **Emerald** and **Limbo** gear lines, tools and armor alike, including the **Emerald Hammer** and a **Limbo chestplate that doubles as an elytra**
 
 Most of it is craftable, the **Weaponsmith** sells the Mace, wind charges, and the mace-enchant books, and defenders have a chance to drop their weapon when they fall.
 
@@ -50,9 +52,9 @@ From **stage 2**, **Wall Defenders** are mounted above the gates: turret creatur
 
 The Brain builds with materials of its own:
 
-- **Reinforced glass**, as tough as ancient debris yet still lets light through, used for protective domes
-- **Protecting glass**, which stops projectiles coming from outside while the village keeps firing out
-- **Fake cobblestone** and **fake obsidian** smart gates, which allies pass straight through but enemies cannot
+*   **Reinforced glass**, as tough as ancient debris yet still lets light through, used for protective domes
+*   **Protecting glass**, which stops projectiles coming from outside while the village keeps firing out
+*   **Fake cobblestone** and **fake obsidian** smart gates, which allies pass straight through but enemies cannot
 
 And it raises purpose-built structures as the situation demands: **golem factories** that forge new golems, **barracks**, and **lure towers** that funnel hostile mobs onto powder snow and drop them into a pool of lava. To put all this up quickly, the village uses special charges: **Blue TNT** that builds a house block by block, and **Green TNT** that builds tower variants.
 
@@ -63,7 +65,6 @@ And it raises purpose-built structures as the situation demands: **golem factori
 ![Map showing the counter-infection (stage 3)](https://cdn.modrinth.com/data/cached_images/e3f1c4595b6c5af8bbba90bbf3ddd984829066b4.png)
 
 To answer the infection mods that rot the world, the village grows a green one of its own. Spreading out from the Brain Node, it slowly converts the world around it into **Fertile blocks** (with richer **Rich** variants), a full family of green-veined dirt, stone, sand, wood, deepslate, netherrack, end stone, sculk, leaves, and more. The spread is deliberately slow and capped, and it leaves your ores untouched. Those blocks are not just decoration: the **Rich** ones drop emeralds when mined, like a natural emerald ore, feeding the very economy the Brain runs on. The growth even has its own **fertile chorus plants**, whose fruit you can eat (it teleports you like ordinary chorus fruit, with a rare and unfortunate side effect). Out among the fertile fields you may meet the **Rich Sheep**, a green-touched sheep that drops lime wool and an emerald.
-
 
 ## Easier Mining
 
@@ -83,7 +84,7 @@ At its peak the virus produces the **Emeraldger**, a stage-4 virus warrior whose
 
 A third power now walks the map: the **Emerald faction**, a creeping **mob infection**. Any hit from an emerald unit infects its victim, and a creature that dies while infected **feeds the closest Brain Node with organic points**. The Brain node can then use these points to summon emerald units, based on an AI system that identifies whether it is better to explore, hunt, swarm the enemy, summon a boss, etc.
 
-The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Enemy of the Village, you, though by default they stay neutral toward the player. *Because I'm nice, I made them spare the cats, dogs and horses so that you don't lose your pets to them.*
+The emerald faction and the village **leave each other alone**: emerald units never attack villagers, guards, or golems, and the village never strikes back at them, not even with air strikes. Everything else is prey, the wild animals, the monsters, and, if you become Enemy of the Village, you, though by default they stay neutral toward the player. _Because I'm nice, I made them spare the cats, dogs and horses so that you don't lose your pets to them._
 
 Where an emerald creature is born the ground below turns to an **infested path** that slowly grows the fertile zone on its own, and when an emerald unit dies those paths erupt with emerald mites while the survivors nearby grow stronger. Emerald units drop their normal loot plus an emerald. The whole faction can be tuned, capped, or turned off in the configs.
 
@@ -105,9 +106,9 @@ Beyond the war for the village lies **the Limbo**, a dark void dimension with a 
 
 **Limbo gear.** Craft Limbo Membrane into **Limbo Ingots**, then use a rare **smithing template** to forge netherite into the **Limbo set**:
 
-- **Limbo armor** with full knockback immunity, including a **chestplate that doubles as an elytra**
-- a **Limbo tool set** that out-mines netherite, with a **pickaxe that breaks bedrock** and reinforced deepslate
-- wearing the **full set** makes you immune to fire and falling, clears harmful effects, turns the Limbo Phantoms neutral, smashes soft blocks as you move, lets you **walk through bedrock**, and arms a keybound green **banish beam** on a 30 second cooldown
+*   **Limbo armor** with full knockback immunity, including a **chestplate that doubles as an elytra**
+*   a **Limbo tool set** that out-mines netherite, with a **pickaxe that breaks bedrock** and reinforced deepslate
+*   wearing the **full set** makes you immune to fire and falling, clears harmful effects, turns the Limbo Phantoms neutral, smashes soft blocks as you move, lets you **walk through bedrock**, and arms a keybound green **banish beam** on a 30 second cooldown
 
 **The Limbo Sage.** A new villager profession that deals in rare and costly Limbo goods, from oddment blocks up to enchanted Limbo tools, though **never Limbo armor**. Threaten one and it hurls a **Volatile Limbo Potion** to banish you outright.
 
@@ -121,56 +122,68 @@ The village keeps score of how you treat it, and it responds in kind.
 
 **Become an Enemy.** Cross the village and you are branded an **Enemy of the Village for 20 minutes**: strike a villager, guard, or golem, or steal from its stores. Any chest or barrel placed within a Brain Node's range is **claimed by the village**. Open one without Hero standing and you get a warning; take something anyway and the whole server hears that you are **stealing from the village**, your Hero standing is revoked, and every defender turns to hunt you. The mark sticks through milk and even the mod's own Immunity, and clears only when the timer runs out or you die.
 
+## Minecraft Comes Alive (MCA Reborn) compatibility
+
+The village runs on **MCA Reborn** out of the box. MCA is entirely optional: install it and the whole village becomes MCA humans, leave it out and nothing changes at all.
+
+**The village is uniformly MCA.** Every villager the mod spawns, the expansion and founding settlers, the Brain Node's sunset reinforcements, and the staged defender spawn eggs, arrives as an MCA human instead of a vanilla villager, so you never end up with MCA families living next door to blank-faced villagers. They take everything the mod does to a villager exactly as before: the stage kits and weapons, the wall building, the miner and settler roles, the Limbo Sage profession, the Emerald Virus immunity, and the angry face they wear in combat. Turn it off with the `mca_compat` config if you would rather keep vanilla villagers alongside MCA's.
+
+**Your guards stay guards.** An MCA guard or archer is a villager with a job, not a separate creature, so the mod recognises the profession and hands it the real **guard** kit, the emerald knight with the mace at stage 3 and the virus crossbow archer at stage 2, rather than the civilian loadout. Guards are also kept out of the civilian roles: a soldier will not wander off to settle, build walls, or mine.
+
+**Outlaws and cultists are treated as raiders.** MCA's hostile professions are villagers too, which would otherwise make the village adopt them as citizens, arm them with its own blades, and let them walk through its gates. The village now fights them with everything it has, and they get nothing from it.
+
+**Your town hall survives.** The Brain Node normally replaces the village bell, but the bell is what MCA uses to anchor a village, so with MCA installed the node settles beside it and leaves it standing. Residency, marriage, taxes, and MCA's own guard spawning all keep working.
+
+**The truce holds.** The Emerald faction and MCA's villagers, guards and golems leave each other alone, in both directions, exactly as they do with vanilla villagers.
+
 ## Configs
 
 Tune the village to taste. Every setting lives in a single commented file (`config/thevillagefightsback-common.toml`) and can also be changed live in-game with `/thevillagefightsback config <name> [value]` (read it with no value, set it as an operator). Multipliers default to `1.0`; most switches default on.
 
 **Multipliers** (1.0 = vanilla pace):
 
-- `multiplier_level_up_emerald_threshold`: emerald cost for the Brain Node to reach each stage
-- `multiplier_unit_spawn_frequency`: how many times a day every node and the Brain Node spawn their units (2.0 = twice a day, evenly spaced)
-- `multiplier_number_of_settlers`: how many settlers each wave sends out
-- `multiplier_brain_initiatives_cooldown`: how often the Brain Node's reflexes fire
-- `multiplier_air_strikes_cooldown`: how often air strikes fire (kept separate from the reflexes)
-- `multiplier_block_infection_speed` / `multiplier_block_infection_reach`: how fast and how far the fertile zone spreads
-- `multiplier_brain_influence_radius`: the reach of every "within the Brain's radius" rule
-- `multiplier_limbo_raiders`: how many raiders a Limbo raid throws at you
-- `multiplier_emerald_mobs_spawned_by_brain`: how many emerald scouts the Brain summons (base 2 cats per settlement + 1 bat per sunset, times this)
-- `organic_army_multiplier`: scales the standing organic army the Brain can field (cap = `emerald_mobs_max_number` times this)
-- `organic_spawn_budget_multiplier`: scales how much banked organic mass the Brain spends per decision (bigger bursts)
+*   `multiplier_level_up_emerald_threshold`: emerald cost for the Brain Node to reach each stage
+*   `multiplier_unit_spawn_frequency`: how many times a day every node and the Brain Node spawn their units (2.0 = twice a day, evenly spaced)
+*   `multiplier_number_of_settlers`: how many settlers each wave sends out
+*   `multiplier_brain_initiatives_cooldown`: how often the Brain Node's reflexes fire
+*   `multiplier_air_strikes_cooldown`: how often air strikes fire (kept separate from the reflexes)
+*   `multiplier_block_infection_speed` / `multiplier_block_infection_reach`: how fast and how far the fertile zone spreads
+*   `multiplier_brain_influence_radius`: the reach of every "within the Brain's radius" rule
+*   `multiplier_limbo_raiders`: how many raiders a Limbo raid throws at you
+*   `multiplier_emerald_mobs_spawned_by_brain`: how many emerald scouts the Brain summons (base 2 cats per settlement + 1 bat per sunset, times this)
+*   `organic_army_multiplier`: scales the standing organic army the Brain can field (cap = `emerald_mobs_max_number` times this)
+*   `organic_spawn_budget_multiplier`: scales how much banked organic mass the Brain spends per decision (bigger bursts)
 
 **Switches and values:**
 
-- `enable_block_infection`: master switch for the village's own fertile-zone takeover (the Brain Node's natural spread)
-- `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
-- `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
-- `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
-- `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
-- `enable_organic_mass_system`: emerald kills bank "organic points" in the nearest Brain Node, which spends them to field its own emerald army instead of converting each kill directly (off = classic convert-on-kill)
-- `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire`: whether each kind of explosion breaks blocks or starts fires (it always still hits units)
-- `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
-- `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
-- `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald
-- `defeated_brain_node_spawn_spirit`: whether destroying a Brain Node (any non-silk-touch break) unleashes the Vindictive Village Spirit boss; off lets a node be broken without summoning it (default on)
-- `air_strikes_appear_at_stage` (1-4): the stage air strikes unlock at
-- `unstable_limbo_gravel_HP_threshold`: the HP above which a banished creature is "unstable" in Limbo
-- `enable_chunk_portals`: work in progress; when on, once a brain reaches stage 3 about 1% of nearby chunks turn into 4-wall portals that show and lead into the Limbo (default off; turning it off stops new portals but leaves existing ones)
-- `guards_spawning_with_general_darius`: guards that spawn already under General Darius's command
-- `general_darius_remains`: Darius holds the field instead of returning home
-- `emeraldgers_size_variation`: emeraldgers sized by the HP of the host they sprang from
-- `player_spawn_in_village` / `player_is_given_bell_at_spawn`: where you start and whether you start with a Bell
-- `player_is_hostile`: you are permanently an Enemy of the Village and can never be its Hero
-- `mega_expansion_mode`: the Brain Node founds a new building every minute
-- `mega_brutal_mode`: every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
-- `mca_compat`: Minecraft Comes Alive (MCA Reborn) integration; no effect unless MCA is installed. On (the default), every villager this mod spawns is an MCA human, so the village is uniformly MCA instead of a mix of MCA humans and vanilla villagers. Off spawns plain vanilla villagers alongside MCA's
+*   `enable_block_infection`: master switch for the village's own fertile-zone takeover (the Brain Node's natural spread)
+*   `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
+*   `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
+*   `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
+*   `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
+*   `enable_organic_mass_system`: emerald kills bank "organic points" in the nearest Brain Node, which spends them to field its own emerald army instead of converting each kill directly (off = classic convert-on-kill)
+*   `creature_rocket_` / `air_strike_rocket_` / `emerald_virus_explosion_destroy_blocks` and `_set_blocks_on_fire`: whether each kind of explosion breaks blocks or starts fires (it always still hits units)
+*   `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
+*   `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
+*   `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald
+*   `defeated_brain_node_spawn_spirit`: whether destroying a Brain Node (any non-silk-touch break) unleashes the Vindictive Village Spirit boss; off lets a node be broken without summoning it (default on)
+*   `air_strikes_appear_at_stage` (1-4): the stage air strikes unlock at
+*   `unstable_limbo_gravel_HP_threshold`: the HP above which a banished creature is "unstable" in Limbo
+*   `enable_chunk_portals`: work in progress; when on, once a brain reaches stage 3 about 1% of nearby chunks turn into 4-wall portals that show and lead into the Limbo (default off; turning it off stops new portals but leaves existing ones)
+*   `guards_spawning_with_general_darius`: guards that spawn already under General Darius's command
+*   `general_darius_remains`: Darius holds the field instead of returning home
+*   `emeraldgers_size_variation`: emeraldgers sized by the HP of the host they sprang from
+*   `player_spawn_in_village` / `player_is_given_bell_at_spawn`: where you start and whether you start with a Bell
+*   `player_is_hostile`: you are permanently an Enemy of the Village and can never be its Hero
+*   `mega_expansion_mode`: the Brain Node founds a new building every minute
+*   `mega_brutal_mode`: every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
 
 **Handy commands:** `/thevillagefightsback brain_stage_get` and `brain_stage_set <1-4>`, `village_status_report` (the nearest Brain Node's report), and `tp_to_nearest_node` (warp above the nearest Brain Node).
 
 ## Requirements and credits
 
-- **Minecraft:** 1.20.1
-- **Mod loader:** Forge
-- **Required dependency:** **Guard Villagers** (the village's guards are built on it). Playtested with guardvillagers-1.20.1-1.6.17.
-- **Optional dependency:** **Minecraft Comes Alive (MCA Reborn)**. Install it and the whole village becomes MCA humans -- settlers, brain-node reinforcements and spawn-egg defenders all spawn as MCA villagers, and they take the mod's roles, weapons, walls and virus exactly as vanilla villagers do. Nothing changes if you do not install it. Tested against minecraft-comes-alive-7.7.0-beta.2+1.20.1.
-- **Author:** Alexandre Le Mercier
-- **License:** All Rights Reserved
+*   **Minecraft:** 1.20.1 (original), 1.19.2, or 1.21.1
+*   **Mod loader:** Forge
+*   **Required dependency:** **Guard Villagers** (the village's guards are built on it). Playtested with guardvillagers-1.20.1-1.6.17.
+*   **Author:** Alexandre Le Mercier
+*   **License:** All Rights Reserved
