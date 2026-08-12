@@ -831,10 +831,16 @@ public final class BrainNodeEvents {
         GlobalPos key = GlobalPos.of(level.dimension(), bell.immutable());
         if (data.isServiced(key)) return;
 
-        // The brainNode takes the bell's place DIRECTLY: it replaces the bell block, so a village shows a
-        // brainNode at its heart instead of a bell. If the bell is wall/ceiling-mounted (nothing solid below
-        // -> the brain node would float), fall back to the nearest open ground spot instead.
-        BlockPos spot = level.getBlockState(bell.below()).isFaceSturdy(level, bell.below(), Direction.UP)
+        // Where the brainNode settles:
+        //  - Without MCA: it takes the bell's place DIRECTLY (replaces the bell block), so a village shows a
+        //    brainNode at its heart instead of a bell -- but only if that spot is actually usable (see
+        //    isGoodNodeSpot). A bell that is wall/ceiling-mounted, walled in, or under a low roof falls back.
+        //  - With MCA Reborn: the bell IS MCA's Town Center building, and MCA's residency / marriage / taxes /
+        //    guard systems hang off it, so consuming it would delete the village centre out from under MCA.
+        //    There we always settle BESIDE the bell and leave it standing; MCA's town centre has an 8-block
+        //    margin, so an adjacent spot is still the town hall.
+        boolean keepBell = com.example.villagefightsback.compat.MCACompat.preserveTownCenter();
+        BlockPos spot = (!keepBell && isGoodNodeSpot(level, bell, true))
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
         if (spot == null) return; // no good spot yet; retry next scan
@@ -896,14 +902,77 @@ public final class BrainNodeEvents {
     }
 
     /** Nearest open ground spot within 3 blocks of the village centre, close to the centre's height. */
+    /** How far from the village centre a brain node may settle. Kept inside MCA's 8-block town-centre margin. */
+    private static final int NODE_SEARCH = 4;
+    /** Max height difference from the village centre. Tighter than the old +/-5, which accepted low roofs. */
+    private static final int NODE_Y_TOLERANCE = 3;
+    /** A support block with air this close beneath it is a roof or platform, not ground. */
+    private static final int GROUND_PROBE = 3;
+    /** Clear cells needed out of the 8 around the node, so summoned units have somewhere to land. Deliberately
+     *  5 rather than all 8: a vanilla bell commonly has support posts on two or three sides, and demanding a
+     *  fully open ring would push the node off almost every village centre. */
+    private static final int MIN_CLEAR_NEIGHBOURS = 5;
+    /** Clear blocks above the node, so it is never buried. Only 1: many village bells sit under a canopy, and
+     *  requiring more would relocate the node away from the bell in most vanilla villages. */
+    private static final int NODE_HEADROOM = 1;
+
+    /**
+     * Is {@code spot} a good home for a brain node? The node has to be reachable and usable, not merely
+     * supported, so this checks all three things a node needs:
+     * <ul>
+     *   <li><b>on real ground</b> -- solid support below, and no air within {@link #GROUND_PROBE} beneath that
+     *       support. That last test is what rejects ROOFS: the surface heightmap happily reports the top of a
+     *       building, and a node placed there strands every unit it summons;</li>
+     *   <li><b>room to summon</b> -- at least {@link #MIN_CLEAR_NEIGHBOURS} of the 8 surrounding cells open with
+     *       something solid under them, so spawned villagers/golems have ground to stand on;</li>
+     *   <li><b>visible</b> -- {@link #NODE_HEADROOM} clear blocks above, so it is never buried or boxed in.</li>
+     * </ul>
+     *
+     * @param replacingBell true for the bell's own cell, which we intend to overwrite, so its occupancy is fine
+     */
+    private static boolean isGoodNodeSpot(ServerLevel level, BlockPos spot, boolean replacingBell) {
+        if (!replacingBell && !level.getBlockState(spot).canBeReplaced()) return false;
+
+        BlockPos support = spot.below();
+        if (!level.getBlockState(support).isFaceSturdy(level, support, Direction.UP)) return false;
+        for (int d = 1; d <= GROUND_PROBE; d++) {                 // a roof/platform has open space under it
+            BlockPos under = support.below(d);
+            if (!level.isLoaded(under)) break;
+            if (!level.getBlockState(under).blocksMotion()) return false;
+        }
+
+        for (int dy = 1; dy <= NODE_HEADROOM; dy++) {
+            if (level.getBlockState(spot.above(dy)).blocksMotion()) return false;
+        }
+
+        int clear = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                BlockPos n = spot.offset(dx, 0, dz);
+                if (!level.isLoaded(n)) continue;
+                if (level.getBlockState(n).blocksMotion()) continue;            // blocked at node level
+                BlockPos below = n.below();
+                if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue; // nowhere to stand
+                clear++;
+            }
+        }
+        return clear >= MIN_CLEAR_NEIGHBOURS;
+    }
+
+    /**
+     * The best brain-node spot near {@code center} (the village bell): on the surface, close to the centre in
+     * both plan and height, and passing {@link #isGoodNodeSpot}. Never returns the bell cell itself, so it is
+     * safe to use when MCA's Town Center bell has to survive. Prefers the spot nearest the centre.
+     */
     private static BlockPos findBrainNodeSpot(ServerLevel level, BlockPos center) {
         BlockPos best = null;
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dz = -3; dz <= 3; dz++) {
+        for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
+            for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
+                if (dx == 0 && dz == 0) continue;                 // leave the bell's own cell alone
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
-                if (Math.abs(surface.getY() - center.getY()) > 5) continue;                   // skip roofs / cliffs
-                if (!level.getBlockState(surface).canBeReplaced()) continue;                   // open spot
-                if (!level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) continue;
+                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
+                if (!isGoodNodeSpot(level, surface, false)) continue;
                 if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
             }
         }

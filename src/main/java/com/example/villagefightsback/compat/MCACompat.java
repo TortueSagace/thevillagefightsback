@@ -94,6 +94,23 @@ public final class MCACompat {
     }
 
     /**
+     * True when the village bell must be LEFT STANDING because MCA Reborn is using it.
+     *
+     * <p>MCA's "Town Center" building is defined as exactly one block -- {@code #mca:town_center}, whose only
+     * member is {@code minecraft:bell} (its own lang string for the tag is literally "Bell"). That building is
+     * what MCA's residency, marriage, taxes and guard-spawning systems hang the village off. This mod normally
+     * has the brain node REPLACE the bell, which would delete MCA's town centre out from under it, so with MCA
+     * installed the node settles beside the bell instead. MCA gives the town centre an 8-block margin, so an
+     * adjacent spot still counts as the town hall.
+     */
+    public static boolean preserveTownCenter() {
+        return enabled();
+    }
+
+    /** How far from the bell a brain node may settle and still sit inside MCA's town-centre margin (8). */
+    public static final int TOWN_CENTER_MARGIN = 8;
+
+    /**
      * MCA's HOSTILE professions. This is the trap in MCA's design as far as this mod is concerned: an outlaw
      * (bandit) and a cultist are not separate entities, they are ordinary {@code VillagerEntityMCA} carrying a
      * profession -- so they are {@link Villager}s, and every village check in this mod keys off exactly that.
