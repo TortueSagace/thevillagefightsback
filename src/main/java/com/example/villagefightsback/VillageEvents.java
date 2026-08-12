@@ -620,6 +620,24 @@ public final class VillageEvents {
         if (best != null) data.econ(best).addEmeralds(1); // addEmeralds() self-dirties the saved data
     }
 
+    /**
+     * A wall builder takes no FALL damage, so it stops crying out every time it steps off its own scaffolding.
+     *
+     * <p>Builders work at height on scaffolding they place themselves, so short drops are constant and normal
+     * for the job. Under MCA Reborn each one plays a human hurt sound, and a work site turns into a chorus of
+     * villagers yelping. Cancelling at {@link LivingAttackEvent} is what makes that stop: it aborts
+     * {@code hurt()} before it runs, and the hurt sound is played inside {@code hurt()}, so there is no way to
+     * silence the shout while still applying the damage. Only fall damage and only while actually building --
+     * a builder is still perfectly killable by anything else, and reverts to a normal villager when it finishes.
+     */
+    @SubscribeEvent
+    public static void onBuilderFall(LivingAttackEvent event) {
+        if (!event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) return;
+        if (!(event.getEntity() instanceof Villager villager)) return;
+        if (!BuilderRole.isBuilder(villager)) return;
+        event.setCanceled(true);
+    }
+
     /** Immunity effect: the holder is immune to FIRE damage only (in-fire / on-fire / lava / magma /
      *  fireballs). It does NOT block ordinary combat damage -- its protection is fire immunity plus the
      *  harmful-status-effect block below. */
