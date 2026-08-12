@@ -18,9 +18,9 @@ import net.minecraft.resources.ResourceLocation;
  * The one-off game-mode screen, shown over the spawn view the first time a player enters a freshly created
  * world. Full-bleed key art, the stylised mod logo, the question, and one vanilla button per mode.
  *
- * <p>It cannot be dismissed until a mode is picked (no ESC, no close button). Once one is, the buttons are
- * removed and replaced by the note about changing it later; the screen then closes on a click, on ESC, or by
- * itself after {@link #AUTO_CLOSE_TICKS}.
+ * <p>It cannot be dismissed until a mode is picked (no ESC, no close button). Picking one closes the screen
+ * immediately and drops the player straight into the world -- the server acknowledges the choice in chat
+ * (see {@link com.example.villagefightsback.network.ChooseModePacket}), so no follow-up screen is needed.
  *
  * <p>{@link #isPauseScreen()} deliberately returns false: in singleplayer a pausing screen also pauses the
  * integrated server, which would stop it ever processing the answer packet.
@@ -39,16 +39,10 @@ public class ModeSelectScreen extends Screen {
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
 
-    /** How long the confirmation stays up before the screen closes on its own (20 ticks = 1s). */
-    private static final int AUTO_CLOSE_TICKS = 160;
+    /** Set the instant a mode is picked, so a double click cannot send the answer twice. */
+    private boolean answered;
 
-    private static final String CMD_BLOCK = "/thevillagefightsback config enable_block_infection <true|false>";
-    private static final String CMD_MOB = "/thevillagefightsback config enable_mob_infection <true|false>";
-
-    private WorldMode picked;
-    private int ticksLeft = AUTO_CLOSE_TICKS;
-
-    /** Y of the top of the button column, shared with the confirmation text so the two occupy the same band. */
+    /** Y of the top of the button column. */
     private int contentY;
     private int questionY;
 
@@ -67,8 +61,6 @@ public class ModeSelectScreen extends Screen {
         this.questionY = logoY + logoH + 12;
         this.contentY = questionY + 26;
 
-        if (picked != null) return; // answered already: no buttons, just the note (see render)
-
         int x = (this.width - BUTTON_W) / 2;
         int y = contentY;
         for (WorldMode mode : WorldMode.values()) {
@@ -85,17 +77,12 @@ public class ModeSelectScreen extends Screen {
         return Math.min(1.0F, Math.min(byWidth, byHeight));
     }
 
+    /** Send the answer and get out of the way at once: the server confirms the mode in chat. */
     private void choose(WorldMode mode) {
-        if (picked != null) return;
-        picked = mode;
-        ticksLeft = AUTO_CLOSE_TICKS;
+        if (answered) return;
+        answered = true;
         ModNetwork.CHANNEL.sendToServer(new ChooseModePacket(mode.id()));
-        clearWidgets(); // the three buttons disappear; the note below takes their place
-    }
-
-    @Override
-    public void tick() {
-        if (picked != null && --ticksLeft <= 0) onClose();
+        onClose();
     }
 
     @Override
@@ -104,12 +91,8 @@ public class ModeSelectScreen extends Screen {
         renderLogo(g);
 
         // The question, drawn a little larger than the standard font so it carries against the art.
-        if (picked == null) {
-            drawScaled(g, Component.literal("Which Game Mode?").withStyle(ChatFormatting.WHITE),
-                    this.width / 2, questionY, 1.5F, 0xFFFFFFFF);
-        } else {
-            renderConfirmation(g);
-        }
+        drawScaled(g, Component.literal("Which Game Mode?").withStyle(ChatFormatting.WHITE),
+                this.width / 2, questionY, 1.5F, 0xFFFFFFFF);
 
         super.render(g, mouseX, mouseY, partial);
     }
@@ -138,44 +121,6 @@ public class ModeSelectScreen extends Screen {
         g.blit(LOGO, x, y, w, h, 0.0F, 0.0F, LOGO_W, LOGO_H, LOGO_W, LOGO_H);
     }
 
-    /** What replaces the buttons once a mode is picked. */
-    private void renderConfirmation(GuiGraphics g) {
-        Component mode = Component.literal(picked.title()).withStyle(ChatFormatting.GREEN);
-        Component intro = Component.literal("You can change it anytime using").withStyle(ChatFormatting.WHITE);
-        Component cmd1 = Component.literal(CMD_BLOCK).withStyle(ChatFormatting.YELLOW);
-        Component cmd2 = Component.literal(CMD_MOB).withStyle(ChatFormatting.YELLOW);
-        Component luck = Component.literal("Good luck!").withStyle(ChatFormatting.WHITE);
-
-        // The command lines are long. Shrink the whole block rather than let it run off a narrow window (which is
-        // what a small window at GUI scale 3-4 amounts to).
-        int widest = Math.max(Math.max(font.width(cmd1), font.width(cmd2)), font.width(intro));
-        float fit = Math.min(1.0F, (this.width - 24.0F) / Math.max(1, widest));
-        float modeScale = Math.min(1.3F, (this.width - 24.0F) / Math.max(1, font.width(mode)));
-
-        int lineH = Math.max(1, Math.round((font.lineHeight + 3) * fit));
-        int modeH = Math.round((font.lineHeight + 3) * modeScale);
-        int top = contentY;
-        int blockH = modeH + 5 + lineH * 4 + 10;
-        int half = Math.round(Math.max(widest * fit, font.width(mode) * modeScale)) / 2 + 10;
-
-        // A dark plate so the commands stay legible over the bright sky behind them.
-        g.fill(this.width / 2 - half, top - 6, this.width / 2 + half, top + blockH - 6, 0xB0000000);
-
-        int y = top;
-        drawScaled(g, mode, this.width / 2, y, modeScale, 0xFFFFFFFF);
-        y += modeH + 5;
-        drawScaled(g, intro, this.width / 2, y, fit, 0xFFFFFFFF);
-        y += lineH;
-        drawScaled(g, cmd1, this.width / 2, y, fit, 0xFFFFFFFF);
-        y += lineH;
-        drawScaled(g, cmd2, this.width / 2, y, fit, 0xFFFFFFFF);
-        y += lineH;
-        drawScaled(g, luck, this.width / 2, y, fit, 0xFFFFFFFF);
-
-        drawScaled(g, Component.literal("click to continue").withStyle(ChatFormatting.GRAY),
-                this.width / 2, top + blockH + 2, 0.8F * fit, 0xFFFFFFFF);
-    }
-
     /** Centred text at an arbitrary scale (the font itself only draws at 1x). */
     private void drawScaled(GuiGraphics g, Component text, int centerX, int y, float scale, int color) {
         g.pose().pushPose();
@@ -185,16 +130,10 @@ public class ModeSelectScreen extends Screen {
         g.pose().popPose();
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (picked != null) { onClose(); return true; } // the note is up: any click dismisses it
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    /** No escaping the question; once it is answered ESC closes the note like any other screen. */
+    /** No escaping the question: the only way out is to pick a mode, which closes the screen itself. */
     @Override
     public boolean shouldCloseOnEsc() {
-        return picked != null;
+        return false;
     }
 
     /** See the class note: pausing here would also pause the integrated server, which has to handle the answer. */

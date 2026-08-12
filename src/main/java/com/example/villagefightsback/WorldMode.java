@@ -15,12 +15,14 @@ package com.example.villagefightsback;
  * switch rather than with the block one.
  */
 public enum WorldMode {
-    /** No infection at all: the village still evolves, arms itself and fights, but nothing spreads or converts. */
-    NORMAL(0, "Normal Village", false, false, false),
+    /** No infection at all: the village still evolves, arms itself and fights, but nothing spreads or converts.
+     *  Named "Evolving" rather than "Normal" because the village evolving through its 4 stages is the baseline
+     *  in EVERY mode -- "Normal" read as "the mod does nothing special", which is the opposite of the truth. */
+    EVOLVING(0, "Evolving Village", false, false, false),
     /** The village brain node's fertile spread only; no emerald units are ever created. */
-    BLOCK(1, "Village with Block Infection", true, false, false),
+    BLOCK(1, "Evolving Village with Block Infection", true, false, false),
     /** The full game: fertile spread, emerald units, and their infested paths. */
-    BLOCK_AND_MOB(2, "Village with Block + Mob Infection", true, true, true);
+    BLOCK_AND_MOB(2, "Evolving Village with Block + Mob Infection", true, true, true);
 
     private final int id;
     private final String title;
