@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -17,8 +16,8 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Burial and resurrection for the village's fallen.
  *
- * <p>A villager that has killed at least one hostile has fought for the village, and is buried where it falls
- * with an epitaph naming what it did. A grave holds the whole villager, so the Limbo Scythe can bring it back.
+ * <p>A villager or guard that has killed at least one hostile has fought for the village, and is buried where it
+ * falls with an epitaph naming what it did. A grave holds the whole body, so the Limbo Scythe can bring it back.
  * General Darius is always buried, kills or not: he is the village's champion and only ever dies in its defence.
  *
  * <p>Which headstone gets used depends on the modpack. With MCA Reborn installed the grave is one of MCA's OWN
@@ -120,7 +119,10 @@ public final class Graves {
             bury(level, dead, Component.literal("General Darius, champion of the village"));
             return;
         }
-        if (!(dead instanceof Villager)) return;
+        // Villagers AND guards. Without MCA a guard is a Guard Villagers guard rather than a Villager, and it is
+        // the unit that does most of the dying, so the old Villager-only gate denied memorials to exactly the
+        // defenders that earned them.
+        if (!VillagerKills.isDefender(dead)) return;
         if (!VillagerKills.earnedGrave(dead)) return;   // never fought: no headstone, so a siege cannot carpet the village
         bury(level, dead, VillagerKills.epitaph(dead));
     }

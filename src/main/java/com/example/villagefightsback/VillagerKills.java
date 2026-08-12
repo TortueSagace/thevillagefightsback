@@ -38,6 +38,26 @@ public final class VillagerKills {
     }
 
     /**
+     * True for a village defender whose kills are worth counting and who can be buried under a memorial.
+     *
+     * <p>Villagers AND guards, because which one a guard is depends entirely on the modpack: with MCA Reborn a
+     * guard is an MCA villager (so {@code instanceof Villager} alone was enough), but WITHOUT MCA it is a Guard
+     * Villagers {@code guardvillagers:guard}, which is not a Villager at all. That is exactly the unit that does
+     * most of the dying in a vanilla-ish pack, so gating on Villager quietly denied a memorial to the village's
+     * best fighters in the very packs where they matter most.
+     *
+     * <p>Iron golems and wall defenders are deliberately left out: they are constructs, not the village's people,
+     * and burying every golem would carpet a besieged village in headstones. General Darius is handled on his own
+     * terms in {@link Graves#onDeath} -- he is always buried, kills or not.
+     */
+    public static boolean isDefender(Entity e) {
+        if (Factions.isInfected(e) || Factions.isEmerald(e)) return false;
+        // An MCA outlaw or cultist is a Villager, but it is a raider: it fights the village, not for it.
+        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)) return false;
+        return e instanceof Villager || Factions.isGuard(e);
+    }
+
+    /**
      * The epitaph carved on a fallen defender's headstone.
      *
      * <p>Kept SHORT on purpose. On an MCA Reborn tombstone this line is sandwiched between MCA's own header
@@ -61,7 +81,7 @@ public final class VillagerKills {
         if (!Factions.isVillageThreat(event.getEntity())) return;
         // getEntity() on the source is the responsible killer: the shooter for a projectile, not the arrow.
         if (!(event.getSource().getEntity() instanceof LivingEntity killer)) return;
-        if (!(killer instanceof Villager)) return;   // villagers, which under MCA includes its guards and archers
+        if (!isDefender(killer)) return;   // villagers and guards, whichever kind of guard this pack has
         if (killer.level().isClientSide()) return;
 
         int now = get(killer) + 1;
