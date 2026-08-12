@@ -434,6 +434,9 @@ public final class BrainReflexes {
         if (d == null) return;
         BlockPos spot = findInsideSpot(level, brain, ModEntities.GENERAL_DARIUS.get());
         if (spot == null) return; // no room for him yet; the reflex retries (cdDarius is only set on success)
+        // The village has its champion back, so the memorial to the last one is retired rather than letting a
+        // graveyard of Dariuses pile up around the node.
+        com.example.villagefightsback.Graves.clearDariusGrave(level, brain, 24);
         d.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         d.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
         d.setHomeBrain(node);

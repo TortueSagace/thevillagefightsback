@@ -216,6 +216,15 @@ public final class MCACompat {
         }
     }
 
+    /**
+     * True for a FEMALE MCA villager. MCA bakes gender into the entity type rather than into a data field, so
+     * this is answerable by registry id alone, with no MCA class involved. Anything else (a male MCA villager,
+     * a vanilla villager, a guard entity) is treated as male, which is only ever used to pick a pronoun.
+     */
+    public static boolean isFemale(Entity e) {
+        return FEMALE_VILLAGER.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+    }
+
     /** True for an MCA villager specifically (either gender). Vanilla villagers and Emeraldgers return false. */
     public static boolean isMcaVillager(Entity e) {
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());

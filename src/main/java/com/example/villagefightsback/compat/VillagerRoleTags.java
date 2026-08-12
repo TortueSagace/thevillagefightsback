@@ -50,6 +50,7 @@ public final class VillagerRoleTags {
     private static final String[] INT_KEYS = {
             "vgun_exp_tnt",      // ExpansionManager: which structure TNT this settler carries
             "vgun_builder_door", // BuilderRole: the door this builder owns
+            "vgun_kills",        // VillagerKills: hostiles killed, which decides whether it earns a grave
     };
 
     /** Long role payloads (a packed BlockPos). */

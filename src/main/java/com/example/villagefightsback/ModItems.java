@@ -159,6 +159,12 @@ public final class ModItems {
                 @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
             });
 
+    /** Limbo Scythe: the reaper's tool. Uncraftable -- it only drops from the creatures of the Limbo. Stores
+     *  souls reaped from substantial creatures and spends them raising the village's dead from their graves.
+     *  See {@link LimboScytheItem}. */
+    public static final RegistryObject<Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",
+            () -> new LimboScytheItem(new Item.Properties().stacksTo(1).fireResistant()));
+
     /** Forgotten Powder: dropped by Forgotten Glowstone AND by the Limbo raiders (the Forgotten Dust used to
      *  craft the block back). Foil + an animated icon, matching the Limbo gear's shimmer. */
     public static final RegistryObject<Item> FORGOTTEN_POWDER =

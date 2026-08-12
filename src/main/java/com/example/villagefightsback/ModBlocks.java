@@ -732,6 +732,7 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_AXE.get());
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
+                output.accept(ModItems.LIMBO_SCYTHE.get()); // uncraftable: drops from Limbo creatures only
             })
             .build());
 

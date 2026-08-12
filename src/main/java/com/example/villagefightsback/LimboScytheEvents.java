@@ -1,0 +1,60 @@
+package com.example.villagefightsback;
+
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * The two ways the Limbo Scythe enters and charges: it drops from the creatures of the Limbo, and it takes a
+ * soul from anything substantial it kills. See {@link LimboScytheItem}.
+ */
+@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class LimboScytheEvents {
+    private LimboScytheEvents() {}
+
+    /** Chance a slain Limbo creature gives up its scythe. Deliberately small: it is the only source there is. */
+    private static final float DROP_CHANCE = 0.01F;
+
+    /**
+     * A Limbo creature has a small chance of dropping the scythe. Added to the death drops rather than to a loot
+     * table, because the Limbo raiders and the Limbo Phantom are this mod's own entities and share no table.
+     */
+    @SubscribeEvent
+    public static void onLimboDrops(LivingDropsEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (!Factions.isLimbo(dead)) return;
+        if (dead.level().isClientSide()) return;
+        if (dead.getRandom().nextFloat() >= DROP_CHANCE) return;
+
+        ItemStack scythe = new ItemStack(ModItems.LIMBO_SCYTHE.get());
+        event.getDrops().add(new ItemEntity(dead.level(), dead.getX(), dead.getY(), dead.getZ(), scythe));
+    }
+
+    /**
+     * Reaping a creature of at least {@link LimboScytheItem#SOUL_HEALTH_MIN} maximum health stores its soul in
+     * the scythe. Keyed on MAX health, not on the damage dealt, so a soul is worth what the creature was, and a
+     * swarm of small things can never charge it.
+     */
+    @SubscribeEvent
+    public static void onReap(LivingDeathEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim.level().isClientSide()) return;
+        if (victim.getMaxHealth() < LimboScytheItem.SOUL_HEALTH_MIN) return;
+        if (!(event.getSource().getEntity() instanceof LivingEntity killer)) return;
+
+        ItemStack held = killer.getMainHandItem();
+        if (!held.is(ModItems.LIMBO_SCYTHE.get())) return;
+        if (!LimboScytheItem.addSoul(held)) return;   // already full
+
+        if (killer instanceof net.minecraft.world.entity.player.Player player) {
+            player.displayClientMessage(net.minecraft.network.chat.Component
+                    .literal("The scythe takes a soul (" + LimboScytheItem.souls(held) + "/"
+                            + LimboScytheItem.MAX_SOULS + ").")
+                    .withStyle(net.minecraft.ChatFormatting.AQUA), true);
+        }
+    }
+}
