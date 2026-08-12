@@ -241,6 +241,11 @@ public class GeneralDariusEntity extends Monster {
      * has recently killed >= {@value #DANGEROUS_PLAYER_KILLS} villagers/guards near the home brain). When the
      * first lock has died, callers want the NEXT biggest -- so we only consider enemies with maxHealth
      * >= {@value #NEXT_TARGET_MIN_MAXHP}, plus dangerous players. Returns null when nothing qualifies.
+     *
+     * <p>That floor is dropped for a Darius with NO HOME BRAIN, i.e. one placed by hand with the spawn egg or a
+     * command rather than summoned by a village. A summoned champion is deliberately a boss-hunter who ignores
+     * small fry and marches home, but a hand-placed one has no home to march to and no treasury to refund, so
+     * with the floor in place he simply stood inert in any ordinary village, every mob in it being under 50 HP.
      */
     @Nullable
     public LivingEntity pickBiggestThreat() {
@@ -250,7 +255,8 @@ public class GeneralDariusEntity extends Monster {
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 getBoundingBox().inflate(BRAIN_RADIUS), this::isHuntable)) {
             boolean dangerous = e instanceof Player p && BrainReflexes.isDangerousPlayer(sl, p, homeBrain);
-            if (!dangerous && e.getMaxHealth() < NEXT_TARGET_MIN_MAXHP) continue;
+            boolean freelance = homeBrain == null;   // hand-placed: no village summoned him, so he hunts anything
+            if (!dangerous && !freelance && e.getMaxHealth() < NEXT_TARGET_MIN_MAXHP) continue;
             double hp = dangerous ? Math.max(e.getMaxHealth(), 1000.0) : e.getMaxHealth(); // prioritise a dangerous player
             if (hp > bestHp) { bestHp = hp; best = e; }
         }

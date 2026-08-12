@@ -38,14 +38,18 @@ public final class VillagerKills {
     }
 
     /**
-     * The epitaph carved on a fallen defender's headstone. Gendered from the villager itself where MCA Reborn
-     * supplies a gender, so it reads as a person rather than as a statistic.
+     * The epitaph carved on a fallen defender's headstone.
+     *
+     * <p>Kept SHORT on purpose. On an MCA Reborn tombstone this line is sandwiched between MCA's own header
+     * ("Here Lies") and its footer ("May he/she rest in peace"), both of which MCA renders itself and neither of
+     * which this mod can remove without touching MCA's renderer. The only length we control is this line, so it
+     * carries just the fact worth carving: that the villager defended the village, and how many it took down.
+     * "At the cost of his life" was dropped as redundant -- it is a grave.
      */
     public static Component epitaph(LivingEntity villager) {
         int kills = get(villager);
-        String pronoun = com.example.villagefightsback.compat.MCACompat.isFemale(villager) ? "her" : "his";
-        return Component.literal("Defended the village at the cost of " + pronoun + " life: killed "
-                + kills + (kills == 1 ? " hostile mob" : " hostile mobs")).withStyle(ChatFormatting.WHITE);
+        return Component.literal("Defended the village: killed " + kills
+                + (kills == 1 ? " hostile mob" : " hostile mobs")).withStyle(ChatFormatting.WHITE);
     }
 
     /**
