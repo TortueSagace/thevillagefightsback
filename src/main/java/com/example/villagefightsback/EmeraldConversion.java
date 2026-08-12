@@ -71,6 +71,28 @@ public final class EmeraldConversion {
     }
 
     /**
+     * MCA Reborn only: when an emerald unit damages an MCA villager, call off the guards it just summoned.
+     *
+     * <p>{@code VillagerEntityMCA.hurt} broadcasts its attacker into the {@code ATTACK_TARGET} memory of every MCA
+     * guard within 32 blocks using a RAW brain write, before it calls {@code super.hurt}. That happens ahead of
+     * every Forge damage event, so neither the target-change cancel nor the faction damage-immunity below can
+     * stop it: an emerald creeper blast or wither skull that merely clips a villager would set the whole guard
+     * detail hunting a faction they are supposed to be at peace with.
+     *
+     * <p>{@link net.minecraftforge.event.entity.living.LivingAttackEvent} is the first thing Minecraft runs after
+     * that broadcast, so this is the earliest possible undo. It is edge-triggered -- nothing runs unless an
+     * emerald actually lands damage on an MCA villager.
+     */
+    @SubscribeEvent
+    public static void onMcaVillagerHurtByEmerald(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
+        if (!Factions.isEmerald(attacker)) return;
+        // Only MCA's own villager class runs that broadcast, so anything else cannot have summoned guards.
+        if (!com.example.villagefightsback.compat.MCACompat.isMcaVillager(event.getEntity())) return;
+        com.example.villagefightsback.compat.MCACompat.recallGuardsHurtBy(event.getEntity());
+    }
+
+    /**
      * Counter-attack when provoked (rule 1) -- for ALL emerald units, including the Bat and Phantom which are plain
      * Mobs without a HurtByTargetGoal. An emerald unit retaliates against whoever hurt it, EXCEPT the village
      * faction and fellow emeralds (it never fights the village even when provoked; vindictive attackers DO get hit

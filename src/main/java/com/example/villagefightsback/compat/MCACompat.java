@@ -126,22 +126,56 @@ public final class MCACompat {
      */
     public static void forgetEmeraldTarget(net.minecraft.world.entity.LivingEntity villager) {
         net.minecraft.world.entity.ai.Brain<?> brain = villager.getBrain();
-
-        brain.getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET)
-                .filter(com.example.villagefightsback.Factions::isEmerald)
-                .ifPresent(t -> brain.eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET));
-
+        eraseIfEmerald(brain, net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET);
         net.minecraft.core.registries.BuiltInRegistries.MEMORY_MODULE_TYPE
                 .getOptional(GUARD_ENEMY_MEMORY)
                 .ifPresent(type -> {
                     @SuppressWarnings("unchecked")
                     net.minecraft.world.entity.ai.memory.MemoryModuleType<net.minecraft.world.entity.LivingEntity> m =
                             (net.minecraft.world.entity.ai.memory.MemoryModuleType<net.minecraft.world.entity.LivingEntity>) type;
-                    if (!brain.checkMemory(m, net.minecraft.world.entity.ai.memory.MemoryStatus.REGISTERED)) return;
-                    brain.getMemory(m)
-                            .filter(com.example.villagefightsback.Factions::isEmerald)
-                            .ifPresent(t -> brain.eraseMemory(m));
+                    eraseIfEmerald(brain, m);
                 });
+    }
+
+    /**
+     * Erase {@code memory} when it holds an emerald unit.
+     *
+     * <p>The REGISTERED check is not optional: {@code Brain.getMemory} THROWS
+     * {@code IllegalStateException("Unregistered memory fetched")} for a memory the brain does not declare, and
+     * this is reached for every village member, including iron golems and wall defenders whose default brain
+     * declares no memories at all. Probing first is what keeps that from taking the server down.
+     */
+    private static <U> void eraseIfEmerald(net.minecraft.world.entity.ai.Brain<?> brain,
+                                           net.minecraft.world.entity.ai.memory.MemoryModuleType<U> memory) {
+        if (!brain.checkMemory(memory, net.minecraft.world.entity.ai.memory.MemoryStatus.REGISTERED)) return;
+        brain.getMemory(memory)
+                .filter(v -> v instanceof net.minecraft.world.entity.Entity e
+                        && com.example.villagefightsback.Factions.isEmerald(e))
+                .ifPresent(v -> brain.eraseMemory(memory));
+    }
+
+    /** The radius MCA's own {@code VillagerEntityMCA.hurt} broadcasts an attacker to nearby guards over. */
+    private static final double HURT_BROADCAST_RADIUS = 32.0;
+
+    /**
+     * Undo MCA's "a villager was hurt" guard call-out when the attacker was an emerald unit.
+     *
+     * <p>This is the one acquisition path no event can gate. {@code VillagerEntityMCA.hurt} writes the attacker
+     * straight into the {@code ATTACK_TARGET} memory of every MCA guard within 32 blocks with a RAW
+     * {@code Brain.setMemory} (no {@code LivingChangeTargetEvent}), and it does so BEFORE calling
+     * {@code super.hurt} -- so it lands before {@code LivingAttackEvent}, and long before the faction
+     * damage-immunity cancel. One emerald creeper blast clipping a villager would otherwise turn every guard in
+     * a 32-block radius into a pursuer.
+     *
+     * <p>Edge-triggered: it runs only when an emerald actually damages an MCA villager, and then does exactly one
+     * villager-class box query over MCA's own broadcast box. No periodic sweep, so it costs nothing at rest.
+     */
+    public static void recallGuardsHurtBy(net.minecraft.world.entity.LivingEntity victim) {
+        if (!present()) return;
+        for (Villager v : victim.level().getEntitiesOfClass(Villager.class,
+                new net.minecraft.world.phys.AABB(victim.blockPosition()).inflate(HURT_BROADCAST_RADIUS))) {
+            forgetEmeraldTarget(v);
+        }
     }
 
     /** True for an MCA villager specifically (either gender). Vanilla villagers and Emeraldgers return false. */
