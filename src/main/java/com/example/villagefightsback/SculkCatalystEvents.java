@@ -77,6 +77,8 @@ public final class SculkCatalystEvents {
             BlockState s = level.getBlockState(p);
             if (BlockMatcher.isWoodenDoor(s)) continue;           // don't leave a half-door behind
             if (!BlockMatcher.isCandidate(level, p, s)) continue; // same preserved-block rules as the infection
+            // The bloom has no range gate of its own, so a death on a doorstep could sculk the floor inside.
+            if (com.example.villagefightsback.infection.StructureZones.protectedAt(level, p)) continue;
             level.setBlock(p, target, 3);
             placed++;
             for (Direction dir : HORIZ) {

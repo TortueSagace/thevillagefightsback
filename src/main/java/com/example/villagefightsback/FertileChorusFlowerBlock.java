@@ -135,8 +135,8 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
                         Direction dir = Direction.Plane.HORIZONTAL.getRandomDirection(random);
                         BlockPos side = pos.relative(dir);
                         if (level.isEmptyBlock(side) && level.isEmptyBlock(side.below())
-                                && allNeighborsEmpty(level, side, dir.getOpposite())) {
-                            placeGrownFlower(level, side, age + 1);
+                                && allNeighborsEmpty(level, side, dir.getOpposite())
+                                && placeGrownFlower(level, side, age + 1)) {
                             spawned = true;
                         }
                     }
@@ -153,9 +153,18 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
         }
     }
 
-    private void placeGrownFlower(Level level, BlockPos pos, int age) {
+    /**
+     * Place a grown flower at {@code pos}. This is the only site that claims NEW ground (both the upward growth
+     * and the one-cell lateral spread route through it), so it is where the village-building guard belongs: the
+     * chorus creeps a single cell per random tick, which is exactly how it would otherwise slip in through an
+     * open doorway or window. Returns false when it refused, so a caller does not count that as a spread.
+     */
+    private boolean placeGrownFlower(Level level, BlockPos pos, int age) {
+        if (level instanceof net.minecraft.server.level.ServerLevel sl
+                && com.example.villagefightsback.infection.StructureZones.protectedAt(sl, pos)) return false;
         level.setBlock(pos, this.defaultBlockState().setValue(AGE, Integer.valueOf(age)), 2);
         level.levelEvent(1033, pos, 0);
+        return true;
     }
 
     private void placeDeadFlower(Level level, BlockPos pos) {

@@ -115,10 +115,13 @@ public final class InfectionManager {
                 double[][] brain = village ? brainNodeRanges(gdata, level) : EMPTY_RANGES; // {cx,cz,rSqr,speed=1.0}
                 double[][] ranges = emerald ? concat(brain, infestedRanges(inf)) : brain; // + slow infested (0.2)
                 if (ranges.length == 0) continue;                  // nothing active here -> nothing to infect
+                // The village's own buildings are off limits. Fetched ONCE per pass and threaded down (exactly
+                // like ranges) so the 8192-cell walk never repeats the SavedData lookup.
+                StructureZones zones = StructureZones.get(level);
                 // Dirt paths still grow only within brain ranges; conversion spreads across both, but the convert
                 // chance is scaled by speedAt() so infested-only ground proliferates at 1/5 the brain rate.
-                growPaths(level, inf, now, brain);
-                convert(level, inf, now, ranges);
+                growPaths(level, inf, now, brain, zones);
+                convert(level, inf, now, ranges, zones);
             }
         }
         com.example.villagefightsback.ModProfiler.add("infection", _p);
@@ -259,12 +262,45 @@ public final class InfectionManager {
     public static void placeInfestedPath(ServerLevel level, BlockPos pos) {
         if (!com.example.villagefightsback.Config.emeraldInfestationEnabled()) return;
         if (!level.isLoaded(pos)) return;
+        if (StructureZones.get(level).contains(pos)) return;   // never inside one of the village's own buildings
         BlockState cur = level.getBlockState(pos);
         if (cur.is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) return;        // already ours
         if (cur.getBlock().getExplosionResistance() >= Blocks.ANCIENT_DEBRIS.getExplosionResistance()) return; // too tough
         if (cur.hasBlockEntity()) return;   // never convert chests / containers / other block entities
         level.setBlock(pos, com.example.villagefightsback.ModBlocks.INFESTED_PATH.get().defaultBlockState(), 3);
         InfectionData.get(level).addInfestedPath(pos.asLong());
+    }
+
+    /**
+     * Tell the engine that every infection block in this volume is being removed BY THE VILLAGE (a structure is
+     * about to be built there), so the frontier walk does not read the carve as an ATTACK and boost the infection
+     * all around the new building (spec 8). Also drops the cells from the frontier / path heads and corrects the
+     * fertilized tally, which the walk would otherwise only fix lazily on its next visit.
+     *
+     * <p>Bounded and cold: runs once per building, over that building's own volume -- the same volume the caller
+     * is about to overwrite anyway. Bounds are INCLUSIVE.
+     */
+    public static void forgetVolume(ServerLevel level, int minX, int minY, int minZ,
+                                    int maxX, int maxY, int maxZ) {
+        InfectionData inf = InfectionData.get(level);
+        long now = level.getGameTime();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                for (int y = minY; y <= maxY; y++) {
+                    m.set(x, y, z);
+                    if (!level.isLoaded(m)) continue;
+                    BlockState s = level.getBlockState(m);
+                    if (!BlockMatcher.isInfection(s)) continue;
+                    long key = m.asLong();
+                    inf.sanction(key, now);                                // a sanctioned removal, not an attack
+                    inf.dropPathHead(key);
+                    inf.retire(key);
+                    inf.removeRich(key);
+                    if (BlockMatcher.isConverted(s)) inf.decConverted();
+                }
+            }
+        }
     }
 
     /** Infested path blocks within {@code radius} of {@code center} (from the tracked set, verified still present).
@@ -338,6 +374,7 @@ public final class InfectionManager {
             BlockState gs = level.getBlockState(g);
             if (gs.isAir() || !gs.getFluidState().isEmpty() || !gs.blocksMotion()) continue; // need solid ground
             if (BlockMatcher.isInfection(gs)) return;                  // already ours
+            if (StructureZones.get(level).contains(g)) return;         // never seed a path inside a building
             BlockState above = level.getBlockState(g.above());
             if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
                 level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
@@ -350,7 +387,8 @@ public final class InfectionManager {
     // --- path growth (spec 1 + spec 5) --------------------------------------------------------------
     private static final Direction[] HORIZ = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
 
-    private static void growPaths(ServerLevel level, InfectionData inf, long now, double[][] ranges) {
+    private static void growPaths(ServerLevel level, InfectionData inf, long now, double[][] ranges,
+                                  StructureZones zones) {
         RandomSource rnd = level.getRandom();
         for (long head : inf.pathHeadsSnapshot()) {
             BlockPos p = BlockPos.of(head);
@@ -360,11 +398,11 @@ public final class InfectionManager {
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
             double chance = Math.min(1.0, PATH_GROW_CHANCE * mult * slow * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() >= chance) continue;
-            int res = tryGrow(level, inf, p, rnd, ranges);
+            int res = tryGrow(level, inf, p, rnd, ranges, zones);
             if (res < 0) {
                 // spec 5: a path with NO viable extension, sitting over air/water, may drip a fertile sand below
                 BlockPos below = p.below();
-                if (level.isLoaded(below)) {
+                if (level.isLoaded(below) && !zones.contains(below)) {
                     BlockState bs = level.getBlockState(below);
                     boolean voidOrWater = bs.isAir() || !bs.getFluidState().isEmpty();
                     if (voidOrWater && rnd.nextDouble() < SAND_DROP_CHANCE && BlockMatcher.fertileSand() != null) {
@@ -382,7 +420,8 @@ public final class InfectionManager {
      * a path consumes its 45% as a no-op, so the path mostly continues forward and rarely branches.
      * Returns 1 = extended, 0 = picked a non-viable direction (no-op this attempt), -1 = no viable extension.
      */
-    private static int tryGrow(ServerLevel level, InfectionData inf, BlockPos p, RandomSource rnd, double[][] ranges) {
+    private static int tryGrow(ServerLevel level, InfectionData inf, BlockPos p, RandomSource rnd,
+                               double[][] ranges, StructureZones zones) {
         int xCount = 0, zCount = 0;
         for (Direction d : HORIZ) if (hasPathNeighbour(level, p, d)) {
             if (d.getAxis() == Direction.Axis.X) xCount++; else zCount++;
@@ -395,7 +434,7 @@ public final class InfectionManager {
         double total = 0;
         boolean anyViable = false;
         for (int i = 0; i < HORIZ.length; i++) {
-            targets[i] = extendTarget(level, p, HORIZ[i], ranges);
+            targets[i] = extendTarget(level, p, HORIZ[i], ranges, zones);
             if (targets[i] != null) anyViable = true;
             boolean alongX = HORIZ[i].getAxis() == Direction.Axis.X;
             w[i] = tie ? 25.0 : ((xDominant == alongX) ? 45.0 : 5.0);
@@ -423,12 +462,14 @@ public final class InfectionManager {
 
     /** The ground cell (within +/-2 in Y) the path would convert to dirt-path in direction {@code d}, or null.
      *  Never extends beyond a brain node's (stage-scaled) range. */
-    private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d, double[][] ranges) {
+    private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d, double[][] ranges,
+                                         StructureZones zones) {
         int nx = p.getX() + d.getStepX(), nz = p.getZ() + d.getStepZ();
         if (!inRange(nx + 0.5, nz + 0.5, ranges)) return null;       // outside every brain node's reach -> stop here
         for (int dy = 2; dy >= -2; dy--) {
             BlockPos g = new BlockPos(nx, p.getY() + dy, nz);
             if (!level.isLoaded(g)) continue;
+            if (zones.contains(nx, g.getY(), nz)) continue;           // never pave through one of our own buildings
             BlockState gs = level.getBlockState(g);
             if (!BlockMatcher.isPathGround(gs)) continue;            // must be dirt-like ground (not already a path)
             BlockState above = level.getBlockState(g.above());
@@ -438,7 +479,8 @@ public final class InfectionManager {
     }
 
     // --- conversion (spec 2-3) + destruction detection (spec 8) -------------------------------------
-    private static void convert(ServerLevel level, InfectionData inf, long now, double[][] ranges) {
+    private static void convert(ServerLevel level, InfectionData inf, long now, double[][] ranges,
+                                StructureZones zones) {
         // The boost multiplier applies to the per-cell CHANCE only (below), not the cell count, so the per-tick
         // cost stays bounded regardless of speed-ups (anti-lag).
         int n = Math.min(MAX_CELLS_PER_PASS, inf.frontierSize());
@@ -465,7 +507,7 @@ public final class InfectionManager {
             // racing ahead onto fresh ground and conversion fills in BEHIND them (spec 3). Keep them active.
             if (inf.isPathHead(key)) { inf.reactivate(key); continue; }
 
-            BlockPos cand = findCandidate(level, pos, rnd, ranges);
+            BlockPos cand = findCandidate(level, pos, rnd, ranges, zones);
             if (cand == null) { inf.retire(key); continue; }           // nothing left to convert here -> drop it
 
             double mult = inf.multiplierAt(pos, now);
@@ -485,14 +527,14 @@ public final class InfectionManager {
                     if (conv != null) {
                         // Any small plant next to this new fertile block becomes fertile grass. Done BEFORE the
                         // soil flips so a plant standing on it is replaced (and survives) rather than popping off.
-                        convertNearbyPlants(level, cand);
+                        convertNearbyPlants(level, cand, zones);
                         conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
                         level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
                         inf.addFrontier(cand.asLong());
                         inf.incConverted();
                         if (richVariant) inf.addRich(cand.asLong());
                         // Sparse flora: a tiny chance to sprout a fertile tree / chorus on the new fertile ground.
-                        FertileFlora.onConverted(level, cand);
+                        FertileFlora.onConverted(level, cand, zones);
                     }
                 }
             }
@@ -533,13 +575,16 @@ public final class InfectionManager {
     /** Turn small plants in the 26-neighbourhood of {@code center} into fertile grass. Called just BEFORE the
      *  block at {@code center} flips to fertile, so a plant standing on it is replaced (and survives on the new
      *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
-    private static void convertNearbyPlants(ServerLevel level, BlockPos center) {
+    private static void convertNearbyPlants(ServerLevel level, BlockPos center, StructureZones zones) {
         BlockState fg = com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get().defaultBlockState();
         BlockState fk = com.example.villagefightsback.ModBlocks.FERTILE_KELP.get().defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int[] o : N26) {
             m.set(center.getX() + o[0], center.getY() + o[1], center.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
+            // This reaches one block PAST the converted cell, so it can poke into a building even when the cell
+            // itself is outside one. Guard every write, not just the parent cell.
+            if (zones.contains(m.getX(), m.getY(), m.getZ())) continue;
             BlockState s = level.getBlockState(m);
             if (s.is(Blocks.KELP) || s.is(Blocks.KELP_PLANT)) {        // underwater kelp -> our fertile kelp
                 level.setBlock(m.immutable(), fk, 3);
@@ -549,7 +594,8 @@ public final class InfectionManager {
         }
     }
 
-    private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges) {
+    private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges,
+                                          StructureZones zones) {
         int start = rnd.nextInt(N26.length);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int k = 0; k < N26.length; k++) {
@@ -557,6 +603,9 @@ public final class InfectionManager {
             m.set(pos.getX() + o[0], pos.getY() + o[1], pos.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
             if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the brain node reach -> skip
+            // The village never eats its own buildings. This is THE hot guard -- see StructureZones for why it
+            // is a chunk-bucketed lookup and not a scan over every building.
+            if (zones.contains(m.getX(), m.getY(), m.getZ())) continue;
             BlockState ns = level.getBlockState(m);
             // Only RAW convertible ground (-> fertile). Already-fertile blocks are NOT re-targeted: rich occurs
             // only via the RICH_CHANCE roll at first conversion, so fertile zones never "ripen" wholesale to rich.
