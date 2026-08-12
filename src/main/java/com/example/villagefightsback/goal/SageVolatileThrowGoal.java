@@ -42,8 +42,8 @@ public class SageVolatileThrowGoal extends Goal {
     /** A valid throw target: a living, in-range, big monster the sage can see -- never an ally. */
     private boolean isValidTarget(LivingEntity t) {
         if (t == null || !t.isAlive()) return false;
-        if (!(t instanceof Enemy)) return false;                 // only hostiles (vanilla monsters / raiders)
-        if (t instanceof Villager || t instanceof IronGolem || t instanceof Player) return false; // never allies
+        if (!com.example.villagefightsback.Factions.isVillageThreat(t)) return false; // only hostiles (incl. MCA raiders)
+        if (com.example.villagefightsback.Factions.isVillage(t) || t instanceof Player) return false; // never allies
         if (com.example.villagefightsback.Factions.isSparedByVillage(t)) return false; // never Darius or the friendly Vindictive Village Spirit
         if (t.getMaxHealth() <= MIN_HEALTH) return false;        // only the big threats
         if (sage.distanceToSqr(t) > RANGE * RANGE) return false;

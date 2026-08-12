@@ -262,7 +262,7 @@ public class GeneralDariusEntity extends Monster {
         // Darius -- a village champion -- never hunts or chases them.
         if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
-        return e instanceof Enemy;
+        return com.example.villagefightsback.Factions.isVillageThreat(e);
     }
 
     // --- the banish beam (below 50% HP, 30s cooldown) ------------------------------------------------

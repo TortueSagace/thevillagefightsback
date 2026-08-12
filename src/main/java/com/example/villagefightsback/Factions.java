@@ -98,11 +98,27 @@ public final class Factions {
     public static boolean isVillage(Entity e) {
         if (isInfected(e)) return false; // a vindictive gigachad is an IronGolem -> exclude the boss faction
         if (isEmerald(e)) return false;  // an emerald iron golem is an IronGolem -> it's emerald, not village
+        // An MCA Reborn outlaw / cultist is a Villager carrying a hostile profession -- a raider, not a citizen.
+        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)) return false;
         return e instanceof net.minecraft.world.entity.npc.Villager
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
                 || e instanceof WallDefenderEntity
                 || e instanceof GeneralDariusEntity
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+    }
+
+    /**
+     * Everything the VILLAGE should fight: anything implementing Minecraft's {@link net.minecraft.world.entity.monster.Enemy}
+     * (which covers all vanilla and modded hostiles), the vindictive boss faction, and MCA Reborn's hostile
+     * villager professions (outlaw / cultist), which are {@code Enemy}-less {@code Villager}s and so would
+     * otherwise be invisible to every threat scan.
+     *
+     * <p>The single definition of "a threat to the village", shared by the villager/guard/golem target scans.
+     */
+    public static boolean isVillageThreat(Entity e) {
+        return e instanceof net.minecraft.world.entity.monster.Enemy
+                || isInfected(e)
+                || com.example.villagefightsback.compat.MCACompat.isHostileVillager(e);
     }
 
     /** The "emerald" faction (the v1.0.3 mob-infection units + the Emeraldger). Membership = the {@link EmeraldUnit}

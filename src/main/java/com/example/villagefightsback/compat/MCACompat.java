@@ -92,4 +92,31 @@ public final class MCACompat {
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
         return MALE_VILLAGER.equals(id) || FEMALE_VILLAGER.equals(id);
     }
+
+    /**
+     * MCA's HOSTILE professions. This is the trap in MCA's design as far as this mod is concerned: an outlaw
+     * (bandit) and a cultist are not separate entities, they are ordinary {@code VillagerEntityMCA} carrying a
+     * profession -- so they are {@link Villager}s, and every village check in this mod keys off exactly that.
+     * Left alone, the village would treat raiding cultists as its own citizens: never fight them, spare them from
+     * the emerald faction, count them as population, let them take village roles, and -- worst -- ARM them with
+     * the village's stage kit, handing a hostile its Alien Slasher and leather set.
+     *
+     * <p>Deliberately only outlaw + cultist. MCA's other custom professions are NOT hostile: guard and archer are
+     * village defenders, mercenaries are hireable by the player, adventurers are neutral travellers. Treating one
+     * of those as an enemy would be a worse bug than the one being fixed.
+     */
+    private static final java.util.Set<ResourceLocation> HOSTILE_PROFESSIONS = java.util.Set.of(
+            new ResourceLocation(MODID, "outlaw"),
+            new ResourceLocation(MODID, "cultist"));
+
+    /**
+     * True for an MCA villager whose profession makes it an ENEMY of the village (outlaw / cultist). Cheap: the
+     * {@code instanceof} gate rejects every non-villager before any registry work, and only villagers -- a small
+     * minority of the entities a threat scan sees -- pay for the profession lookup.
+     */
+    public static boolean isHostileVillager(Entity e) {
+        if (!(e instanceof Villager v)) return false;
+        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        return id != null && HOSTILE_PROFESSIONS.contains(id);
+    }
 }

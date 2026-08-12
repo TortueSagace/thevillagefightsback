@@ -102,7 +102,7 @@ public class BuilderDefenseGoal extends Goal {
         LivingEntity nearest = null;
         double best = radius * radius;
         for (LivingEntity e : villager.level().getEntitiesOfClass(LivingEntity.class, box,
-                x -> (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                x -> com.example.villagefightsback.Factions.isVillageThreat(x)
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && !(x instanceof Creeper) && x.isAlive() && x != villager)) {
             double d = villager.distanceToSqr(e);

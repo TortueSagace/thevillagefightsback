@@ -85,7 +85,7 @@ public final class CombatUtil {
         boolean mobInfected = Factions.isInfected(mob);
         List<LivingEntity> candidates = mob.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
-                                  : (e instanceof Enemy || Factions.isInfected(e)))
+                                  : Factions.isVillageThreat(e))
                         && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
                         && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr
@@ -109,7 +109,7 @@ public final class CombatUtil {
         boolean mobInfected = Factions.isInfected(mob);
         return mob.level().getEntitiesOfClass(LivingEntity.class, box,
                 e -> (mobInfected ? (e instanceof Enemy && !Factions.isInfected(e))
-                                  : (e instanceof Enemy || Factions.isInfected(e)))
+                                  : Factions.isVillageThreat(e))
                         && (mobInfected || !Factions.isSparedByVillage(e)) // a village mob never targets Darius or the friendly Vindictive Village Spirit
                         && e.isAlive() && e != mob
                         && mob.distanceToSqr(e) <= rangeSqr).size();

@@ -87,6 +87,11 @@ public final class VillageEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof PathfinderMob mob)) return;
 
+        // MCA Reborn only: an outlaw / cultist is a HOSTILE villager (a profession, not a separate entity). It
+        // gets nothing from the village -- no kit, no roles, no wall-phasing. Bail before any of that is applied,
+        // otherwise the village would hand a raider its Alien Slasher and a key to its own doors.
+        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(mob)) return;
+
         // MCA Reborn only: re-hydrate any role flag that survived a villager replacement as a scoreboard tag,
         // BEFORE the stage flags are read below. No-op without MCA installed, and it never overwrites data
         // that came through intact -- it only fills gaps. Then re-mirror, so a villager whose data IS intact
@@ -541,7 +546,7 @@ public final class VillageEvents {
     /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */
     @SubscribeEvent
     public static void onMobKilledByGuard(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof Enemy) && !Factions.isInfected(event.getEntity())) return; // hostile / boss-minion kills count
+        if (!Factions.isVillageThreat(event.getEntity())) return; // hostile / boss-minion / MCA-raider kills count
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         Entity killer = event.getSource().getEntity();
         if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard
