@@ -45,7 +45,12 @@ public final class StartingItems {
 
         // Spawned away from any village: nudge them about what the bell is FOR. Queued rather than sent now,
         // because at login the client is usually still on the loading screen and would never see it.
-        if (!inVillage(player)) pendingHint.put(player.getUUID(), HINT_DELAY_TICKS);
+        boolean away = !inVillage(player);
+        if (away) pendingHint.put(player.getUUID(), HINT_DELAY_TICKS);
+        TheVillageFightsBack.LOGGER.info("[The Village Fights Back] starter bell given to {}; {}.",
+                player.getGameProfile().getName(),
+                away ? "spawned away from a village, so the bell hint is queued"
+                     : "spawned in a village, so no bell hint");
     }
 
     /** Ticks left before each player's starter-bell hint is sent. Session-only: an unsent hint is not worth saving. */
