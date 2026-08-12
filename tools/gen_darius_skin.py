@@ -1,16 +1,22 @@
 """
-Generate General Darius's skin: a LIVING villager-guard texture, so he renders with a proper villager face
-(the iconic nose + brow) instead of being a faceless player model or a green zombie.
+Generate General Darius's skin: a HUMAN commander, so he reads as one of the village's people rather than as a
+villager (and so he does not stand out as the only big-nosed figure in a town of MCA Reborn humans).
 
-We start from the vanilla zombie-villager base texture (which lays out perfectly on the ZombieVillagerModel that
-Darius is rendered with -- same nose/head UVs) and recolor only its GREEN ZOMBIE SKIN to a warm villager tan by
-swapping the red/green channels on skin pixels (green-dominant). The robe and dark facial features (brow/eyes)
-are left as-is, so he keeps a normal villager's face, just alive and tan rather than undead green.
+Darius used to render on a villager-nosed model with the vanilla zombie-villager texture recoloured tan. That
+made him unmistakably a VILLAGER, which looks wrong next to MCA's human villagers. He now renders on the plain
+player model, so his skin has to be a PLAYER-layout texture.
+
+We start from the vanilla wide player skin (already the exact layout the player model expects, with proper
+shading baked in) and recolour only its CLOTHING by hue: the cyan shirt becomes a deep military green and the
+blue trousers a dark slate, giving a general's uniform. Skin, hair, eyes and mouth are matched by hue too and
+left untouched, so the face stays a normal human face.
 
 Output: src/main/resources/assets/thevillagefightsback/textures/entity/general_darius.png  (64x64)
 """
+import colorsys
 import os
 import zipfile
+
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,37 +24,46 @@ OUT = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefights
                    "textures", "entity", "general_darius.png")
 CLIENT_JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
               r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
-SRC = "assets/minecraft/textures/entity/zombie_villager/zombie_villager.png"
+SRC = "assets/minecraft/textures/entity/player/wide/steve.png"
+
+# Hue windows of the vanilla skin we retarget, in degrees, with the hue/saturation we move them to.
+# The shirt sits around cyan (180) and the trousers around blue (240); skin and hair are warm (< 60) and are
+# deliberately not listed, so they survive untouched.
+# (hue window, target hue, target saturation, value multiplier). The value multiplier is what turns the
+# trousers into dark uniform trousers rather than a pale mint: the vanilla shading is kept, just dimmed.
+SHIRT = ((150.0, 200.0), 125.0, 0.72, 0.92)   # deep military green
+TROUSERS = ((200.0, 260.0), 145.0, 0.35, 0.55) # dark slate with a green cast, so it reads as one outfit
 
 
-def to_living(img):
-    """Recolor the zombie's green skin to villager tan; leave robe / dark features untouched."""
+def retarget(img):
+    """Recolour the uniform by hue, keeping the vanilla shading (value) exactly as it is."""
     img = img.convert("RGBA")
+    px = img.load()
     w, h = img.size
-    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     for y in range(h):
         for x in range(w):
-            r, g, b, a = img.getpixel((x, y))
+            r, g, b, a = px[x, y]
             if a == 0:
                 continue
-            # zombie skin is green-dominant: swap red<->green to turn it into a warm tan, then warm it slightly.
-            if g > r + 4:
-                nr, ng, nb = g, r, b
-                nr = min(255, nr + 14)  # a touch warmer/brighter so it reads as healthy skin
-            else:
-                nr, ng, nb = r, g, b    # robe + dark brow/eyes: keep
-            out.putpixel((x, y), (nr, ng, nb, a))
-    return out
+            hh, ss, vv = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+            if ss < 0.15:
+                continue  # near-grey: leave it (eye whites, boots, shading)
+            deg = hh * 360.0
+            for (lo, hi), hue, sat, vmul in (SHIRT, TROUSERS):
+                if lo <= deg < hi:
+                    nr, ng, nb = colorsys.hsv_to_rgb(hue / 360.0, sat, min(1.0, vv * vmul))
+                    px[x, y] = (int(nr * 255), int(ng * 255), int(nb * 255), a)
+                    break
+    return img
 
 
 def main():
-    with zipfile.ZipFile(CLIENT_JAR) as zf:
-        with zf.open(SRC) as fh:
-            base = Image.open(fh).convert("RGBA")
-    skin = to_living(base)
+    with zipfile.ZipFile(CLIENT_JAR) as jar, jar.open(SRC) as f:
+        base = Image.open(f).copy()
+    out = retarget(base)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    skin.save(OUT)
-    print("wrote", os.path.normpath(OUT), skin.size)
+    out.save(OUT)
+    print("wrote", OUT, out.size)
 
 
 if __name__ == "__main__":
