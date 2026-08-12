@@ -264,7 +264,7 @@ public final class BrainReflexes {
         if (stage >= 1 && s.pendingVillagerKill) {
             s.pendingVillagerKill = false;
             if (now >= s.cdGuard && econ.spendEmeralds(3)) {
-                spawnInside(level, brain, guardType());
+                com.example.villagefightsback.compat.MCACompat.makeGuard(spawnInside(level, brain, guardType(level)));
                 s.cdGuard = now + cd(CD_10M);
                 log(s, level, "Guard raised (-3)");
             }
@@ -395,15 +395,17 @@ public final class BrainReflexes {
 
     /** Spawn one entity just inside the wall near the brain node, at its OWN Y level so it never lands on the
      *  stage-4 dome roof. It auto-arms (and stage-adapts) through the normal entity-join handler. */
-    private static void spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
-        if (type == null) return;
+    private static Entity spawnInside(ServerLevel level, BlockPos brain, EntityType<?> type) {
+        if (type == null) return null;
         BlockPos spot = findInsideSpot(level, brain, type);
-        if (spot == null) return; // nowhere it fits inside the wall -> skip; the reflex retries next pass
+        if (spot == null) return null; // nowhere it fits inside the wall -> skip; the reflex retries next pass
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
+        return e;
     }
 
-    private static EntityType<?> guardType() { return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); }
+    /** An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard. */
+    private static EntityType<?> guardType(ServerLevel level) { return com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom()); }
 
     // --- General Darius (stage-4 reflex) -------------------------------------------------------------
 

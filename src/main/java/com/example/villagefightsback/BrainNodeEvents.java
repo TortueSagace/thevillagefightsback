@@ -1169,21 +1169,24 @@ public final class BrainNodeEvents {
             //  scheduleBirthScouts. The recurring sunset emerald scout is the BAT, in handleSunsetIncome.)
         }
 
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
-        if (guardType != null) {
-            for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType, outside);
+        // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard.
+        for (int i = 0; i < guardsToSpawn; i++) {
+            EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+            if (guardType == null) break; // no MCA and no Guard Villagers -> nothing to spawn
+            com.example.villagefightsback.compat.MCACompat.makeGuard(spawnDefender(level, pos, guardType, outside));
         }
         for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM, outside);
     }
 
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
      *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
-    private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
+    private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
         BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall, type) : null;
         if (spot == null) spot = findSpawnSpot(level, center, type); // no wall / no valid outside spot
-        if (spot == null) return; // nowhere this creature actually fits -> skip; the next pass retries
+        if (spot == null) return null; // nowhere this creature actually fits -> skip; the next pass retries
         Entity e = type.spawn(level, spot, MobSpawnType.EVENT);
         if (e instanceof Villager v) v.setBaby(false);
+        return e;
     }
 
     /** Where a brain-summoned emerald unit should appear. If the brain node is MORE THAN ONE BLOCK above the

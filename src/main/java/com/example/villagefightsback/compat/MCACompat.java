@@ -108,6 +108,44 @@ public final class MCACompat {
         return id != null && GUARD_PROFESSIONS.contains(id);
     }
 
+    /** The Guard Villagers guard entity, used when MCA is absent. */
+    private static final ResourceLocation GUARD_VILLAGERS_GUARD = new ResourceLocation("guardvillagers", "guard");
+
+    /**
+     * The entity type to spawn when this mod wants A GUARD: an MCA human when MCA is installed, otherwise the
+     * Guard Villagers guard as before.
+     *
+     * <p>MCA guards are not a separate creature -- they are MCA villagers wearing the {@code mca:guard}
+     * profession, which MCA renders with a human face and its own guard clothing. Spawning the Guard Villagers
+     * entity into an MCA village left the guards as the only blank-faced villagers in a town of humans. The
+     * caller must follow the spawn with {@link #makeGuard} to actually pin the profession on.
+     */
+    public static EntityType<?> guardType(RandomSource rng) {
+        if (enabled()) {
+            EntityType<?> mca = ForgeRegistries.ENTITY_TYPES.getValue(
+                    rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
+            if (mca != null) return mca;
+        }
+        return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
+    }
+
+    /**
+     * Turn a freshly spawned MCA villager into a GUARD by giving it the {@code mca:guard} profession. A no-op
+     * for anything else, so it is safe to call on whatever {@link #guardType} produced.
+     *
+     * <p>The profession sticks: MCA registers guard as an "important" profession, so the villager brain will not
+     * reset it for want of a job-site POI the way it would an ordinary job. Setting it also switches MCA onto its
+     * own guard AI (its enemy sensor, patrol and combat tasks) and its guard clothing, while this mod's
+     * {@code isGuard} recognises the same profession and issues the emerald knight / virus archer kit on top.
+     */
+    public static void makeGuard(net.minecraft.world.entity.Entity e) {
+        if (!(e instanceof Villager v) || !isMcaVillager(v)) return;
+        net.minecraft.world.entity.npc.VillagerProfession guard =
+                ForgeRegistries.VILLAGER_PROFESSIONS.getValue(new ResourceLocation(MODID, "guard"));
+        if (guard == null) return;
+        v.setVillagerData(v.getVillagerData().setProfession(guard));
+    }
+
     /** MCA's own "who should this guard attack" memory, resolved by registry id so MCA stays a soft dep. */
     private static final ResourceLocation GUARD_ENEMY_MEMORY = new ResourceLocation(MODID, "nearest_guard_enemy");
 

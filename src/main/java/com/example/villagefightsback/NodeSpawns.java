@@ -98,11 +98,13 @@ public final class NodeSpawns {
 
     /** One guard below/above the node, armed to the brain node's stage (full kit at stage 3+). */
     public static void spawnGuard(ServerLevel level, BlockPos node, int stage) {
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+        // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard.
+        EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
         if (guardType == null) return;
         BlockPos spot = spawnSpotFor(level, node, guardType);
         if (spot == null) return;
         Entity guard = guardType.spawn(level, spot, MobSpawnType.EVENT);
+        com.example.villagefightsback.compat.MCACompat.makeGuard(guard);
         if (stage >= 3 && guard instanceof PathfinderMob pm) {
             UpgradeState.setUpgraded(pm);
             VillageEvents.applyUpgrade(pm);              // give it the full stage-3 guard kit now

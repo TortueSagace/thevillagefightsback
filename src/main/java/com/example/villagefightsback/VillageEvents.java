@@ -34,6 +34,7 @@ import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -261,16 +262,38 @@ public final class VillageEvents {
         LivingEntity e = event.getEntity();
         // Only defenders this mod has actually armed. An un-upgraded villager legitimately holds nothing.
         if (!UpgradeState.isUpgraded(e) && !UpgradeState.isStage2(e)) return;
+        // Leave OUR OWN hand changes alone. This mod swaps the main hand constantly and on purpose:
+        // StageThreeGuardGoal cycles mace / crossbow / slasher through a fight, WallBuildGoal holds stone tools
+        // and clears the slot, MinerGoal carries the emerald it dug. Reacting to those would fight the goals and
+        // break guard combat and wall building outright, so only a FOREIGN item counts as the weapon being taken.
+        if (isSanctionedHandItem(event.getTo())) return;
+
         if (e instanceof PathfinderMob pm && isGuard(pm)) {
             // A guard's weapon is the mace (stage 3+) or the virus crossbow (stage 2), not the villager blade.
             ItemStack want = UpgradeState.isUpgraded(pm) ? GuardWeapons.mace() : GuardWeapons.crossbow();
-            if (pm.getMainHandItem().getItem() != want.getItem()) {
-                pm.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
-                pm.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
-            }
+            pm.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
+            pm.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         } else if (e instanceof Villager villager) {
             restoreDefenderWeapon(villager);
         }
+    }
+
+    /**
+     * Is this something this mod itself put in a defender's hand, or an empty slot it emptied on purpose?
+     *
+     * <p>An EMPTY hand is sanctioned: the build and mine goals clear the slot deliberately and restore the
+     * weapon in their own stop(). Every blade this mod issues is a netherite AXE and the work goals hold stone
+     * tools, so any {@link DiggerItem} is ours; the rest are named outright. Anything else (MCA's EquipmentTask
+     * handing out an iron sword, for instance) means the weapon was taken and should be put back.
+     */
+    private static boolean isSanctionedHandItem(ItemStack stack) {
+        if (stack.isEmpty()) return true;
+        Item i = stack.getItem();
+        if (i instanceof DiggerItem) return true;              // slasher / eradicator / build + mine tools
+        if (i == Items.EMERALD) return true;                   // MinerGoal carries the ore it just dug
+        return i == GuardWeapons.mace().getItem()
+                || i == GuardWeapons.crossbow().getItem()
+                || i == GuardWeapons.alienSmasher().getItem();
     }
 
     private static void armVillagerFull(Villager villager) {

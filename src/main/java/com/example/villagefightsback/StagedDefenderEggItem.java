@@ -54,7 +54,8 @@ public class StagedDefenderEggItem extends Item {
             // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
             case VILLAGER -> com.example.villagefightsback.compat.MCACompat.villagerType(sl.getRandom());
             case GOLEM -> golemTypeForStage();
-            case GUARD -> ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID); // null if Guard Villagers absent
+            // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard.
+            case GUARD -> com.example.villagefightsback.compat.MCACompat.guardType(sl.getRandom());
         };
     }
 
@@ -89,6 +90,9 @@ public class StagedDefenderEggItem extends Item {
             mob.setYHeadRot(yaw);
             mob.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.SPAWN_EGG, null, null);
         }
+        // A GUARD egg under MCA spawns an MCA human, so pin the guard profession on BEFORE it joins: the join
+        // handler reads the profession to decide between the guard kit and the civilian one.
+        if (kind == Kind.GUARD) com.example.villagefightsback.compat.MCACompat.makeGuard(entity);
         // Stamp the stage BEFORE the entity joins the level, so VillageEvents#onEntityJoin arms it to match.
         if (stage == 4) UpgradeState.setStage4(entity);
         else if (stage == 3) UpgradeState.setUpgraded(entity);
