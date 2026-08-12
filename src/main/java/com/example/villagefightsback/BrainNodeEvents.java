@@ -74,6 +74,7 @@ public final class BrainNodeEvents {
         processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node
         spawnInVillages(server, data);
         announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
+        retrofitBuildingProtection(server, data); // claim village buildings for nodes placed before that existed
         driveWalls(server, data);
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
@@ -871,7 +872,17 @@ public final class BrainNodeEvents {
         // node (which, for a hand-/auto-placed node, is essentially immediately), so it never double-fires.
         playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
+        // Claim the village's own buildings so the fertile spread never eats them. Reads the village's real
+        // structure pieces, which covers the WHOLE settlement however far it sprawls -- the room detector in
+        // HouseBedFiller only reaches 32 blocks, so on its own it left most of a village unprotected.
+        int protectedBuildings = com.example.villagefightsback.infection.VillageBuildings.protectVillageAt(level, spot);
+        TheVillageFightsBack.LOGGER.info(
+                "[The Village Fights Back] brain node at {} protected {} village buildings from block infection.",
+                spot, protectedBuildings);
+
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
+        // Its room detector also claims anything it recognises, which covers player-built or modded houses
+        // that are not part of a generated village structure.
         HouseBedFiller.fill(level, spot);
     }
 
@@ -880,6 +891,32 @@ public final class BrainNodeEvents {
      * brain node (however that node came to exist -- auto-placed, hand-placed, or boss-reverted), broadcast the
      * settlement-phase banner once and persist the "announced" flag so it never double-fires across reloads.
      */
+    /** Nodes whose village buildings have been claimed this session (see {@link #retrofitBuildingProtection}). */
+    private static final java.util.Set<GlobalPos> buildingsProtected = new java.util.HashSet<>();
+
+    /**
+     * Claim the village buildings of brain nodes that already existed before building protection was added, so
+     * an EXISTING world stops losing its village to the fertile spread instead of only new ones being spared.
+     *
+     * <p>Session-scoped and idempotent rather than persisted: the box store already drops an exact duplicate, so
+     * re-claiming a village costs nothing, and doing it once per node per server start needs no new save data.
+     * Only runs for nodes in a LOADED chunk, so it never forces chunk loading. Blocks already converted stay as
+     * they are -- the original blocks are not recoverable -- but the buildings stop being eaten any further.
+     */
+    private static void retrofitBuildingProtection(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (buildingsProtected.contains(gp)) continue;
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            buildingsProtected.add(gp);
+            int n = com.example.villagefightsback.infection.VillageBuildings.protectVillageAt(level, gp.pos());
+            if (n > 0) {
+                TheVillageFightsBack.LOGGER.info(
+                        "[The Village Fights Back] claimed {} village buildings around the brain node at {}.", n, gp.pos());
+            }
+        }
+    }
+
     private static void announceDiscoveredNodes(MinecraftServer server, BrainNodeData data) {
         double r2 = (double) VILLAGE_SCAN_RADIUS * VILLAGE_SCAN_RADIUS;
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {

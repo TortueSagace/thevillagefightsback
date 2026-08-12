@@ -242,6 +242,37 @@ public final class VillageEvents {
         }
     }
 
+    /**
+     * Put a defender's weapon back when something else takes it out of its hand.
+     *
+     * <p>This exists for MCA Reborn. MCA runs an {@code EquipmentTask} brain behaviour that periodically
+     * re-equips its villagers from its own configured {@code EquipmentSet}, which silently strips the stage
+     * weapon this mod gave them: the weapon appears on spawn and vanishes a moment later, leaving a stage-4
+     * defender holding nothing. Since the kit is applied once on join, nothing put it back.
+     *
+     * <p>Edge-triggered on the equipment change itself, so there is no polling. Re-arming fires this event
+     * again, but {@link #restoreDefenderWeapon} and the guard branch below only touch the slot when it holds
+     * the WRONG item, so the second pass is a no-op and it cannot recurse.
+     */
+    @SubscribeEvent
+    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (event.getSlot() != EquipmentSlot.MAINHAND) return;
+        if (event.getEntity().level().isClientSide()) return;
+        LivingEntity e = event.getEntity();
+        // Only defenders this mod has actually armed. An un-upgraded villager legitimately holds nothing.
+        if (!UpgradeState.isUpgraded(e) && !UpgradeState.isStage2(e)) return;
+        if (e instanceof PathfinderMob pm && isGuard(pm)) {
+            // A guard's weapon is the mace (stage 3+) or the virus crossbow (stage 2), not the villager blade.
+            ItemStack want = UpgradeState.isUpgraded(pm) ? GuardWeapons.mace() : GuardWeapons.crossbow();
+            if (pm.getMainHandItem().getItem() != want.getItem()) {
+                pm.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
+                pm.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+            }
+        } else if (e instanceof Villager villager) {
+            restoreDefenderWeapon(villager);
+        }
+    }
+
     private static void armVillagerFull(Villager villager) {
         // Stage-3 villagers wield the Alien Slasher (a netherite axe) instead of the revolver. They hold it
         // for real -- the vanilla CrossedArmsItemLayer renders the held item -- and melee with it; the axe's
