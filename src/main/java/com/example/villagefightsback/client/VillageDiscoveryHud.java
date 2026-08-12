@@ -45,7 +45,7 @@ public final class VillageDiscoveryHud {
         ticksLeft = ticks;
     }
 
-    /** Show the starter-bell hint for {@code ticks} (called when the spawn-hint packet arrives). */
+    /** Show the starter-bell hint for {@code ticks}, or hide it at once with 0 (the bell has been placed). */
     public static void showHint(int ticks) {
         hintTicksLeft = ticks;
     }

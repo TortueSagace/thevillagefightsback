@@ -67,7 +67,7 @@ public final class StartingItems {
             new java.util.HashMap<>();
     /** How far the player must move from the spot they spawned on before the hint is shown. */
     private static final double MOVE_TRIGGER_SQR = 1.0;
-    private static final int HINT_TICKS = 60;       // 3s on screen, then it fades out
+    private static final int HINT_TICKS = 100;      // 5s on screen, then it fades out
 
     /**
      * Is the player standing in a village? True inside a generated village's structure, or near a bell (the
@@ -90,6 +90,22 @@ public final class StartingItems {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         pendingHint.remove(event.getEntity().getUUID());
+    }
+
+    /**
+     * The moment the player puts the bell down, the hint has served its purpose and is dismissed early, rather
+     * than hanging on screen telling them to do the thing they have just done.
+     *
+     * <p>Also drops a hint that was still waiting to be sent, for a player who places the bell without having
+     * walked anywhere first.
+     */
+    @SubscribeEvent
+    public static void onBellPlaced(net.minecraftforge.event.level.BlockEvent.EntityPlaceEvent event) {
+        if (!event.getPlacedBlock().is(net.minecraft.world.level.block.Blocks.BELL)) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        pendingHint.remove(player.getUUID());
+        ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
     }
 
     /** Once a second, while player_is_hostile is on, keep every player an Enemy of the Village and never a Hero. */

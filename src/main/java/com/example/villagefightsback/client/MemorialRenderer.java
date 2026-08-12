@@ -64,7 +64,12 @@ public class MemorialRenderer implements BlockEntityRenderer<MemorialBlockEntity
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);
             pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-side.toYRot()));
-            pose.translate(0.0, 0.0, -FACE_OFFSET);   // step clear of the slab face so it cannot z-fight
+            // POSITIVE offset, and the sign is the whole point. font.drawInBatch lays text out readable from
+            // local +Z, so after the rotation the readable direction IS local +Z. Stepping along -Z therefore
+            // pushed each inscription through the stone to the FAR side while it went on facing inward, which is
+            // why the text always appeared to be on the wrong face whichever side you stood on. Along +Z it lands
+            // on the same side it faces.
+            pose.translate(0.0, 0.0, FACE_OFFSET);
             pose.scale(SCALE, -SCALE, SCALE);         // negative Y: text is drawn with Y down
 
             int lineHeight = font.lineHeight + 1;
