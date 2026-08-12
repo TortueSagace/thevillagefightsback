@@ -246,7 +246,7 @@ public final class BrainNodeEvents {
         if (ws != null) return ws;
 
         AABB box = new AABB(node).inflate(INCOME_RADIUS);
-        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box, e -> isAirStrikeEnemy(e, data));
+        List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box, BrainNodeEvents::isAirStrikeEnemy);
         candidates.sort((a, b) -> Float.compare(b.getHealth(), a.getHealth())); // most HP first
         for (LivingEntity c : candidates) {
             // Only bomb a threat that stands clear of the village's own units: the column must be clear of village
@@ -263,28 +263,28 @@ public final class BrainNodeEvents {
     private static final double AIRSTRIKE_ALLY_CLEAR =
             AirStrikeManager.CLEAR_RADIUS + RocketEntity.EXPLOSION_RADIUS + 1.0;
 
-    /** True if NO village ally (villager / guard / iron golem) is within the air strike's blast footprint of the
-     *  target, in 3D (so allies above, below, and around are all spared). */
+    /** True if nobody the strike must protect ({@link #isAirStrikeProtected}) is within its blast footprint of
+     *  the target, in 3D (so allies above, below, and around are all spared). */
     private static boolean noAlliesNear(ServerLevel level, LivingEntity target) {
         AABB box = target.getBoundingBox().inflate(AIRSTRIKE_ALLY_CLEAR);
         double cx = target.getX(), cy = target.getY(), cz = target.getZ();
         double r2 = AIRSTRIKE_ALLY_CLEAR * AIRSTRIKE_ALLY_CLEAR;
-        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, BrainNodeEvents::isVillageAlly)) {
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, BrainNodeEvents::isAirStrikeProtected)) {
             double dx = e.getX() - cx, dy = e.getY() - cy, dz = e.getZ() - cz;
             if (dx * dx + dy * dy + dz * dz <= r2) return false;
         }
         return true;
     }
 
-    /** Air-strike target: a hostile mob, or a player flagged as a village enemy. Never an ally or the boss. */
-    private static boolean isAirStrikeEnemy(LivingEntity e, BrainNodeData data) {
+    /** Air-strike target: a hostile mob, or a player flagged as a village enemy. Never one of our own. */
+    private static boolean isAirStrikeEnemy(LivingEntity e) {
         if (!e.isAlive()) return false;
-        if (Factions.isEmerald(e)) return false;                       // the village spares emerald units (v1.0.3)
+        // Village units, General Darius, the boss spirit and every emerald unit are off limits. Checked before
+        // the Enemy test below, which several of them (Darius, emerald mobs) would otherwise pass.
+        if (isAirStrikeProtected(e)) return false;
         if (e instanceof net.minecraft.world.entity.player.Player p) {
             return !p.isCreative() && !p.isSpectator() && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
-        if (e instanceof UnleashedBrainNodeEntity) return false;        // the boss has its own arc
-        if (isVillageAlly(e) || e instanceof EmeraldgerEntity || e instanceof WallDefenderEntity) return false;
         if (e.getMaxHealth() < 50.0F) return false;                    // weak mobs aren't worth a rocket (overkill)
         return e instanceof net.minecraft.world.entity.monster.Enemy;
     }
@@ -312,11 +312,28 @@ public final class BrainNodeEvents {
         return true;
     }
 
-    /** Villager, guard, or iron golem -- the village allies the air strike protects (and never bombs). */
+    /** Villager, guard, or iron golem -- the civilian defenders whose being attacked counts as "the village is
+     *  under attack" for the air-strike trigger ({@link #onAllyAttacked}). This is deliberately NOT the set the
+     *  strike protects: for that see {@link #isAirStrikeProtected}. */
     private static boolean isVillageAlly(LivingEntity e) {
         return e instanceof Villager
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
                 || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+    }
+
+    /**
+     * Everyone an air strike must never drop a rocket on: the village's own units (villagers, guards, golems,
+     * wall defenders, General Darius) plus everyone the village spares (the Vindictive Village Spirit and the
+     * whole emerald faction).
+     *
+     * <p>Delegates to {@link Factions} rather than listing types locally, the way every other village-side
+     * threat scan in the mod does. A local list is what let a strike target General Darius: he extends
+     * {@code Monster}, so he reads as an {@code Enemy}, and the old list (villager / iron golem / guard) did
+     * not mention him. The rocket blast itself is indiscriminate, so this filter is the only thing standing
+     * between the village and its own champion.
+     */
+    private static boolean isAirStrikeProtected(LivingEntity e) {
+        return Factions.isVillage(e) || Factions.isSparedByVillage(e);
     }
 
     /** Build the 3x3 protecting-glass cube (panes facing outward, bulldozing whatever is there) with a wall
