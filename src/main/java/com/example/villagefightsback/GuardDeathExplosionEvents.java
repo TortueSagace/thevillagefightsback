@@ -40,7 +40,12 @@ public final class GuardDeathExplosionEvents {
 
     /** TNT-strength explosion that also leaves the whole blast range on fire. */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
-        level.explode(null, x, y, z, BLAST_RADIUS, true, net.minecraft.world.level.Explosion.BlockInteraction.DESTROY);
+        // BREAK, not DESTROY. The two enums read the same but mean opposite things across the versions: 1.19.2's
+        // BREAK is the no-decay blast (every broken block rolls its loot table without EXPLOSION_RADIUS, so it
+        // drops), while 1.19.2's DESTROY is the one that adds EXPLOSION_RADIUS and lets ApplyExplosionDecay eat
+        // most of the drops. Main asks for Level.ExplosionInteraction.TNT, which resolves through the
+        // tntExplosionDropDecay game rule (default false) to 1.20.1's plain DESTROY = no decay = BREAK here.
+        level.explode(null, x, y, z, BLAST_RADIUS, true, net.minecraft.world.level.Explosion.BlockInteraction.BREAK);
         BlockPos center = new BlockPos(x, y, z);
         int r = FIRE_RADIUS;
         for (BlockPos bp : BlockPos.betweenClosed(center.offset(-r, -r, -r), center.offset(r, r, r))) {

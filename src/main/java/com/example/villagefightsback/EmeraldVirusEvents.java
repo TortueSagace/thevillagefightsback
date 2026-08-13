@@ -371,9 +371,12 @@ public final class EmeraldVirusEvents {
     /** TNT-strength blast. The blast ALWAYS hurts units; whether it breaks blocks and whether it leaves the
      *  blast range on fire are independently config-gated (emerald_virus_explosion_destroy_blocks / _set_blocks_on_fire). */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
-        // NONE still damages entities but destroys no blocks; TNT also destroys blocks.
+        // NONE still damages entities but destroys no blocks (1.19.2's NONE == main's KEEP); BREAK also destroys
+        // blocks. BREAK is the 1.19.2 spelling of main's Level.ExplosionInteraction.TNT: with the default
+        // tntExplosionDropDecay=false that resolves to a no-decay blast, and on 1.19.2 it is DESTROY -- not
+        // BREAK -- that feeds EXPLOSION_RADIUS to the loot tables and has ApplyExplosionDecay eat the drops.
         net.minecraft.world.level.Explosion.BlockInteraction interaction = Config.emeraldVirusDestroysBlocks()
-                ? net.minecraft.world.level.Explosion.BlockInteraction.DESTROY : net.minecraft.world.level.Explosion.BlockInteraction.NONE;
+                ? net.minecraft.world.level.Explosion.BlockInteraction.BREAK : net.minecraft.world.level.Explosion.BlockInteraction.NONE;
         level.explode(null, x, y, z, BLAST_RADIUS, false, interaction); // engine fire off; we scorch separately
         if (Config.emeraldVirusSetsFire()) ModExplosions.scorch(level, new BlockPos(x, y, z), FIRE_PASS_RADIUS);
     }
