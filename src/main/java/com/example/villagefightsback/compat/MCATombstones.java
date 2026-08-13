@@ -34,8 +34,14 @@ public final class MCATombstones {
     private static final ResourceLocation HEADSTONE =
             ResourceLocation.fromNamespaceAndPath("mca", "gravelling_headstone");
 
-    /** MCA's classes carry a loader prefix from its merged jar; try the Forge one first, then the bare name. */
-    private static final String[] PREFIXES = {"forge.net.mca.", "net.mca."};
+    /**
+     * MCA ships a Forgix-merged jar whose per-loader classes are relocated under the loader's own name, so the
+     * class to reflect on is named after whichever loader MCA was built for. Ordered most-likely-first FOR THIS
+     * BRANCH: NeoForge leads, because that is the only loader this build runs on. The Forge prefix stays because
+     * the list is shared with the Forge branches and costs nothing to try, and the bare name covers a jar that
+     * was never relocated at all.
+     */
+    private static final String[] PREFIXES = {"neoforge.net.mca.", "forge.net.mca.", "net.mca."};
 
     private static boolean resolved;
     private static boolean usable;
