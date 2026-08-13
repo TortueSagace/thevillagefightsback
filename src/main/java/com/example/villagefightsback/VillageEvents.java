@@ -630,13 +630,17 @@ public final class VillageEvents {
      *
      * <p>Builders work at height on scaffolding they place themselves, so short drops are constant and normal
      * for the job. Under MCA Reborn each one plays a human hurt sound, and a work site turns into a chorus of
-     * villagers yelping. Cancelling at {@link LivingAttackEvent} is what makes that stop: it aborts
+     * villagers yelping. Cancelling at {@link LivingIncomingDamageEvent} is what makes that stop: it aborts
      * {@code hurt()} before it runs, and the hurt sound is played inside {@code hurt()}, so there is no way to
      * silence the shout while still applying the damage. Only fall damage and only while actually building --
      * a builder is still perfectly killable by anything else, and reverts to a normal villager when it finishes.
+     *
+     * <p>1.21: {@code LivingAttackEvent} is gone. {@link LivingIncomingDamageEvent} occupies exactly the same
+     * slot -- it is posted at the very top of {@code LivingEntity.hurt}, before any mitigation and long before
+     * {@code playHurtSound} -- so cancelling it aborts the hurt with the shout unplayed, as before.
      */
     @SubscribeEvent
-    public static void onBuilderFall(LivingAttackEvent event) {
+    public static void onBuilderFall(LivingIncomingDamageEvent event) {
         if (!event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) return;
         if (!(event.getEntity() instanceof Villager villager)) return;
         if (!BuilderRole.isBuilder(villager)) return;

@@ -5,9 +5,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
  * Counts the hostile mobs each villager has killed, so a villager who actually fought for the village can be
@@ -21,7 +21,9 @@ import net.minecraftforge.fml.common.Mod;
  * <p>The tally lives in the villager's persistent data and is mirrored to a scoreboard tag, so it survives the
  * villager being replaced by MCA Reborn's spawn queue (which copies tags but not persistent data).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// GAME bus (NeoForge's rename of Forge's FORGE bus): onKill below is a gameplay event, and 1.21 refuses to load
+// an @EventBusSubscriber class that carries no @SubscribeEvent method at all.
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillagerKills {
     private VillagerKills() {}
 

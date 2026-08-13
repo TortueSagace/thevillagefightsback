@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -31,14 +32,25 @@ public class WorldModeData extends SavedData {
 
     public WorldModeData() {}
 
+    /**
+     * The constructor/deserialiser pair the data storage needs. 1.21 replaced the two loose method references
+     * {@code computeIfAbsent} used to take with a single {@link SavedData.Factory}, and threads a
+     * {@link HolderLookup.Provider} through the deserialiser; this data is plain booleans so the provider is
+     * unused, but it has to be in the signature. Shared by {@link #get} and {@link #getExisting} so both agree
+     * on how the file is read, exactly as the paired method references did on main.
+     */
+    private static SavedData.Factory<WorldModeData> factory() {
+        return new SavedData.Factory<>(WorldModeData::new, WorldModeData::load);
+    }
+
     public static WorldModeData get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(WorldModeData::load, WorldModeData::new, NAME);
+        return overworld.getDataStorage().computeIfAbsent(factory(), NAME);
     }
 
     /** The stored data, or null when this world has never had any (used to tell a brand-new save from an old one). */
     public static WorldModeData getExisting(MinecraftServer server) {
-        return server.overworld().getDataStorage().get(WorldModeData::load, NAME);
+        return server.overworld().getDataStorage().get(factory(), NAME);
     }
 
     public boolean isPending() { return pending; }
@@ -113,7 +125,7 @@ public class WorldModeData extends SavedData {
         data.setDirty();
     }
 
-    public static WorldModeData load(CompoundTag tag) {
+    public static WorldModeData load(CompoundTag tag, HolderLookup.Provider registries) {
         WorldModeData data = new WorldModeData();
         data.pending = tag.getBoolean("Pending");
         data.chosen = tag.getBoolean("Chosen");
@@ -124,7 +136,7 @@ public class WorldModeData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putBoolean("Pending", pending);
         tag.putBoolean("Chosen", chosen);
         tag.putBoolean("BlockInfection", blockInfection);

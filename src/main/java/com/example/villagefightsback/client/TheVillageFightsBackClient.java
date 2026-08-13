@@ -206,13 +206,12 @@ public final class TheVillageFightsBackClient {
                 : com.example.villagefightsback.compat.MCACompat.VILLAGER_IDS) {
             EntityType<?> type = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(id);
             if (type == null) continue; // MCA not installed -- nothing to decorate
-            LivingEntityRenderer<?, ?> renderer;
-            try {
-                renderer = event.getRenderer((EntityType) type);
-            } catch (ClassCastException notLiving) {
-                continue; // another mod swapped in a non-living renderer
-            }
-            if (renderer == null) continue;
+            // 1.21's AddLayers.getRenderer is generic in the renderer type, and the raw EntityType argument erases
+            // the call to plain EntityRenderer, so it no longer implicitly casts (and no longer throws the
+            // ClassCastException main relied on). The pattern test below does the same job explicitly: a renderer
+            // some other mod swapped for a non-living one simply gets skipped, exactly as before.
+            Object raw = event.getRenderer((EntityType) type);
+            if (!(raw instanceof LivingEntityRenderer<?, ?> renderer)) continue;
             if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) continue;
             ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
                     (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));

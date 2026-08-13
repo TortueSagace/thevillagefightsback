@@ -1,6 +1,7 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -8,10 +9,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * Lets MCA Reborn's own Scythe raise the dead from THIS mod's memorial.
@@ -24,17 +24,18 @@ import net.minecraftforge.registries.ForgeRegistries;
  *
  * <p>Matched by registry id, so MCA stays a soft dep and this is dead weight in a pack without it.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// GAME bus: a player interaction. (1.21 throws for an @EventBusSubscriber class with no handler at all.)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class MemorialScytheEvents {
     private MemorialScytheEvents() {}
 
-    private static final ResourceLocation MCA_SCYTHE = new ResourceLocation("mca", "scythe");
+    private static final ResourceLocation MCA_SCYTHE = ResourceLocation.fromNamespaceAndPath("mca", "scythe");
 
     @SubscribeEvent
     public static void onScytheOnMemorial(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         ItemStack held = event.getItemStack();
-        if (!MCA_SCYTHE.equals(ForgeRegistries.ITEMS.getKey(held.getItem()))) return;
+        if (!MCA_SCYTHE.equals(BuiltInRegistries.ITEM.getKey(held.getItem()))) return;
 
         BlockPos pos = event.getPos();
         if (!(level.getBlockEntity(pos) instanceof MemorialBlockEntity grave) || !grave.hasOccupant()) return;

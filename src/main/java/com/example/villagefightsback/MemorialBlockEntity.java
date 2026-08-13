@@ -1,8 +1,8 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -66,16 +66,19 @@ public class MemorialBlockEntity extends BlockEntity {
         }
     }
 
+    // 1.21 threads a HolderLookup.Provider through every block-entity read/write hook, and the read hook is
+    // loadAdditional rather than load. Nothing stored here is registry data (an entity snapshot and a string),
+    // so the provider is simply passed on to super. This matches LimboGravelBlockEntity on this branch.
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         if (occupant != null) tag.put(NBT_OCCUPANT, occupant);
         tag.putString(NBT_EPITAPH, epitaph);
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         occupant = tag.contains(NBT_OCCUPANT) ? tag.getCompound(NBT_OCCUPANT) : null;
         epitaph = tag.getString(NBT_EPITAPH);
     }
@@ -83,9 +86,9 @@ public class MemorialBlockEntity extends BlockEntity {
     // The epitaph has to reach the client, since the renderer draws it on the stone. The occupant snapshot rides
     // along too, which is harmless and keeps the two in step.
     @Override
-    public CompoundTag getUpdateTag() {
-        CompoundTag tag = super.getUpdateTag();
-        saveAdditional(tag);
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        saveAdditional(tag, registries);
         return tag;
     }
 
@@ -94,8 +97,13 @@ public class MemorialBlockEntity extends BlockEntity {
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
+    // main overrode onDataPacket to feed the packet tag back through load(). NeoForge's IBlockEntityExtension
+    // now does exactly that by default (it calls loadWithComponents, which reaches loadAdditional above), and the
+    // chunk-load path arrives via handleUpdateTag, which defaults the same way -- so both are left to the default
+    // rather than reimplemented. Overriding handleUpdateTag keeps the read path explicit and symmetric with the
+    // getUpdateTag above.
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        if (pkt.getTag() != null) load(pkt.getTag());
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+        loadAdditional(tag, registries);
     }
 }

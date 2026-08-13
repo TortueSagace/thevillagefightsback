@@ -53,7 +53,9 @@ public class ModeSelectScreen extends ModeArtScreen {
     private void choose(WorldMode mode) {
         if (answered) return;
         answered = true;
-        ModNetwork.CHANNEL.sendToServer(new ChooseModePacket(mode.id()));
+        // 1.21: Forge's SimpleChannel.sendToServer is gone; a payload goes up through PacketDistributor, the same
+        // way LimboAbilityClient sends its own client-to-server packet on this branch.
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(new ChooseModePacket(mode.id()));
         this.minecraft.setScreen(new ThankYouScreen());
     }
 

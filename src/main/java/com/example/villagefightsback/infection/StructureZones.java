@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -50,7 +51,11 @@ public class StructureZones extends SavedData {
     private final Long2ObjectMap<int[]> byChunk = new Long2ObjectOpenHashMap<>();
 
     public static StructureZones get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(StructureZones::load, StructureZones::new, NAME);
+        // 1.21 folded the (deserialiser, constructor) pair into a single SavedData.Factory and threads a
+        // HolderLookup.Provider through both halves. Nothing saved here is registry data (it is a flat int
+        // array of block coordinates), so the provider is simply unused.
+        return level.getDataStorage().computeIfAbsent(
+                new SavedData.Factory<>(StructureZones::new, StructureZones::load), NAME);
     }
 
     /** True when nothing is protected in this dimension, so callers can skip the query entirely. */
@@ -142,7 +147,7 @@ public class StructureZones extends SavedData {
     // rebuilds the chunk index in one pass on load.
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         int[] flat = new int[boxes.size() * STRIDE];
         int i = 0;
         for (int[] box : boxes) {
@@ -153,7 +158,7 @@ public class StructureZones extends SavedData {
         return tag;
     }
 
-    public static StructureZones load(CompoundTag tag) {
+    public static StructureZones load(CompoundTag tag, HolderLookup.Provider registries) {
         StructureZones data = new StructureZones();
         int[] flat = tag.getIntArray("Boxes");
         for (int i = 0; i + STRIDE <= flat.length; i += STRIDE) {

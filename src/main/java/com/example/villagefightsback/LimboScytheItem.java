@@ -2,13 +2,16 @@ package com.example.villagefightsback;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
@@ -38,24 +41,42 @@ public class LimboScytheItem extends HoeItem {
 
     public LimboScytheItem(Properties properties) {
         // Reaper's reach: slow and heavy, in line with the rest of the Limbo set rather than a farming tool.
-        super(LimboToolTier.INSTANCE, 3, -3.0F, properties);
+        // 1.21: a tool's attack damage/speed are no longer constructor arguments; they are an attribute modifier
+        // set built by HoeItem.createAttributes and hung on the Properties, the same way the rest of the Limbo
+        // tools do it in ModItems. The numbers are main's (+3 damage, -3.0 speed) unchanged.
+        super(LimboToolTier.INSTANCE, properties.attributes(
+                HoeItem.createAttributes(LimboToolTier.INSTANCE, 3.0F, -3.0F)));
     }
+
+    // 1.21 replaced free-form item NBT with data components: the souls counter now lives inside the vanilla
+    // CUSTOM_DATA component under the same "vgun_souls" key, which is where LimboSoulGravelItem on this branch
+    // already keeps its own payload. Same key, same integer, same per-stack storage -- only the container moved.
 
     /** Souls currently held. */
     public static int souls(ItemStack stack) {
-        return stack.getOrCreateTag().getInt(NBT_SOULS);
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data == null ? 0 : data.copyTag().getInt(NBT_SOULS);
     }
 
     /** Store one more soul, up to {@link #MAX_SOULS}. Returns false when the scythe is already full. */
     public static boolean addSoul(ItemStack stack) {
         int held = souls(stack);
         if (held >= MAX_SOULS) return false;
-        stack.getOrCreateTag().putInt(NBT_SOULS, held + 1);
+        setSouls(stack, held + 1);
         return true;
     }
 
     private static void spendSoul(ItemStack stack) {
-        stack.getOrCreateTag().putInt(NBT_SOULS, Math.max(0, souls(stack) - 1));
+        setSouls(stack, Math.max(0, souls(stack) - 1));
+    }
+
+    /** Write the souls counter back, leaving any other custom data on the stack untouched. */
+    private static void setSouls(ItemStack stack, int souls) {
+        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, cd -> {
+            net.minecraft.nbt.CompoundTag root = cd.copyTag();
+            root.putInt(NBT_SOULS, souls);
+            return CustomData.of(root);
+        });
     }
 
     /** The Limbo gear all shimmers; the scythe is no exception, and it is never actually enchanted. */
@@ -111,9 +132,12 @@ public class LimboScytheItem extends HoeItem {
     }
 
     /** Show the stored souls on the tooltip, so the scythe's charge is readable at a glance. */
+    // 1.21 replaced the Level argument with Item.TooltipContext (a Level is not available for every tooltip any
+    // more, e.g. a recipe book entry). Nothing here used the level, so the line is unchanged.
     @Override
-    public void appendHoverText(ItemStack stack, Level level, java.util.List<Component> lines,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, java.util.List<Component> lines,
                                 net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, context, lines, flag);
         lines.add(Component.literal("Souls: " + souls(stack) + " / " + MAX_SOULS)
                 .withStyle(ChatFormatting.AQUA));
     }

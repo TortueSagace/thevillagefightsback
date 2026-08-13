@@ -1316,7 +1316,9 @@ public final class BrainNodeEvents {
      * falls, which is harmless; being spawned INSIDE blocks is what suffocates it.
      */
     static boolean fitsFreely(ServerLevel level, BlockPos feet, EntityType<?> type) {
-        return level.noCollision(type.getAABB(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5));
+        // 1.21 renamed EntityType.getAABB to getSpawnAABB. Same method body: the type's half-width/height box
+        // built with its feet at the given point, which is exactly the hitbox this test needs.
+        return level.noCollision(type.getSpawnAABB(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5));
     }
 
     /** {@link #fitsFreely} plus a sturdy floor: a spot the creature can actually stand on. */

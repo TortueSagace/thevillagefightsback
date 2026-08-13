@@ -3,15 +3,16 @@ package com.example.villagefightsback;
 import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
  * Burial and resurrection for the village's fallen.
@@ -25,7 +26,10 @@ import net.minecraftforge.fml.common.Mod;
  * graveyard, MCA's villagers mourn at it, and MCA's own Scythe works on it as well as ours. Without MCA the
  * grave is this mod's memorial block. Either way the Limbo Scythe raises it.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// The death handler is a gameplay event, so this stays on the GAME bus (NeoForge's rename of Forge's FORGE bus).
+// 1.21 also throws on load for an @EventBusSubscriber class with no @SubscribeEvent method, so the annotation is
+// only correct here because onDeath below carries one.
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class Graves {
     private Graves() {}
 
@@ -58,8 +62,7 @@ public final class Graves {
         CompoundTag snapshot = new CompoundTag();
         // saveWithoutId omits the entity id, which EntityType.create needs to rebuild it, so put it back.
         deceased.saveWithoutId(snapshot);
-        net.minecraft.resources.ResourceLocation type = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
-                .getKey(deceased.getType());
+        net.minecraft.resources.ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(deceased.getType());
         if (type == null) { level.removeBlock(spot, false); return false; }
         snapshot.putString("id", type.toString());
         grave.bury(snapshot, epitaph.getString());
@@ -150,7 +153,6 @@ public final class Graves {
     /** True if this snapshot is General Darius (used to recognise his grave). */
     public static boolean isDariusNbt(CompoundTag nbt) {
         String id = nbt.getString("id");
-        return id.equals(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
-                .getKey(ModEntities.GENERAL_DARIUS.get()).toString());
+        return id.equals(BuiltInRegistries.ENTITY_TYPE.getKey(ModEntities.GENERAL_DARIUS.get()).toString());
     }
 }

@@ -7,11 +7,11 @@ import java.util.Optional;
 import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Reads MCA Reborn's tombstones, so the Limbo Scythe can raise anyone MCA itself buried.
@@ -31,7 +31,8 @@ public final class MCATombstones {
     private MCATombstones() {}
 
     /** Any MCA tombstone id, used only to confirm MCA's grave blocks are actually registered. */
-    private static final ResourceLocation HEADSTONE = new ResourceLocation("mca", "gravelling_headstone");
+    private static final ResourceLocation HEADSTONE =
+            ResourceLocation.fromNamespaceAndPath("mca", "gravelling_headstone");
 
     /** MCA's classes carry a loader prefix from its merged jar; try the Forge one first, then the bare name. */
     private static final String[] PREFIXES = {"forge.net.mca.", "net.mca."};
@@ -53,7 +54,7 @@ public final class MCATombstones {
                         "[The Village Fights Back] MCA tombstones unavailable; falling back to our own memorial block.");
             }
         }
-        return usable && ForgeRegistries.BLOCKS.containsKey(HEADSTONE);
+        return usable && BuiltInRegistries.BLOCK.containsKey(HEADSTONE);
     }
 
     private static boolean resolve() {
@@ -143,7 +144,8 @@ public final class MCATombstones {
     }
 
     // --- our memorial, seen by MCA -------------------------------------------------------------------
-    // Our stone is in MCA's mca:tombstones block tag (see data/mca/tags/blocks/tombstones.json), which is what
+    // Our stone is in MCA's mca:tombstones block tag (see data/mca/tags/block/tombstones.json -- 1.21 datapack
+    // tag directories are singular, so this branch carries the file at block/ rather than main's blocks/), which is what
     // makes a cluster of them register as an MCA GRAVEYARD building. Telling MCA's GraveyardManager about each
     // individual grave is the other half: that index is what its mourning tasks search to find somewhere to
     // grieve, so without it a graveyard would be recognised but never visited.

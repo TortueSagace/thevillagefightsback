@@ -20,9 +20,9 @@ import net.minecraft.util.FormattedCharSequence;
  */
 public abstract class ModeArtScreen extends Screen {
     protected static final ResourceLocation BG =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/mode_select_bg.png");
+            ResourceLocation.fromNamespaceAndPath(TheVillageFightsBack.MODID, "textures/gui/mode_select_bg.png");
     protected static final ResourceLocation LOGO =
-            new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/mode_select_title.png");
+            ResourceLocation.fromNamespaceAndPath(TheVillageFightsBack.MODID, "textures/gui/mode_select_title.png");
 
     /** Native sizes of the two textures above (needed by blit, and neither is a power of two). */
     protected static final int BG_W = 1280, BG_H = 755;

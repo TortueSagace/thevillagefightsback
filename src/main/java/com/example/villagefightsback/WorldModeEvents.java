@@ -5,13 +5,13 @@ import com.example.villagefightsback.network.OpenModeSelectPacket;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * Drives the one-off "choose your mode" screen and the per-world override it produces.
@@ -27,7 +27,9 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *       whatever the previous world happened to choose.</li>
  * </ol>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// GAME bus: every handler here is a level/server-lifecycle or player event, all of which fire on NeoForge's game
+// bus (its rename of Forge's FORGE bus). Server-lifecycle events in particular are NOT mod-bus events in 1.21.
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class WorldModeEvents {
     private WorldModeEvents() {}
 
@@ -105,7 +107,7 @@ public final class WorldModeEvents {
     }
 
     /**
-     * Re-assert the loaded world's mode after the config file is reloaded (Forge watches the .toml and will
+     * Re-assert the loaded world's mode after the config file is reloaded (NeoForge watches the .toml and will
      * otherwise quietly replace our in-memory override with the file's values).
      */
     public static void reapplyToRunningServer() {

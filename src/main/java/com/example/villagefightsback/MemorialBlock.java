@@ -1,5 +1,7 @@
 package com.example.villagefightsback;
 
+import com.mojang.serialization.MapCodec;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -29,6 +31,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * inscription reads from the approach.
  */
 public class MemorialBlock extends BaseEntityBlock {
+    /** 1.21 made {@code codec()} abstract on every Block, for the block-state-to-codec registry. The block takes
+     *  only Properties, so the generated simpleCodec is exact -- nothing about the stone is lost. */
+    public static final MapCodec<MemorialBlock> CODEC = simpleCodec(MemorialBlock::new);
+
     public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING =
             HorizontalDirectionalBlock.FACING;
 
@@ -39,6 +45,11 @@ public class MemorialBlock extends BaseEntityBlock {
     public MemorialBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override

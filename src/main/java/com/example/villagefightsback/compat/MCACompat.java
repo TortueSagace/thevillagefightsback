@@ -2,13 +2,13 @@ package com.example.villagefightsback.compat;
 
 import com.example.villagefightsback.Config;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Minecraft Comes Alive (MCA Reborn, mod id {@code mca}) integration. MCA is a pure RUNTIME soft dep: nothing
@@ -44,8 +44,8 @@ public final class MCACompat {
 
     /** MCA's mod id, and the two ids its villagers are registered under (gender is baked into the type). */
     public static final String MODID = "mca";
-    public static final ResourceLocation MALE_VILLAGER = new ResourceLocation(MODID, "male_villager");
-    public static final ResourceLocation FEMALE_VILLAGER = new ResourceLocation(MODID, "female_villager");
+    public static final ResourceLocation MALE_VILLAGER = ResourceLocation.fromNamespaceAndPath(MODID, "male_villager");
+    public static final ResourceLocation FEMALE_VILLAGER = ResourceLocation.fromNamespaceAndPath(MODID, "female_villager");
 
     /** Both MCA villager ids, for callers that must decorate/inspect every one of them (e.g. the render layers). */
     public static final ResourceLocation[] VILLAGER_IDS = { MALE_VILLAGER, FEMALE_VILLAGER };
@@ -54,9 +54,15 @@ public final class MCACompat {
      * True when MCA's villagers are registered. Resolved from the registry on every call rather than cached:
      * the entity registry is swapped when a client connects to a server, and a stale cache would be wrong on
      * exactly the setup this integration exists for.
+     *
+     * <p>1.21 note: Forge's {@code ForgeRegistries.ENTITY_TYPES} wrapper is gone; every lookup in this class now
+     * goes to {@link BuiltInRegistries#ENTITY_TYPE} (and {@link BuiltInRegistries#VILLAGER_PROFESSION}), which is
+     * the same registry the wrapper delegated to, so a present/absent MCA answers identically. {@code getValue} is
+     * spelled {@code get} on a vanilla {@code Registry} and returns null for an unknown id just the same, which is
+     * what every null-check below already relies on.
      */
     public static boolean present() {
-        return ForgeRegistries.ENTITY_TYPES.containsKey(MALE_VILLAGER);
+        return BuiltInRegistries.ENTITY_TYPE.containsKey(MALE_VILLAGER);
     }
 
     /** True when MCA is installed AND the player has left {@code mca_compat} on (the default). */
@@ -71,7 +77,7 @@ public final class MCACompat {
      */
     public static EntityType<?> villagerType(RandomSource rng) {
         if (!enabled()) return EntityType.VILLAGER;
-        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(
                 rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
         return type != null ? type : EntityType.VILLAGER;
     }
@@ -93,8 +99,8 @@ public final class MCACompat {
      * cannot drift from MCA's.
      */
     private static final java.util.Set<ResourceLocation> GUARD_PROFESSIONS = java.util.Set.of(
-            new ResourceLocation(MODID, "guard"),
-            new ResourceLocation(MODID, "archer"));
+            ResourceLocation.fromNamespaceAndPath(MODID, "guard"),
+            ResourceLocation.fromNamespaceAndPath(MODID, "archer"));
 
     /**
      * True for an MCA villager doing a guard's job. They are Villagers, so without this they would be armed as
@@ -104,12 +110,12 @@ public final class MCACompat {
      */
     public static boolean isMcaGuard(Entity e) {
         if (!(e instanceof Villager v)) return false;
-        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        ResourceLocation id = BuiltInRegistries.VILLAGER_PROFESSION.getKey(v.getVillagerData().getProfession());
         return id != null && GUARD_PROFESSIONS.contains(id);
     }
 
     /** The Guard Villagers guard entity, used when MCA is absent. */
-    private static final ResourceLocation GUARD_VILLAGERS_GUARD = new ResourceLocation("guardvillagers", "guard");
+    private static final ResourceLocation GUARD_VILLAGERS_GUARD = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     /**
      * The entity type to spawn when this mod wants A GUARD: an MCA human when MCA is installed, otherwise the
@@ -122,11 +128,11 @@ public final class MCACompat {
      */
     public static EntityType<?> guardType(RandomSource rng) {
         if (enabled()) {
-            EntityType<?> mca = ForgeRegistries.ENTITY_TYPES.getValue(
+            EntityType<?> mca = BuiltInRegistries.ENTITY_TYPE.get(
                     rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
             if (mca != null) return mca;
         }
-        return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
+        return BuiltInRegistries.ENTITY_TYPE.get(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
     }
 
     /**
@@ -141,13 +147,13 @@ public final class MCACompat {
     public static void makeGuard(net.minecraft.world.entity.Entity e) {
         if (!(e instanceof Villager v) || !isMcaVillager(v)) return;
         net.minecraft.world.entity.npc.VillagerProfession guard =
-                ForgeRegistries.VILLAGER_PROFESSIONS.getValue(new ResourceLocation(MODID, "guard"));
+                BuiltInRegistries.VILLAGER_PROFESSION.get(ResourceLocation.fromNamespaceAndPath(MODID, "guard"));
         if (guard == null) return;
         v.setVillagerData(v.getVillagerData().setProfession(guard));
     }
 
     /** MCA's own "who should this guard attack" memory, resolved by registry id so MCA stays a soft dep. */
-    private static final ResourceLocation GUARD_ENEMY_MEMORY = new ResourceLocation(MODID, "nearest_guard_enemy");
+    private static final ResourceLocation GUARD_ENEMY_MEMORY = ResourceLocation.fromNamespaceAndPath(MODID, "nearest_guard_enemy");
 
     /**
      * Make {@code villager} forget an emerald-faction target.
@@ -222,12 +228,12 @@ public final class MCACompat {
      * a vanilla villager, a guard entity) is treated as male, which is only ever used to pick a pronoun.
      */
     public static boolean isFemale(Entity e) {
-        return FEMALE_VILLAGER.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return FEMALE_VILLAGER.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
     }
 
     /** True for an MCA villager specifically (either gender). Vanilla villagers and Emeraldgers return false. */
     public static boolean isMcaVillager(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
         return MALE_VILLAGER.equals(id) || FEMALE_VILLAGER.equals(id);
     }
 
@@ -261,8 +267,8 @@ public final class MCACompat {
      * of those as an enemy would be a worse bug than the one being fixed.
      */
     private static final java.util.Set<ResourceLocation> HOSTILE_PROFESSIONS = java.util.Set.of(
-            new ResourceLocation(MODID, "outlaw"),
-            new ResourceLocation(MODID, "cultist"));
+            ResourceLocation.fromNamespaceAndPath(MODID, "outlaw"),
+            ResourceLocation.fromNamespaceAndPath(MODID, "cultist"));
 
     /**
      * True for an MCA villager whose profession makes it an ENEMY of the village (outlaw / cultist). Cheap: the
@@ -271,7 +277,7 @@ public final class MCACompat {
      */
     public static boolean isHostileVillager(Entity e) {
         if (!(e instanceof Villager v)) return false;
-        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        ResourceLocation id = BuiltInRegistries.VILLAGER_PROFESSION.getKey(v.getVillagerData().getProfession());
         return id != null && HOSTILE_PROFESSIONS.contains(id);
     }
 }

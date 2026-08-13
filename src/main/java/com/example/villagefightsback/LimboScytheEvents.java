@@ -2,15 +2,16 @@ package com.example.villagefightsback;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
  * How the Limbo Scythe charges: it takes a soul from anything substantial it kills. See
  * {@link LimboScytheItem}. (It is crafted rather than dropped, so there is no drop hook here.)
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+// GAME bus: onReap is a gameplay event. (1.21 throws for an @EventBusSubscriber class with no handler at all.)
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboScytheEvents {
     private LimboScytheEvents() {}
 
