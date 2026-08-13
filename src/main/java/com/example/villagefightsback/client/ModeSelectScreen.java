@@ -4,8 +4,9 @@ import com.example.villagefightsback.WorldMode;
 import com.example.villagefightsback.network.ChooseModePacket;
 import com.example.villagefightsback.network.ModNetwork;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -43,8 +44,10 @@ public class ModeSelectScreen extends ModeArtScreen {
         int x = (this.width - BUTTON_W) / 2;
         int y = contentY;
         for (WorldMode mode : WorldMode.values()) {
-            addRenderableWidget(Button.builder(Component.literal(mode.title()), b -> choose(mode))
-                    .bounds(x, y, BUTTON_W, BUTTON_H).build());
+            // 1.19.2 has no Button.builder()/bounds(); the public constructor takes the same geometry and the
+            // same OnPress handler directly.
+            addRenderableWidget(new Button(x, y, BUTTON_W, BUTTON_H,
+                    Component.literal(mode.title()), b -> choose(mode)));
             y += BUTTON_H + BUTTON_GAP;
         }
     }
@@ -58,15 +61,15 @@ public class ModeSelectScreen extends ModeArtScreen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
-        renderKeyArt(g);
-        renderLogo(g);
+    public void render(PoseStack ps, int mouseX, int mouseY, float partial) {
+        renderKeyArt(ps);
+        renderLogo(ps);
 
         // The question, drawn a little larger than the standard font so it carries against the art.
-        drawScaled(g, Component.literal("Which Game Mode?").withStyle(ChatFormatting.WHITE),
+        drawScaled(ps, Component.literal("Which Game Mode?").withStyle(ChatFormatting.WHITE),
                 this.width / 2, questionY, 1.5F, 0xFFFFFFFF);
 
-        super.render(g, mouseX, mouseY, partial);
+        super.render(ps, mouseX, mouseY, partial);
     }
 
     /** No escaping the question: the only way out is to pick a mode, which closes the screen itself. */

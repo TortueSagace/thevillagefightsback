@@ -2,8 +2,9 @@ package com.example.villagefightsback.client;
 
 import java.util.List;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -55,8 +56,9 @@ public class ThankYouScreen extends ModeArtScreen {
         // On a short window (or a large GUI scale) keep the button on screen rather than off the bottom.
         buttonY = Math.min(buttonY, this.height - BUTTON_H - 8);
 
-        addRenderableWidget(Button.builder(Component.literal("Enter the world"), b -> onClose())
-                .bounds((this.width - BUTTON_W) / 2, buttonY, BUTTON_W, BUTTON_H).build());
+        // 1.19.2 has no Button.builder()/bounds(); the public constructor takes the same geometry and handler.
+        addRenderableWidget(new Button((this.width - BUTTON_W) / 2, buttonY, BUTTON_W, BUTTON_H,
+                Component.literal("Enter the world"), b -> onClose()));
     }
 
     /** Message block width: 72% of the window, capped, so it never runs edge to edge on a wide monitor. */
@@ -69,9 +71,9 @@ public class ThankYouScreen extends ModeArtScreen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
-        renderKeyArt(g);
-        renderLogo(g);
+    public void render(PoseStack ps, int mouseX, int mouseY, float partial) {
+        renderKeyArt(ps);
+        renderLogo(ps);
 
         // A dark plate behind the message so it stays legible over the bright key art.
         int step = lineStep();
@@ -79,14 +81,15 @@ public class ThankYouScreen extends ModeArtScreen {
         int widest = 0;
         for (FormattedCharSequence line : lines) widest = Math.max(widest, font.width(line));
         int half = Math.round(widest * TEXT_SCALE) / 2 + 10;
-        g.fill(this.width / 2 - half, textTop - 8, this.width / 2 + half, textTop + blockH + 2, 0xB0000000);
+        // GuiComponent#fill takes the PoseStack up front on 1.19.2; the two corners and the ARGB are unchanged.
+        fill(ps, this.width / 2 - half, textTop - 8, this.width / 2 + half, textTop + blockH + 2, 0xB0000000);
 
         int y = textTop;
         for (FormattedCharSequence line : lines) {
-            drawScaled(g, line, this.width / 2, y, TEXT_SCALE, 0xFFFFFFFF);
+            drawScaled(ps, line, this.width / 2, y, TEXT_SCALE, 0xFFFFFFFF);
             y += step;
         }
 
-        super.render(g, mouseX, mouseY, partial);
+        super.render(ps, mouseX, mouseY, partial);
     }
 }

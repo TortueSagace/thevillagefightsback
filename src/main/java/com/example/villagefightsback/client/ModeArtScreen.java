@@ -3,9 +3,10 @@ package com.example.villagefightsback.client;
 import com.example.villagefightsback.TheVillageFightsBack;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -49,16 +50,25 @@ public abstract class ModeArtScreen extends Screen {
         return logoY() + Math.round(LOGO_H * logoScale());
     }
 
-    /** The key art, scaled to COVER the window (aspect preserved, overflow cropped by the viewport). */
-    protected void renderKeyArt(GuiGraphics g) {
+    /**
+     * The key art, scaled to COVER the window (aspect preserved, overflow cropped by the viewport).
+     *
+     * <p>1.19.2 has no GuiGraphics, so the texture is not an argument to blit: it is bound on the shader first,
+     * the way {@link BrainNodeScreen} already does it on this branch. The remaining arguments are identical to
+     * the 1.20.1 GuiGraphics overload, which takes the same (x, y, w, h, u, v, uw, vh, texW, texH) after the
+     * ResourceLocation, so the sampling and the placement are unchanged.
+     */
+    protected void renderKeyArt(PoseStack ps) {
         float scale = Math.max((float) this.width / BG_W, (float) this.height / BG_H);
         int w = Math.round(BG_W * scale);
         int h = Math.round(BG_H * scale);
-        g.blit(BG, (this.width - w) / 2, (this.height - h) / 2, w, h, 0.0F, 0.0F, BG_W, BG_H, BG_W, BG_H);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, BG);
+        blit(ps, (this.width - w) / 2, (this.height - h) / 2, w, h, 0.0F, 0.0F, BG_W, BG_H, BG_W, BG_H);
     }
 
     /** The stylised mod logo, centred at the top. */
-    protected void renderLogo(GuiGraphics g) {
+    protected void renderLogo(PoseStack ps) {
         float scale = logoScale();
         int w = Math.round(LOGO_W * scale);
         int h = Math.round(LOGO_H * scale);
@@ -66,25 +76,32 @@ public abstract class ModeArtScreen extends Screen {
         // for GUI rendering and what the widgets drawn after us expect.
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        g.blit(LOGO, (this.width - w) / 2, logoY(), w, h, 0.0F, 0.0F, LOGO_W, LOGO_H, LOGO_W, LOGO_H);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, LOGO);
+        blit(ps, (this.width - w) / 2, logoY(), w, h, 0.0F, 0.0F, LOGO_W, LOGO_H, LOGO_W, LOGO_H);
     }
 
-    /** Centred text at an arbitrary scale (the font itself only draws at 1x). */
-    protected void drawScaled(GuiGraphics g, Component text, int centerX, int y, float scale, int color) {
-        g.pose().pushPose();
-        g.pose().scale(scale, scale, 1.0F);
-        g.drawString(font, text, Math.round(centerX / scale) - font.width(text) / 2,
-                Math.round(y / scale), color, true);
-        g.pose().popPose();
+    /**
+     * Centred text at an arbitrary scale (the font itself only draws at 1x).
+     *
+     * <p>GuiComponent#drawString always draws WITH a shadow, which is what the 1.20.1 call asked for by passing
+     * dropShadow=true, so the look carries over exactly.
+     */
+    protected void drawScaled(PoseStack ps, Component text, int centerX, int y, float scale, int color) {
+        ps.pushPose();
+        ps.scale(scale, scale, 1.0F);
+        drawString(ps, font, text, Math.round(centerX / scale) - font.width(text) / 2,
+                Math.round(y / scale), color);
+        ps.popPose();
     }
 
     /** Centred pre-wrapped line at an arbitrary scale, preserving the per-word styling of the source component. */
-    protected void drawScaled(GuiGraphics g, FormattedCharSequence line, int centerX, int y, float scale, int color) {
-        g.pose().pushPose();
-        g.pose().scale(scale, scale, 1.0F);
-        g.drawString(font, line, Math.round(centerX / scale) - font.width(line) / 2,
-                Math.round(y / scale), color, true);
-        g.pose().popPose();
+    protected void drawScaled(PoseStack ps, FormattedCharSequence line, int centerX, int y, float scale, int color) {
+        ps.pushPose();
+        ps.scale(scale, scale, 1.0F);
+        drawString(ps, font, line, Math.round(centerX / scale) - font.width(line) / 2,
+                Math.round(y / scale), color);
+        ps.popPose();
     }
 
     /** See the class note: pausing would also pause the integrated server, which has to handle the answer. */
