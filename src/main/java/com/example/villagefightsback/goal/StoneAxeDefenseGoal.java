@@ -55,7 +55,7 @@ public class StoneAxeDefenseGoal extends Goal {
     private LivingEntity findTarget() {
         AABB box = villager.getBoundingBox().inflate(SEE_RANGE);
         List<LivingEntity> candidates = villager.level().getEntitiesOfClass(LivingEntity.class, box,
-                e -> (e instanceof Enemy || com.example.villagefightsback.Factions.isInfected(e))
+                e -> com.example.villagefightsback.Factions.isVillageThreat(e)
                         && !com.example.villagefightsback.Factions.isSparedByVillage(e) // never Darius or the friendly Vindictive Village Spirit
                         && !(e instanceof Creeper) && e.isAlive() && e != villager
                         && villager.distanceToSqr(e) <= SEE_RANGE * SEE_RANGE

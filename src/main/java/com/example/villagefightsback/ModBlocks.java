@@ -488,6 +488,21 @@ public final class ModBlocks {
     public static final DeferredHolder<Item, Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
     /** The block entity that caches a leashed gravel's render data (held entity type, name, instability deadline). */
+    /** The Village Memorial: this mod's own headstone, used to bury a fallen defender when MCA Reborn is not
+     *  installed (with MCA the village uses MCA's tombstones instead). Placeable either way.
+     *  NeoForge 1.21 registers through DeferredHolder rather than Forge's RegistryObject, and
+     *  BlockBehaviour.Properties.copy was renamed ofFullCopy; the block itself is main's unchanged. */
+    public static final DeferredHolder<Block, Block> MEMORIAL = BLOCKS.register("memorial",
+            () -> new MemorialBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_TILES)
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noOcclusion()));
+    public static final DeferredHolder<Item, Item> MEMORIAL_ITEM = ITEMS.register("memorial",
+            () -> new BlockItem(MEMORIAL.get(), new Item.Properties()));
+    public static final DeferredHolder<net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.world.level.block.entity.BlockEntityType<MemorialBlockEntity>> MEMORIAL_BE =
+            BLOCK_ENTITIES.register("memorial", () ->
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            MemorialBlockEntity::new, MEMORIAL.get()).build(null));
+
     public static final DeferredHolder<net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
             BLOCK_ENTITIES.register("limbo_gravel", () ->
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
@@ -741,6 +756,8 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_AXE.get());
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
+                output.accept(ModItems.LIMBO_SCYTHE.get());
+                output.accept(MEMORIAL_ITEM.get());
             })
             .build());
 

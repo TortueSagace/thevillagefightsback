@@ -213,6 +213,9 @@ public final class EmeraldVirusEvents {
         if (moved < 1.0E-3) return; // standing still
 
         BlockPos pos = e.getOnPos(); // the block just below the host's feet
+        // An infected host wandering through a village building must not rot its floor out from under it.
+        if (level instanceof net.minecraft.server.level.ServerLevel sl
+                && com.example.villagefightsback.infection.StructureZones.protectedAt(sl, pos)) return;
         BlockState state = level.getBlockState(pos);
         if (state.isAir() || state.is(Blocks.DIRT_PATH)) return;
         if (state.getBlock().getExplosionResistance() >= MAX_PATH_RESISTANCE) return; // obsidian-tough or harder

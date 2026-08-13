@@ -40,6 +40,9 @@ public class FakeCobblestoneBlock extends Block {
 
     /** Entities allowed to phase through (kept consistent with the pathfinding malus opt-in). */
     public static boolean isPhaser(Entity e) {
+        // MCA Reborn outlaws / cultists are hostile Villagers -- they must NOT be handed a key to the village's
+        // smart doors, or a raid would simply walk through the wall.
+        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)) return false;
         if (e instanceof Player || e instanceof Villager || e instanceof IronGolem) return true;
         if (Factions.isEmerald(e)) return true; // emerald faction units phase the village's smart doors too
         return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));

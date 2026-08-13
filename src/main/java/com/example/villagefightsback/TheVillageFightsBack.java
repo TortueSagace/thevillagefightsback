@@ -40,7 +40,9 @@ public class TheVillageFightsBack {
         // RegisterBrewingRecipesEvent fires on the GAME bus (NeoForge.EVENT_BUS) in 1.21.1, not the mod bus.
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRegisterBrewingRecipes);
         modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent e) -> {
-            if (e.getConfig().getSpec() == Config.SPEC) Config.apply(); // push drift chances into LimboDrift
+            if (e.getConfig().getSpec() != Config.SPEC) return;
+            Config.apply();                          // push drift chances into LimboDrift
+            WorldModeEvents.reapplyToRunningServer(); // a .toml reload must not drop the loaded world's mode
         });
         com.example.villagefightsback.network.ModNetwork.register(modBus); // brainNode UI packet channel
         modContainer.registerConfig(

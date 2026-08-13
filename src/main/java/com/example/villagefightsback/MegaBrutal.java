@@ -1,8 +1,6 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -40,7 +38,6 @@ public final class MegaBrutal {
     private static final int EFFECT_TICKS = 60;
     private static final int AMP_III = 2;                   // amplifier 2 == level III
     private static final double TELEPORT_MIN = 16.0;        // golems blink only when this far from their target
-    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -83,7 +80,9 @@ public final class MegaBrutal {
     }
 
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
+        // Single definition of "is a guard" now lives in Factions: the guardvillagers entity id plus
+        // MCA Reborn's guard humans, so mega-brutal arms MCA guards with the Alien Smasher too.
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 
     private static void buff(LivingEntity e) {

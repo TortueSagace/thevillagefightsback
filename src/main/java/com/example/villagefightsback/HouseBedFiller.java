@@ -61,6 +61,9 @@ public final class HouseBedFiller {
             if (!isRectangularHouse(room)) continue;     // strongest signal: rectangular footprint
             Set<BlockPos> roomSet = new HashSet<>(room);
             if (!wallsAreBuilt(level, room, roomSet)) continue;
+            // A confirmed house -- rectangular footprint AND built walls. Claim it as immune to block infection
+            // BEFORE the bed check, so an already-furnished house is protected too.
+            protectRoom(level, room);
             if (roomHasBed(level, room)) continue;        // already furnished
             placed += placeBeds(level, room, roomSet, doorwayCells(level, room, roomSet));
         }
@@ -108,6 +111,35 @@ public final class HouseBedFiller {
     }
 
     /** A house: the 2D footprint is a mostly-filled rectangle of house-sized dimensions. */
+    /**
+     * Make a NATURALLY GENERATED village house immune to block infection, the same way the village's own
+     * templated buildings are (see {@link com.example.villagefightsback.infection.StructureZones}). This matters
+     * because the mod's whole premise is a brain node taking over an EXISTING village: those vanilla houses are
+     * the village's original architecture, and their materials -- logs, dirt, granite, fences, wooden doors --
+     * are exactly what the fertile spread converts. Nothing else in the mod can derive a box for them; this
+     * detector is the only house-finder there is, and it already proves "rectangular footprint + built walls".
+     *
+     * <p>{@code room} holds INTERIOR FLOOR cells, so the box is inflated to enclose the shell: one block out
+     * horizontally for the walls, one down for the floor slab, and {@link #ROOF_MAX} up for the roof (the same
+     * bound {@code scan} used to decide the cell was indoors in the first place).
+     *
+     * <p>Deliberately does NOT call {@code InfectionManager.forgetVolume}: unlike a template build, nothing here
+     * is carved to air, so the blocks are still present and reporting them as removed would corrupt the
+     * fertilized tally. Any conversion that already happened inside stays as it is -- it simply stops spreading.
+     */
+    private static void protectRoom(ServerLevel level, List<BlockPos> room) {
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+        int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+        int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+        for (BlockPos p : room) {
+            minX = Math.min(minX, p.getX()); maxX = Math.max(maxX, p.getX());
+            minY = Math.min(minY, p.getY()); maxY = Math.max(maxY, p.getY());
+            minZ = Math.min(minZ, p.getZ()); maxZ = Math.max(maxZ, p.getZ());
+        }
+        com.example.villagefightsback.infection.StructureZones.get(level)
+                .addBox(minX - 1, minY - 1, minZ - 1, maxX + 1, maxY + ROOF_MAX, maxZ + 1);
+    }
+
     private static boolean isRectangularHouse(List<BlockPos> room) {
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
         Set<Long> footprint = new HashSet<>();

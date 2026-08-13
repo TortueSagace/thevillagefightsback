@@ -63,6 +63,7 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
     public static final ModConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     public static final ModConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
+    public static final ModConfigSpec.BooleanValue MCA_COMPAT;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -214,6 +215,13 @@ public final class Config {
                         "Default: false (off for now). Turning this on applies portals immediately to any stage-3-or-higher",
                         "brain node currently in reach (loaded); turning it off only stops NEW portals -- existing ones persist.")
                 .define("enable_chunk_portals", false);
+        MCA_COMPAT = b
+                .comment("Minecraft Comes Alive (MCA Reborn) integration. Has NO effect unless MCA is installed. When ON and",
+                        "MCA is present, every villager this mod spawns (settlers, brain-node reinforcements, staged spawn eggs)",
+                        "is spawned as an MCA human instead of a vanilla villager, so the village is uniformly MCA rather than a",
+                        "mix. MCA villagers extend the vanilla villager, so they take the same roles, weapons, walls and virus.",
+                        "Turn OFF to spawn plain vanilla villagers alongside MCA's. Default: true.")
+                .define("mca_compat", true);
         b.pop();
 
         b.push("multipliers");
@@ -296,6 +304,7 @@ public final class Config {
         INDEX.put("organic_spawn_budget_multiplier", ORGANIC_SPAWN_BUDGET_MULTIPLIER);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("enable_chunk_portals", ENABLE_CHUNK_PORTALS);
+        INDEX.put("mca_compat", MCA_COMPAT);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);
@@ -312,6 +321,50 @@ public final class Config {
 
     private static ModConfigSpec.DoubleValue mult(ModConfigSpec.Builder b, String key, String... comment) {
         return b.comment(comment).defineInRange(key, MULT_DEFAULT, MULT_MIN, MULT_MAX);
+    }
+
+    // --- per-world game mode ------------------------------------------------------------------------
+    // This is a COMMON config, i.e. one shared file for every world. The mode screen shown when a world is
+    // created ({@link WorldMode} / {@link WorldModeData}) must not let one world silently re-configure another,
+    // so the three infection switches are overridden IN MEMORY for as long as that world is loaded, and the
+    // file's own values are put back when the server stops. The .toml itself is never written by this path.
+
+    /** The .toml's own {block, mob, infestation} values, held while a world overrides them; null when none is. */
+    private static boolean[] infectionSnapshot;
+
+    /** Remember the file's infection flags (server start), so {@link #restoreInfectionFlags()} can put them back. */
+    public static void snapshotInfectionFlags() {
+        if (infectionSnapshot == null) {
+            infectionSnapshot = new boolean[] {
+                    ENABLE_BLOCK_INFECTION.get(), ENABLE_MOB_INFECTION.get(), ENABLE_EMERALD_INFESTATION.get() };
+        }
+    }
+
+    /** Put the file's infection flags back (server stop), so the next world starts from the file, not the last world. */
+    public static void restoreInfectionFlags() {
+        if (infectionSnapshot == null) return;
+        ENABLE_BLOCK_INFECTION.set(infectionSnapshot[0]);
+        ENABLE_MOB_INFECTION.set(infectionSnapshot[1]);
+        ENABLE_EMERALD_INFESTATION.set(infectionSnapshot[2]);
+        infectionSnapshot = null;
+    }
+
+    /** Push a world's stored mode over the live values. In memory only -- the .toml file is not touched. */
+    public static void applyInfectionFlags(boolean block, boolean mob, boolean infestation) {
+        ENABLE_BLOCK_INFECTION.set(block);
+        ENABLE_MOB_INFECTION.set(mob);
+        ENABLE_EMERALD_INFESTATION.set(infestation);
+    }
+
+    /** A config command changed one of the three: keep the snapshot in step so the stop-restore cannot undo it. */
+    public static void noteInfectionFlag(String key, boolean value) {
+        if (infectionSnapshot == null) return;
+        switch (key) {
+            case "enable_block_infection" -> infectionSnapshot[0] = value;
+            case "enable_mob_infection" -> infectionSnapshot[1] = value;
+            case "enable_emerald_infestation" -> infectionSnapshot[2] = value;
+            default -> { }
+        }
     }
 
     /** Push the loaded config into the systems that cache it. Called on config (re)load via ModConfigEvent. */

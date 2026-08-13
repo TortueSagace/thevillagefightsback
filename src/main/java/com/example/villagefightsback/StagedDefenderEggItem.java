@@ -48,11 +48,15 @@ public class StagedDefenderEggItem extends Item {
         return layer == 0 ? primaryColor : secondaryColor;
     }
 
-    private EntityType<?> entityType() {
+    /** {@code sl} only supplies the RNG that picks an MCA villager's gender; it is unused for the other kinds. */
+    private EntityType<?> entityType(ServerLevel sl) {
         return switch (kind) {
-            case VILLAGER -> EntityType.VILLAGER;
+            // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
+            case VILLAGER -> com.example.villagefightsback.compat.MCACompat.villagerType(sl.getRandom());
             case GOLEM -> golemTypeForStage();
-            case GUARD -> BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID); // null if Guard Villagers absent
+            // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers
+            // guard; null when neither is installed, which the caller already treats as "no egg spawn".
+            case GUARD -> com.example.villagefightsback.compat.MCACompat.guardType(sl.getRandom());
         };
     }
 
@@ -72,7 +76,7 @@ public class StagedDefenderEggItem extends Item {
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
         if (!(level instanceof ServerLevel sl)) return InteractionResult.SUCCESS;
-        EntityType<?> type = entityType();
+        EntityType<?> type = entityType(sl);
         if (type == null) return InteractionResult.FAIL; // e.g. Guard Villagers not installed
 
         BlockPos clicked = ctx.getClickedPos();
@@ -87,6 +91,9 @@ public class StagedDefenderEggItem extends Item {
             mob.setYHeadRot(yaw);
             mob.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.SPAWN_EGG, null);
         }
+        // A GUARD egg under MCA spawns an MCA human, so pin the guard profession on BEFORE it joins: the join
+        // handler reads the profession to decide between the guard kit and the civilian one.
+        if (kind == Kind.GUARD) com.example.villagefightsback.compat.MCACompat.makeGuard(entity);
         // Stamp the stage BEFORE the entity joins the level, so VillageEvents#onEntityJoin arms it to match.
         if (stage == 4) UpgradeState.setStage4(entity);
         else if (stage == 3) UpgradeState.setUpgraded(entity);

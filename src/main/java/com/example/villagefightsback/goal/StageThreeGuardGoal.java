@@ -375,7 +375,7 @@ public class StageThreeGuardGoal extends Goal {
         double bestD = radius * radius;
         for (LivingEntity e : guard.level().getEntitiesOfClass(LivingEntity.class, box,
                 x -> x != guard && x != exclude
-                        && (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                        && com.example.villagefightsback.Factions.isVillageThreat(x)
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && !isFactionMate(x)
                         && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {

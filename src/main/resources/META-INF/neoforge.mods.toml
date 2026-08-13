@@ -39,3 +39,9 @@ file="META-INF/accesstransformer.cfg"
     versionRange="[1,)"
     ordering="AFTER"
     side="BOTH"
+
+# Minecraft Comes Alive (MCA Reborn): deliberately NOT declared here. main lists it as an optional
+# dependency on 1.20.1, but there is no 1.21.1 build to order against and compat/MCACompat.java only
+# ever resolves MCA by registry id + reflection, lazily, long after every mod has registered. An
+# entry naming a mod id that cannot exist on this version would buy nothing and risk a bogus
+# "missing dependency" screen, so the compat stays purely runtime-detected here.

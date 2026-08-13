@@ -65,6 +65,9 @@ public class FertileGrassBlock extends BushBlock {
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         BlockPos below = pos.below();
+        // This spread has no brain-node range gate at all, so it is the one route by which the infection can
+        // reach a village building from outside. Refuse it inside a protected structure volume.
+        if (com.example.villagefightsback.infection.StructureZones.protectedAt(level, below)) return;
         BlockState soil = level.getBlockState(below);
         if (!BlockMatcher.isCandidate(level, below, soil)) return;
         BlockState converted = BlockMatcher.convertedState(soil, false); // fertile (not rich)

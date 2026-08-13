@@ -29,7 +29,6 @@ public final class UpgradeEvents {
     private static final int GIGACHAD_LEVEL = 4;     // a golem (iron OR defender) becomes a Gigachad at stage 4+
     static double RADIUS = 100.0; // brain influence radius (set from Config.apply(); base 100)
     private static final int INTERVAL = 100; // check every ~5s (upgrade is permanent; no need to be fast)
-    private static final ResourceLocation GUARD_ID = ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard");
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
@@ -86,13 +85,13 @@ public final class UpgradeEvents {
             return !UpgradeState.isUpgraded(e) || (stage >= GIGACHAD_LEVEL && !UpgradeState.isStage4(e));
         }
         // Stage 2: only GUARDS gain a tier here (the virus archer), and only until the stage-2 flag is stamped.
-        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType())) && !UpgradeState.isStage2(e);
+        return com.example.villagefightsback.Factions.isGuard(e) && !UpgradeState.isStage2(e);
     }
 
     private static boolean isUpgradable(LivingEntity e) {
         if (e instanceof GigachadGolemEntity) return false; // gigachad (+ vindictive) are already fully armed
         if (e instanceof IronGolem golem) return !golem.isPlayerCreated();
         if (e instanceof Villager) return true;
-        return GUARD_ID.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 }

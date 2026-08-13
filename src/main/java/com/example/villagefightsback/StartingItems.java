@@ -12,6 +12,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import com.example.villagefightsback.network.ModNetwork;
+
 /**
  * Gives every player a single Bell the first time they ever join a world -- the seed for founding their own
  * Village Brain Node (gated by {@link Config#playerGivenBellAtSpawn()}). Tracked with a flag in the player's
@@ -40,13 +42,93 @@ public final class StartingItems {
 
         ItemStack bell = new ItemStack(Items.BELL);
         if (!player.getInventory().add(bell)) player.drop(bell, false); // drop at feet if the inventory is full
+
+        // Spawned away from any village: nudge them about what the bell is FOR. Queued rather than sent now,
+        // because at login the client is usually still on the loading screen and would never see it.
+        boolean away = !inVillage(player);
+        if (away) pendingHint.put(player.getUUID(), player.position());
+        TheVillageFightsBack.LOGGER.info("[The Village Fights Back] starter bell given to {}; {}.",
+                player.getGameProfile().getName(),
+                away ? "spawned away from a village, so the bell hint is queued"
+                     : "spawned in a village, so no bell hint");
+    }
+
+    /**
+     * Where each waiting player stood when they were handed the bell. The hint is held until they MOVE.
+     *
+     * <p>A timer was tried first and did not work: on a new world the player spends an unknown stretch on the
+     * game-mode and send-off screens, so any fixed delay either fires behind them or guesses wrong. Movement is
+     * the one signal that means the player is genuinely in the world and in control -- you cannot walk while a
+     * screen is open -- so it needs no guess about how long they take to click through.
+     *
+     * <p>Session-only: an unsent hint is not worth persisting.
+     */
+    private static final java.util.Map<java.util.UUID, net.minecraft.world.phys.Vec3> pendingHint =
+            new java.util.HashMap<>();
+    /** How far the player must move from the spot they spawned on before the hint is shown. */
+    private static final double MOVE_TRIGGER_SQR = 1.0;
+    private static final int HINT_TICKS = 100;      // 5s on screen, then it fades out
+
+    /**
+     * Is the player standing in a village? True inside a generated village's structure, or near a bell (the
+     * village meeting point), which also covers a player-built or modded village that vanilla never generated.
+     */
+    private static boolean inVillage(ServerPlayer player) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        net.minecraft.core.BlockPos pos = player.blockPosition();
+        if (level.structureManager()
+                .getStructureWithPieceAt(pos, net.minecraft.tags.StructureTags.VILLAGE).isValid()) {
+            return true;
+        }
+        return level.getPoiManager().getInSquare(
+                        h -> h.is(net.minecraft.world.entity.ai.village.poi.PoiTypes.MEETING), pos, 48,
+                        net.minecraft.world.entity.ai.village.poi.PoiManager.Occupancy.ANY)
+                .findAny().isPresent();
+    }
+
+    /** Forget a queued hint for a player who left before it fired, so the map cannot accumulate stale entries. */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        pendingHint.remove(event.getEntity().getUUID());
+    }
+
+    /**
+     * The moment the player puts the bell down, the hint has served its purpose and is dismissed early, rather
+     * than hanging on screen telling them to do the thing they have just done.
+     *
+     * <p>Also drops a hint that was still waiting to be sent, for a player who places the bell without having
+     * walked anywhere first.
+     */
+    @SubscribeEvent
+    public static void onBellPlaced(net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent event) {
+        if (!event.getPlacedBlock().is(net.minecraft.world.level.block.Blocks.BELL)) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        pendingHint.remove(player.getUUID());
+        // NeoForge 1.21 replaced SimpleChannel + PacketDistributor.PLAYER.with(...) with a payload sent
+        // straight at one player; ModNetwork.sendTo is this branch's wrapper for it.
+        ModNetwork.sendTo(player,
+                new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
     }
 
     /** Once a second, while player_is_hostile is on, keep every player an Enemy of the Village and never a Hero. */
     @SubscribeEvent
+    // PlayerTickEvent.Post is 1.21's split-out END phase, so main's `phase != END -> return` is implicit.
+    // NOTE the ordering main settled on: the bell hint is released BEFORE the playerIsHostile() early-out,
+    // because the hint has nothing to do with that switch and was previously swallowed whenever it was off.
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!Config.playerIsHostile()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        // The queued starter-bell hint, released the moment the player takes their first steps.
+        net.minecraft.world.phys.Vec3 from = pendingHint.get(player.getUUID());
+        if (from != null && player.distanceToSqr(from.x, from.y, from.z) > MOVE_TRIGGER_SQR) {
+            pendingHint.remove(player.getUUID());
+            ModNetwork.sendTo(player,
+                    new com.example.villagefightsback.network.SpawnHintPacket(HINT_TICKS));
+            TheVillageFightsBack.LOGGER.info("[The Village Fights Back] bell hint sent to {} (first movement).",
+                    player.getGameProfile().getName());
+        }
+
+        if (!Config.playerIsHostile()) return;
         if (player.tickCount % 20 != 0) return;                     // cheap: ~1/s
         enforceHostile(player);
     }

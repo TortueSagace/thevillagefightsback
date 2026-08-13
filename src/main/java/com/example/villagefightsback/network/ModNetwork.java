@@ -26,6 +26,13 @@ public final class ModNetwork {
         registrar.playToServer(LimboBeamPacket.TYPE, LimboBeamPacket.STREAM_CODEC, LimboBeamPacket::handle);
         registrar.playToClient(LimboCooldownPacket.TYPE, LimboCooldownPacket.STREAM_CODEC, LimboCooldownPacket::handle);
         registrar.playToClient(VillageDiscoveryPacket.TYPE, VillageDiscoveryPacket.STREAM_CODEC, VillageDiscoveryPacket::handle);
+        // 1.3.x additions. main registers these through Forge's SimpleChannel messageBuilder with an explicit
+        // numeric id and a direction; the 1.21 registrar takes the direction from the method it is registered
+        // with (playToClient / playToServer) and derives the id from the payload TYPE, so the ordering below
+        // just mirrors main's for readability -- it carries no wire meaning any more.
+        registrar.playToClient(SpawnHintPacket.TYPE, SpawnHintPacket.STREAM_CODEC, SpawnHintPacket::handle);
+        registrar.playToClient(OpenModeSelectPacket.TYPE, OpenModeSelectPacket.STREAM_CODEC, OpenModeSelectPacket::handle);
+        registrar.playToServer(ChooseModePacket.TYPE, ChooseModePacket.STREAM_CODEC, ChooseModePacket::handle);
     }
 
     /** Send a packet to one player (server -> client). */

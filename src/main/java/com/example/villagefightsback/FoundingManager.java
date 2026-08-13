@@ -156,12 +156,14 @@ public final class FoundingManager {
     }
 
     private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos brainNode) {
-        Villager v = EntityType.VILLAGER.create(level);
+        // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
+        Villager v = com.example.villagefightsback.compat.MCACompat.createVillager(level);
         if (v == null) return;
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
         v.setBaby(false);
         v.getPersistentData().putBoolean(NBT_FOUNDING, true);
+        com.example.villagefightsback.compat.VillagerRoleTags.mirror(v); // survive an MCA replacement we did not cause
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant goals
         v.goalSelector.addGoal(1, new FoundingSettlerGoal(v, brainNode)); // founding takes priority while it runs
 
@@ -175,8 +177,9 @@ public final class FoundingManager {
     }
 
     private static void spawnGuards(ServerLevel level, BlockPos brainNode) {
-        EntityType<?> guardType = BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
-        if (guardType == null) return; // Guard Villagers not installed
+        // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard.
+        EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+        if (guardType == null) return; // neither MCA nor Guard Villagers installed
         int[][] dirs = {{2, 0}, {-2, 0}, {0, 2}, {0, -2}};
         for (int i = 0; i < GUARDS; i++) {
             BlockPos spot = closestStandable(level, brainNode.offset(dirs[i][0], 0, dirs[i][1]), 3);
@@ -184,7 +187,9 @@ public final class FoundingManager {
             Entity g = guardType.create(level);
             if (!(g instanceof Mob mob)) continue;
             mob.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
+            // 1.21.1 dropped finalizeSpawn's trailing CompoundTag argument; the 4-arg call is main's call.
             mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
+            com.example.villagefightsback.compat.MCACompat.makeGuard(mob); // pin the guard profession BEFORE the join handler reads it
             level.addFreshEntity(mob); // onEntityJoin arms the guard
         }
     }

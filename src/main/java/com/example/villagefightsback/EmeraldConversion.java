@@ -65,9 +65,34 @@ public final class EmeraldConversion {
         LivingEntity me = event.getEntity();
         if (Factions.isEmerald(target) && (Factions.isVillage(me) || me instanceof UnleashedBrainNodeEntity)) {
             event.setCanceled(true);     // village + the Vindictive Village Spirit spare emerald units
+            com.example.villagefightsback.compat.MCACompat.forgetEmeraldTarget(me); // and drop any brain-memory copy
         } else if (Factions.isEmerald(me) && (Factions.isVillage(target) || Factions.isEmerald(target))) {
             event.setCanceled(true);     // emerald never targets the village OR a fellow emerald, even when provoked
         }
+    }
+
+    /**
+     * MCA Reborn only: when an emerald unit damages an MCA villager, call off the guards it just summoned.
+     *
+     * <p>{@code VillagerEntityMCA.hurt} broadcasts its attacker into the {@code ATTACK_TARGET} memory of every MCA
+     * guard within 32 blocks using a RAW brain write, before it calls {@code super.hurt}. That happens ahead of
+     * every Forge damage event, so neither the target-change cancel nor the faction damage-immunity below can
+     * stop it: an emerald creeper blast or wither skull that merely clips a villager would set the whole guard
+     * detail hunting a faction they are supposed to be at peace with.
+     *
+     * <p>{@link LivingIncomingDamageEvent} is the first thing Minecraft runs after that broadcast, so this is the
+     * earliest possible undo. (main fires this off Forge's LivingAttackEvent; NeoForge 1.21 dropped that event and
+     * LivingIncomingDamageEvent now occupies the same slot -- posted from LivingEntity.hurt before any mitigation,
+     * i.e. still ahead of every later damage event.) It is edge-triggered -- nothing runs unless an emerald
+     * actually lands damage on an MCA villager.
+     */
+    @SubscribeEvent
+    public static void onMcaVillagerHurtByEmerald(LivingIncomingDamageEvent event) {
+        if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
+        if (!Factions.isEmerald(attacker)) return;
+        // Only MCA's own villager class runs that broadcast, so anything else cannot have summoned guards.
+        if (!com.example.villagefightsback.compat.MCACompat.isMcaVillager(event.getEntity())) return;
+        com.example.villagefightsback.compat.MCACompat.recallGuardsHurtBy(event.getEntity());
     }
 
     /**
@@ -116,6 +141,11 @@ public final class EmeraldConversion {
                 || (aE && Factions.isVillage(victim))         // emerald -> village
                 || (Factions.isVillage(attacker) && vE)) {    // village -> emerald
             event.setCanceled(true);
+            // MCA's guard villagers target through BRAIN MEMORY, which never reaches onChangeTarget above, so
+            // without this they would chase an emerald unit forever, swinging for damage we keep cancelling.
+            if (Factions.isVillage(attacker) && vE) {
+                com.example.villagefightsback.compat.MCACompat.forgetEmeraldTarget(attacker);
+            }
         }
     }
 

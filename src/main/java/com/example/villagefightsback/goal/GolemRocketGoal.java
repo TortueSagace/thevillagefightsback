@@ -76,7 +76,7 @@ public class GolemRocketGoal extends Goal {
             return !com.example.villagefightsback.Factions.isInfected(t);   // boss golem: anyone not boss
         }
         if (com.example.villagefightsback.Factions.isSparedByVillage(t)) return false; // never Darius or the friendly Vindictive Village Spirit
-        return t instanceof Enemy || com.example.villagefightsback.Factions.isInfected(t); // village golem
+        return com.example.villagefightsback.Factions.isVillageThreat(t); // village golem
     }
 
     /** Can we rocket this target right now (in range band, LOS, no ally near it)? */
