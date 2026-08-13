@@ -16,7 +16,9 @@
       "conditions": {
         "items": [
           {
-            "item": "thevillagefightsback:limbo_pickaxe"
+            "items": [
+              "thevillagefightsback:limbo_pickaxe"
+            ]
           }
         ]
       }

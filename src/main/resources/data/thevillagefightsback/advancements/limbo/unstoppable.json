@@ -16,16 +16,24 @@
       "conditions": {
         "items": [
           {
-            "item": "thevillagefightsback:limbo_helmet"
+            "items": [
+              "thevillagefightsback:limbo_helmet"
+            ]
           },
           {
-            "item": "thevillagefightsback:limbo_chestplate"
+            "items": [
+              "thevillagefightsback:limbo_chestplate"
+            ]
           },
           {
-            "item": "thevillagefightsback:limbo_leggings"
+            "items": [
+              "thevillagefightsback:limbo_leggings"
+            ]
           },
           {
-            "item": "thevillagefightsback:limbo_boots"
+            "items": [
+              "thevillagefightsback:limbo_boots"
+            ]
           }
         ]
       }
