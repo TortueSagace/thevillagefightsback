@@ -140,8 +140,9 @@ public final class StartingItems {
         }
         var enemy = ModEffects.ENEMY_OF_THE_VILLAGE;
         if (!player.hasEffect(enemy)) {
-            // Permanent, no particles (visible=false), shows icon. Milk-proofing now lives on the effect itself
-            // (NeoForge replaced per-instance curative items with EffectCure; see EnemyOfVillageEffect).
+            // Permanent, no particles (visible=false), shows icon. Milk-proofing lives on the effect itself:
+            // EnemyOfVillageEffect#fillEffectCures leaves the instance's cure set EMPTY, which is 1.21's
+            // equivalent of main's setCurativeItems(new ArrayList<>()).
             MobEffectInstance inst = new MobEffectInstance(enemy, Integer.MAX_VALUE, 0, false, false, true);
             player.addEffect(inst);
         }

@@ -110,7 +110,7 @@ public class VillageBrainNodeBlock extends Block {
     /**
      * Grant (or EXTEND) Hero of the Village by {@code emeralds} minutes. The new duration is whatever time was
      * left on any current Hero of the Village PLUS {@code emeralds * 60 * 20} ticks, so repeated donations
-     * stack. The instance carries EMPTY curative items so milk can never cure it (it still clears on death).
+     * stack. The instance carries an EMPTY cure set so nothing can lift it (it still clears on death).
      */
     private static void grantDonationHero(ServerPlayer player, int emeralds) {
         if (emeralds <= 0) return;
@@ -121,7 +121,14 @@ public class VillageBrainNodeBlock extends Block {
         int newDuration = remaining + emeralds * HERO_TICKS_PER_EMERALD;
         net.minecraft.world.effect.MobEffectInstance hero = new net.minecraft.world.effect.MobEffectInstance(
                 net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE, newDuration, 0, false, false, true);
-        // NeoForge removed per-instance curative items (replaced by EffectCure); see EnemyOfVillageEffect.
+        // 1.21 equivalent of main's hero.setCurativeItems(new ArrayList<>()). This one has to be done PER
+        // INSTANCE rather than on the effect (as EnemyOfVillageEffect does), because Hero of the Village is
+        // vanilla's -- we must not make every other source of it milk-proof, only the one the player paid
+        // emeralds for. MobEffectInstance#getCures is the mutable set NeoForge filled from fillEffectCures
+        // (default {MILK, PROTECTED_BY_TOTEM}); emptying it means neither a bucket of milk nor a Totem of
+        // Undying proc can wipe the donation. setDetailsFrom copies the set, so a later donation that
+        // REFRESHES this instance keeps it empty too.
+        hero.getCures().clear();
         player.addEffect(hero);
         // Hero and Enemy of the Village are mutually exclusive: becoming a hero clears any enemy status
         // (the reverse -- becoming an enemy clears hero -- is done in VillageEvents.markVillageEnemy/markThief).
