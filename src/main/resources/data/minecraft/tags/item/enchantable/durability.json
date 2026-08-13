@@ -1,1 +1,13 @@
-{ "replace": false, "values": [ "thevillagefightsback:mace", "thevillagefightsback:alien_smasher" ] }
+{
+  "replace": false,
+  "values": [
+    "thevillagefightsback:mace",
+    "thevillagefightsback:alien_smasher",
+    "thevillagefightsback:limbo_sword",
+    "thevillagefightsback:limbo_pickaxe",
+    "thevillagefightsback:limbo_axe",
+    "thevillagefightsback:limbo_shovel",
+    "thevillagefightsback:limbo_hoe",
+    "thevillagefightsback:limbo_scythe"
+  ]
+}
