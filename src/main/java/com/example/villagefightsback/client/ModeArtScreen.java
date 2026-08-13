@@ -49,6 +49,21 @@ public abstract class ModeArtScreen extends Screen {
         return logoY() + Math.round(LOGO_H * logoScale());
     }
 
+    /**
+     * These screens paint their own full-bleed background, so vanilla's must not run.
+     *
+     * <p>1.21 moved the background pass INSIDE {@code Screen.render}: it now calls {@code renderBackground}
+     * (a blur pass plus the translucent in-world menu tile) and only then draws the widgets, where 1.20.1's
+     * {@code Screen.render} drew widgets alone. Both subclasses paint the key art, the logo and their text
+     * FIRST and call {@code super.render} last, exactly as they did on main -- so left alone, 1.21 would dim
+     * and blur the whole panel the instant the buttons were drawn. Overriding this to do nothing restores
+     * main's paint order (art, logo, text, widgets) without touching either subclass.
+     */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        // Intentionally empty: renderKeyArt below is this screen's background, drawn at the top of render().
+    }
+
     /** The key art, scaled to COVER the window (aspect preserved, overflow cropped by the viewport). */
     protected void renderKeyArt(GuiGraphics g) {
         float scale = Math.max((float) this.width / BG_W, (float) this.height / BG_H);
