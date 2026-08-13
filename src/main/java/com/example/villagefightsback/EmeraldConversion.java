@@ -100,6 +100,9 @@ public final class EmeraldConversion {
      * Mobs without a HurtByTargetGoal. An emerald unit retaliates against whoever hurt it, EXCEPT the village
      * faction and fellow emeralds (it never fights the village even when provoked; vindictive attackers DO get hit
      * back). Only sets a target when the unit is currently idle, so it doesn't thrash an existing target.
+     *
+     * <p>SLOT NOTE (1.21 port): see {@link #onFactionImmunity}. Retaliation reads better at the incoming-damage
+     * slot than at main's hurt slot -- being struck is the provocation, whether or not armour absorbed it.
      */
     @SubscribeEvent
     public static void onEmeraldHurt(LivingIncomingDamageEvent event) {
@@ -115,6 +118,10 @@ public final class EmeraldConversion {
     /**
      * Track when an emerald unit DEALS damage to a valid target, so {@link OrganicMass}'s idle-reclaim timer can
      * cull (and refund) units that have been useless (e.g. stuck) for 5 minutes. Only relevant in organic mode.
+     *
+     * <p>SLOT NOTE (1.21 port): see {@link #onFactionImmunity}. Firing at the incoming-damage slot rather than
+     * main's hurt slot means a swing counts as "not idle" even when armour eats all of it, which is what this
+     * timer is actually asking: the unit is engaging something, not sitting stuck in a hole.
      */
     @SubscribeEvent
     public static void onEmeraldDealtDamage(LivingIncomingDamageEvent event) {
@@ -131,6 +138,14 @@ public final class EmeraldConversion {
      * wither's skull catching a fellow emerald), or blast splash are all cancelled. Highest priority + cancel,
      * so virus/effect handlers downstream are skipped too. Player and every other faction are unaffected, so the
      * player can still fight either side, and emeralds still hurt non-emerald/non-village mobs they hunt.
+     *
+     * <p>SLOT NOTE (1.21 port): on 1.20.1 this hung on {@code LivingHurtEvent}, whose 1.21 successor is
+     * {@code LivingDamageEvent.Pre}. It sits on {@code LivingIncomingDamageEvent} here on purpose, and the two
+     * are NOT interchangeable for this handler: {@code LivingDamageEvent.Pre} cannot be cancelled at all, so the
+     * nearest expressible equivalent would be zeroing the damage, which still lands the hit. Knockback, the hurt
+     * animation, {@code lastHurtByMob} and the aggro it seeds would all still happen, and an emerald unit would
+     * visibly flinch at every friendly blow. Cancelling one step earlier delivers the stated rule -- these two
+     * factions cannot damage each other -- more completely than main managed, so the earlier slot is kept.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onFactionImmunity(LivingIncomingDamageEvent event) {

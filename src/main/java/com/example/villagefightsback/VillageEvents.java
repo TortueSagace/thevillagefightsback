@@ -670,7 +670,15 @@ public final class VillageEvents {
     }
 
     /** Player hits a village defender -> the defender retaliates AND the player is branded an Enemy of the
-     *  Village (status + nearby rally + warning), same as mining a node. */
+     *  Village (status + nearby rally + warning), same as mining a node.
+     *
+     *  <p>SLOT NOTE (1.21 port): main hung this on {@code LivingHurtEvent}, whose 1.21 successor is
+     *  {@code LivingDamageEvent.Pre}. It stays on {@code LivingIncomingDamageEvent} deliberately, because the
+     *  two friendly-fire rules below CANCEL, and {@code LivingDamageEvent.Pre} cannot be cancelled -- zeroing
+     *  the damage instead would still land the hit, so allied golems and villagers would flinch and re-aggro on
+     *  each other through rocket splash. Branding an attacker an Enemy of the Village is likewise a question
+     *  about the swing, not about how much of it got through the armour. See
+     *  {@link EmeraldConversion#onFactionImmunity} for the same decision in the emerald faction. */
     @SubscribeEvent
     public static void onLivingHurt(LivingIncomingDamageEvent event) {
         if (event.getEntity().level().isClientSide()) return;
@@ -742,8 +750,8 @@ public final class VillageEvents {
     public static final int THIEF_STATUS_TICKS = 1200;       // a chest thief is an Enemy of the Village for 1 min
 
     /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on. It still clears on
-     *  death. (NeoForge removed per-instance curative items; milk-cure is governed by EffectCure now.) Shared
-     *  by every ETV grant. */
+     *  death, and nothing cures it -- 1.21 moved milk-proofing off the instance and onto the effect, see
+     *  {@link EnemyOfVillageEffect#fillEffectCures}. Shared by every ETV grant. */
     private static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
         return new net.minecraft.world.effect.MobEffectInstance(
                 ModEffects.ENEMY_OF_THE_VILLAGE, ticks, 0, false, false, true);
@@ -752,8 +760,9 @@ public final class VillageEvents {
     /**
      * Brand a player a chest THIEF: Enemy of the Village for {@value #THIEF_STATUS_TICKS} ticks (1 min) with a RED
      * broadcast. Distinct from {@link #markVillageEnemy} (20 min) -- a short, sharp punishment for taking from a
-     * village chest. Like every ETV grant it removes Hero of the Village, uses empty curative items (milk-proof),
-     * and -- via the {@link MobEffectEvent.Added} handler -- rallies the village the instant it lands.
+     * village chest. Like every ETV grant it removes Hero of the Village, cannot be cured (see
+     * {@link EnemyOfVillageEffect#fillEffectCures}), and -- via the {@link MobEffectEvent.Added} handler --
+     * rallies the village the instant it lands.
      */
     public static void markThief(ServerLevel level, Player player) {
         if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators can't steal
@@ -783,9 +792,10 @@ public final class VillageEvents {
     public static void markVillageEnemy(ServerLevel level, BlockPos center, Player player) {
         if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators excluded
         boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE);
-        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD. Empty curative
-        // items -> milk cannot cure it (it still clears on death). The MobEffectEvent.Added handler rallies
-        // every defender the moment this lands (event-driven hostility, no per-tick scan).
+        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD. The effect
+        // installs an EMPTY cure set, so neither milk nor a totem can lift it (it still clears on death).
+        // The MobEffectEvent.Added handler rallies every defender the moment this lands (event-driven
+        // hostility, no per-tick scan).
         player.addEffect(enemyInstance(ENEMY_STATUS_TICKS));
         // You can't be a hero of the village and its enemy at once -- the enemy status revokes Hero of the Village.
         player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
