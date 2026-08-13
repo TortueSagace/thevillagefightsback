@@ -1039,7 +1039,7 @@ public final class BrainNodeEvents {
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
                 if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
                 // 1.19.2: Material.isReplaceable()/blocksMotion() are the pre-1.20 spellings of
-                // BlockState.getMaterial().isReplaceable()/blocksMotion(). Same predicates, so the vetting is unchanged.
+                // BlockState.canBeReplaced()/blocksMotion(). Same predicates, so the vetting is unchanged.
                 boolean ok = roomy ? isGoodNodeSpot(level, surface, false)
                         : (level.getBlockState(surface).getMaterial().isReplaceable()
                                 && onRealGround(level, surface)
