@@ -59,12 +59,13 @@ public final class FertileFlora {
      * a fertile tree or a fertile chorus flower at {@code converted.above()}. Cheap (a handful of block reads)
      * and fully guarded so it can never throw / lag the infection loop.
      */
-    public static void onConverted(ServerLevel level, BlockPos converted) {
+    public static void onConverted(ServerLevel level, BlockPos converted, StructureZones zones) {
         if (level == null || converted == null) return;
         try {
             resolve();
             BlockPos up = converted.above();
             if (!level.isLoaded(up)) return;
+            if (zones.contains(up)) return; // never sprout inside one of the village's own buildings
             // The conversion itself must be a SURFACE (open sky-step) -- air directly above the converted block.
             // (Plants standing on/near the new fertile soil are turned into fertile grass earlier, by
             //  InfectionManager.convertNearbyPlants, BEFORE the soil flips.)
@@ -76,9 +77,9 @@ public final class FertileFlora {
             RandomSource rnd = level.getRandom();
             double roll = rnd.nextDouble();
             if (roll < TREE_CHANCE) {
-                tryGrowTree(level, up);
+                tryGrowTree(level, up, zones);
             } else if (roll < TREE_CHANCE + CHORUS_CHANCE) {
-                tryPlaceChorus(level, up);
+                tryPlaceChorus(level, up); // `up` is already zone-checked above, and this writes only there
             }
         } catch (Throwable ignored) {
             // Flora is purely cosmetic; never let it break the infection tick.
@@ -101,17 +102,19 @@ public final class FertileFlora {
      * fertile_log topped with a simple fertile_leaves blob, placed only into air. On success, gives a small
      * chance to spawn a Rich Sheep beside it.
      */
-    public static void tryGrowTree(ServerLevel level, BlockPos pos) {
+    public static void tryGrowTree(ServerLevel level, BlockPos pos, StructureZones zones) {
         resolve();
         if (fertileLog == null || fertileLeaves == null) return;
 
         RandomSource rnd = level.getRandom();
         int trunk = TRUNK_MIN + rnd.nextInt(TRUNK_MAX - TRUNK_MIN + 1); // 4..6
 
-        // Room check: the whole trunk column + a small canopy box must be air (cheap, bounded).
+        // Room check: the whole trunk column + a small canopy box must be air (cheap, bounded). A protected
+        // building volume counts as "no room" too, so a tree next to a house can never push its canopy inside it.
         for (int dy = 0; dy < trunk + 2; dy++) {
             BlockPos t = pos.above(dy);
             if (!level.isLoaded(t) || !level.getBlockState(t).isAir()) return;
+            if (zones.contains(t)) return;
         }
         int top = trunk - 1; // index of the highest trunk log
         // Canopy spans the top two trunk levels plus one above; verify those cells are loaded & air.
@@ -121,6 +124,7 @@ public final class FertileFlora {
                     BlockPos l = pos.offset(dx, dy, dz);
                     if (!level.isLoaded(l)) return;
                     if (!level.getBlockState(l).isAir()) return;
+                    if (zones.contains(l)) return;
                 }
             }
         }

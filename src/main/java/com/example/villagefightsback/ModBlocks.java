@@ -483,6 +483,21 @@ public final class ModBlocks {
     public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties().tab(TAB)));
     /** The block entity that caches a leashed gravel's render data (held entity type, name, instability deadline). */
+    /** The Village Memorial: this mod's own headstone, used to bury a fallen defender when MCA Reborn is not
+     *  installed (with MCA the village uses MCA's tombstones instead). Placeable either way. */
+    public static final RegistryObject<Block> MEMORIAL = BLOCKS.register("memorial",
+            () -> new MemorialBlock(BlockBehaviour.Properties.copy(Blocks.DEEPSLATE_TILES)
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noOcclusion()));
+    // Main puts the memorial in the creative tab through displayItems(). 1.19.2 has no
+    // BuildCreativeModeTabContentsEvent and no tab builder, so tab membership is declared per item instead.
+    public static final RegistryObject<Item> MEMORIAL_ITEM = ITEMS.register("memorial",
+            () -> new net.minecraft.world.item.BlockItem(MEMORIAL.get(), new Item.Properties().tab(TAB)));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<MemorialBlockEntity>> MEMORIAL_BE =
+            BLOCK_ENTITIES.register("memorial", () ->
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            MemorialBlockEntity::new, MEMORIAL.get()).build(null));
+
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
             BLOCK_ENTITIES.register("limbo_gravel", () ->
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
@@ -565,6 +580,10 @@ public final class ModBlocks {
      * the {@link #LIMBO_PORTAL} (its blockstate reuses the limbo_portal models); no item form; unbreakable;
      * glows. Entirely dormant unless {@link Config#chunkPortalsEnabled()} is on.
      */
+    // Main pins this down with .pushReaction(PushReaction.BLOCK) so a piston can never shove a portal pane out
+    // of a chunk wall. On 1.19.2 push reaction belongs to the Material, not to BlockBehaviour.Properties, and
+    // Material.PORTAL is already notPushable -- which is exactly why a vanilla nether portal resists pistons.
+    // So the behaviour main asks for is already in force here, and there is no Properties.pushReaction to call.
     public static final RegistryObject<Block> CHUNK_PORTAL = BLOCKS.register("chunk_portal",
             () -> new ChunkPortalBlock(BlockBehaviour.Properties.of(Material.PORTAL)
                     .noCollission()

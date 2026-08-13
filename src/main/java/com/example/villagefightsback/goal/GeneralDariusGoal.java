@@ -326,7 +326,7 @@ public class GeneralDariusGoal extends Goal {
         // Emerald units are a separate faction the village never fights, so Darius never locks/retaliates on them.
         if (e == darius || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
-        return e instanceof Enemy;
+        return com.example.villagefightsback.Factions.isVillageThreat(e);
     }
 
     private void ensureWeapon() {

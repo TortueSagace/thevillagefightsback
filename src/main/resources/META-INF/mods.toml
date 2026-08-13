@@ -36,4 +36,11 @@ description='''${mod_description}'''
     ordering="AFTER"
     side="BOTH"
 
+# Minecraft Comes Alive (MCA Reborn) is deliberately NOT listed here. The 1.20.1 build declares it as an
+# optional dependency with versionRange "[7.6,)", but 7.6 is the 1.20.1 line: the 1.19.2 line numbers
+# differently, so that range would make FML REFUSE to load next to the only MCA a 1.19.2 pack can install.
+# Nothing is lost by omitting it -- compat/MCACompat.java detects MCA purely at runtime, by looking its
+# villager entity ids up in the registry on every call, and it needs no load-order guarantee to do that.
+# See compat/MCACompat, compat/VillagerRoleTags and compat/MCATombstones.
+
 # (Just Enough Guns + framework dependencies removed -- guns/ammo/explosions are all native now.)

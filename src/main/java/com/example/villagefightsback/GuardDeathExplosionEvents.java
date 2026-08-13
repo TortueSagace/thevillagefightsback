@@ -34,7 +34,7 @@ public final class GuardDeathExplosionEvents {
         if (!GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) return; // Guard Villagers guard only
         if (!UpgradeState.isUpgraded(e)) return;                                         // stage-3 only
         Entity killer = event.getSource().getEntity();
-        if (!(killer instanceof Enemy) && !Factions.isInfected(killer)) return;          // killed by a hostile / boss-minion only
+        if (!Factions.isVillageThreat(killer)) return;   // killed by a hostile / boss-minion / MCA raider only
         explodeWithFire(level, e.getX(), e.getY() + 0.5, e.getZ());
     }
 

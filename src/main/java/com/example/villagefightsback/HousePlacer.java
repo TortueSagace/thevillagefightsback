@@ -112,6 +112,18 @@ public final class HousePlacer {
         int ox = center.getX() - hx, oy = center.getY() - 1 - floorLayer, oz = center.getZ() - hz;
         BlockPos offset = new BlockPos(ox, oy, oz);
 
+        // 0) Claim this exact volume as PROTECTED: block infection (fertile spread + emerald infested paths) is
+        // refused inside it from now on, so the village never digests its own buildings. Every structure the
+        // village raises comes through here -- Blue TNT houses, Green TNT towers, and the StructureTnt node
+        // buildings -- so this one registration covers the lot, including any template added later.
+        // The box is the same footprint the carve below walks, so it is exact by construction.
+        com.example.villagefightsback.infection.StructureZones.get(level)
+                .addBox(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1);
+        // Any infection already inside the volume is about to be carved to air anyway; drop those cells from the
+        // engine's frontier so it stops revisiting them (bounded: once per building, over its own volume).
+        com.example.villagefightsback.infection.InfectionManager.forgetVolume(
+                level, ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1);
+
         // 1) carve the footprint to air instantly (square footprint -> rotation-independent box)
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();

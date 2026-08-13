@@ -110,6 +110,8 @@ public final class TheVillageFightsBackClient {
 
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(com.example.villagefightsback.ModBlocks.MEMORIAL_BE.get(),
+                MemorialRenderer::new);
         // The Limbo gravel's purple instability glow (a block-entity renderer).
         event.registerBlockEntityRenderer(com.example.villagefightsback.ModBlocks.LIMBO_GRAVEL_BE.get(),
                 LimboGravelRenderer::new);
@@ -196,7 +198,35 @@ public final class TheVillageFightsBackClient {
         // arm-swing animation -- see AngryFaceClient), scowl the angry villager face onto its head.
         addAngryVillagerFace(event);
         addAngryGuardFace(event);
+        addAngryMcaFace(event);
         addLimboHelmetSpikes(event);
+    }
+
+    /**
+     * Attach the angry-face layer to MCA Reborn's villagers ({@code mca:male_villager} / {@code mca:female_villager}).
+     * MCA is a runtime soft-dep, so the types are looked up by id and we simply skip when they are absent.
+     *
+     * <p>The GUARD variant of the layer is the right one here, not the villager variant: MCA renders its humans
+     * with a {@code HumanoidMobRenderer} over a player-shaped head, the same geometry the Guard Villagers guard
+     * uses, whereas {@link AngryVillagerFaceLayer} is laid out for the vanilla villager's oversized head.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addAngryMcaFace(EntityRenderersEvent.AddLayers event) {
+        for (net.minecraft.resources.ResourceLocation id
+                : com.example.villagefightsback.compat.MCACompat.VILLAGER_IDS) {
+            EntityType<?> type = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(id);
+            if (type == null) continue; // MCA not installed -- nothing to decorate
+            LivingEntityRenderer<?, ?> renderer;
+            try {
+                renderer = event.getRenderer((EntityType) type);
+            } catch (ClassCastException notLiving) {
+                continue; // another mod swapped in a non-living renderer
+            }
+            if (renderer == null) continue;
+            if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) continue;
+            ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
+                    (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+        }
     }
 
     /**

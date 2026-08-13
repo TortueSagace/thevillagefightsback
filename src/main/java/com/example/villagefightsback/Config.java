@@ -63,6 +63,7 @@ public final class Config {
     public static final ForgeConfigSpec.DoubleValue ORGANIC_SPAWN_BUDGET_MULTIPLIER;
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     public static final ForgeConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
+    public static final ForgeConfigSpec.BooleanValue MCA_COMPAT;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -214,6 +215,13 @@ public final class Config {
                         "Default: false (off for now). Turning this on applies portals immediately to any stage-3-or-higher",
                         "brain node currently in reach (loaded); turning it off only stops NEW portals -- existing ones persist.")
                 .define("enable_chunk_portals", false);
+        MCA_COMPAT = b
+                .comment("Minecraft Comes Alive (MCA Reborn) integration. Has NO effect unless MCA is installed. When ON and",
+                        "MCA is present, every villager this mod spawns (settlers, brain-node reinforcements, staged spawn eggs)",
+                        "is spawned as an MCA human instead of a vanilla villager, so the village is uniformly MCA rather than a",
+                        "mix. MCA villagers extend the vanilla villager, so they take the same roles, weapons, walls and virus.",
+                        "Turn OFF to spawn plain vanilla villagers alongside MCA's. Default: true.")
+                .define("mca_compat", true);
         b.pop();
 
         b.push("multipliers");
@@ -296,6 +304,7 @@ public final class Config {
         INDEX.put("organic_spawn_budget_multiplier", ORGANIC_SPAWN_BUDGET_MULTIPLIER);
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("enable_chunk_portals", ENABLE_CHUNK_PORTALS);
+        INDEX.put("mca_compat", MCA_COMPAT);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);

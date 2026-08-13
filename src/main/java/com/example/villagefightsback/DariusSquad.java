@@ -28,8 +28,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class DariusSquad {
     private DariusSquad() {}
 
-    /** The Guard Villagers guard entity type id (runtime soft-dep). */
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     public static final double HIRE_RADIUS = 5.0;     // hire guards within this many blocks
     private static final double FOLLOW_RADIUS = 64.0;  // keep / command hired guards within this range
@@ -39,7 +37,7 @@ public final class DariusSquad {
     /** True if {@code e} is a village guard Darius can hire (a guardvillagers guard or a vindictive guard). */
     public static boolean isHireableGuard(Entity e) {
         if (e instanceof VindictiveGuardEntity) return true;
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 
     /** A guard is "fighting" if it currently has a live attack target. */

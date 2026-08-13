@@ -74,6 +74,7 @@ public final class BrainNodeEvents {
         processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node
         spawnInVillages(server, data);
         announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
+        retrofitBuildingProtection(server, data); // claim village buildings for nodes placed before that existed
         driveWalls(server, data);
         applyImmunityAura(server, data); // shield nearby villagers/golems at ANY stage
         manageDefenders(server, data); // level-2 gate turrets
@@ -831,13 +832,26 @@ public final class BrainNodeEvents {
         GlobalPos key = GlobalPos.of(level.dimension(), bell.immutable());
         if (data.isServiced(key)) return;
 
-        // The brainNode takes the bell's place DIRECTLY: it replaces the bell block, so a village shows a
-        // brainNode at its heart instead of a bell. If the bell is wall/ceiling-mounted (nothing solid below
-        // -> the brain node would float), fall back to the nearest open ground spot instead.
-        BlockPos spot = level.getBlockState(bell.below()).isFaceSturdy(level, bell.below(), Direction.UP)
+        // Where the brainNode settles:
+        //  - Without MCA: it takes the bell's place DIRECTLY (replaces the bell block), so a village shows a
+        //    brainNode at its heart instead of a bell -- but only if that spot is actually usable (see
+        //    isGoodNodeSpot). A bell that is wall/ceiling-mounted, walled in, or under a low roof falls back.
+        //  - With MCA Reborn: the bell IS MCA's Town Center building, and MCA's residency / marriage / taxes /
+        //    guard systems hang off it, so consuming it would delete the village centre out from under MCA.
+        //    There we always settle BESIDE the bell and leave it standing; MCA's town centre has an 8-block
+        //    margin, so an adjacent spot is still the town hall.
+        boolean keepBell = com.example.villagefightsback.compat.MCACompat.preserveTownCenter();
+        BlockPos spot = (!keepBell && isGoodNodeSpot(level, bell, true))
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
-        if (spot == null) return; // no good spot yet; retry next scan
+        if (spot == null) {
+            // Nowhere usable around this bell yet. Not marked serviced, so the next scan tries again, but log it:
+            // a village silently never getting a node is otherwise invisible to diagnose.
+            TheVillageFightsBack.LOGGER.warn(
+                    "[The Village Fights Back] no usable brain node spot around the village centre at {}; will retry.",
+                    bell);
+            return;
+        }
 
         // Respawn grace: if a brain node was destroyed near here within the last ~5s (and so summoned the boss),
         // wait. Once the grace elapses, the boss-nearby guard below decides -- a new node rises ONLY if the boss
@@ -865,7 +879,17 @@ public final class BrainNodeEvents {
         // node (which, for a hand-/auto-placed node, is essentially immediately), so it never double-fires.
         playStageBell(level, spot); // stage 1 reached (checkStageBells first-sees this node next pass, so no double-ring)
 
+        // Claim the village's own buildings so the fertile spread never eats them. Reads the village's real
+        // structure pieces, which covers the WHOLE settlement however far it sprawls -- the room detector in
+        // HouseBedFiller only reaches 32 blocks, so on its own it left most of a village unprotected.
+        int protectedBuildings = com.example.villagefightsback.infection.VillageBuildings.protectVillageAt(level, spot);
+        TheVillageFightsBack.LOGGER.info(
+                "[The Village Fights Back] brain node at {} protected {} village buildings from block infection.",
+                spot, protectedBuildings);
+
         // Furnish the village: drop a bed into every bedless cobblestone house near the brain node.
+        // Its room detector also claims anything it recognises, which covers player-built or modded houses
+        // that are not part of a generated village structure.
         HouseBedFiller.fill(level, spot);
     }
 
@@ -874,6 +898,32 @@ public final class BrainNodeEvents {
      * brain node (however that node came to exist -- auto-placed, hand-placed, or boss-reverted), broadcast the
      * settlement-phase banner once and persist the "announced" flag so it never double-fires across reloads.
      */
+    /** Nodes whose village buildings have been claimed this session (see {@link #retrofitBuildingProtection}). */
+    private static final java.util.Set<GlobalPos> buildingsProtected = new java.util.HashSet<>();
+
+    /**
+     * Claim the village buildings of brain nodes that already existed before building protection was added, so
+     * an EXISTING world stops losing its village to the fertile spread instead of only new ones being spared.
+     *
+     * <p>Session-scoped and idempotent rather than persisted: the box store already drops an exact duplicate, so
+     * re-claiming a village costs nothing, and doing it once per node per server start needs no new save data.
+     * Only runs for nodes in a LOADED chunk, so it never forces chunk loading. Blocks already converted stay as
+     * they are -- the original blocks are not recoverable -- but the buildings stop being eaten any further.
+     */
+    private static void retrofitBuildingProtection(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            if (buildingsProtected.contains(gp)) continue;
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null || !level.isLoaded(gp.pos())) continue;
+            buildingsProtected.add(gp);
+            int n = com.example.villagefightsback.infection.VillageBuildings.protectVillageAt(level, gp.pos());
+            if (n > 0) {
+                TheVillageFightsBack.LOGGER.info(
+                        "[The Village Fights Back] claimed {} village buildings around the brain node at {}.", n, gp.pos());
+            }
+        }
+    }
+
     private static void announceDiscoveredNodes(MinecraftServer server, BrainNodeData data) {
         double r2 = (double) VILLAGE_SCAN_RADIUS * VILLAGE_SCAN_RADIUS;
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
@@ -896,14 +946,105 @@ public final class BrainNodeEvents {
     }
 
     /** Nearest open ground spot within 3 blocks of the village centre, close to the centre's height. */
+    /** How far from the village centre a brain node may settle. Kept inside MCA's 8-block town-centre margin. */
+    private static final int NODE_SEARCH = 4;
+    /** Max height difference from the village centre. Tighter than the old +/-5, which accepted low roofs. */
+    private static final int NODE_Y_TOLERANCE = 3;
+    /** A support block with air this close beneath it is a roof or platform, not ground. */
+    private static final int GROUND_PROBE = 3;
+    /** Clear cells needed out of the 8 around the node, so summoned units have somewhere to land. Deliberately
+     *  5 rather than all 8: a vanilla bell commonly has support posts on two or three sides, and demanding a
+     *  fully open ring would push the node off almost every village centre. */
+    private static final int MIN_CLEAR_NEIGHBOURS = 5;
+    /** Clear blocks above the node, so it is never buried. Only 1: many village bells sit under a canopy, and
+     *  requiring more would relocate the node away from the bell in most vanilla villages. */
+    private static final int NODE_HEADROOM = 1;
+
+    /**
+     * Is {@code spot} a good home for a brain node? The node has to be reachable and usable, not merely
+     * supported, so this checks all three things a node needs:
+     * <ul>
+     *   <li><b>on real ground</b> -- solid support below, and no air within {@link #GROUND_PROBE} beneath that
+     *       support. That last test is what rejects ROOFS: the surface heightmap happily reports the top of a
+     *       building, and a node placed there strands every unit it summons;</li>
+     *   <li><b>room to summon</b> -- at least {@link #MIN_CLEAR_NEIGHBOURS} of the 8 surrounding cells open with
+     *       something solid under them, so spawned villagers/golems have ground to stand on;</li>
+     *   <li><b>visible</b> -- {@link #NODE_HEADROOM} clear blocks above, so it is never buried or boxed in.</li>
+     * </ul>
+     *
+     * @param replacingBell true for the bell's own cell, which we intend to overwrite, so its occupancy is fine
+     */
+    /**
+     * Is {@code feet} standing on REAL GROUND rather than on a roof or a platform? A building's roof is solid
+     * and has open air above it, so every "is this a valid surface" test passes on it; what gives it away is the
+     * hollow underneath. Shared by node placement and by the spawn finders, because the surface heightmap
+     * reports the top of a BUILDING for any column that passes through one.
+     */
+    static boolean onRealGround(ServerLevel level, BlockPos feet) {
+        BlockPos support = feet.below();
+        if (!level.getBlockState(support).isFaceSturdy(level, support, Direction.UP)) return false;
+        for (int d = 1; d <= GROUND_PROBE; d++) {                 // a roof/platform has open space under it
+            BlockPos under = support.below(d);
+            if (!level.isLoaded(under)) break;
+            if (!level.getBlockState(under).blocksMotion()) return false;
+        }
+        return true;
+    }
+
+    private static boolean isGoodNodeSpot(ServerLevel level, BlockPos spot, boolean replacingBell) {
+        if (!replacingBell && !level.getBlockState(spot).canBeReplaced()) return false;
+        if (!onRealGround(level, spot)) return false;
+
+        for (int dy = 1; dy <= NODE_HEADROOM; dy++) {
+            if (level.getBlockState(spot.above(dy)).blocksMotion()) return false;
+        }
+
+        int clear = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                BlockPos n = spot.offset(dx, 0, dz);
+                if (!level.isLoaded(n)) continue;
+                if (level.getBlockState(n).blocksMotion()) continue;            // blocked at node level
+                if (level.getBlockState(n.above()).blocksMotion()) continue;    // 1-high crawlspace: nothing can stand
+                BlockPos below = n.below();
+                if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue; // nowhere to stand
+                clear++;
+            }
+        }
+        return clear >= MIN_CLEAR_NEIGHBOURS;
+    }
+
+    /**
+     * The best brain-node spot near {@code center} (the village bell): on the surface, close to the centre in
+     * both plan and height, and passing {@link #isGoodNodeSpot}. Never returns the bell cell itself, so it is
+     * safe to use when MCA's Town Center bell has to survive. Prefers the spot nearest the centre.
+     */
     private static BlockPos findBrainNodeSpot(ServerLevel level, BlockPos center) {
+        BlockPos best = search(level, center, true);
+        // A village centre can legitimately be cramped: a bell boxed in by fences, lanterns and its own posts can
+        // fail the "room to summon" ring on every candidate, and returning null there means the village NEVER
+        // gets a brain node at all, which is far worse than a tight one. So relax the ring requirement and take
+        // any real, open, ground-level spot. The roof and burial tests are NOT relaxed, since landing on a roof
+        // strands everything the node summons.
+        return best != null ? best : search(level, center, false);
+    }
+
+    /** Best spot near {@code center}; {@code roomy} also demands the summoning ring, see {@link #isGoodNodeSpot}. */
+    private static BlockPos search(ServerLevel level, BlockPos center, boolean roomy) {
         BlockPos best = null;
-        for (int dx = -3; dx <= 3; dx++) {
-            for (int dz = -3; dz <= 3; dz++) {
+        for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
+            for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
+                if (dx == 0 && dz == 0) continue;                 // leave the bell's own cell alone
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
-                if (Math.abs(surface.getY() - center.getY()) > 5) continue;                   // skip roofs / cliffs
-                if (!level.getBlockState(surface).getMaterial().isReplaceable()) continue;                   // open spot
-                if (!level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP)) continue;
+                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
+                // 1.19.2: Material.isReplaceable()/blocksMotion() are the pre-1.20 spellings of
+                // BlockState.canBeReplaced()/blocksMotion(). Same predicates, so the vetting is unchanged.
+                boolean ok = roomy ? isGoodNodeSpot(level, surface, false)
+                        : (level.getBlockState(surface).getMaterial().isReplaceable()
+                                && onRealGround(level, surface)
+                                && !level.getBlockState(surface.above()).getMaterial().blocksMotion());
+                if (!ok) continue;
                 if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
             }
         }
@@ -961,7 +1102,7 @@ public final class BrainNodeEvents {
             // brain spawn) so it reliably appears even in a crowded area.
             int scouts = Math.max(0, (int) Math.round(1.0 * Config.emeraldBrainSpawnMult()));
             if (Config.mobInfectionEnabled()) {
-                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, gp.pos()));
+                for (int i = 0; i < scouts; i++) spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, gp.pos(), ModEntities.EMERALD_CAT.get()));
             }
 
             ExpansionManager.maybeExpand(level, gp, data); // stage-3 one-time expansion wave (no-ops below level 3)
@@ -1021,7 +1162,7 @@ public final class BrainNodeEvents {
             AABB box = new AABB(pos).inflate(INCOME_RADIUS);
             if (level.getEntitiesOfClass(EmeraldCat.class, box, e -> e.isAlive()).size() >= pc.count() * 5) continue;
             for (int i = 0; i < pc.count(); i++) {
-                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, pos)); // on the ground below an elevated node
+                spawnUncappedScout(level, ModEntities.EMERALD_CAT.get(), emeraldSpawnPos(level, pos, ModEntities.EMERALD_CAT.get())); // on the ground below an elevated node
             }
         }
     }
@@ -1029,6 +1170,7 @@ public final class BrainNodeEvents {
     /** Spawn one emerald scout of {@code type} at {@code at}, bypassing the emerald LAG cap (it is a DELIBERATE
      *  brain spawn -- the flag is set before the join event fires). */
     private static void spawnUncappedScout(ServerLevel level, net.minecraft.world.entity.EntityType<?> type, BlockPos at) {
+        if (at == null) return; // nowhere it fits -> skip rather than bury it
         if (!(type.create(level) instanceof net.minecraft.world.entity.Mob mob)) return;
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
         mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
@@ -1052,31 +1194,64 @@ public final class BrainNodeEvents {
                 h -> h.is(PoiTypes.HOME), pos, INCOME_RADIUS, PoiManager.Occupancy.ANY);
         boolean overpopulated = beds <= 0 || villagers > VILLAGER_BED_RATIO_CAP * beds;
         if (!overpopulated) {
-            for (int i = 0; i < villagersToSpawn; i++) spawnDefender(level, pos, EntityType.VILLAGER, outside);
+            // villagerType() is called PER villager so a batch comes out mixed-gender under MCA Reborn.
+            for (int i = 0; i < villagersToSpawn; i++) {
+                spawnDefender(level, pos, com.example.villagefightsback.compat.MCACompat
+                        .villagerType(level.getRandom()), outside);
+            }
             // (Emerald cats are NOT a sunset reinforcement -- they spawn once when the brain node is BORN, see
             //  scheduleBirthScouts. The recurring sunset emerald scout is the BAT, in handleSunsetIncome.)
         }
 
-        EntityType<?> guardType = ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
-        if (guardType != null) {
-            for (int i = 0; i < guardsToSpawn; i++) spawnDefender(level, pos, guardType, outside);
+        // An MCA human wearing the mca:guard profession when MCA is installed, else the Guard Villagers guard.
+        for (int i = 0; i < guardsToSpawn; i++) {
+            EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+            if (guardType == null) break; // no MCA and no Guard Villagers -> nothing to spawn
+            com.example.villagefightsback.compat.MCACompat.makeGuard(spawnDefender(level, pos, guardType, outside));
         }
         for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM, outside);
     }
 
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
      *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
-    private static void spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
-        BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall) : null;
-        if (spot == null) spot = findSpawnSpot(level, center); // no wall / no valid outside spot -> old behaviour
-        Entity e = type.spawn(level, (net.minecraft.world.item.ItemStack) null, (net.minecraft.world.entity.player.Player) null, spot, MobSpawnType.EVENT, false, false);
+    private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
+        return spawnDefender(level, center, type, outsideWall, null);
+    }
+
+    /**
+     * As above, but {@code beforeJoin} runs on the new entity BEFORE it is added to the level.
+     *
+     * <p>That ordering matters. EntityType.spawn adds the entity itself, so anything stamped on afterwards is
+     * too late for the entity-join handler, which is where this mod decides what a creature IS and arms it
+     * accordingly. A guard whose profession was set after the fact therefore joined as a CIVILIAN and was given
+     * the villager roles -- including the goal that walks a strayed villager home, which then fought MCA's own
+     * guard AI for control and left the guard visibly dithering between fleeing and fighting.
+     *
+     * <p>That is also why this no longer calls EntityType.spawn at all: create + moveTo + finalizeSpawn +
+     * addFreshEntity is the same sequence spawn() runs internally, but with the join deferred until after
+     * beforeJoin has run. It is spelled identically on 1.19.2, so no adaptation was needed here.
+     */
+    private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type,
+                                        WallPlan outsideWall, java.util.function.Consumer<Entity> beforeJoin) {
+        BlockPos spot = outsideWall != null ? findSpawnSpotOutsideWall(level, outsideWall, type) : null;
+        if (spot == null) spot = findSpawnSpot(level, center, type); // no wall / no valid outside spot
+        if (spot == null) return null; // nowhere this creature actually fits -> skip; the next pass retries
+        Entity e = type.create(level);
+        if (e == null) return null;
+        e.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
+        if (e instanceof net.minecraft.world.entity.Mob mob) {
+            mob.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.EVENT, null, null);
+        }
         if (e instanceof Villager v) v.setBaby(false);
+        if (beforeJoin != null) beforeJoin.accept(e);   // stamped BEFORE the join handler reads it
+        level.addFreshEntity(e);
+        return e;
     }
 
     /** Where a brain-summoned emerald unit should appear. If the brain node is MORE THAN ONE BLOCK above the
      *  nearest solid ground (it floats, or sits on a thin perch), the unit spawns down on that ground so it isn't
      *  stranded on top of the node with no way down; otherwise it uses the normal nearby-surface spot. */
-    private static BlockPos emeraldSpawnPos(ServerLevel level, BlockPos node) {
+    private static BlockPos emeraldSpawnPos(ServerLevel level, BlockPos node, EntityType<?> type) {
         BlockPos.MutableBlockPos m = node.mutable().move(Direction.DOWN);
         int floor = level.getMinBuildHeight();
         int scanned = 0;
@@ -1085,21 +1260,35 @@ public final class BrainNodeEvents {
             scanned++;
         }
         BlockPos ground = m.above(); // the open cell on top of the first solid block below the node
-        return (node.getY() - ground.getY() > 1) ? ground : findSpawnSpot(level, node);
+        if (node.getY() - ground.getY() > 1) {
+            return fits(level, ground, type) ? ground : nearestFit(level, ground, type, FIT_SEARCH_RADIUS);
+        }
+        return findSpawnSpot(level, node, type);
     }
 
-    private static BlockPos findSpawnSpot(ServerLevel level, BlockPos center) {
+    /** A surface spot near {@code center} where {@code type} genuinely fits: 12 random columns first (the old
+     *  scatter, which keeps reinforcements from stacking), then the nearest fitting cell in growing rings so a
+     *  big unit lands BESIDE a cramped node rather than in its ceiling. Null when nowhere fits -- the old code
+     *  returned an unchecked {@code center.above()} here, which is exactly how summons ended up inside blocks. */
+    private static BlockPos findSpawnSpot(ServerLevel level, BlockPos center, EntityType<?> type) {
         for (int i = 0; i < 12; i++) {
             BlockPos col = center.offset(level.getRandom().nextInt(9) - 4, 0, level.getRandom().nextInt(9) - 4);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, col);
-            if (spawnableSurface(level, surface)) return surface;
+            // getHeightmapPos DISCARDS the Y it is given and returns the top of the column, which for a column
+            // through a building is the cell above its ROOF. Unguarded, that is how summons ended up standing on
+            // the town hall. Two tests fix it: stay near the node's own height, and be on real ground, not a roof.
+            if (Math.abs(surface.getY() - center.getY()) > SPAWN_Y_TOLERANCE) continue;
+            if (!onRealGround(level, surface)) continue;
+            if (fits(level, surface, type)) return surface;
         }
-        return center.above();
+        // nearestFit is already safe here: it walks rings at the node's own Y (and one or two steps down), so it
+        // cannot wander onto a roof the way an unbounded heightmap lookup can.
+        return nearestFit(level, center, type, FIT_SEARCH_RADIUS);
     }
 
     /** Pick a ground spot a few blocks OUTSIDE the inner wall, fanning out past a (random) gate so stage-4
      *  reinforcements muster between the inner and outer walls instead of on top of the dome. Null if none found. */
-    private static BlockPos findSpawnSpotOutsideWall(ServerLevel level, WallPlan plan) {
+    private static BlockPos findSpawnSpotOutsideWall(ServerLevel level, WallPlan plan, EntityType<?> type) {
         List<BlockPos> gates = plan.gates();
         if (gates.isEmpty()) return null;
         BlockPos centre = plan.brainNode().pos();
@@ -1115,16 +1304,62 @@ public final class BrainNodeEvents {
             int tz = (int) Math.floor(gate.getZ() + 0.5 + oz * dist + ox * jitter);
             BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, new BlockPos(tx, gate.getY(), tz));
             if (plan.contains(surface)) continue;                       // still inside the ring -> push further next try
-            if (spawnableSurface(level, surface)) return surface;
+            if (!onRealGround(level, surface)) continue;                // same heightmap trap: never muster on a roof
+            if (fits(level, surface, type)) return surface;
         }
         return null;
     }
 
-    /** A standable open surface: feet + head clear, solid floor below. */
-    private static boolean spawnableSurface(ServerLevel level, BlockPos surface) {
-        return level.getBlockState(surface).getCollisionShape(level, surface).isEmpty()
-                && level.getBlockState(surface.above()).getCollisionShape(level, surface.above()).isEmpty()
-                && level.getBlockState(surface.below()).isFaceSturdy(level, surface.below(), Direction.UP);
+    /**
+     * Does {@code type}'s FULL hitbox fit with its feet at {@code feet}? Tests the entity's real AABB rather than
+     * counting block cells, which is the only way to be right for every creature the village summons: an iron
+     * golem is 1.4 wide and 2.7 tall (three cells, and wider than a 1-block shaft), an emerald enderman is 2.9
+     * tall, a villager 1.95. The old two-cell test passed a golem into a 2-high pocket and buried its head.
+     *
+     * <p>No floor requirement -- see {@link #fits} for the surface variant. A creature spawned over air simply
+     * falls, which is harmless; being spawned INSIDE blocks is what suffocates it.
+     */
+    static boolean fitsFreely(ServerLevel level, BlockPos feet, EntityType<?> type) {
+        return level.noCollision(type.getAABB(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5));
+    }
+
+    /** {@link #fitsFreely} plus a sturdy floor: a spot the creature can actually stand on. */
+    static boolean fits(ServerLevel level, BlockPos feet, EntityType<?> type) {
+        BlockPos below = feet.below();
+        return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)
+                && fitsFreely(level, feet, type);
+    }
+
+    /** How far out {@link #nearestFit} will look for somewhere a summoned creature fits. */
+    private static final int FIT_SEARCH_RADIUS = 5;
+
+    /** How far above or below the node a heightmap-picked spawn spot may sit. Keeps summons off nearby roofs. */
+    private static final int SPAWN_Y_TOLERANCE = 4;
+
+    /**
+     * The nearest cell to {@code center} where {@code type} fits, searched as growing square rings so a closer
+     * spot always wins. This is what lets a BIG unit appear BESIDE the brain node when the column above it is
+     * too tight: a 2.7-tall golem rarely fits directly over a node tucked under a canopy, but almost always fits
+     * a block or two to the side. Each ring tries the node's own level first, then a step or two down for
+     * sloping ground, then one up.
+     *
+     * @return null when nothing within {@code max} fits, so the caller can SKIP the spawn instead of choking it
+     */
+    static BlockPos nearestFit(ServerLevel level, BlockPos center, EntityType<?> type, int max) {
+        int[] dys = {0, -1, -2, 1};
+        for (int r = 1; r <= max; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue; // walk the ring shell only
+                    for (int dy : dys) {
+                        BlockPos p = center.offset(dx, dy, dz);
+                        if (!level.isLoaded(p)) continue;
+                        if (fits(level, p, type)) return p;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /** Alive villagers/guards within {@value #INCOME_RADIUS} blocks of one brainNode. */
@@ -1213,9 +1448,11 @@ public final class BrainNodeEvents {
         int villagers = 0, guards = 0, golems = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (e instanceof EmeraldgerEntity) continue;
-            if (e instanceof Villager) villagers++;
+            // Guards FIRST: an MCA guard is a Villager too, so the villager branch would swallow it and the
+            // report would show a full garrison as "Guards: 0".
+            if (Factions.isGuard(e)) guards++;
+            else if (e instanceof Villager) villagers++;
             else if (e instanceof net.minecraft.world.entity.animal.IronGolem) golems++;
-            else if (GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) guards++;
         }
         return new int[]{villagers, guards, golems};
     }

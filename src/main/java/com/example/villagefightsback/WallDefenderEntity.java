@@ -159,7 +159,7 @@ public class WallDefenderEntity extends Mob {
         LivingEntity best = null;
         double bestD = Double.MAX_VALUE;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box,
-                x -> (x instanceof Enemy || com.example.villagefightsback.Factions.isInfected(x))
+                x -> com.example.villagefightsback.Factions.isVillageThreat(x)
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && x.isAlive() && x != this)) {
             double d = distanceToSqr(e);

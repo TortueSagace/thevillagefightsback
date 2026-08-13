@@ -34,6 +34,7 @@ import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -76,7 +77,6 @@ public final class VillageEvents {
     private static final float MINIGUN_BONUS = 9.0F;    // 4  -> 13 (minigun also fades over range)
     private static final float FLAME_BONUS = 3.0F;      // 3  -> 6 per flame (x3 flames)
 
-    private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     // Guards have a chance to drop our native Fire Grenade on death.
     private static final float GUARD_FIRE_GRENADE_DROP_CHANCE = 0.5F;
@@ -86,6 +86,18 @@ public final class VillageEvents {
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof PathfinderMob mob)) return;
+
+        // MCA Reborn only: an outlaw / cultist is a HOSTILE villager (a profession, not a separate entity). It
+        // gets nothing from the village -- no kit, no roles, no wall-phasing. Bail before any of that is applied,
+        // otherwise the village would hand a raider its Alien Slasher and a key to its own doors.
+        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(mob)) return;
+
+        // MCA Reborn only: re-hydrate any role flag that survived a villager replacement as a scoreboard tag,
+        // BEFORE the stage flags are read below. No-op without MCA installed, and it never overwrites data
+        // that came through intact -- it only fills gaps. Then re-mirror, so a villager whose data IS intact
+        // refreshes its tags on every load.
+        com.example.villagefightsback.compat.VillagerRoleTags.restore(mob);
+        com.example.villagefightsback.compat.VillagerRoleTags.mirror(mob);
 
         // Let village defenders (and all iron golems) PATH through fake-cobblestone "doors": flip our
         // custom passable type's malus to 0 for them only (others keep the -1 default = blocked). This
@@ -98,10 +110,13 @@ public final class VillageEvents {
         // settler/builder) or profession. So skip every role goal for them -- they still get the stage-3
         // combat loadout below (they spawn pre-upgraded).
         boolean emeraldger = mob instanceof EmeraldgerEntity;
+        // An MCA Reborn guard/archer is a Villager doing a SOLDIER's job. It takes the guard kit further down,
+        // and none of the civilian roles below: a guard has no business settling, building walls or mining.
+        boolean soldier = com.example.villagefightsback.compat.MCACompat.isMcaGuard(mob);
 
         // A villager far from every brainNode can found a new home with a Blue TNT (independent of the
         // combat upgrade). Idempotent: goals are re-added on every load; the goal settles at most once.
-        if (!emeraldger && mob instanceof Villager settler
+        if (!emeraldger && !soldier && mob instanceof Villager settler
                 && !hasGoal(settler, com.example.villagefightsback.goal.SettlerGoal.class)) {
             settler.goalSelector.addGoal(6, new com.example.villagefightsback.goal.SettlerGoal(settler));
         }
@@ -109,7 +124,7 @@ public final class VillageEvents {
         // A villager stranded OUTSIDE its wall heads back toward the brain node when it isn't fighting (low
         // priority, so combat preempts it). Villagers never CROSS the wall to chase -- this only brings home
         // one that is already out. Idempotent.
-        if (!emeraldger && mob instanceof Villager strayed
+        if (!emeraldger && !soldier && mob instanceof Villager strayed
                 && !hasGoal(strayed, com.example.villagefightsback.goal.ReturnToVillageGoal.class)) {
             strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
         }
@@ -117,14 +132,14 @@ public final class VillageEvents {
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
-        if (!emeraldger && mob instanceof Villager defender
+        if (!emeraldger && !soldier && mob instanceof Villager defender
                 && !hasGoal(defender, com.example.villagefightsback.goal.BuilderDefenseGoal.class)) {
             defender.goalSelector.addGoal(2, new com.example.villagefightsback.goal.BuilderDefenseGoal(defender));
         }
 
         // Every villager carries the (dormant) miner goal; it only runs once the brain node tags it a miner
         // (level-2 infection). Idempotent. (Emeraldgers can't be miners, so they don't need it.)
-        if (!emeraldger && mob instanceof Villager v) {
+        if (!emeraldger && !soldier && mob instanceof Villager v) {
             com.example.villagefightsback.infection.InfectionManager.ensureMinerGoal(v);
         }
 
@@ -137,13 +152,14 @@ public final class VillageEvents {
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
             // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 brainNode.
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
-        } else if (mob instanceof Villager villager) {
-            if (upgraded) armVillagerFull(villager);
-            else armVillagerNerfed(villager);
         } else if (isGuard(mob)) {
+            // BEFORE the Villager branch: an MCA guard/archer is a Villager too, and must take the guard kit.
             if (upgraded) armGuardFull(mob);                       // stage 3+: full emerald knight (mace-bounce)
             else if (UpgradeState.isStage2(mob)) armGuardStage2(mob); // stage 2: virus archer (no mace)
             // else: normal guard
+        } else if (mob instanceof Villager villager) {
+            if (upgraded) armVillagerFull(villager);
+            else armVillagerNerfed(villager);
         }
     }
 
@@ -184,14 +200,15 @@ public final class VillageEvents {
 
     /** Apply the full upgrade to an already-spawned defender (called when it first reaches a lvl-3 brainNode). */
     public static void applyUpgrade(LivingEntity e) {
-        if (e instanceof Villager villager) {
+        if (e instanceof PathfinderMob soldier && isGuard(soldier)) {
+            // Checked first: an MCA guard is a Villager as well, and must upgrade to the GUARD kit.
+            if (UpgradeState.isUpgraded(soldier)) armGuardFull(soldier);
+            else if (UpgradeState.isStage2(soldier)) armGuardStage2(soldier);
+        } else if (e instanceof Villager villager) {
             removeGoal(villager, StoneAxeDefenseGoal.class);
             armVillagerFull(villager); // replaces the stone axe with the revolver
         } else if (e instanceof IronGolem golem) {
             if (!golem.isPlayerCreated()) armGolemFull(golem);
-        } else if (e instanceof PathfinderMob pm && isGuard(pm)) {
-            if (UpgradeState.isUpgraded(pm)) armGuardFull(pm);
-            else if (UpgradeState.isStage2(pm)) armGuardStage2(pm);
         }
     }
 
@@ -223,6 +240,59 @@ public final class VillageEvents {
             villager.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(weapon));
             villager.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
         }
+    }
+
+    /**
+     * Put a defender's weapon back when something else takes it out of its hand.
+     *
+     * <p>This exists for MCA Reborn. MCA runs an {@code EquipmentTask} brain behaviour that periodically
+     * re-equips its villagers from its own configured {@code EquipmentSet}, which silently strips the stage
+     * weapon this mod gave them: the weapon appears on spawn and vanishes a moment later, leaving a stage-4
+     * defender holding nothing. Since the kit is applied once on join, nothing put it back.
+     *
+     * <p>Edge-triggered on the equipment change itself, so there is no polling. Re-arming fires this event
+     * again, but {@link #restoreDefenderWeapon} and the guard branch below only touch the slot when it holds
+     * the WRONG item, so the second pass is a no-op and it cannot recurse.
+     */
+    @SubscribeEvent
+    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (event.getSlot() != EquipmentSlot.MAINHAND) return;
+        if (event.getEntity().level().isClientSide()) return;
+        LivingEntity e = event.getEntity();
+        // Only defenders this mod has actually armed. An un-upgraded villager legitimately holds nothing.
+        if (!UpgradeState.isUpgraded(e) && !UpgradeState.isStage2(e)) return;
+        // Leave OUR OWN hand changes alone. This mod swaps the main hand constantly and on purpose:
+        // StageThreeGuardGoal cycles mace / crossbow / slasher through a fight, WallBuildGoal holds stone tools
+        // and clears the slot, MinerGoal carries the emerald it dug. Reacting to those would fight the goals and
+        // break guard combat and wall building outright, so only a FOREIGN item counts as the weapon being taken.
+        if (isSanctionedHandItem(event.getTo())) return;
+
+        if (e instanceof PathfinderMob pm && isGuard(pm)) {
+            // A guard's weapon is the mace (stage 3+) or the virus crossbow (stage 2), not the villager blade.
+            ItemStack want = UpgradeState.isUpgraded(pm) ? GuardWeapons.mace() : GuardWeapons.crossbow();
+            pm.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
+            pm.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        } else if (e instanceof Villager villager) {
+            restoreDefenderWeapon(villager);
+        }
+    }
+
+    /**
+     * Is this something this mod itself put in a defender's hand, or an empty slot it emptied on purpose?
+     *
+     * <p>An EMPTY hand is sanctioned: the build and mine goals clear the slot deliberately and restore the
+     * weapon in their own stop(). Every blade this mod issues is a netherite AXE and the work goals hold stone
+     * tools, so any {@link DiggerItem} is ours; the rest are named outright. Anything else (MCA's EquipmentTask
+     * handing out an iron sword, for instance) means the weapon was taken and should be put back.
+     */
+    private static boolean isSanctionedHandItem(ItemStack stack) {
+        if (stack.isEmpty()) return true;
+        Item i = stack.getItem();
+        if (i instanceof DiggerItem) return true;              // slasher / eradicator / build + mine tools
+        if (i == Items.EMERALD) return true;                   // MinerGoal carries the ore it just dug
+        return i == GuardWeapons.mace().getItem()
+                || i == GuardWeapons.crossbow().getItem()
+                || i == GuardWeapons.alienSmasher().getItem();
     }
 
     private static void armVillagerFull(Villager villager) {
@@ -534,7 +604,7 @@ public final class VillageEvents {
     /** Every hostile mob a guard kills feeds one emerald to the nearest in-range Village Brain Node. */
     @SubscribeEvent
     public static void onMobKilledByGuard(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof Enemy) && !Factions.isInfected(event.getEntity())) return; // hostile / boss-minion kills count
+        if (!Factions.isVillageThreat(event.getEntity())) return; // hostile / boss-minion / MCA-raider kills count
         if (!(event.getEntity().level instanceof ServerLevel sl)) return;
         Entity killer = event.getSource().getEntity();
         if (killer == null || !isGuard(killer)) return;                    // only kills credited to a guard
@@ -548,6 +618,24 @@ public final class VillageEvents {
             if (d <= bestD) { bestD = d; best = gp; }
         }
         if (best != null) data.econ(best).addEmeralds(1); // addEmeralds() self-dirties the saved data
+    }
+
+    /**
+     * A wall builder takes no FALL damage, so it stops crying out every time it steps off its own scaffolding.
+     *
+     * <p>Builders work at height on scaffolding they place themselves, so short drops are constant and normal
+     * for the job. Under MCA Reborn each one plays a human hurt sound, and a work site turns into a chorus of
+     * villagers yelping. Cancelling at {@link LivingAttackEvent} is what makes that stop: it aborts
+     * {@code hurt()} before it runs, and the hurt sound is played inside {@code hurt()}, so there is no way to
+     * silence the shout while still applying the damage. Only fall damage and only while actually building --
+     * a builder is still perfectly killable by anything else, and reverts to a normal villager when it finishes.
+     */
+    @SubscribeEvent
+    public static void onBuilderFall(LivingAttackEvent event) {
+        if (!event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) return;
+        if (!(event.getEntity() instanceof Villager villager)) return;
+        if (!BuilderRole.isBuilder(villager)) return;
+        event.setCanceled(true);
     }
 
     /** Immunity effect: the holder is immune to FIRE damage only (in-fire / on-fire / lava / magma /
@@ -783,8 +871,10 @@ public final class VillageEvents {
         }
     }
 
+    /** A village GUARD: a Guard Villagers guard entity, or an MCA Reborn villager whose profession is a
+     *  soldier's one (mca:guard / mca:archer). Both get the guard kit rather than the civilian villager kit. */
     private static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return com.example.villagefightsback.Factions.isGuard(e);
     }
 
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the
