@@ -75,8 +75,15 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_INGOT =
             ITEMS.register("limbo_ingot", () -> new Item(new Item.Properties().tab(ModBlocks.TAB).fireResistant()));
 
-    /** Limbo Smithing Template: a rare (1%) village-chest find. Together with a Limbo Ingot it upgrades a
-     *  netherite piece into Limbo gear at a smithing table. */
+    /** Limbo Smithing Template: a rare (1%) village-chest find. On main it is the third smithing ingredient that
+     *  upgrades a netherite piece into Limbo gear.
+     *
+     *  <p>1.19.2's smithing table has only TWO slots -- there is no template slot, and the vanilla
+     *  {@code minecraft:smithing} recipe type takes only {@code base} + {@code addition} -- so on this branch the
+     *  Limbo upgrade recipes cannot ask for it, and do not. The item is kept anyway (registered, craftable,
+     *  still a chest find) so the branch stays in step with main and the next catch-up merge has nothing to
+     *  reconcile; it is simply not a gate on this Minecraft line. Do NOT read the template-less smithing
+     *  recipes as a porting mistake. */
     public static final RegistryObject<Item> LIMBO_SMITHING_TEMPLATE =
             ITEMS.register("limbo_smithing_template", () -> new Item(new Item.Properties().tab(ModBlocks.TAB)));
 

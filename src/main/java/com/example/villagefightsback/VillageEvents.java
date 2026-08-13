@@ -632,8 +632,10 @@ public final class VillageEvents {
      */
     @SubscribeEvent
     public static void onBuilderFall(LivingAttackEvent event) {
-        // 1.19.2 predates the damage-type registry and its tags. DamageSource#isFall() is the exact equivalent of
-        // 1.20.1's DamageTypeTags.IS_FALL: both cover "fall" and "stalagmite" and nothing else.
+        // 1.19.2 predates the damage-type registry and its tags. DamageSource#isFall() is the 1.19.2 equivalent of
+        // 1.20.1's DamageTypeTags.IS_FALL: it covers "fall" and "stalagmite". The 1.20.1 tag also lists
+        // "ender_pearl", which on 1.19.2 is not a type of its own -- a thrown pearl hurts with DamageSource.FALL,
+        // so isFall() catches that case too and the behaviour still matches.
         if (!event.getSource().isFall()) return;
         if (!(event.getEntity() instanceof Villager villager)) return;
         if (!BuilderRole.isBuilder(villager)) return;

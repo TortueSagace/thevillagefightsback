@@ -20,7 +20,9 @@ public final class LimboAbilityHud {
 
     private static final int GREEN = 0xFF3BF07A;
 
-    /** Registered from client setup (1.19.2 has no RegisterGuiOverlaysEvent). */
+    /** Registered from {@link TheVillageFightsBackClient#onRegisterOverlays} rather than self-registering.
+     *  1.19.2 DOES have RegisterGuiOverlaysEvent and the whole overlay package; only the render lambda differs,
+     *  taking a PoseStack where 1.20.1 hands over a GuiGraphics. */
     public static void register(RegisterGuiOverlaysEvent event) {
         event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "limbo_ability_cooldown",
                 (gui, ps, partialTick, w, h) -> draw(ps, w, h));
