@@ -222,8 +222,12 @@ public class GeneralDariusEntity extends Monster {
     // --- full-set damage immunity (fire + fall), mirroring LimboGearEvents.onHurt for the player --------
     @Override
     public boolean hurt(net.minecraft.world.damagesource.DamageSource source, float amount) {
+        // 1.19.2 predates the damage-type registry, so the flags on DamageSource stand in for main's
+        // DamageTypeTags: isFire() for IS_FIRE, isFall() for IS_FALL. isFall() -- not "== DamageSource.FALL" --
+        // because STALAGMITE is a separate singleton that also carries setIsFall(), and reference equality
+        // would let dripstone through.
         if (source.isFire()
-                || source == net.minecraft.world.damagesource.DamageSource.FALL) {
+                || source.isFall()) {
             return false; // fire + fall immunity
         }
         return super.hurt(source, amount);
