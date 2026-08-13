@@ -14,7 +14,11 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
-import org.joml.Matrix4f;
+
+// 1.19.2 predates the move to JOML: the math types still live in com.mojang.math, and rotations are built from
+// Vector3f.YP rather than from the Axis enum that replaced it in 1.20.
+import com.mojang.math.Matrix4f;
+import com.mojang.math.Vector3f;
 
 /**
  * Carves the epitaph onto the front of a {@link com.example.villagefightsback.MemorialBlock}.
@@ -63,7 +67,7 @@ public class MemorialRenderer implements BlockEntityRenderer<MemorialBlockEntity
         for (Direction side : new Direction[]{facing, facing.getOpposite()}) {
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);
-            pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-side.toYRot()));
+            pose.mulPose(Vector3f.YP.rotationDegrees(-side.toYRot()));
             // POSITIVE offset, and the sign is the whole point. font.drawInBatch lays text out readable from
             // local +Z, so after the rotation the readable direction IS local +Z. Stepping along -Z therefore
             // pushed each inscription through the stone to the FAR side while it went on facing inward, which is
@@ -78,8 +82,11 @@ public class MemorialRenderer implements BlockEntityRenderer<MemorialBlockEntity
             for (int i = 0; i < lines.size(); i++) {
                 FormattedCharSequence line = lines.get(i);
                 float x = -font.width(line) / 2.0F;
+                // 1.19.2 has no Font.DisplayMode; the same argument slot is the boolean "see through walls" flag,
+                // and false is exactly what DisplayMode.NORMAL means. Background colour 0 and the packed light
+                // follow unchanged -- this is the identical call vanilla's 1.19.2 SignRenderer makes.
                 font.drawInBatch(line, x, top + i * lineHeight, COLOUR, false, matrix, buffers,
-                        Font.DisplayMode.NORMAL, 0, light);
+                        false, 0, light);
             }
             pose.popPose();
         }
