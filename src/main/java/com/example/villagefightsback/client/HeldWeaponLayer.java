@@ -68,7 +68,11 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
         }
         // Gate.HELD_GUN: show only when the holder is actually holding the very item we render (the golem's
         // native rocket launcher), so we no longer reference JEG's GunItem here.
-        return entity.getMainHandItem().getItem() == BuiltInRegistries.ITEM.get(gunId);
+        // getOptional, not get: ITEM is a DefaultedRegistry that answers minecraft:air for an unknown id, and
+        // an EMPTY main hand also reads as air -- so a missing gun id would make this true for every empty hand.
+        return BuiltInRegistries.ITEM.getOptional(gunId)
+                .map(gun -> entity.getMainHandItem().getItem() == gun)
+                .orElse(false);
     }
 
     @Override
@@ -81,7 +85,9 @@ public class HeldWeaponLayer<T extends LivingEntity, M extends EntityModel<T>> e
         if (!shouldShow(entity)) return; // only show the gun on UPGRADED defenders (see Gate)
 
         if (stack.isEmpty()) {
-            Item item = BuiltInRegistries.ITEM.get(gunId);
+            // getOptional, not get: ITEM is a DefaultedRegistry, so get() answers an unknown id with AIR rather
+            // than null. The null-check below would never fire and we would render an empty stack every frame.
+            Item item = BuiltInRegistries.ITEM.getOptional(gunId).orElse(null);
             if (item == null) return;
             stack = new ItemStack(item);
         }

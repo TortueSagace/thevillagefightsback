@@ -145,8 +145,11 @@ public class GeneralDariusEntity extends Monster {
      *  (guards_spawning_with_general_darius). No-op if count &lt;= 0 or Guard Villagers isn't installed. */
     public void enrollEscort(net.minecraft.server.level.ServerLevel level, int count) {
         if (count <= 0) return;
-        net.minecraft.world.entity.EntityType<?> guardType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE
-                .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard"));
+        // entityTypeOrNull, not ENTITY_TYPE.get: the entity registry is DEFAULTED, so get() would return a PIG
+        // rather than null when Guard Villagers is absent (see MCACompat#present) and Darius would march out
+        // with an escort of pigs in stage-3 guard kit.
+        net.minecraft.world.entity.EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat
+                .entityTypeOrNull(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard"));
         if (guardType == null) return; // soft dep absent
         for (int i = 0; i < count; i++) {
             net.minecraft.world.entity.Entity e = guardType.create(level);

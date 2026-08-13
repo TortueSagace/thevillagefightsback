@@ -470,8 +470,10 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             if (e instanceof VindictiveGuardEntity vg) guards.add(vg);
             else if (e instanceof VindictiveGigachadEntity vgc) gigas.add(vgc);
         }
+        // entityTypeOrNull, not ENTITY_TYPE.get: the entity registry is DEFAULTED, so get() would return a PIG
+        // rather than null when Guard Villagers is absent (see MCACompat#present).
         net.minecraft.world.entity.EntityType<?> guardType =
-                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
+                com.example.villagefightsback.compat.MCACompat.entityTypeOrNull(GUARD_ID);
         for (VindictiveGuardEntity vg : guards) {
             BlockPos p = vg.blockPosition();
             float yaw = vg.getYRot();

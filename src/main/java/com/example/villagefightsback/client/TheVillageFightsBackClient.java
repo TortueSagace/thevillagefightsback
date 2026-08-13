@@ -204,7 +204,9 @@ public final class TheVillageFightsBackClient {
     private static void addAngryMcaFace(EntityRenderersEvent.AddLayers event) {
         for (net.minecraft.resources.ResourceLocation id
                 : com.example.villagefightsback.compat.MCACompat.VILLAGER_IDS) {
-            EntityType<?> type = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(id);
+            // entityTypeOrNull, not ENTITY_TYPE.get: the entity registry is DEFAULTED and get() returns a PIG,
+            // not null, for an unregistered id (see MCACompat#present).
+            EntityType<?> type = com.example.villagefightsback.compat.MCACompat.entityTypeOrNull(id);
             if (type == null) continue; // MCA not installed -- nothing to decorate
             // 1.21's AddLayers.getRenderer is generic in the renderer type, and the raw EntityType argument erases
             // the call to plain EntityRenderer, so it no longer implicitly casts (and no longer throws the
@@ -265,7 +267,10 @@ public final class TheVillageFightsBackClient {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static void addAngryGuardFace(EntityRenderersEvent.AddLayers event) {
-        EntityType<?> guardType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(GUARD_ID);
+        // entityTypeOrNull, not ENTITY_TYPE.get: the entity registry is DEFAULTED and get() returns a PIG,
+        // not null, for an unregistered id (see MCACompat#present) -- which would send us off to decorate the
+        // pig renderer, saved from doing so only by the HumanoidModel check below.
+        EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat.entityTypeOrNull(GUARD_ID);
         if (guardType == null) return; // Guard Villagers not installed -- nothing to decorate
         // getRenderer needs EntityType<? extends T extends LivingEntity>; the registry hands us EntityType<?>,
         // so go through a raw EntityType (we re-check the model type below before attaching the layer).

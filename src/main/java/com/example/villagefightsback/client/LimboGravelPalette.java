@@ -48,7 +48,10 @@ public final class LimboGravelPalette {
 
     private static int compute(String typeId) {
         try {
-            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(typeId));
+            // getOptional, not get: ENTITY_TYPE is a DefaultedRegistry, so an id from a mod that is no longer
+            // installed would come back as minecraft:pig and colour the gravel with the PIG's spawn-egg pink
+            // instead of falling through to NEUTRAL.
+            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.parse(typeId)).orElse(null);
             if (type == null) return NEUTRAL;
             SpawnEggItem egg = SpawnEggItem.byId(type);
             if (egg != null) return egg.getColor(0) & 0xFFFFFF;     // spawn-egg primary colour

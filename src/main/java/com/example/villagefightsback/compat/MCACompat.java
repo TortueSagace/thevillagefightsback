@@ -57,12 +57,27 @@ public final class MCACompat {
      *
      * <p>1.21 note: Forge's {@code ForgeRegistries.ENTITY_TYPES} wrapper is gone; every lookup in this class now
      * goes to {@link BuiltInRegistries#ENTITY_TYPE} (and {@link BuiltInRegistries#VILLAGER_PROFESSION}), which is
-     * the same registry the wrapper delegated to, so a present/absent MCA answers identically. {@code getValue} is
-     * spelled {@code get} on a vanilla {@code Registry} and returns null for an unknown id just the same, which is
-     * what every null-check below already relies on.
+     * the same registry the wrapper delegated to.
+     *
+     * <p>The one trap in that swap: those are {@code DefaultedRegistry}s, and {@code DefaultedMappedRegistry.get}
+     * is {@code @Nonnull} -- an id nobody registered comes back as the registry's DEFAULT VALUE, not null.
+     * {@code ENTITY_TYPE} defaults to {@code minecraft:pig}, so {@code get(guardvillagers:guard)} with Guard
+     * Villagers absent hands back a PIG and every {@code == null} soft-dep guard downstream becomes dead code.
+     * ({@code BLOCK} and {@code ITEM} default to air, {@code VILLAGER_PROFESSION} to none,
+     * {@code MEMORY_MODULE_TYPE} to dummy -- the same trap.) Forge's wrapper had no default for entity types,
+     * which is why main got away with it. So absence is asked for explicitly here: {@code containsKey} where a
+     * boolean will do, and {@code getOptional(id).orElse(null)} -- which bypasses the default -- where the value
+     * is wanted. Never plain {@code get} for a soft dep.
      */
     public static boolean present() {
         return BuiltInRegistries.ENTITY_TYPE.containsKey(MALE_VILLAGER);
+    }
+
+    /** An entity type by id, or null when nothing is registered under it -- see the note on {@link #present()}
+     *  for why plain {@code BuiltInRegistries.ENTITY_TYPE.get} cannot be used for a soft dependency. */
+    @javax.annotation.Nullable
+    public static EntityType<?> entityTypeOrNull(ResourceLocation id) {
+        return BuiltInRegistries.ENTITY_TYPE.getOptional(id).orElse(null);
     }
 
     /** True when MCA is installed AND the player has left {@code mca_compat} on (the default). */
@@ -77,8 +92,7 @@ public final class MCACompat {
      */
     public static EntityType<?> villagerType(RandomSource rng) {
         if (!enabled()) return EntityType.VILLAGER;
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(
-                rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
+        EntityType<?> type = entityTypeOrNull(rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
         return type != null ? type : EntityType.VILLAGER;
     }
 
@@ -128,11 +142,10 @@ public final class MCACompat {
      */
     public static EntityType<?> guardType(RandomSource rng) {
         if (enabled()) {
-            EntityType<?> mca = BuiltInRegistries.ENTITY_TYPE.get(
-                    rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
+            EntityType<?> mca = entityTypeOrNull(rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
             if (mca != null) return mca;
         }
-        return BuiltInRegistries.ENTITY_TYPE.get(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
+        return entityTypeOrNull(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent (NOT a pig -- see present())
     }
 
     /**
@@ -146,8 +159,10 @@ public final class MCACompat {
      */
     public static void makeGuard(net.minecraft.world.entity.Entity e) {
         if (!(e instanceof Villager v) || !isMcaVillager(v)) return;
-        net.minecraft.world.entity.npc.VillagerProfession guard =
-                BuiltInRegistries.VILLAGER_PROFESSION.get(ResourceLocation.fromNamespaceAndPath(MODID, "guard"));
+        // getOptional, not get: VILLAGER_PROFESSION is a DefaultedRegistry whose get() would hand back
+        // minecraft:none for an unregistered id and so CLEAR the villager's job instead of skipping.
+        net.minecraft.world.entity.npc.VillagerProfession guard = BuiltInRegistries.VILLAGER_PROFESSION
+                .getOptional(ResourceLocation.fromNamespaceAndPath(MODID, "guard")).orElse(null);
         if (guard == null) return;
         v.setVillagerData(v.getVillagerData().setProfession(guard));
     }
