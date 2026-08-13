@@ -74,7 +74,9 @@ public final class StartingItems {
      * village meeting point), which also covers a player-built or modded village that vanilla never generated.
      */
     private static boolean inVillage(ServerPlayer player) {
-        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        // ServerPlayer#serverLevel() is the 1.20.1 rename; on 1.19.2 ServerPlayer#getLevel() already returns
+        // the covariant ServerLevel, so this is the same call under its older name.
+        net.minecraft.server.level.ServerLevel level = player.getLevel();
         net.minecraft.core.BlockPos pos = player.blockPosition();
         if (level.structureManager()
                 .getStructureWithPieceAt(pos, net.minecraft.tags.StructureTags.VILLAGE).isValid()) {

@@ -23,7 +23,7 @@ public final class LimboScytheEvents {
     @SubscribeEvent
     public static void onReap(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
-        if (victim.level().isClientSide()) return;
+        if (victim.getLevel().isClientSide()) return;
         if (victim.getMaxHealth() < LimboScytheItem.SOUL_HEALTH_MIN) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity killer)) return;
 

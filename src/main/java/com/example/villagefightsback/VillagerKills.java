@@ -82,7 +82,7 @@ public final class VillagerKills {
         // getEntity() on the source is the responsible killer: the shooter for a projectile, not the arrow.
         if (!(event.getSource().getEntity() instanceof LivingEntity killer)) return;
         if (!isDefender(killer)) return;   // villagers and guards, whichever kind of guard this pack has
-        if (killer.level().isClientSide()) return;
+        if (killer.getLevel().isClientSide()) return;
 
         int now = get(killer) + 1;
         killer.getPersistentData().putInt(NBT_KILLS, now);

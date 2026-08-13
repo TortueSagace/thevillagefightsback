@@ -77,7 +77,7 @@ public final class Graves {
                     for (int dy = 1; dy >= -2; dy--) {
                         BlockPos p = around.offset(dx, dy, dz);
                         if (!level.isLoaded(p)) continue;
-                        if (!level.getBlockState(p).canBeReplaced()) continue;
+                        if (!level.getBlockState(p).getMaterial().isReplaceable()) continue;
                         BlockPos below = p.below();
                         if (!level.getBlockState(below).isFaceSturdy(level, below,
                                 net.minecraft.core.Direction.UP)) continue;
@@ -112,7 +112,7 @@ public final class Graves {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity dead = event.getEntity();
-        if (!(dead.level() instanceof ServerLevel level)) return;
+        if (!(dead.getLevel() instanceof ServerLevel level)) return;
 
         if (dead instanceof GeneralDariusEntity) {
             // The champion always gets a grave, whether or not he took anyone with him.

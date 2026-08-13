@@ -257,7 +257,7 @@ public final class VillageEvents {
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
         if (event.getSlot() != EquipmentSlot.MAINHAND) return;
-        if (event.getEntity().level().isClientSide()) return;
+        if (event.getEntity().getLevel().isClientSide()) return;
         LivingEntity e = event.getEntity();
         // Only defenders this mod has actually armed. An un-upgraded villager legitimately holds nothing.
         if (!UpgradeState.isUpgraded(e) && !UpgradeState.isStage2(e)) return;
@@ -632,7 +632,9 @@ public final class VillageEvents {
      */
     @SubscribeEvent
     public static void onBuilderFall(LivingAttackEvent event) {
-        if (!event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FALL)) return;
+        // 1.19.2 predates the damage-type registry and its tags. DamageSource#isFall() is the exact equivalent of
+        // 1.20.1's DamageTypeTags.IS_FALL: both cover "fall" and "stalagmite" and nothing else.
+        if (!event.getSource().isFall()) return;
         if (!(event.getEntity() instanceof Villager villager)) return;
         if (!BuilderRole.isBuilder(villager)) return;
         event.setCanceled(true);

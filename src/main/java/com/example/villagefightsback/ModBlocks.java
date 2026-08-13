@@ -487,7 +487,8 @@ public final class ModBlocks {
      *  installed (with MCA the village uses MCA's tombstones instead). Placeable either way. */
     public static final RegistryObject<Block> MEMORIAL = BLOCKS.register("memorial",
             () -> new MemorialBlock(BlockBehaviour.Properties.copy(Blocks.DEEPSLATE_TILES)
-                    .mapColor(MapColor.DEEPSLATE)
+                    // 1.19.2 has MaterialColor rather than MapColor, and the setter is color() not mapColor().
+                    .color(MaterialColor.DEEPSLATE)
                     .noOcclusion()));
     // Main puts the memorial in the creative tab through displayItems(). 1.19.2 has no
     // BuildCreativeModeTabContentsEvent and no tab builder, so tab membership is declared per item instead.

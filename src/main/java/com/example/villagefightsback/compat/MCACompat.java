@@ -165,7 +165,8 @@ public final class MCACompat {
     public static void forgetEmeraldTarget(net.minecraft.world.entity.LivingEntity villager) {
         net.minecraft.world.entity.ai.Brain<?> brain = villager.getBrain();
         eraseIfEmerald(brain, net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET);
-        net.minecraft.core.registries.BuiltInRegistries.MEMORY_MODULE_TYPE
+        // 1.19.2 keeps the built-in registries as static fields on Registry; BuiltInRegistries arrived in 1.19.3.
+        net.minecraft.core.Registry.MEMORY_MODULE_TYPE
                 .getOptional(GUARD_ENEMY_MEMORY)
                 .ifPresent(type -> {
                     @SuppressWarnings("unchecked")
@@ -210,7 +211,7 @@ public final class MCACompat {
      */
     public static void recallGuardsHurtBy(net.minecraft.world.entity.LivingEntity victim) {
         if (!present()) return;
-        for (Villager v : victim.level().getEntitiesOfClass(Villager.class,
+        for (Villager v : victim.getLevel().getEntitiesOfClass(Villager.class,
                 new net.minecraft.world.phys.AABB(victim.blockPosition()).inflate(HURT_BROADCAST_RADIUS))) {
             forgetEmeraldTarget(v);
         }

@@ -986,17 +986,17 @@ public final class BrainNodeEvents {
         for (int d = 1; d <= GROUND_PROBE; d++) {                 // a roof/platform has open space under it
             BlockPos under = support.below(d);
             if (!level.isLoaded(under)) break;
-            if (!level.getBlockState(under).blocksMotion()) return false;
+            if (!level.getBlockState(under).getMaterial().blocksMotion()) return false;
         }
         return true;
     }
 
     private static boolean isGoodNodeSpot(ServerLevel level, BlockPos spot, boolean replacingBell) {
-        if (!replacingBell && !level.getBlockState(spot).canBeReplaced()) return false;
+        if (!replacingBell && !level.getBlockState(spot).getMaterial().isReplaceable()) return false;
         if (!onRealGround(level, spot)) return false;
 
         for (int dy = 1; dy <= NODE_HEADROOM; dy++) {
-            if (level.getBlockState(spot.above(dy)).blocksMotion()) return false;
+            if (level.getBlockState(spot.above(dy)).getMaterial().blocksMotion()) return false;
         }
 
         int clear = 0;
@@ -1005,8 +1005,8 @@ public final class BrainNodeEvents {
                 if (dx == 0 && dz == 0) continue;
                 BlockPos n = spot.offset(dx, 0, dz);
                 if (!level.isLoaded(n)) continue;
-                if (level.getBlockState(n).blocksMotion()) continue;            // blocked at node level
-                if (level.getBlockState(n.above()).blocksMotion()) continue;    // 1-high crawlspace: nothing can stand
+                if (level.getBlockState(n).getMaterial().blocksMotion()) continue;            // blocked at node level
+                if (level.getBlockState(n.above()).getMaterial().blocksMotion()) continue;    // 1-high crawlspace: nothing can stand
                 BlockPos below = n.below();
                 if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue; // nowhere to stand
                 clear++;
@@ -1039,7 +1039,7 @@ public final class BrainNodeEvents {
                 BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
                 if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
                 // 1.19.2: Material.isReplaceable()/blocksMotion() are the pre-1.20 spellings of
-                // BlockState.canBeReplaced()/blocksMotion(). Same predicates, so the vetting is unchanged.
+                // BlockState.getMaterial().isReplaceable()/blocksMotion(). Same predicates, so the vetting is unchanged.
                 boolean ok = roomy ? isGoodNodeSpot(level, surface, false)
                         : (level.getBlockState(surface).getMaterial().isReplaceable()
                                 && onRealGround(level, surface)

@@ -60,10 +60,16 @@ public final class VillageBuildings {
 
     /** The first village start referenced by {@code center}'s chunk, or null. */
     private static StructureStart fromChunk(ServerLevel level, BlockPos center) {
+        // 1.19.2 has no Registries.STRUCTURE and no Registry#wrapAsHolder; the registry key lives on Registry as
+        // STRUCTURE_REGISTRY, and a value is turned into a Holder by looking its key back up. Same test, same
+        // answer -- "is this structure in the village tag" -- just spelled with the holder lookup that exists here.
+        net.minecraft.core.Registry<net.minecraft.world.level.levelgen.structure.Structure> structures =
+                level.registryAccess().registryOrThrow(net.minecraft.core.Registry.STRUCTURE_REGISTRY);
         for (StructureStart s : level.structureManager().startsForStructure(new ChunkPos(center),
-                structure -> level.registryAccess()
-                        .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
-                        .wrapAsHolder(structure).is(StructureTags.VILLAGE))) {
+                structure -> structures.getResourceKey(structure)
+                        .flatMap(structures::getHolder)
+                        .map(holder -> holder.is(StructureTags.VILLAGE))
+                        .orElse(false))) {
             if (s.isValid()) return s;
         }
         return null;
