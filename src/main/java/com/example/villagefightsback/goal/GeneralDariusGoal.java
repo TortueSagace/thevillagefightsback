@@ -34,7 +34,9 @@ import net.minecraft.world.phys.Vec3;
  * left he walks home and despawns (refunding 64 gems -- handled by {@link GeneralDariusEntity}).
  *
  * Movement: a DOUBLE-height mace jump (no ceiling check -- Darius breaks the ceiling on the way up) to close /
- * smash, a dive smash on the way down, a Cheap-Scaffold pit-escape when boxed in below ground, and -- below
+ * smash, and again on the spot once he is in reach, so the fight stays a rain of smashes rather than settling
+ * into standing swings; a dive smash on the way down, a Cheap-Scaffold pit-escape when boxed in below ground,
+ * and -- below
  * 50% HP -- the Limbo banish beam at the locked target on a 30s cooldown (fired by the entity).
  */
 public class GeneralDariusGoal extends Goal {
@@ -44,6 +46,8 @@ public class GeneralDariusGoal extends Goal {
 
     private static final double LAUNCH_VY = 2.0;            // ~2x a mace guard's 1.0-1.2 (double jump)
     private static final double LAUNCH_HORIZ = 0.55;
+    /** Horizontal push for a point-blank leap: just enough to track a shuffling target, not enough to overshoot. */
+    private static final double LAUNCH_HORIZ_CLOSE = 0.12;
     private static final int LAUNCH_COOLDOWN = 35;
     private static final double JUMP_MIN_DIST_SQR = 16.0;   // only jump-close when >4 blocks out
     private static final double SMASH_RANGE_SQR = 9.0;
@@ -145,6 +149,19 @@ public class GeneralDariusGoal extends Goal {
 
         if (distSqr <= MELEE_REACH_SQR) {
             darius.getNavigation().stop();
+            // GOING UP IS THE ATTACK. A mace champion who has closed the distance should still be leaping and
+            // coming down on his target, not standing there trading pokes -- the smash is worth several times a
+            // plain swing (SMASH_BASE plus 3.5 per block of fall against a flat hit) and it is what the weapon
+            // is FOR. Standing swings are only what he does while the launch is recharging.
+            //
+            // Nearly vertical at this range: the long-range LAUNCH_HORIZ is tuned to cover ground, and using it
+            // point-blank would sail him clean over the target's head and land him behind it. A small nudge keeps
+            // him above them, and diveAndSmash steers the rest of the way down.
+            if (launchCooldown <= 0 && (t.getY() - darius.getY()) > -2.0) {
+                launchAt(t, LAUNCH_HORIZ_CLOSE);
+                noProgressTicks = 0;
+                return;
+            }
             if (meleeCooldown <= 0) {
                 darius.swing(InteractionHand.MAIN_HAND);
                 darius.doHurtTarget(t);
@@ -262,11 +279,23 @@ public class GeneralDariusGoal extends Goal {
     }
 
     // --- mace jump (double height, no ceiling check) ------------------------------------------------
+    /** Jump at {@code t} to close ground: the full horizontal reach. */
     private void launchAt(LivingEntity t) {
+        launchAt(t, LAUNCH_HORIZ);
+    }
+
+    /**
+     * Jump at {@code t} with {@code horiz} of horizontal push.
+     *
+     * <p>The push is a parameter because the same leap serves two jobs. Crossing four blocks to reach someone
+     * wants the whole {@link #LAUNCH_HORIZ}; leaping on someone already at arm's length wants almost none, or he
+     * flies over their head and lands behind them, having to turn round before he can do it again.
+     */
+    private void launchAt(LivingEntity t, double horiz) {
         Vec3 to = t.position().subtract(darius.position());
         double hl = Math.sqrt(to.x * to.x + to.z * to.z);
         double hx = hl > 1.0E-4 ? to.x / hl : 0, hz = hl > 1.0E-4 ? to.z / hl : 0;
-        darius.setDeltaMovement(hx * LAUNCH_HORIZ, LAUNCH_VY, hz * LAUNCH_HORIZ);
+        darius.setDeltaMovement(hx * horiz, LAUNCH_VY, hz * horiz);
         darius.hasImpulse = true;
         darius.hurtMarked = true;
         darius.fallDistance = 0.0F;
