@@ -7,10 +7,14 @@ public final class ModTriggers {
     private ModTriggers() {}
 
     public static final BrainNodeStageTrigger BRAIN_NODE_STAGE = new BrainNodeStageTrigger();
-    public static final ResurrectionTrigger RESURRECTION = new ResurrectionTrigger();
+    /** Raised one of the village's dead with the Limbo Scythe. */
+    public static final SimpleModTrigger RESURRECTION = new SimpleModTrigger("resurrection");
+    /** The Limbo Scythe spent a soul to buy back the player's own death. */
+    public static final SimpleModTrigger SCYTHE_SAVE = new SimpleModTrigger("scythe_save");
 
     public static void register() {
         CriteriaTriggers.register(BRAIN_NODE_STAGE);
         CriteriaTriggers.register(RESURRECTION);
+        CriteriaTriggers.register(SCYTHE_SAVE);
     }
 }

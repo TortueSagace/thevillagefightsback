@@ -111,7 +111,8 @@ at the bottom.
     20 HP on a 60s cooldown.
   - **Limbo Block** -- 9 limbo ingots, bedrock-tough, animated green, and a valid beacon base.
   - A 12-node **advancement tree** for the Limbo journey (added **Dark deal**: buy from the Limbo Sage, and
-    the scythe chain: **Not As Useless As It Sounds** -> **Raise The Dead** -> **An Invincible Army**).
+    the scythe chain: **Not As Useless As It Sounds** -> **Raise The Dead** -> **An Invincible Army**, plus
+    **Not Even Close!** for surviving a death on a soul).
 
 ### 8. Expanded arsenal
 - **Alien Slasher / Alien Eradicator split**: the Slasher now always inflicts Emerald Virus I; the new

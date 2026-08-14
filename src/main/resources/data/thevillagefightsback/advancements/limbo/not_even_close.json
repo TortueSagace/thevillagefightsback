@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:limbo_scythe"
+    },
+    "title": "Not Even Close!",
+    "description": "Let the Limbo Scythe spend a soul to buy back your own death.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "saved": {
+      "trigger": "thevillagefightsback:scythe_save"
+    }
+  },
+  "requirements": [
+    [
+      "saved"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/scythe"
+}

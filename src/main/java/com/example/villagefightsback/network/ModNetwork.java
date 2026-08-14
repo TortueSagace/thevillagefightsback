@@ -56,6 +56,11 @@ public final class ModNetwork {
                 .decoder(SpawnHintPacket::decode)
                 .consumerMainThread(SpawnHintPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(ScytheSavePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScytheSavePacket::encode)
+                .decoder(ScytheSavePacket::decode)
+                .consumerMainThread(ScytheSavePacket::handle)
+                .add();
         CHANNEL.messageBuilder(OpenModeSelectPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(OpenModeSelectPacket::encode)
                 .decoder(OpenModeSelectPacket::decode)

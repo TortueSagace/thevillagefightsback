@@ -32,7 +32,7 @@ public class LimboScytheItem extends HoeItem {
     public static final float SOUL_HEALTH_MIN = 20.0F;
 
     /** How many souls one scythe can hold at once. */
-    public static final int MAX_SOULS = 16;
+    public static final int MAX_SOULS = 8;
 
     private static final String NBT_SOULS = "vgun_souls";
 
@@ -54,7 +54,8 @@ public class LimboScytheItem extends HoeItem {
         return true;
     }
 
-    private static void spendSoul(ItemStack stack) {
+    /** Burn one soul. Public because dying spends them too, from every scythe carried (see LimboScytheEvents). */
+    public static void spendSoul(ItemStack stack) {
         stack.getOrCreateTag().putInt(NBT_SOULS, Math.max(0, souls(stack) - 1));
     }
 
