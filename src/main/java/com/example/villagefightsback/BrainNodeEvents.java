@@ -137,21 +137,21 @@ public final class BrainNodeEvents {
     }
 
     /**
-     * A bell that has raised a brain node is SPENT: one bell, one village, and never a second one.
+     * A bell that has raised a brain node is SPENT: one bell, one village, and never a second one. The bell is
+     * TAKEN, always. Usually the node has already replaced it in place and there is nothing left to do; this
+     * matters when the node settled beside it instead, which happens for a wall-mounted or walled-in bell and
+     * always under MCA Reborn.
      *
-     * <p>Without MCA the bell is simply taken. Usually the node has already replaced it in place, and this only
-     * has anything to do when the node had to settle beside it (a wall-mounted or walled-in bell). Either way it
-     * is removed WITHOUT drops, so it cannot be picked back up.
-     *
-     * <p>With MCA Reborn the bell has to keep standing: it is MCA's Town Center, and its residency, marriage,
-     * taxes and guard spawning all hang off it, so taking it would delete the village centre out from under MCA.
-     * It stays, and {@link #onSpentBellBroken} makes it unrecoverable instead. Same outcome for the exploit --
-     * the bell can never travel to a second village -- without breaking the town hall to get there.
+     * <p>MCA is deliberately no exception, and it used to be. The bell is MCA's Town Center, so the first
+     * version left it standing there and merely made it unrecoverable, on the reasoning that deleting the
+     * village centre out from under MCA would cost more than the exploit did. That was the wrong trade to make
+     * on the player's behalf: a bell still standing in the middle of the village reads as a bell you can take,
+     * and being told "no" by an invisible rule is worse than it simply being gone. Taken everywhere now, at the
+     * cost of MCA losing that meeting point.
      */
-    private static void spendBell(ServerLevel level, BlockPos bell, boolean keepBell) {
-        if (keepBell) return;                                  // MCA's town centre must keep standing
+    private static void spendBell(ServerLevel level, BlockPos bell) {
         if (!level.getBlockState(bell).is(Blocks.BELL)) return; // the node already took its place
-        level.removeBlock(bell, false);                        // false = no drops: spent, not recovered
+        level.removeBlock(bell, false);                        // removeBlock never drops (its boolean is isMoving)
     }
 
     /**
@@ -897,12 +897,13 @@ public final class BrainNodeEvents {
         //  - Without MCA: it takes the bell's place DIRECTLY (replaces the bell block), so a village shows a
         //    brainNode at its heart instead of a bell -- but only if that spot is actually usable (see
         //    isGoodNodeSpot). A bell that is wall/ceiling-mounted, walled in, or under a low roof falls back.
-        //  - With MCA Reborn: the bell IS MCA's Town Center building, and MCA's residency / marriage / taxes /
-        //    guard systems hang off it, so consuming it would delete the village centre out from under MCA.
-        //    There we always settle BESIDE the bell and leave it standing; MCA's town centre has an 8-block
-        //    margin, so an adjacent spot is still the town hall.
-        boolean keepBell = com.example.villagefightsback.compat.MCACompat.preserveTownCenter();
-        BlockPos spot = (!keepBell && isGoodNodeSpot(level, bell, true))
+        //  - With MCA Reborn: settle BESIDE the bell instead. MCA's town centre carries an 8-block margin, so an
+        //    adjacent spot is still the town hall, and the node does not land on whatever MCA has built there.
+        //
+        // NOTE: this only chooses WHERE. The bell itself is taken either way now (see spendBell), so the flag no
+        // longer means "the bell survives" -- under MCA the node simply stands next to the gap it leaves.
+        boolean settleBeside = com.example.villagefightsback.compat.MCACompat.preserveTownCenter();
+        BlockPos spot = (!settleBeside && isGoodNodeSpot(level, bell, true))
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
         if (spot == null) {
@@ -935,7 +936,7 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
-        spendBell(level, bell, keepBell);
+        spendBell(level, bell);
         // Note: founding a village no longer grants Hero of the Village, and the SETTLEMENT PHASE banner is NOT
         // broadcast here -- announceDiscoveredNodes fires it exactly once the first time any player is near the
         // node (which, for a hand-/auto-placed node, is essentially immediately), so it never double-fires.
