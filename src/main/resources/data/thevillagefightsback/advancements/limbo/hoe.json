@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:limbo_hoe"
+    },
+    "title": "Not As Useless As It Sounds",
+    "description": "Forge the Limbo Hoe. It has a second life ahead of it.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:limbo_hoe"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/membrane"
+}

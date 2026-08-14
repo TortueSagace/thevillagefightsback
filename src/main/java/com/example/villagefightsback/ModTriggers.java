@@ -7,8 +7,10 @@ public final class ModTriggers {
     private ModTriggers() {}
 
     public static final BrainNodeStageTrigger BRAIN_NODE_STAGE = new BrainNodeStageTrigger();
+    public static final ResurrectionTrigger RESURRECTION = new ResurrectionTrigger();
 
     public static void register() {
         CriteriaTriggers.register(BRAIN_NODE_STAGE);
+        CriteriaTriggers.register(RESURRECTION);
     }
 }

@@ -90,6 +90,10 @@ public class LimboScytheItem extends HoeItem {
                 pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 40, 0.4, 0.8, 0.4, 0.02);
         sl.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0F, 1.4F);
         tell(ctx, "A soul returns to the village.", ChatFormatting.GREEN);
+        // Success branch only: a swing that failed for want of a soul earns nothing.
+        if (ctx.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            ModTriggers.RESURRECTION.trigger(sp);
+        }
         return InteractionResult.CONSUME;
     }
 

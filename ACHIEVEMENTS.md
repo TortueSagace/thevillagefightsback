@@ -110,7 +110,8 @@ at the bottom.
     randomly-enchanted limbo tools, never limbo armour) and hurls a Volatile Limbo Potion at enemies above
     20 HP on a 60s cooldown.
   - **Limbo Block** -- 9 limbo ingots, bedrock-tough, animated green, and a valid beacon base.
-  - A 9-node **advancement tree** for the Limbo journey (added **Dark deal**: buy from the Limbo Sage).
+  - A 12-node **advancement tree** for the Limbo journey (added **Dark deal**: buy from the Limbo Sage, and
+    the scythe chain: **Not As Useless As It Sounds** -> **Raise The Dead** -> **An Invincible Army**).
 
 ### 8. Expanded arsenal
 - **Alien Slasher / Alien Eradicator split**: the Slasher now always inflicts Emerald Virus I; the new

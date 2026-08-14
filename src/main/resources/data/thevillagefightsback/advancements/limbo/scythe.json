@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:limbo_scythe"
+    },
+    "title": "Raise The Dead",
+    "description": "Craft the Limbo Scythe from that hoe, and learn what it was really for.",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:limbo_scythe"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/hoe"
+}
