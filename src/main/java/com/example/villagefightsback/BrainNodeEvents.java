@@ -136,6 +136,46 @@ public final class BrainNodeEvents {
         }
     }
 
+    /**
+     * A bell that has raised a brain node is SPENT: one bell, one village, and never a second one.
+     *
+     * <p>Without MCA the bell is simply taken. Usually the node has already replaced it in place, and this only
+     * has anything to do when the node had to settle beside it (a wall-mounted or walled-in bell). Either way it
+     * is removed WITHOUT drops, so it cannot be picked back up.
+     *
+     * <p>With MCA Reborn the bell has to keep standing: it is MCA's Town Center, and its residency, marriage,
+     * taxes and guard spawning all hang off it, so taking it would delete the village centre out from under MCA.
+     * It stays, and {@link #onSpentBellBroken} makes it unrecoverable instead. Same outcome for the exploit --
+     * the bell can never travel to a second village -- without breaking the town hall to get there.
+     */
+    private static void spendBell(ServerLevel level, BlockPos bell, boolean keepBell) {
+        if (keepBell) return;                                  // MCA's town centre must keep standing
+        if (!level.getBlockState(bell).is(Blocks.BELL)) return; // the node already took its place
+        level.removeBlock(bell, false);                        // false = no drops: spent, not recovered
+    }
+
+    /**
+     * Breaking a bell that has already raised a brain node yields nothing.
+     *
+     * <p>This is what closes the loop for MCA, where {@link #spendBell} has to leave the bell standing. Without
+     * it a player could mine the town centre back into their inventory and re-place it somewhere else for a
+     * second village, which is exactly the "one bell, many nodes" trick the spending rule exists to stop. The
+     * bell still breaks; it just does not come back as an item.
+     *
+     * <p>Serviced keys ARE bell positions (see {@link #tryPlaceBrainNode}), so membership is the whole test.
+     * Creative is left alone, since it never drops anything and can hand out bells freely regardless.
+     */
+    @SubscribeEvent
+    public static void onSpentBellBroken(BlockEvent.BreakEvent event) {
+        if (!event.getState().is(Blocks.BELL)) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (event.getPlayer() != null && event.getPlayer().getAbilities().instabuild) return;
+        if (!BrainNodeData.get(level.getServer())
+                .isServiced(GlobalPos.of(level.dimension(), event.getPos().immutable()))) return;
+        event.setCanceled(true);
+        level.removeBlock(event.getPos(), false); // no drops
+    }
+
     /** Remember which player placed a village bell (legacy; the founder reward was removed). Kept so old saves
      *  with bellPlacers still load and so the record is pruned over time. */
     @SubscribeEvent
@@ -874,6 +914,7 @@ public final class BrainNodeEvents {
 
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
+        spendBell(level, bell, keepBell);
         // Note: founding a village no longer grants Hero of the Village, and the SETTLEMENT PHASE banner is NOT
         // broadcast here -- announceDiscoveredNodes fires it exactly once the first time any player is near the
         // node (which, for a hand-/auto-placed node, is essentially immediately), so it never double-fires.
