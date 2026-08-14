@@ -348,6 +348,15 @@ public class StageThreeGuardGoal extends Goal {
         return true;
     }
 
+    /**
+     * Pick who to fight: KEEP whoever we already have, otherwise acquire someone new.
+     *
+     * <p>The asymmetry is the design. Acquiring needs line of sight ({@link #nearestEnemy}); keeping does not.
+     * A guard that watched a zombie duck behind a wall goes after it, which is what a soldier should do, but a
+     * guard that has never laid eyes on anything stays put instead of setting off after a mob two rooms away.
+     * Pursuit is still bounded by FOLLOW_RANGE below, so a target that genuinely escapes is dropped rather than
+     * chased across the map.
+     */
     private void refreshTarget() {
         // Honor an externally-set target first (a vindictive guard's broad target goal sets guard.getTarget()
         // to villagers/players/animals -- things that aren't Enemy), as long as it's valid and not a faction-mate.
@@ -364,6 +373,24 @@ public class StageThreeGuardGoal extends Goal {
         return com.example.villagefightsback.Factions.isInfected(guard) && com.example.villagefightsback.Factions.isInfected(e);
     }
 
+    /**
+     * The nearest hostile this guard can SEE, within {@code radius}.
+     *
+     * <p>Line of sight is required to ACQUIRE, which is the whole point of this check: without it this was a
+     * bare box query, so a guard locked onto hostiles through walls, floors and hillsides and then marched at
+     * something it had never seen. Every other combat goal in the mod (AxeCombatGoal, StoneAxeDefenseGoal,
+     * GolemRocketGoal, SageVolatileThrowGoal) has always gated selection this way; the guard goal was the one
+     * that did not, and it only checked sight when it came to FIRING. Since guards learned to dig, that gap
+     * stopped being invisible and became a guard tunnelling toward a mob it could not see.
+     *
+     * <p>Retaining a target is deliberately NOT gated: see {@link #refreshTarget}. Both callers here are
+     * acquiring -- a fresh sweep, and the Wind Burst bounce picking who to leap at next, which has just as
+     * little business hurling a guard at something behind a wall.
+     *
+     * <p>The sight test is LAST in the predicate on purpose. It ray-traces, while everything before it is a
+     * field read or an instanceof, so ordering it last means only genuine candidates cost a trace.
+     * {@link net.minecraft.world.entity.ai.sensing.Sensing} also caches per entity per tick.
+     */
     private LivingEntity nearestEnemy(double radius, LivingEntity exclude, boolean includeCreepers) {
         AABB box = guard.getBoundingBox().inflate(radius);
         LivingEntity best = null;
@@ -373,7 +400,8 @@ public class StageThreeGuardGoal extends Goal {
                         && com.example.villagefightsback.Factions.isVillageThreat(x)
                         && !com.example.villagefightsback.Factions.isSparedByVillage(x) // never Darius or the friendly Vindictive Village Spirit
                         && !isFactionMate(x)
-                        && (includeCreepers || !(x instanceof Creeper)) && x.isAlive())) {
+                        && (includeCreepers || !(x instanceof Creeper)) && x.isAlive()
+                        && guard.getSensing().hasLineOfSight(x))) {
             double d = guard.distanceToSqr(e);
             if (d <= bestD) { bestD = d; best = e; }
         }
