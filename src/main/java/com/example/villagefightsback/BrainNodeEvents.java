@@ -170,10 +170,29 @@ public final class BrainNodeEvents {
         if (!event.getState().is(Blocks.BELL)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (event.getPlayer() != null && event.getPlayer().getAbilities().instabuild) return;
-        if (!BrainNodeData.get(level.getServer())
-                .isServiced(GlobalPos.of(level.dimension(), event.getPos().immutable()))) return;
+        BlockPos pos = event.getPos().immutable();
+        BrainNodeData data = BrainNodeData.get(level.getServer());
+        if (!isSpentBell(level, data, pos)) return;
         event.setCanceled(true);
-        level.removeBlock(event.getPos(), false); // no drops
+        level.removeBlock(pos, false); // removeBlock never drops (its boolean is isMoving, not dropBlock)
+    }
+
+    /**
+     * Has this bell already done its one job?
+     *
+     * <p>Asked TWO ways on purpose. The exact-position test is the precise one: serviced keys are the village
+     * centres a node was raised from, so a match means this very bell paid for that node. It is also the
+     * fragile one, since it only holds while the bell block and the MEETING poi agree on a position, and the
+     * first version of this rule relied on it alone and let bells be looted anyway.
+     *
+     * <p>So proximity backs it up: a bell standing inside a village that ALREADY has a brain node is spent
+     * whatever the bookkeeping says, because that village cannot use a second one. Same radius the placement
+     * scan uses to decide a village is already served, so the two rules agree by construction: if a bell is
+     * close enough to a node that it will never raise one, it is close enough to be spent.
+     */
+    private static boolean isSpentBell(ServerLevel level, BrainNodeData data, BlockPos pos) {
+        if (data.isServiced(GlobalPos.of(level.dimension(), pos))) return true;
+        return hasBrainNodeWithin(level, data, pos, NODE_CLAIM_RADIUS);
     }
 
     /** Remember which player placed a village bell (legacy; the founder reward was removed). Kept so old saves
@@ -440,6 +459,8 @@ public final class BrainNodeEvents {
     // Transient (like the maps above): a server restart simply clears the grace, and the boss guard takes over.
     private static final int REMOVAL_COOLDOWN_TICKS = 100;       // ~5s grace after a boss-summoning removal
     private static final double REMOVAL_COOLDOWN_RADIUS = 128.0; // matches the boss-nearby guard radius below
+    /** How far a brain node claims. A village this close to one will never raise its own, so its bell is spent. */
+    private static final double NODE_CLAIM_RADIUS = 100.0;
     private static final Map<GlobalPos, Long> recentRemovals = new HashMap<>(); // removed node pos -> server tick
 
     /** Ring a bell at a brain node when it reaches a new stage (its placement, or a level-up). */
@@ -903,9 +924,9 @@ public final class BrainNodeEvents {
             if (e.getKey().dimension().equals(level.dimension()) && e.getKey().pos().distSqr(spot) <= cd2) return;
         }
 
-        // One brainNode per area: skip if another already exists within 100 blocks (overlapping
+        // One brainNode per area: skip if another already exists within NODE_CLAIM_RADIUS (overlapping
         // villages / extra bells). Not marked serviced, so it self-heals if that brainNode is removed.
-        if (hasBrainNodeWithin(level, data, spot, 100.0)) return;
+        if (hasBrainNodeWithin(level, data, spot, NODE_CLAIM_RADIUS)) return;
 
         // While the unleashed brainNode boss is loose in the area, NO new brainNode may rise (no domino
         // re-spawn after it was destroyed). It resumes only once the boss is dead. Not marked serviced.
