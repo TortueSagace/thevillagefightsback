@@ -154,6 +154,7 @@ public final class VillageEvents {
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
         } else if (isGuard(mob)) {
             // BEFORE the Villager branch: an MCA guard/archer is a Villager too, and must take the guard kit.
+            ensureGuardDigGoal(mob);                               // EVERY guard, at every stage
             if (upgraded) armGuardFull(mob);                       // stage 3+: full emerald knight (mace-bounce)
             else if (UpgradeState.isStage2(mob)) armGuardStage2(mob); // stage 2: virus archer (no mace)
             // else: normal guard
@@ -161,6 +162,25 @@ public final class VillageEvents {
             if (upgraded) armVillagerFull(villager);
             else armVillagerNerfed(villager);
         }
+    }
+
+    /**
+     * Give a guard the same digging ability the emerald faction has: when it cannot PATH to its prey it breaks
+     * the soft block in the way instead of standing there. Idempotent, and applied to EVERY guard at EVERY
+     * stage, not just an upgraded one, since being walled off from a fight is not a problem that waits for a
+     * promotion.
+     *
+     * <p>Priority 5 mirrors the emerald units'. The goal carries NO goal flags, so the number barely matters:
+     * it runs ALONGSIDE {@code StageThreeGuardGoal} rather than competing with it for the MOVE flag, and only
+     * wakes up once a real pathfind to the target has already failed.
+     *
+     * <p>The village's own masonry is safe. {@code EmeraldDigGoal.isDiggable} refuses cobblestone, planks,
+     * brick, both fake gates and this mod's reinforced/protecting glass, so a guard can tunnel through dirt or
+     * a besieger's makeshift cover but cannot chew a hole in the wall it is defending.
+     */
+    private static void ensureGuardDigGoal(PathfinderMob guard) {
+        if (hasGoal(guard, com.example.villagefightsback.goal.EmeraldDigGoal.class)) return; // re-added each load
+        guard.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(guard));
     }
 
     /** Replace a plain village iron golem with a {@link GigachadGolemEntity} at the same spot; the new type

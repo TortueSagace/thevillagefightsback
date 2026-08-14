@@ -18,7 +18,7 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * An emerald unit that cannot PATH to its prey digs through the soft block in its way -- the block(s) directly in
+ * A unit that cannot PATH to its prey digs through the soft block in its way -- the block(s) directly in
  * FRONT of it (one per body level: 2 blocks for a 2-tall unit, 3 for a 3-tall one), the one directly ABOVE its head,
  * or straight DOWN (preferred when the prey is below). It digs at a bare-hand player's speed (no tool) and shows the
  * cracking animation. In EVERY direction -- down included -- it only breaks blocks {@link #isDiggable} permits;
@@ -28,6 +28,11 @@ import net.minecraftforge.registries.ForgeRegistries;
  * flag (which the attack goal always holds while a target exists). It only kicks in when a real pathfind to the
  * target fails ({@link Path#canReach()} is false) -- i.e. there is no clear path -- then breaks the obstacle and the
  * normal pursuit walks through. The reach check is staggered per-entity to a few times a second to keep it cheap.
+ *
+ * <p>NAME: this began as an emerald-faction ability and kept the name, but VILLAGE GUARDS carry it too now (see
+ * {@code VillageEvents.ensureGuardDigGoal}), at every stage rather than only when upgraded. The digging rules are
+ * identical for both sides; what differs is only who is holding the pick. The village's own walls are safe either
+ * way, because {@link #isDiggable} refuses cobblestone, planks, brick, the fake gates and this mod's own glass.
  */
 public class EmeraldDigGoal extends Goal {
     private static final int RECHECK_TICKS = 20; // how often to (re)test reachability with a real pathfind
@@ -42,9 +47,31 @@ public class EmeraldDigGoal extends Goal {
         this.setFlags(EnumSet.noneOf(Goal.Flag.class)); // no flags -> runs concurrently with combat/movement goals
     }
 
+    /**
+     * The prey to dig toward.
+     *
+     * <p>{@link Mob#getTarget()} first, then the brain's ATTACK_TARGET. The fallback exists because this goal is
+     * no longer emerald-only: village guards carry it too, and an MCA Reborn guard is a brain-driven Villager that
+     * picks its prey through memory rather than through {@code setTarget}. Without the fallback such a guard would
+     * carry the goal and never once use it, since {@code getTarget()} stays null for its whole life.
+     *
+     * <p>The REGISTERED check is not optional. {@link net.minecraft.world.entity.ai.Brain#getMemory} THROWS for a
+     * memory the entity's brain never declared, and most of the mobs carrying this goal (golems, emerald mobs)
+     * have no ATTACK_TARGET memory at all, so probing unguarded would crash the server on the first stuck digger.
+     */
+    private LivingEntity currentTarget() {
+        LivingEntity t = mob.getTarget();
+        if (t != null) return t;
+        net.minecraft.world.entity.ai.Brain<?> brain = mob.getBrain();
+        net.minecraft.world.entity.ai.memory.MemoryModuleType<LivingEntity> mem =
+                net.minecraft.world.entity.ai.memory.MemoryModuleType.ATTACK_TARGET;
+        if (!brain.checkMemory(mem, net.minecraft.world.entity.ai.memory.MemoryStatus.REGISTERED)) return null;
+        return brain.getMemory(mem).orElse(null);
+    }
+
     @Override
     public boolean canUse() {
-        LivingEntity target = mob.getTarget();
+        LivingEntity target = currentTarget();
         if (target == null || !target.isAlive() || !mob.onGround()) return false;
         // Only dig once the mob has actually WALKED to the end of its path (it is stuck), never mid-stride -- this is
         // what stops it gouging random holes in the floor on the way to reachable prey.
@@ -57,7 +84,7 @@ public class EmeraldDigGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        LivingEntity target = mob.getTarget();
+        LivingEntity target = currentTarget();
         if (target == null || !target.isAlive() || dig == null || !isDiggable(mob.level(), dig)) return false;
         if (stuckCheckDue() && canReachTarget(target)) return false; // a path opened up -> stop digging and walk it
         return true;
@@ -153,7 +180,7 @@ public class EmeraldDigGoal extends Goal {
         if (progress >= 1.0F) {
             level.destroyBlock(dig, false);    // break it (no drops, so it never litters)
             clearProgress();
-            LivingEntity target = mob.getTarget();
+            LivingEntity target = currentTarget();
             dig = target != null ? findDiggable(target) : null; // keep tunnelling: line up the next block in the way
         }
     }
