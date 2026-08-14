@@ -50,7 +50,8 @@ public final class LimboDimension {
     /** Guarantee the cell directly under {@code feet} (in Limbo) is a solid standing surface. If it has been
      *  destroyed/replaced by something you would fall through (air, fluid, a non-sturdy block), drop a
      *  fake-bedrock block there -- so anything spawned at that spot can never fall into the void. Fake bedrock
-     *  is itself solid as a floor (it only goes passable when a block covers it), so the new block holds. */
+     *  is itself solid as a floor: it only goes passable when something covers it, or when it stands on more
+     *  fake bedrock (the gate rule). Neither applies to a single block dropped over the void, so this holds. */
     public static void ensureFloorUnder(ServerLevel limbo, BlockPos feet) {
         BlockPos below = feet.below();
         if (!limbo.getBlockState(below).isFaceSturdy(limbo, below, net.minecraft.core.Direction.UP)) {

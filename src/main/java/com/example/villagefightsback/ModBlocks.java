@@ -583,12 +583,14 @@ public final class ModBlocks {
                     "block.thevillagefightsback.forgotten_glowstone.desc"));
 
     /** "Fake bedrock": looks/breaks exactly like bedrock (unbreakable except by the Limbo Pickaxe) but every
-     *  creature passes through it -- the whole Limbo is built from it (see {@link FakeBedrockBlock}). The
-     *  isSuffocating/isViewBlocking predicates are false so a creature inside it is unharmed + unobscured. */
+     *  creature passes through it -- the whole Limbo is built from it (see {@link FakeBedrockBlock}). Carries
+     *  the same pair as the other two fake blocks: isSuffocating false so standing in it costs no health, and
+     *  isViewBlocking TRUE so it blinds you like the stone it pretends to be. Use {@link #X_RAY_BEDROCK} when
+     *  you want to see out. */
     public static final RegistryObject<Block> FAKE_BEDROCK = BLOCKS.register("fake_bedrock",
             () -> new FakeBedrockBlock(BlockBehaviour.Properties.copy(Blocks.BEDROCK)
                     .isSuffocating((s, l, p) -> false)
-                    .isViewBlocking((s, l, p) -> false)));
+                    .isViewBlocking((s, l, p) -> true)));
     public static final RegistryObject<Item> FAKE_BEDROCK_ITEM = ITEMS.register("fake_bedrock",
             () -> new TooltipBlockItem(FAKE_BEDROCK.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_bedrock.desc"));

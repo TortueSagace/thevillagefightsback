@@ -19,8 +19,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * acts as a floor/surface when there is open space above, so mobs and players stand on the Limbo cube floors and
  * roofs instead of dropping into the void; a covered block (a wall's interior) is fully passable. The whole
  * Limbo is built from it, so anything can simply walk out of a Limbo cube while it still looks like a sealed
- * bedrock cell. isSuffocating / isViewBlocking are set false on its Properties (in {@link ModBlocks}) so an
- * entity standing inside it takes no damage and gets no black overlay.
+ * bedrock cell. On its Properties (in {@link ModBlocks}) isSuffocating is false so an entity standing inside
+ * takes no damage, while isViewBlocking is TRUE so it blinds you like the stone it imitates -- the same pair
+ * the other two fake blocks carry. {@code ModBlocks#X_RAY_BEDROCK} is the see-through variant, and it shares
+ * this class, so the floor rule below treats the two as one family.
  */
 public class FakeBedrockBlock extends Block {
     public FakeBedrockBlock(Properties properties) {
@@ -32,9 +34,23 @@ public class FakeBedrockBlock extends Block {
         if (context instanceof EntityCollisionContext ecc && ecc.getEntity() != null) {
             // A surface (open space above) is solid so creatures stand on it; a covered block (wall interior) is
             // fully passable, so any creature walks through the walls of a cube but not down through its floor.
+            //
+            // ...unless it is standing on another block of this family, in which case it is the upper half of a
+            // gate and stays passable. Without that clause a free-standing 2-high doorway was solid at HEAD
+            // height (open sky above the top block made it read as a floor), so you could put your feet in it
+            // and go no further -- while the fake cobblestone and obsidian gates, which have always had this
+            // rule, let you walk straight through. A doorway made of the family's third block should not be the
+            // one that refuses to open.
+            //
+            // Safe for every structure the Limbo builds because all of them are ONE block thick: cube shells,
+            // portal floors and the emergency floor under a spawning entity all sit on void, so their "below"
+            // is never family and they stay solid. The Limbo's worldgen is a single layer of air, so there is
+            // no stacked bedrock floor anywhere to fall through.
             BlockState above = level.getBlockState(pos.above());
+            BlockState below = level.getBlockState(pos.below());
             boolean openAbove = above.isAir() || above.canBeReplaced();
-            return openAbove ? Shapes.block() : Shapes.empty();
+            boolean onFamily = below.getBlock() instanceof FakeBedrockBlock;
+            return openAbove && !onFamily ? Shapes.block() : Shapes.empty();
         }
         return Shapes.block(); // non-entity contexts (support / redstone / the per-state cache): solid
     }
