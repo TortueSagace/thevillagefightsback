@@ -148,9 +148,24 @@ public final class FoundingManager {
         return best;
     }
 
-    /** A 1-wide, 2-tall air (or cave-air) pocket with a solid floor -- room for a villager to stand. */
+    /**
+     * A 1-wide, 2-tall pocket a villager can stand in, with a solid floor.
+     *
+     * <p>Tested by COLLISION, not by air. Asking for air meant a snow layer disqualified the cell, and in a
+     * snowy biome every surface cell has one, so the whole outdoors read as unstandable: the hex ring found
+     * nothing, the fallback ring found nothing, and the few spots that did pass were the snow-free patches
+     * around the village centre and its paths. All four settlers were then dropped in that same huddle, and
+     * one second of scattering could not undo it, so their houses went up on top of each other. The same
+     * carpet-shaped hole would swallow tall grass and flowers on a plains start.
+     *
+     * <p>{@link ExpansionManager} already tests it this way, which is why village EXPANSION spaced its
+     * buildings correctly in the same world that founding botched. This now matches it, fluid check included,
+     * so a settler is never dropped standing in water either.
+     */
     private static boolean standable(ServerLevel level, BlockPos p) {
-        if (!level.getBlockState(p).isAir() || !level.getBlockState(p.above()).isAir()) return false;
+        if (!level.getBlockState(p).getCollisionShape(level, p).isEmpty()) return false;
+        if (!level.getBlockState(p.above()).getCollisionShape(level, p.above()).isEmpty()) return false;
+        if (!level.getBlockState(p).getFluidState().isEmpty()) return false; // not stood in water
         BlockPos below = p.below();
         return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
     }
