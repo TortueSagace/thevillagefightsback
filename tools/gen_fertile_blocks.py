@@ -24,6 +24,10 @@ GREEN_GAMMA = 0.80         # <1 brightens mid-tones (more punch)
 BASES = {
     "dirt":       ("all", "dirt"),
     "sand":       ("all", "sand"),
+    # Vanilla sandstone is top/bottom/side, but the only multi-face kind here is "log" -- and that comes with
+    # axis blockstate variants the (non-pillar) fertile_sandstone block has no AXIS property for. So we take
+    # the side texture on all 6 faces; it is the face you actually see in a wall.
+    "sandstone":  ("all", "sandstone"),
     "stone":      ("all", "stone"),
     "log":        ("log", ("oak_log", "oak_log_top")),
     "deepslate":  ("log", ("deepslate", "deepslate_top")),  # axis pillar like logs (side + top)

@@ -36,10 +36,11 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class BlockMatcher {
     private BlockMatcher() {}
 
-    /** Base names, MOST-SPECIFIC FIRST so id-substring matching prefers "end_stone"/"deepslate" over "stone". */
+    /** Base names, MOST-SPECIFIC FIRST so id-substring matching prefers "end_stone"/"deepslate" over "stone"
+     *  and "sandstone" over "sand" (an id containing one base often contains a shorter one too). */
     static final String[] BASES = {
             "deepslate", "end_stone", "netherrack", "sculk", "leaves", "blackstone", "basalt",
-            "soul_sand", "soul_soil", "snow_block", "gravel", "sand", "dirt", "log", "stone"
+            "soul_sand", "soul_soil", "snow_block", "gravel", "sandstone", "sand", "dirt", "log", "stone"
     };
 
     /** Reference hardness per base (vanilla destroy time) for the closest-toughness fallback. */
@@ -47,6 +48,7 @@ public final class BlockMatcher {
     static {
         BASE_HARDNESS.put("dirt", 0.5F);
         BASE_HARDNESS.put("sand", 0.5F);
+        BASE_HARDNESS.put("sandstone", 0.8F);
         BASE_HARDNESS.put("gravel", 0.6F);
         BASE_HARDNESS.put("stone", 1.5F);
         BASE_HARDNESS.put("deepslate", 3.0F);
@@ -131,6 +133,9 @@ public final class BlockMatcher {
         putAll(exact, "dirt", Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.GRASS_BLOCK, Blocks.PODZOL,
                 Blocks.MYCELIUM, Blocks.ROOTED_DIRT, Blocks.MUD);
         putAll(exact, "sand", Blocks.SAND, Blocks.RED_SAND);
+        putAll(exact, "sandstone", Blocks.SANDSTONE, Blocks.CHISELED_SANDSTONE, Blocks.CUT_SANDSTONE,
+                Blocks.SMOOTH_SANDSTONE, Blocks.RED_SANDSTONE, Blocks.CHISELED_RED_SANDSTONE,
+                Blocks.CUT_RED_SANDSTONE, Blocks.SMOOTH_RED_SANDSTONE);
         putAll(exact, "gravel", Blocks.GRAVEL);
         putAll(exact, "stone", Blocks.STONE, Blocks.GRANITE, Blocks.DIORITE, Blocks.ANDESITE,
                 Blocks.TUFF, Blocks.CALCITE);
