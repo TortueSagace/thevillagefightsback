@@ -168,6 +168,29 @@ public final class BrainReflexes {
         return recent >= GeneralDariusEntity.DANGEROUS_PLAYER_KILLS;
     }
 
+    /**
+     * Dying settles the account: the village forgets this player's kills at EVERY node.
+     *
+     * <p>Without this the grudge outlived the punishment. The kill deque is pruned only by time, so a player
+     * who died to Darius respawned still "dangerous" and Darius simply came for them again, and again, for the
+     * remainder of the three-minute window -- while Enemy of the Village, the status they could actually SEE,
+     * had already cleared on death. Being hunted by something you can no longer tell you deserve is just a
+     * mystery, and paying for the same crime several times is not what the reflex is for.
+     *
+     * <p>Hooked to the respawn rather than to the death event on purpose: {@code LivingDeathEvent} is cancelled
+     * when a Limbo Scythe buys the death back, and someone the scythe saved has not died and should not be
+     * forgiven. {@code PlayerEvent.Clone} with {@code isWasDeath} fires only when a death really happened.
+     *
+     * <p>Kills counted AFTER the respawn build the record up again from zero, so the village forgives once and
+     * then starts watching just as closely.
+     */
+    @SubscribeEvent
+    public static void onPlayerRespawn(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        if (!event.isWasDeath()) return;
+        java.util.UUID id = event.getOriginal().getUUID();
+        STATES.values().forEach(s -> s.playerKills.remove(id));
+    }
+
     @SubscribeEvent
     public static void onWallBreak(BlockEvent.BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel sl)) return;

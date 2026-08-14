@@ -70,9 +70,11 @@ public final class LimboScytheEvents {
         event.setCanceled(true);
         charged.forEach(LimboScytheItem::spendSoul);
 
-        // Pull them back from the brink the way a totem does: alive but only just, and cleaned of whatever was
-        // killing them, so being saved from poison does not simply kill you again a second later.
-        player.setHealth(1.0F);
+        // Back on your feet, not on your knees. A totem leaves you at half a heart, which is survivable only
+        // because a totem is cheap; a soul costs a 20-HP kill and is drained from EVERY scythe carried, so
+        // being handed back a sliver of health that the very next hit takes away made the price absurd. Half
+        // of max, and the Regeneration below closes the rest within seconds.
+        player.setHealth(player.getMaxHealth() * 0.5F);
         player.removeAllEffects();
         player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                 net.minecraft.world.effect.MobEffects.REGENERATION, 900, 1));
