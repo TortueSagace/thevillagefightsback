@@ -142,12 +142,13 @@ public final class BrainNodeEvents {
      * matters when the node settled beside it instead, which happens for a wall-mounted or walled-in bell and
      * always under MCA Reborn.
      *
-     * <p>MCA is deliberately no exception, and it used to be. The bell is MCA's Town Center, so the first
-     * version left it standing there and merely made it unrecoverable, on the reasoning that deleting the
-     * village centre out from under MCA would cost more than the exploit did. That was the wrong trade to make
-     * on the player's behalf: a bell still standing in the middle of the village reads as a bell you can take,
-     * and being told "no" by an invisible rule is worse than it simply being gone. Taken everywhere now, at the
-     * cost of MCA losing that meeting point.
+     * <p>MCA is no exception, and taking the bell there costs MCA nothing, because the brain node INHERITS the
+     * job. MCA's Town Center is not the bell as such: {@code town_center.json} asks for one block of the
+     * {@code #mca:town_center} tag, and that tag ships containing exactly {@code minecraft:bell}. The tag is
+     * {@code "replace": false}, so this mod adds the brain node to it (see
+     * {@code data/mca/tags/blocks/town_center.json}) and the node standing beside the vanished bell satisfies
+     * the same requirement. Residency, marriage, taxes and MCA's guard spawning all keep their centre; it is
+     * simply a different block now, and one that suits a village whose heart is the node anyway.
      */
     private static void spendBell(ServerLevel level, BlockPos bell) {
         if (!level.getBlockState(bell).is(Blocks.BELL)) return; // the node already took its place

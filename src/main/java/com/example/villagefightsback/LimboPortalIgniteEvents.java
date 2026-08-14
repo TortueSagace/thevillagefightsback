@@ -13,7 +13,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Lights Limbo portals: right-clicking a {@link ModBlocks#FAKE_OBSIDIAN} frame with flint &amp; steel (or a fire
+ * Lights Limbo portals: right-clicking a fake- or X-ray-obsidian frame with flint &amp; steel (or a fire
  * charge) tries to build a green Limbo portal in the enclosed opening ({@link LimboPortalShape}). On success
  * the flame is consumed but no fire is placed -- the portal blocks fill the frame directly.
  */
@@ -27,7 +27,8 @@ public final class LimboPortalIgniteEvents {
         ItemStack held = event.getItemStack();
         boolean igniter = held.is(Items.FLINT_AND_STEEL) || held.is(Items.FIRE_CHARGE);
         if (!igniter) return;
-        if (!event.getLevel().getBlockState(event.getPos()).is(ModBlocks.FAKE_OBSIDIAN.get())) return;
+        // Either obsidian gate block lights a portal (see LimboPortalShape#isFrame).
+        if (!LimboPortalShape.isFrame(event.getLevel().getBlockState(event.getPos()))) return;
         if (!(event.getLevel() instanceof ServerLevel sl)) {
             event.setCanceled(true); // keep client + server in lockstep; the server does the work
             return;

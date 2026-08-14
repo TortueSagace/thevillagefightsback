@@ -7,9 +7,10 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Lights a player-built Limbo portal: given the air cell where the flame would land, it looks for a
- * rectangular frame of {@link ModBlocks#FAKE_OBSIDIAN} (interior 2-21 wide x 3-21 tall) enclosing that cell on
- * either horizontal axis, and -- if found -- fills the interior with green Limbo portal blocks. Mirrors the
- * vanilla nether-portal rules, but for fake obsidian instead of obsidian.
+ * rectangular frame of {@link ModBlocks#FAKE_OBSIDIAN} or {@link ModBlocks#X_RAY_OBSIDIAN} (interior 2-21 wide
+ * x 3-21 tall) enclosing that cell on either horizontal axis, and -- if found -- fills the interior with green
+ * Limbo portal blocks. Mirrors the vanilla nether-portal rules, but for this mod's obsidian gates instead of
+ * plain obsidian.
  */
 public final class LimboPortalShape {
     private LimboPortalShape() {}
@@ -78,10 +79,12 @@ public final class LimboPortalShape {
         return true;
     }
 
-    /** If {@code pos} is fake obsidian, replace it with real (solid, impassable) obsidian. Used to harden the
-     *  frame cells in direct contact with a freshly-lit portal. */
+    /** If {@code pos} is a portal frame block (fake or X-ray obsidian), replace it with real (solid, impassable)
+     *  obsidian. Used to harden the frame cells in direct contact with a freshly-lit portal, so nobody walks
+     *  through the rim of a live portal. Both kinds harden: a see-through frame you could still step through
+     *  would leave exactly the gap this pass exists to close. */
     private static void solidifyFrame(ServerLevel level, BlockPos pos, BlockState solid) {
-        if (level.getBlockState(pos).is(ModBlocks.FAKE_OBSIDIAN.get())) level.setBlock(pos, solid, 3);
+        if (isFrame(level.getBlockState(pos))) level.setBlock(pos, solid, 3);
     }
 
     /** How far the air interior extends from {@code from} in {@code dir} (exclusive of the bounding frame). */
@@ -101,6 +104,19 @@ public final class LimboPortalShape {
     }
 
     private static boolean isFrame(ServerLevel level, BlockPos pos) {
-        return level.getBlockState(pos).is(ModBlocks.FAKE_OBSIDIAN.get());
+        return isFrame(level.getBlockState(pos));
+    }
+
+    /**
+     * A block a Limbo portal frame can be built from: fake obsidian, or its X-ray twin.
+     *
+     * <p>The X-ray block is the same block with one flag flipped, crafted FROM a fake obsidian, so a player who
+     * upgraded their gate glass had every reason to expect the frame to keep working and no way to guess it did
+     * not. Shared here rather than repeated so the igniter, the shape scan and the hardening pass can never
+     * disagree about what a frame is, which is the failure that would light a portal in a frame it then refused
+     * to recognise.
+     */
+    public static boolean isFrame(net.minecraft.world.level.block.state.BlockState s) {
+        return s.is(ModBlocks.FAKE_OBSIDIAN.get()) || s.is(ModBlocks.X_RAY_OBSIDIAN.get());
     }
 }
