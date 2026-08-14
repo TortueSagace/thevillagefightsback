@@ -26,8 +26,9 @@ import net.minecraftforge.registries.ForgeRegistries;
  *
  * Two mechanisms, kept in sync via {@link #isPhaser}:
  *  - Collision: {@link #getCollisionShape} returns an empty shape for allied entities, solid otherwise
- *    (and for non-entity contexts: placement/redstone/the per-state cache). {@link #isSuffocating} /
- *    {@link #isViewBlocking} are false so an ally standing inside doesn't take damage or black-screen.
+ *    (and for non-entity contexts: placement/redstone/the per-state cache). isSuffocating is false so an
+ *    ally standing inside takes no damage, while isViewBlocking is TRUE so they still get the ordinary
+ *    in-wall overlay and cannot use the gate as a free window (see {@link ModBlocks#FAKE_COBBLESTONE}).
  *  - Pathfinding: {@link #getBlockPathType} returns {@link ModPathTypes#ALLY_PASSABLE} (mob-blind by
  *    necessity in 1.20.1); allied mobs set that type's malus to 0 so only they route through.
  */
@@ -69,9 +70,10 @@ public class FakeCobblestoneBlock extends Block {
         return Shapes.block(); // everyone else + non-entity contexts: solid
     }
 
-    // NOTE: isSuffocating / isViewBlocking are Properties predicates (not overridable methods); they
-    // are set to "always false" on the block's Properties in ModBlocks so an ally standing inside the
-    // block doesn't take suffocation damage or get the black "inside a block" overlay.
+    // NOTE: isSuffocating / isViewBlocking are Properties predicates (not overridable methods), and they are
+    // set opposite ways in ModBlocks: suffocating false so an ally inside takes no damage, view-blocking TRUE
+    // so they still get the "inside a block" overlay. Standing in the gate should cost you your view, just not
+    // your health -- otherwise it is a free one-way window into the battle. See ModBlocks#FAKE_COBBLESTONE.
 
     @Override
     @Nullable

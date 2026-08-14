@@ -67,16 +67,25 @@ public final class ModBlocks {
 
     /**
      * "Fake cobblestone": a mossy-cobble look-alike smart door -- allies (players/villagers/golems/
-     * guards) phase through it while everyone else hits solid cobblestone. Emits light level 7. The
-     * isSuffocating/isViewBlocking predicates are false so an ally inside it takes no damage / no
-     * black overlay (these are Properties predicates, not block-method overrides).
+     * guards) phase through it while everyone else hits solid cobblestone. Emits light level 7.
+     *
+     * <p>The two Properties predicates (not block-method overrides) are set OPPOSITE ways on purpose:
+     * <ul>
+     *   <li>{@code isSuffocating} false, so standing in the gate never costs an ally any health.</li>
+     *   <li>{@code isViewBlocking} TRUE, so an ally standing in it gets vanilla's in-wall overlay: the
+     *       cobble texture fills the screen exactly as if they were buried in real stone.</li>
+     * </ul>
+     * Both used to be false, which let a player park inside the wall and watch the battle through it in
+     * perfect comfort -- a one-way window with no cost, which made the gate far too strong. The gate is
+     * meant to be walked THROUGH, so passing costs a moment of blindness and camping in it costs sight
+     * altogether, while still costing no health.
      */
     public static final RegistryObject<Block> FAKE_COBBLESTONE = BLOCKS.register(
             "fake_cobblestone",
             () -> new FakeCobblestoneBlock(BlockBehaviour.Properties.copy(Blocks.MOSSY_COBBLESTONE)
                     .lightLevel(s -> 7)
                     .isSuffocating((s, l, p) -> false)
-                    .isViewBlocking((s, l, p) -> false)));
+                    .isViewBlocking((s, l, p) -> true)));
 
     public static final RegistryObject<Item> FAKE_COBBLESTONE_ITEM = ITEMS.register(
             "fake_cobblestone",
@@ -84,13 +93,14 @@ public final class ModBlocks {
                     "block.thevillagefightsback.fake_cobblestone.desc"));
 
     /** "Fake obsidian": the stage-3 OUTER wall's gate -- same smart-door phasing as fake cobblestone, but with
-     *  obsidian toughness so attackers can't break the gate. */
+     *  obsidian toughness so attackers can't break the gate. Carries the same harmless-but-blinding pair as
+     *  {@link #FAKE_COBBLESTONE}: no suffocation damage, but the in-wall overlay while you are inside it. */
     public static final RegistryObject<Block> FAKE_OBSIDIAN = BLOCKS.register(
             "fake_obsidian",
             () -> new FakeObsidianBlock(BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)
                     .lightLevel(s -> 7)
                     .isSuffocating((s, l, p) -> false)
-                    .isViewBlocking((s, l, p) -> false)));
+                    .isViewBlocking((s, l, p) -> true)));
 
     public static final RegistryObject<Item> FAKE_OBSIDIAN_ITEM = ITEMS.register(
             "fake_obsidian",
