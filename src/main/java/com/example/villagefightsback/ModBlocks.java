@@ -107,6 +107,44 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
+    // --- X-ray blocks: the Fake blocks with their yellow growth burned cold blue, and the ONE behavioural
+    //     difference that the colour advertises. ---
+    //
+    // Every X-ray block is its Fake counterpart in all but two respects:
+    //   1. isViewBlocking is false, so standing inside one you see straight out, which is exactly how the
+    //      Fake blocks behaved before they were made blinding. The old free-window trick is not gone, it is
+    //      now something you PAY for: an echo shard and a night vision potion per block.
+    //   2. The texture is blue instead of yellow, so an X-ray gate is recognisable from across the village
+    //      and nobody has to remember which of two identical-looking walls they can see through.
+    //
+    // They reuse the Fake block CLASSES outright, since the phasing, pathfinding and floor rules are all
+    // meant to be identical -- only the Properties differ. Fake bedrock's sibling picks up light level 7
+    // (which fake bedrock lacks) so its veins actually glow like the other two.
+
+    public static final RegistryObject<Block> X_RAY_COBBLESTONE = BLOCKS.register(
+            "x_ray_cobblestone",
+            () -> new FakeCobblestoneBlock(BlockBehaviour.Properties.copy(Blocks.MOSSY_COBBLESTONE)
+                    .lightLevel(s -> 7)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> X_RAY_COBBLESTONE_ITEM = ITEMS.register(
+            "x_ray_cobblestone",
+            () -> new TooltipBlockItem(X_RAY_COBBLESTONE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.x_ray_cobblestone.desc"));
+
+    public static final RegistryObject<Block> X_RAY_OBSIDIAN = BLOCKS.register(
+            "x_ray_obsidian",
+            () -> new FakeObsidianBlock(BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)
+                    .lightLevel(s -> 7)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> X_RAY_OBSIDIAN_ITEM = ITEMS.register(
+            "x_ray_obsidian",
+            () -> new TooltipBlockItem(X_RAY_OBSIDIAN.get(), new Item.Properties(),
+                    "block.thevillagefightsback.x_ray_obsidian.desc"));
+
     // --- "Nodes": glowing ancient-debris-tough ore blocks. All add +10% to the village's daily sunset harvest
     //     (within a brain node's range); each also spawns its own reinforcement every sunset + on creation. ---
     private static BlockBehaviour.Properties nodeProps() {
@@ -555,6 +593,19 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_BEDROCK.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_bedrock.desc"));
 
+    /** X-ray bedrock: fake bedrock you can see out of (see the X-ray family note by {@link #X_RAY_COBBLESTONE}).
+     *  It takes light level 7 that fake bedrock does not have, so its blue veins read as lit rather than painted,
+     *  and it wears its own texture instead of the vanilla one because it is meant to be spotted, not to hide. */
+    public static final RegistryObject<Block> X_RAY_BEDROCK = BLOCKS.register("x_ray_bedrock",
+            () -> new FakeBedrockBlock(BlockBehaviour.Properties.copy(Blocks.BEDROCK)
+                    .lightLevel(s -> 7)
+                    .isSuffocating((s, l, p) -> false)
+                    .isViewBlocking((s, l, p) -> false)));
+
+    public static final RegistryObject<Item> X_RAY_BEDROCK_ITEM = ITEMS.register("x_ray_bedrock",
+            () -> new TooltipBlockItem(X_RAY_BEDROCK.get(), new Item.Properties(),
+                    "block.thevillagefightsback.x_ray_bedrock.desc"));
+
     /**
      * Limbo Block: a storage block crafted from 9 Limbo Ingots. As tough as bedrock against explosions (blast
      * resistance 1200) yet still obtainable -- a diamond+ pickaxe mines it back (hardness 50, like obsidian/the
@@ -616,6 +667,9 @@ public final class ModBlocks {
                 // === Defensive / structural blocks ===
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
                 output.accept(FAKE_OBSIDIAN_ITEM.get());
+                // Straight after their Fake twins, so the two families sit side by side in the tab.
+                output.accept(X_RAY_COBBLESTONE_ITEM.get());
+                output.accept(X_RAY_OBSIDIAN_ITEM.get());
                 output.accept(CHEAP_SCAFFOLD_ITEM.get());
                 output.accept(REINFORCED_GLASS_ITEM.get());
                 output.accept(PROTECTING_GLASS_ITEM.get());
@@ -738,6 +792,7 @@ public final class ModBlocks {
                 output.accept(LIMBO_GRAVEL_ITEM.get());
                 output.accept(LIMBO_EGG_ITEM.get());
                 output.accept(FAKE_BEDROCK_ITEM.get());
+                output.accept(X_RAY_BEDROCK_ITEM.get());
                 output.accept(FORGOTTEN_GLOWSTONE_ITEM.get());
                 output.accept(ModItems.FORGOTTEN_POWDER.get());
                 output.accept(ModItems.LIMBO_MEMBRANE.get());

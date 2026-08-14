@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "thevillagefightsback:fake_bedrock"
+    },
+    {
+      "item": "minecraft:echo_shard"
+    },
+    {
+      "type": "forge:partial_nbt",
+      "item": "minecraft:potion",
+      "nbt": {
+        "Potion": "minecraft:long_night_vision"
+      }
+    }
+  ],
+  "result": {
+    "item": "thevillagefightsback:x_ray_bedrock"
+  }
+}

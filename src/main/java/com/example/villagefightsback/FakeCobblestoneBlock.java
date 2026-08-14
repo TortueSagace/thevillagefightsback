@@ -57,13 +57,19 @@ public class FakeCobblestoneBlock extends Block {
             if (e != null && isPhaser(e)) {
                 // Allies phase through the wall, BUT a fake-cobble resting on a REAL solid block with open space
                 // above acts as a floor they can stand on (so they don't fall through a fake-cobble platform).
-                // When it sits on ANOTHER fake-cobble, it's the upper half of a vertical door/gate column, so it
-                // stays passable -- a plain 2-high fake-cobble stack (foot + head) is a walk-through doorway, and
-                // a 3-high gate (capped or not) works too. Only the BOTTOM block of a stack can be a floor.
+                // When it sits on ANOTHER block of this family, it's the upper half of a vertical door/gate
+                // column, so it stays passable -- a plain 2-high stack (foot + head) is a walk-through doorway,
+                // and a 3-high gate (capped or not) works too. Only the BOTTOM block of a stack can be a floor.
+                //
+                // "Family", not "this exact block": the X-ray variants are separate registrations of this same
+                // class, and a player who caps a fake-cobble gate with an X-ray one to get a window is building
+                // one gate, not a gate with a floor halfway up. Testing the class keeps any mix of fake and
+                // X-ray, cobble and obsidian, reading as the single column it looks like.
                 BlockState below = level.getBlockState(pos.below());
                 BlockState above = level.getBlockState(pos.above());
                 boolean openAbove = above.isAir() || above.canBeReplaced();
-                boolean realFloor = openAbove && !below.is(this) && !below.isAir() && !below.canBeReplaced();
+                boolean sameFamily = below.getBlock() instanceof FakeCobblestoneBlock;
+                boolean realFloor = openAbove && !sameFamily && !below.isAir() && !below.canBeReplaced();
                 return realFloor ? Shapes.block() : Shapes.empty();
             }
         }
