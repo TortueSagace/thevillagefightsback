@@ -1,6 +1,7 @@
 package com.example.villagefightsback.goal;
 
 import java.util.EnumSet;
+import java.util.List;
 
 import com.example.villagefightsback.infection.BlockMatcher;
 
@@ -12,6 +13,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
@@ -38,13 +40,70 @@ public class EmeraldDigGoal extends Goal {
     private static final int RECHECK_TICKS = 20; // how often to (re)test reachability with a real pathfind
 
     private final Mob mob;
+    /** Whether this digger may draw an emerald tool. Guards do; emerald units keep clawing bare-handed. */
+    private final boolean toolUser;
     private BlockPos dig;
     private float progress;       // 0..1 accumulated break progress on `dig`
     private int shownStage = -1;  // last cracking stage broadcast (0..9), -1 = none
+    private ItemStack stashedWeapon = ItemStack.EMPTY; // what was in the hand before a tool was drawn
+    private boolean holdingTool;
 
+    /** Bare-handed digger (the emerald faction). */
     public EmeraldDigGoal(Mob mob) {
+        this(mob, false);
+    }
+
+    public EmeraldDigGoal(Mob mob, boolean toolUser) {
         this.mob = mob;
+        this.toolUser = toolUser;
         this.setFlags(EnumSet.noneOf(Goal.Flag.class)); // no flags -> runs concurrently with combat/movement goals
+    }
+
+    /**
+     * The emerald tool that bites into {@code state} hardest, or null if none beats bare hands.
+     *
+     * <p>Chosen by ASKING each tool rather than by matching block tags: {@code getDestroySpeed} is the same
+     * question the game asks for a player, so the pickaxe wins on stone, the shovel on dirt, the axe on wood
+     * and the sword on cobweb, without this goal keeping its own copy of vanilla's tag tables to fall out of
+     * date. A block no tool is better at (a mob-placed oddity, a modded block in no mineable tag) returns null
+     * and the digger just uses its fists, which is what it did for everything before.
+     */
+    private static net.minecraft.world.item.Item bestTool(BlockState state) {
+        net.minecraft.world.item.Item best = null;
+        float bestSpeed = 1.0F; // bare hand; a tool has to actually beat it to be worth drawing
+        for (net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item> ro : List.of(
+                com.example.villagefightsback.ModItems.EMERALD_PICKAXE,
+                com.example.villagefightsback.ModItems.EMERALD_SHOVEL,
+                com.example.villagefightsback.ModItems.EMERALD_AXE,
+                com.example.villagefightsback.ModItems.EMERALD_SWORD)) {
+            net.minecraft.world.item.Item item = ro.get();
+            float speed = new ItemStack(item).getDestroySpeed(state);
+            if (speed > bestSpeed) { bestSpeed = speed; best = item; }
+        }
+        return best;
+    }
+
+    /** Draw the right tool for {@code state}, stashing whatever the digger was holding the first time. */
+    private void equipFor(BlockState state) {
+        if (!toolUser) return;
+        net.minecraft.world.item.Item want = bestTool(state);
+        if (want == null) { restoreWeapon(); return; }
+        if (mob.getMainHandItem().is(want)) return;
+        if (!holdingTool) {
+            stashedWeapon = mob.getMainHandItem().copy();
+            holdingTool = true;
+        }
+        mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, new ItemStack(want));
+        mob.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
+    }
+
+    /** Put the weapon back. A guard that stops digging must not wander off holding a shovel. */
+    private void restoreWeapon() {
+        if (!holdingTool) return;
+        mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, stashedWeapon);
+        mob.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
+        stashedWeapon = ItemStack.EMPTY;
+        holdingTool = false;
     }
 
     /**
@@ -139,8 +198,13 @@ public class EmeraldDigGoal extends Goal {
      *  ({@link BlockMatcher#isCandidate} -- a blacklist, so foreign soft blocks like the Spore mod's DO qualify),
      *  or the faction's own fertile/rich GROUND terrain (NOT the wall-shaped fertile variants). Forbidden blocks
      *  (cobblestone, fake/wall blocks, chests, ore, glass, brain node, bedrock, ...) are excluded by isCandidate. */
-    private static boolean isDiggable(Level level, BlockPos pos) {
+    private boolean isDiggable(Level level, BlockPos pos) {
         BlockState s = level.getBlockState(pos);
+        // COBWEB is an obstruction that does not block motion, so the solidity test below throws it out. For a
+        // tool user it is worth cutting anyway: walking into it is what a web is FOR, and a guard wading through
+        // at a crawl while something shoots at it is the trap working exactly as the player intended. Only tool
+        // users get this, so a player's web still slows the emerald faction the way it always has.
+        if (toolUser && s.is(net.minecraft.world.level.block.Blocks.COBWEB)) return true;
         if (s.isAir() || !s.blocksMotion()) return false;          // only solid obstructions
         if (s.getDestroySpeed(level, pos) < 0.0F) return false;    // unbreakable (bedrock / fake bedrock)
         if (BlockMatcher.isCandidate(level, pos, s)) return true;  // any infectable obstruction (incl. foreign soft blocks)
@@ -165,10 +229,17 @@ public class EmeraldDigGoal extends Goal {
         mob.getLookControl().setLookAt(dig.getX() + 0.5, dig.getY() + 0.5, dig.getZ() + 0.5);
 
         BlockState s = level.getBlockState(dig);
+        equipFor(s);
         float hardness = s.getDestroySpeed(level, dig);
-        // Bare-hand player break speed: damage/tick = 1 / hardness / (30 if hand can harvest it, else 100).
+        // Vanilla's own mining formula: damage/tick = toolSpeed / hardness / (30 if it can harvest, else 100).
+        // Held tool included, so drawing the right one actually pays -- an emerald pickaxe chews stone about as
+        // fast as a player's would, where the old hard-coded 1.0F meant a fully equipped guard scratched at a
+        // wall at exactly the speed of a mob with no hands.
+        ItemStack held = mob.getMainHandItem();
+        float speed = held.isEmpty() ? 1.0F : held.getDestroySpeed(s);
+        boolean canHarvest = !s.requiresCorrectToolForDrops() || (!held.isEmpty() && held.isCorrectToolForDrops(s));
         float perTick = hardness <= 0.0F ? 1.0F
-                : 1.0F / hardness / (s.requiresCorrectToolForDrops() ? 100.0F : 30.0F);
+                : speed / hardness / (canHarvest ? 30.0F : 100.0F);
         progress += perTick;
         mob.swing(InteractionHand.MAIN_HAND);
 
@@ -189,6 +260,7 @@ public class EmeraldDigGoal extends Goal {
     public void stop() {
         clearProgress();
         dig = null;
+        restoreWeapon();
     }
 
     private void clearProgress() {

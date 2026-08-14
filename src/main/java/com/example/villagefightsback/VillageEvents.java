@@ -180,7 +180,12 @@ public final class VillageEvents {
      */
     private static void ensureGuardDigGoal(PathfinderMob guard) {
         if (hasGoal(guard, com.example.villagefightsback.goal.EmeraldDigGoal.class)) return; // re-added each load
-        guard.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(guard));
+        // toolUser: a guard draws an emerald pickaxe/shovel/axe for whatever is in the way, and digs at that
+        // tool's real speed. The emerald faction keeps the bare-handed version it has always had.
+        guard.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(guard, true));
+        // Cutting free of a web is a separate problem from tunnelling to prey: no enemy and no failed path
+        // needed, just a caught guard. Priority 4, above digging, since being stuck beats being slow.
+        guard.goalSelector.addGoal(4, new com.example.villagefightsback.goal.CobwebCutGoal(guard));
     }
 
     /** Replace a plain village iron golem with a {@link GigachadGolemEntity} at the same spot; the new type
@@ -310,6 +315,10 @@ public final class VillageEvents {
         Item i = stack.getItem();
         if (i instanceof DiggerItem) return true;              // slasher / eradicator / build + mine tools
         if (i == Items.EMERALD) return true;                   // MinerGoal carries the ore it just dug
+        // The emerald sword is the ONE tool this mod issues that is not a DiggerItem, so it needs naming or the
+        // restore handler would rip it out of a guard's hand mid-swing: CobwebCutGoal and the dig goal both draw
+        // it (a sword is what cuts cobweb), and each puts the weapon back itself when it finishes.
+        if (i == com.example.villagefightsback.ModItems.EMERALD_SWORD.get()) return true;
         return i == GuardWeapons.mace().getItem()
                 || i == GuardWeapons.crossbow().getItem()
                 || i == GuardWeapons.alienSmasher().getItem();
