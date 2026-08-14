@@ -15,9 +15,10 @@ import net.minecraft.world.level.Level;
 /**
  * The Limbo Scythe: the reaper's tool, in the shape of a Limbo hoe.
  *
- * <p>Crafted from a Limbo hoe: amethyst blocks at the four corners, a golden apple above it and soul sand to
- * either side and below. The Limbo hoe itself is smithed from netherite, so a scythe still costs a trip to the
- * Limbo for the membrane behind it.
+ * <p>Crafted from a Limbo hoe: amethyst blocks at the four corners, a golden apple above it, soul sand to
+ * either side, and a Limbo Smithing Template beneath. The template is the expensive ingredient and the point of
+ * it: the hoe was already smithed with one, so a scythe costs a SECOND trip to the Limbo rather than a handful
+ * of soul sand from the nearest nether portal.
  *
  * <p>It works by SOULS. Reap a creature of {@value #SOUL_HEALTH_MIN} maximum health or more with it and the
  * scythe keeps that soul; spend a soul on a grave and the villager buried there walks out of it. Small creatures
