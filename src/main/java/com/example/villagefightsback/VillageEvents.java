@@ -147,13 +147,11 @@ public final class VillageEvents {
         // level-3 Village Brain Node (UpgradeEvents flips the flag). Until then: villagers fight only with a
         // stone axe (and only when badly hurt), guards and golems are vanilla.
         boolean upgraded = UpgradeState.isUpgraded(mob);
-        // Villagers and golems dig as well as guards now. A Nightmare raid has to be able to follow a player
-        // through whatever they put between themselves and it, and a raid where only the guards can pass a wall
-        // is a raid that arrives one third strong. Dormant otherwise: the goal only wakes when a real pathfind
-        // to a target has already failed, which for a villager going about its day never happens.
-        if (!emeraldger && (mob instanceof Villager || mob instanceof IronGolem)) {
-            ensureVillageDigGoal(mob);
-        }
+        // Villagers and golems do NOT get the dig goal here. They did briefly, so a Nightmare raid could follow
+        // through walls, and it was a bad trade: "only wakes when a pathfind fails" turned out to happen all the
+        // time in ordinary village life, and wall builders in particular spent their days digging themselves
+        // into holes they then could not climb out of. Raiders get it when they are drafted instead
+        // (NightmareRaid.send), which is the only time any of them actually needs it.
 
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only

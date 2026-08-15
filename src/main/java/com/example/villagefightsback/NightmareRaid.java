@@ -149,6 +149,9 @@ public final class NightmareRaid {
         if (m.getTarget() != null && m.getTarget().isAlive()) return false; // busy defending
         if (Factions.isInfected(m) || Factions.isEmerald(m)) return false;  // not the village's to send
         if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(m)) return false;
+        // A builder is mid-job on the village's wall; taking it on a hunt strands a half-built course and, when
+        // it had the dig goal, buried the builder in its own hole.
+        if (m instanceof Villager v && com.example.villagefightsback.BuilderRole.isBuilder(v)) return false;
         return m instanceof Villager || m instanceof IronGolem
                 || m instanceof GeneralDariusEntity || Factions.isGuard(m);
     }
@@ -217,6 +220,14 @@ public final class NightmareRaid {
         if (raider.goalSelector.getAvailableGoals().stream()
                 .noneMatch(g -> g.getGoal() instanceof com.example.villagefightsback.goal.NightmareHuntGoal)) {
             raider.goalSelector.addGoal(3, new com.example.villagefightsback.goal.NightmareHuntGoal(raider));
+        }
+        // Digging comes with the draft, not with being a villager, and never for a builder. A builder handed a
+        // shovel digs itself into a hole and stays there, which is what the village's own wall crews were doing.
+        boolean builder = raider instanceof Villager v
+                && com.example.villagefightsback.BuilderRole.isBuilder(v);
+        if (!builder && raider.goalSelector.getAvailableGoals().stream()
+                .noneMatch(g -> g.getGoal() instanceof com.example.villagefightsback.goal.EmeraldDigGoal)) {
+            raider.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(raider, true));
         }
         raider.setPersistenceRequired();                                 // never despawn mid-hunt
     }

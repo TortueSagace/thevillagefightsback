@@ -846,18 +846,32 @@ public final class BrainNodeEvents {
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null) continue;
+            // A RADIUS, not the single chunk the node stands in. The village's people are spread over many
+            // chunks, and with only the node's own chunk loaded a Nightmare raid could draft nobody but the
+            // two golems standing next to it -- everything else simply was not there to be counted.
             net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(gp.pos());
-            net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                    level, TheVillageFightsBack.MODID, gp.pos(), cp.x, cp.z, true, true);
+            for (int dx = -NODE_CHUNK_RADIUS; dx <= NODE_CHUNK_RADIUS; dx++) {
+                for (int dz = -NODE_CHUNK_RADIUS; dz <= NODE_CHUNK_RADIUS; dz++) {
+                    net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                            level, TheVillageFightsBack.MODID, gp.pos(), cp.x + dx, cp.z + dz, true, true);
+                }
+            }
         }
     }
 
     /** Drop a node's chunk ticket when it is destroyed, so nothing stays force-loaded after the village dies. */
     public static void releaseNodeChunk(ServerLevel level, BlockPos node) {
         net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(node);
-        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                level, TheVillageFightsBack.MODID, node, cp.x, cp.z, false, true);
+        for (int dx = -NODE_CHUNK_RADIUS; dx <= NODE_CHUNK_RADIUS; dx++) {
+            for (int dz = -NODE_CHUNK_RADIUS; dz <= NODE_CHUNK_RADIUS; dz++) {
+                net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                        level, TheVillageFightsBack.MODID, node, cp.x + dx, cp.z + dz, false, true);
+            }
+        }
     }
+
+    /** Chunks held either side of a node. 2 keeps roughly the village itself alive, at 25 chunks per node. */
+    private static final int NODE_CHUNK_RADIUS = 2;
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the brain node. */
     private static List<BlockPos> collectBeds(ServerLevel level, BlockPos center) {

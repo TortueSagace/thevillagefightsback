@@ -17,8 +17,11 @@ import net.minecraft.world.phys.Vec3;
  * raiders simply stopped, because nothing was telling them where to go. A hunt is exactly the case where the
  * village does know: the scent is the conceit, and the scent does not care about walls.
  *
- * <p>So this goal only MOVES. It never attacks and never sets a target; when the raider finally does see the
- * player, the ordinary combat goals take over and do the fighting, with their sight rules intact.
+ * <p>It also STRIKES, which it did not at first, and the first version was wrong. The village's ordinary combat
+ * goals each have their own conditions -- range, sight, stage, whether the villager is a builder, whether the
+ * target is past its wall -- and a raider on a hunt satisfies some and not others, so it arrived, swung the
+ * bare-handed animation every Mob does by default, and did nothing. Rather than find and loosen each of those
+ * conditions in turn, the hunt carries the one thing it must guarantee: a raider that reaches you hurts you.
  *
  * <p>It walks to a WAYPOINT rather than to the player. Minecraft's pathfinder gives up well before a thousand
  * blocks, so asking for the player's exact position from that far away returns no path at all and the raider
@@ -31,6 +34,15 @@ public class NightmareHuntGoal extends Goal {
     private static final double SPEED = 1.15;
     /** Re-aim a few times a second: often enough to follow a running player, rarely enough to be cheap. */
     private static final int REPATH_TICKS = 10;
+
+    /** Reach, squared. About the same as a vanilla mob's melee. */
+    private static final double REACH_SQR = 4.0;
+    /** Damage per blow. In line with the stone axe the village arms its villagers with. */
+    private static final float DAMAGE = 5.0F;
+    /** Ticks between blows, so a raid is a fight and not a shredder. */
+    private static final int SWING_TICKS = 20;
+
+    private int swingCooldown;
 
     private final PathfinderMob mob;
     private int cooldown;
@@ -52,6 +64,13 @@ public class NightmareHuntGoal extends Goal {
 
     @Override
     public void tick() {
+        Player quarry0 = NightmareRaid.huntedBy(mob);
+        if (quarry0 != null && --swingCooldown <= 0 && mob.distanceToSqr(quarry0) <= REACH_SQR) {
+            swingCooldown = SWING_TICKS;
+            mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            quarry0.hurt(mob.damageSources().mobAttack(mob), DAMAGE);
+        }
+
         if (--cooldown > 0) return;
         cooldown = REPATH_TICKS;
 
