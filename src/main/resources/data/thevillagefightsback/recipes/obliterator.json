@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ADA",
+    "SWS",
+    "ATA"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_block"
+    },
+    "D": {
+      "item": "minecraft:dragon_egg"
+    },
+    "S": {
+      "item": "minecraft:soul_sand"
+    },
+    "T": {
+      "item": "thevillagefightsback:limbo_smithing_template"
+    },
+    "W": {
+      "item": "thevillagefightsback:limbo_sword"
+    }
+  },
+  "result": {
+    "item": "thevillagefightsback:obliterator"
+  }
+}

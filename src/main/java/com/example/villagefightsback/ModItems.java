@@ -159,6 +159,11 @@ public final class ModItems {
                 @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
             });
 
+    /** Obliterator: an evolved Limbo Sword (14 damage). With an Obliteration Furnace burning, its hits mark
+     *  prey for erasure from the spawn tables. See {@link ObliteratorItem} / {@link ObliterationEvents}. */
+    public static final RegistryObject<Item> OBLITERATOR = ITEMS.register("obliterator",
+            () -> new ObliteratorItem(new Item.Properties().stacksTo(1).fireResistant()));
+
     /** Limbo Scythe: the reaper's tool, crafted from a Limbo hoe. Stores souls reaped from substantial
      *  creatures and spends them raising the village's dead from their graves. See {@link LimboScytheItem}. */
     public static final RegistryObject<Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",

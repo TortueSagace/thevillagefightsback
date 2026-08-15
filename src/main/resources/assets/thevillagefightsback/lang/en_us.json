@@ -294,5 +294,7 @@
   "block.thevillagefightsback.limbo_block": "Limbo Block",
   "block.thevillagefightsback.limbo_block.desc": "As tough as bedrock. Works as a beacon base.",
   "entity.minecraft.villager.limbo_sage": "Limbo Sage",
-  "entity.minecraft.villager.thevillagefightsback.limbo_sage": "Limbo Sage"
+  "entity.minecraft.villager.thevillagefightsback.limbo_sage": "Limbo Sage",
+  "item.thevillagefightsback.obliterator": "Obliterator",
+  "effect.thevillagefightsback.obliteration": "Obliteration"
 }

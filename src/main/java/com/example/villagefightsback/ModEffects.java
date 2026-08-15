@@ -30,6 +30,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> ENEMY_OF_THE_VILLAGE =
             EFFECTS.register("enemy_of_the_village", EnemyOfVillageEffect::new);
 
+    /** "Obliteration": harmless in itself, but dying with it strikes the species off the spawn tables
+     *  (see {@link ObliterationEffect} / {@link ObliterationEvents}). */
+    public static final RegistryObject<MobEffect> OBLITERATION =
+            EFFECTS.register("obliteration", ObliterationEffect::new);
+
     /** "Very Bad Omen": gained after 30s straight in the Limbo; returning to a village unleashes a Limbo raid
      *  (see {@link VeryBadOmenEffect} / {@link LimboRaidManager}). */
     public static final RegistryObject<MobEffect> VERY_BAD_OMEN =
