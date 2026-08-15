@@ -22,7 +22,13 @@ import net.minecraftforge.fml.common.Mod;
  * intent. So it runs from BOTH ends: from the difficulty answer, which is the fresh-world path, and from login,
  * which is every session after that. The once-per-player flag makes the overlap harmless.
  *
- * <p>Because the bell has usually already been given by the time the answer arrives, this also takes it back.
+ * <p>Because the bell has usually already been given by the time the answer arrives, this also takes it back,
+ * and calls off the hint that told the player to go and place it.
+ *
+ * <p>The node does not arrive at once. A countdown runs first, and the player is told the number, because a
+ * village materialising on top of you without warning is a jump scare rather than a difficulty. Ten seconds is
+ * enough to put ground between you and where it will stand -- and it stands where you WERE when the count
+ * began, not where you end up, or running would achieve nothing.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class HostileStart {
@@ -33,6 +39,8 @@ public final class HostileStart {
 
     private static final int MIN_DIST = 18;
     private static final int MAX_DIST = 22;
+    /** Seconds of warning before the village appears. */
+    private static final int COUNTDOWN = 10;
     /** How many angles to try around the ring before giving up for this login. */
     private static final int TRIES = 24;
 
@@ -67,7 +75,10 @@ public final class HostileStart {
         player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
 
         takeBackStarterBell(player);
+        StartingItems.cancelHint(player);   // no advice about a bell they no longer have
 
+        // Where it WILL stand, fixed now, at the spot the player is standing when the count starts. Deciding it
+        // at the end would follow them, and then the ten seconds would buy nothing.
         BlockPos spot = findRingSpot(level, player.blockPosition());
         if (spot == null) {
             // Nowhere usable in the ring: leave the flag SET regardless. Retrying on every login would mean a
@@ -78,10 +89,54 @@ public final class HostileStart {
                     MIN_DIST, MAX_DIST, player.getGameProfile().getName());
             return;
         }
-        level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
+        PENDING.add(new Countdown(player.getUUID(), level.dimension(), spot, COUNTDOWN,
+                level.getGameTime() + 20L));
         TheVillageFightsBack.LOGGER.info(
-                "[The Village Fights Back] {} difficulty: brain node placed at {} for {}.",
-                Difficulty.current().title(), spot, player.getGameProfile().getName());
+                "[The Village Fights Back] {} difficulty: brain node will rise at {} in {}s for {}.",
+                Difficulty.current().title(), spot, COUNTDOWN, player.getGameProfile().getName());
+    }
+
+    /** One village waiting to appear: where, for whom, and how many seconds are left. */
+    private record Countdown(java.util.UUID player, net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dim,
+                             BlockPos spot, int left, long nextTick) {}
+
+    private static final java.util.List<Countdown> PENDING = new java.util.ArrayList<>();
+
+    /**
+     * Tick the countdowns: show the number, then raise the village.
+     *
+     * <p>Once a second rather than every tick, and driven off game time so it cannot drift. The player is shown
+     * the count on the action bar, in red, counting down -- the whole point is that they know exactly how long
+     * they have.
+     */
+    @SubscribeEvent
+    public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || PENDING.isEmpty()) return;
+        net.minecraft.server.MinecraftServer server = event.getServer();
+
+        java.util.List<Countdown> next = new java.util.ArrayList<>();
+        for (Countdown c : PENDING) {
+            ServerLevel level = server.getLevel(c.dim());
+            ServerPlayer p = server.getPlayerList().getPlayer(c.player());
+            if (level == null || p == null) continue;             // logged off: the village simply does not rise
+            if (level.getGameTime() < c.nextTick()) { next.add(c); continue; }
+
+            if (c.left() > 0) {
+                p.displayClientMessage(net.minecraft.network.chat.Component.literal(String.valueOf(c.left()))
+                        .withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD), true);
+                next.add(new Countdown(c.player(), c.dim(), c.spot(), c.left() - 1, level.getGameTime() + 20L));
+                continue;
+            }
+
+            level.setBlock(c.spot(), ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
+            p.displayClientMessage(net.minecraft.network.chat.Component.literal("The village is here.")
+                    .withStyle(net.minecraft.ChatFormatting.DARK_RED, net.minecraft.ChatFormatting.BOLD), true);
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] brain node risen at {} for {}.",
+                    c.spot(), p.getGameProfile().getName());
+        }
+        PENDING.clear();
+        PENDING.addAll(next);
     }
 
     /**

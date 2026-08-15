@@ -66,6 +66,20 @@ public final class StartingItems {
      *
      * <p>Session-only: an unsent hint is not worth persisting.
      */
+    /**
+     * Call off the bell hint for {@code player}, queued or already on screen.
+     *
+     * <p>The hint is queued at LOGIN, before the difficulty is known, so a Hostile or Nightmare world queues
+     * one and then confiscates the very bell it was advising the player to place. Advice about an item you no
+     * longer have is worse than no advice.
+     */
+    public static void cancelHint(net.minecraft.server.level.ServerPlayer player) {
+        pendingHint.remove(player.getUUID());
+        com.example.villagefightsback.network.ModNetwork.CHANNEL.send(
+                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
+    }
+
     private static final java.util.Map<java.util.UUID, net.minecraft.world.phys.Vec3> pendingHint =
             new java.util.HashMap<>();
     /** How far the player must move from the spot they spawned on before the hint is shown. */
