@@ -28,7 +28,8 @@ public final class LimboPickaxeEvents {
     private static boolean isUnmineableTarget(BlockState state) {
         return state.is(Blocks.BEDROCK) || state.is(Blocks.REINFORCED_DEEPSLATE)
                 || state.is(ModBlocks.FAKE_BEDROCK.get())   // the Limbo's fake bedrock breaks like real bedrock
-                || state.is(ModBlocks.X_RAY_BEDROCK.get()); // and so does its see-through sibling
+                || state.is(ModBlocks.X_RAY_BEDROCK.get())   // and so does its see-through sibling
+                || state.is(ModBlocks.OBLITERATION_FURNACE.get()); // bedrock-tough by design, so it needs this too
     }
 
     /**
@@ -40,7 +41,8 @@ public final class LimboPickaxeEvents {
      * pick them up again is just letting you move a wall you already paid for.
      */
     private static boolean dropsWhenBroken(BlockState state) {
-        return state.is(ModBlocks.FAKE_BEDROCK.get()) || state.is(ModBlocks.X_RAY_BEDROCK.get());
+        return state.is(ModBlocks.FAKE_BEDROCK.get()) || state.is(ModBlocks.X_RAY_BEDROCK.get())
+                || state.is(ModBlocks.OBLITERATION_FURNACE.get());
     }
 
     @SubscribeEvent

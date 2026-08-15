@@ -56,6 +56,12 @@ public final class ModNetwork {
                 .decoder(SpawnHintPacket::decode)
                 .consumerMainThread(SpawnHintPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(com.example.villagefightsback.ObliterationFurnaceScreenPacket.class, id++,
+                        NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(com.example.villagefightsback.ObliterationFurnaceScreenPacket::encode)
+                .decoder(com.example.villagefightsback.ObliterationFurnaceScreenPacket::decode)
+                .consumerMainThread(com.example.villagefightsback.ObliterationFurnaceScreenPacket::handle)
+                .add();
         CHANNEL.messageBuilder(ScytheSavePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ScytheSavePacket::encode)
                 .decoder(ScytheSavePacket::decode)

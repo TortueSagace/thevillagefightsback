@@ -545,6 +545,30 @@ public final class ModBlocks {
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
                             MemorialBlockEntity::new, MEMORIAL.get()).build(null));
 
+    /**
+     * The Obliteration Furnace: a blast furnace in the Obliterator's violet that burns emeralds and, while
+     * lit, keeps creatures out of the world's spawn tables (see {@link ObliterationFurnaceBlock}).
+     *
+     * <p>Fake-bedrock tough by copying BEDROCK's -1 hardness, so nothing can blow up or mine away a running
+     * ban by accident. Like fake bedrock, the Limbo Pickaxe is the way to take it back (see
+     * {@link LimboPickaxeEvents}). Full glowstone light while burning, and none at all when cold, which makes
+     * a lit furnace visible across a base without anyone opening its screen.
+     */
+    public static final RegistryObject<Block> OBLITERATION_FURNACE = BLOCKS.register("obliteration_furnace",
+            () -> new ObliterationFurnaceBlock(BlockBehaviour.Properties.copy(Blocks.BEDROCK)
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .sound(SoundType.STONE)
+                    .lightLevel(s -> s.getValue(ObliterationFurnaceBlock.LIT) ? 15 : 0)));
+
+    public static final RegistryObject<Item> OBLITERATION_FURNACE_ITEM = ITEMS.register("obliteration_furnace",
+            () -> new TooltipBlockItem(OBLITERATION_FURNACE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.obliteration_furnace.desc"));
+
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<ObliterationFurnaceBlockEntity>> OBLITERATION_FURNACE_BE =
+            BLOCK_ENTITIES.register("obliteration_furnace", () ->
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
+                            ObliterationFurnaceBlockEntity::new, OBLITERATION_FURNACE.get()).build(null));
+
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<LimboGravelBlockEntity>> LIMBO_GRAVEL_BE =
             BLOCK_ENTITIES.register("limbo_gravel", () ->
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
@@ -815,6 +839,7 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_HOE.get());
                 output.accept(ModItems.LIMBO_SCYTHE.get());
                 output.accept(ModItems.OBLITERATOR.get());
+                output.accept(OBLITERATION_FURNACE_ITEM.get());
                 output.accept(MEMORIAL_ITEM.get());
             })
             .build());
