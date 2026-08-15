@@ -22,6 +22,8 @@ public final class MinerRole {
 
     public static void promote(Villager v) {
         if (isLimboSage(v)) return; // the Limbo Sage keeps its job; it never mines
+        // Same as the builder: a villager on a hunt has a job already, and it is not this one.
+        if (com.example.villagefightsback.NightmareRaid.isHunting(v)) return;
         v.getPersistentData().putBoolean(NBT_MINER, true);
         v.setCustomName(Component.literal(MINER_NAME));
         v.setCustomNameVisible(true);

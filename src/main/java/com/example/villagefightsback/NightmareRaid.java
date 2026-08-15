@@ -52,6 +52,14 @@ public final class NightmareRaid {
 
     /** Set on a raider for as long as it is hunting. Read by SettlerGoal, and by the bell-on-kill below. */
     public static final String NBT_HUNTING = "vgun_nightmare_hunting";
+    /**
+     * A plain scoreboard tag on every drafted unit, villagers and golems alike.
+     *
+     * <p>Purely for looking at: {@code /tag @e[tag=raider] list}, or the F3 screen. The hunt itself runs off
+     * NBT_HUNTING and never reads this. It exists so that a village full of villagers can be told apart at a
+     * glance from the handful that are actually coming for you, which is otherwise guesswork from the outside.
+     */
+    public static final String TAG_RAIDER = "raider";
     /** Who it is hunting, so a raider that loses its target can be told it is done. */
     private static final String NBT_HUNTED = "vgun_nightmare_hunted";
 
@@ -213,6 +221,13 @@ public final class NightmareRaid {
     private static void send(PathfinderMob raider, ServerPlayer target) {
         raider.getPersistentData().putBoolean(NBT_HUNTING, true);
         raider.getPersistentData().putString(NBT_HUNTED, target.getStringUUID());
+        raider.addTag(TAG_RAIDER);
+        // Blocking the requisition only stops a raider being GIVEN a job. A villager that was already a miner
+        // when it was drafted would keep it and try to do both, so the draft takes the job off it. Builders
+        // cannot reach here at all -- they are not eligible in the first place.
+        if (raider instanceof Villager v && com.example.villagefightsback.infection.MinerRole.isMiner(v)) {
+            com.example.villagefightsback.infection.MinerRole.demote(v);
+        }
         raider.setTarget(target);
         markAggro(raider, target);
         // The pursuit goal is what carries a raider across ground it cannot see over. Added once, and harmless
@@ -314,6 +329,7 @@ public final class NightmareRaid {
     /** The hunt is over for this unit: it keeps where it stands, as the brief asks, and goes back to normal. */
     private static void stopHunting(PathfinderMob m) {
         releaseChunk(m);
+        m.removeTag(TAG_RAIDER);
         m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UUID);
         m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UNTIL);
         m.getPersistentData().remove(NBT_HUNTING);

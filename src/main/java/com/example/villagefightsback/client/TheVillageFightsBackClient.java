@@ -189,37 +189,22 @@ public final class TheVillageFightsBackClient {
         // arm-swing animation -- see AngryFaceClient), scowl the angry villager face onto its head.
         addAngryVillagerFace(event);
         addAngryGuardFace(event);
-        addAngryMcaFace(event);
+        // NOT on MCA's villagers. See addAngryMcaFace for why that layer is gone.
         addLimboHelmetSpikes(event);
     }
 
     /**
-     * Attach the angry-face layer to MCA Reborn's villagers ({@code mca:male_villager} / {@code mca:female_villager}).
-     * MCA is a runtime soft-dep, so the types are looked up by id and we simply skip when they are absent.
+     * DELIBERATELY ABSENT: the angry face is never attached to MCA Reborn's villagers.
      *
-     * <p>The GUARD variant of the layer is the right one here, not the villager variant: MCA renders its humans
-     * with a {@code HumanoidMobRenderer} over a player-shaped head, the same geometry the Guard Villagers guard
-     * uses, whereas {@link AngryVillagerFaceLayer} is laid out for the vanilla villager's oversized head.
+     * <p>It used to be. The layer draws a scowl over the head while a defender is swinging, which works on a
+     * vanilla villager because a vanilla villager has one face. An MCA human does not: MCA gives every villager
+     * its own face, and painting our scowl on top replaced the thing that makes each of them a person. A
+     * fighting village turned into a crowd of identical angry masks, and the identity MCA is installed FOR
+     * disappeared for the whole fight.
+     *
+     * <p>So on an MCA pack the anger simply is not drawn. The vanilla villager and Guard Villagers layers are
+     * untouched -- those entities have no MCA face to cover, so nothing is lost by keeping the scowl there.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addAngryMcaFace(EntityRenderersEvent.AddLayers event) {
-        for (net.minecraft.resources.ResourceLocation id
-                : com.example.villagefightsback.compat.MCACompat.VILLAGER_IDS) {
-            EntityType<?> type = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(id);
-            if (type == null) continue; // MCA not installed -- nothing to decorate
-            LivingEntityRenderer<?, ?> renderer;
-            try {
-                renderer = event.getRenderer((EntityType) type);
-            } catch (ClassCastException notLiving) {
-                continue; // another mod swapped in a non-living renderer
-            }
-            if (renderer == null) continue;
-            if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) continue;
-            ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
-                    (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
-        }
-    }
-
     /**
      * Attach the Limbo Helmet spikes layer to every player skin renderer (default + slim) AND to every other
      * humanoid mob renderer, so ANYONE wearing the Limbo Helmet shows the spikes -- not just the player. The
