@@ -28,9 +28,16 @@ public final class EmeraldMobs {
         if (Factions.isEmerald(target)) return false;        // (i) fellow emerald unit
         if (Factions.isVillage(target)) return false;        // (iii) villager/guard/golem/wall defender/Darius
         if (Factions.isInfected(target)) return false;       // (iv) vindictive faction
-        if (target instanceof Player p) {                    // (ii) a player only if the config opts in + Enemy of the Village
+        if (target instanceof Player p) {                    // (ii) a player: see the two rules below
+            if (p.isSpectator()) return false;               // not present in any sense the faction could react to
+            // On the hostile difficulties the emerald faction hunts you unconditionally. The config toggle and
+            // the Enemy-of-the-Village check exist to decide WHETHER you have made yourself a target, and on
+            // Hostile and Nightmare that question is already answered by the difficulty itself -- you are one,
+            // permanently, by definition. Leaving the old rule in charge meant a switch in the .toml could
+            // quietly opt you out of half of what those difficulties are.
+            if (Difficulty.current().forcesEnemy()) return true;
             return Config.emeraldMobsHostileToPlayer()
-                    && !p.isCreative() && !p.isSpectator()
+                    && !p.isCreative()
                     && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
         }
         if (isPlayerCompanion(target)) return false;         // (v) the player's potential mounts/pets are not hunted
