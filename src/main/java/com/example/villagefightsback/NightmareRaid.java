@@ -160,7 +160,11 @@ public final class NightmareRaid {
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
         if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
         MinecraftServer server = event.getServer();
-        if (server.getTickCount() % 20 != 0) return;
+        // Every 2s, not every tick. The sweep below is O(loaded entities) per level because a hunt has no
+        // bounding box -- the raiders are wherever the player led them -- so it cannot be a chunk query. Two
+        // seconds is far inside the window where a target being re-asserted late would be visible, and it is
+        // 40x cheaper than doing it every tick.
+        if (server.getTickCount() % 40 != 0) return;
 
         for (ServerLevel level : server.getAllLevels()) {
             for (PathfinderMob m : level.getEntitiesOfClass(PathfinderMob.class,
