@@ -41,6 +41,9 @@ public final class NightmareRaid {
     /** How long the mark lasts. The raid outlives it: see {@link #NBT_HUNTING}. */
     public static final int SCENT_TICKS = 20 * 60 * 10;   // 10 minutes
 
+    /** Dusk, in day-time ticks: the raid may only go out from here to dawn. */
+    private static final long SUNSET_TIME = 12000L;
+
     /** Raid size by village stage: the village commits more of itself the further it has evolved. */
     private static final int[] RAID_SIZE_BY_STAGE = {4, 4, 8, 16, 32};
 
@@ -72,6 +75,10 @@ public final class NightmareRaid {
      */
     public static void trySunsetRaid(ServerLevel level, BrainNodeData data, GlobalPos node, long period) {
         if (!Difficulty.current().huntsAtSunset()) return;
+        // AT SUNSET, and only then. The period counter this hangs off ticks over the first time a world runs
+        // whatever the hour, so without this the very first raid went out the moment the player spawned in --
+        // at dawn, on a brand-new world, before they had done anything at all.
+        if (net.minecraft.util.Mth.positiveModulo(level.getDayTime(), 24000L) < SUNSET_TIME) return;
         if (LAST_RAID.getOrDefault(node, Long.MIN_VALUE) == period) return;   // already raided this sunset
 
         ServerPlayer target = nearestPlayerTo(level, node.pos());
@@ -150,11 +157,21 @@ public final class NightmareRaid {
         p.sendSystemMessage(Component.literal("Prepare...").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
     }
 
-    /** Put a raider on a player and get it moving. */
+    /**
+     * Put a raider on a player and get it fighting.
+     *
+     * <p>setTarget alone was NOT enough, and that is why raiders arrived and punched for nothing. The village's
+     * combat goals do not read getTarget: AxeCombatGoal, StoneAxeDefenseGoal and the wall defender all ask
+     * {@link VillageEvents#getAggroPlayer}, which reads the aggro record. A raider with only a target set had
+     * no goal willing to swing its axe, so it walked up and threw the bare-handed animation a Mob does by
+     * default -- no weapon, no damage. Writing the record puts the hunt through the same path every other
+     * fight in this mod uses, with the same axe and the same damage.
+     */
     private static void send(PathfinderMob raider, ServerPlayer target) {
         raider.getPersistentData().putBoolean(NBT_HUNTING, true);
         raider.getPersistentData().putString(NBT_HUNTED, target.getStringUUID());
         raider.setTarget(target);
+        markAggro(raider, target);
         raider.setPersistenceRequired();                                 // never despawn mid-hunt
     }
 
@@ -189,6 +206,7 @@ public final class NightmareRaid {
                     continue;
                 }
                 if (m.getTarget() != p) m.setTarget(p);
+                markAggro(m, p);          // the record expires on its own; a live hunt keeps renewing it
                 holdChunk(level, m);
             }
         }
@@ -223,9 +241,19 @@ public final class NightmareRaid {
                 level, TheVillageFightsBack.MODID, m.getUUID(), was.x, was.z, false, true);
     }
 
+    /** Stamp the village's aggro record, which is what the combat goals actually read. */
+    private static void markAggro(PathfinderMob raider, ServerPlayer target) {
+        net.minecraft.nbt.CompoundTag data = raider.getPersistentData();
+        data.putUUID(VillageEvents.NBT_AGGRO_UUID, target.getUUID());
+        // Comfortably longer than the re-assert interval, so it never lapses mid-hunt between renewals.
+        data.putLong(VillageEvents.NBT_AGGRO_UNTIL, raider.level().getGameTime() + 200L);
+    }
+
     /** The hunt is over for this unit: it keeps where it stands, as the brief asks, and goes back to normal. */
     private static void stopHunting(PathfinderMob m) {
         releaseChunk(m);
+        m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UUID);
+        m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UNTIL);
         m.getPersistentData().remove(NBT_HUNTING);
         m.getPersistentData().remove(NBT_HUNTED);
         m.setTarget(null);

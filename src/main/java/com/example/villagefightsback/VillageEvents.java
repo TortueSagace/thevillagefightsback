@@ -157,6 +157,11 @@ public final class VillageEvents {
 
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
+            // Golems never consulted the village's grievance, so an Enemy of the Village could stroll past a
+            // yard full of them. The villagers' goals have always read getAggroPlayer; the golems now do too.
+            if (!hasGoal(golem, com.example.villagefightsback.goal.VillageEnemyTargetGoal.class)) {
+                golem.targetSelector.addGoal(2, new com.example.villagefightsback.goal.VillageEnemyTargetGoal(golem));
+            }
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
             // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 brainNode.
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
