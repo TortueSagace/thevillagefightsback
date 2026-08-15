@@ -147,6 +147,14 @@ public final class VillageEvents {
         // level-3 Village Brain Node (UpgradeEvents flips the flag). Until then: villagers fight only with a
         // stone axe (and only when badly hurt), guards and golems are vanilla.
         boolean upgraded = UpgradeState.isUpgraded(mob);
+        // Villagers and golems dig as well as guards now. A Nightmare raid has to be able to follow a player
+        // through whatever they put between themselves and it, and a raid where only the guards can pass a wall
+        // is a raid that arrives one third strong. Dormant otherwise: the goal only wakes when a real pathfind
+        // to a target has already failed, which for a villager going about its day never happens.
+        if (!emeraldger && (mob instanceof Villager || mob instanceof IronGolem)) {
+            ensureVillageDigGoal(mob);
+        }
+
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
@@ -154,7 +162,7 @@ public final class VillageEvents {
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
         } else if (isGuard(mob)) {
             // BEFORE the Villager branch: an MCA guard/archer is a Villager too, and must take the guard kit.
-            ensureGuardDigGoal(mob);                               // EVERY guard, at every stage
+            ensureVillageDigGoal(mob);                             // EVERY guard, at every stage
             if (upgraded) armGuardFull(mob);                       // stage 3+: full emerald knight (mace-bounce)
             else if (UpgradeState.isStage2(mob)) armGuardStage2(mob); // stage 2: virus archer (no mace)
             // else: normal guard
@@ -178,14 +186,19 @@ public final class VillageEvents {
      * brick, both fake gates and this mod's reinforced/protecting glass, so a guard can tunnel through dirt or
      * a besieger's makeshift cover but cannot chew a hole in the wall it is defending.
      */
-    private static void ensureGuardDigGoal(PathfinderMob guard) {
-        if (hasGoal(guard, com.example.villagefightsback.goal.EmeraldDigGoal.class)) return; // re-added each load
-        // toolUser: a guard draws an emerald pickaxe/shovel/axe for whatever is in the way, and digs at that
-        // tool's real speed. The emerald faction keeps the bare-handed version it has always had.
-        guard.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(guard, true));
+    private static void ensureVillageDigGoal(PathfinderMob mob) {
+        if (hasGoal(mob, com.example.villagefightsback.goal.EmeraldDigGoal.class)) return; // re-added each load
+        // toolUser: a village defender draws an emerald pickaxe/shovel/axe for whatever is in the way, and digs
+        // at that tool's real speed. The emerald faction keeps the bare-handed version it has always had.
+        //
+        // Golems get it too, and they cannot hold a tool in any meaningful sense -- but EmeraldDigGoal reads the
+        // speed off whatever is in the main hand and falls back to bare hands, so a golem simply digs slowly
+        // rather than needing a second version of the goal. Being able to follow at all matters more than pace:
+        // a hunt that stops at the first wall is not a hunt.
+        mob.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(mob, true));
         // Cutting free of a web is a separate problem from tunnelling to prey: no enemy and no failed path
-        // needed, just a caught guard. Priority 4, above digging, since being stuck beats being slow.
-        guard.goalSelector.addGoal(4, new com.example.villagefightsback.goal.CobwebCutGoal(guard));
+        // needed, just a caught defender. Priority 4, above digging, since being stuck beats being slow.
+        mob.goalSelector.addGoal(4, new com.example.villagefightsback.goal.CobwebCutGoal(mob));
     }
 
     /** Replace a plain village iron golem with a {@link GigachadGolemEntity} at the same spot; the new type

@@ -52,6 +52,15 @@ public enum Difficulty {
     /** True when the village hunts the player at sunset (see {@code NightmareRaid}). */
     public boolean huntsAtSunset() { return this == NIGHTMARE; }
 
+    /**
+     * True when the world starts you with a brain node already placed near spawn instead of a bell in hand.
+     *
+     * <p>Both hostile difficulties, not just Nightmare. On Hard you are an Enemy of the Village from the first
+     * morning, and handing an Enemy the bell that founds the village reads backwards: the village should already
+     * be there, and already against you. The bell is a gift to someone the village has not yet judged.
+     */
+    public boolean placesBrainNodeAtSpawn() { return this == HARD || this == NIGHTMARE; }
+
     /** The difficulty with this id, or {@link #NORMAL} for anything unexpected. Never trust a number off the
      *  network or out of a hand-edited .toml: an unknown value should play normally, not crash or lock you out. */
     public static Difficulty byId(int id) {
