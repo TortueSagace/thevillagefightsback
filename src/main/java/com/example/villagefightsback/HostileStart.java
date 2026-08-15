@@ -16,8 +16,13 @@ import net.minecraftforge.fml.common.Mod;
  * bell that FOUNDS a village reads backwards. Instead a brain node is placed for you, close enough to find on
  * the first day and far enough that you do not spawn inside its garrison.
  *
- * <p>The bell handout itself is suppressed in {@link StartingItems}, which asks
- * {@link Difficulty#placesBrainNodeAtSpawn()} before giving one out. This class only does the placing.
+ * <p>TIMING is the whole difficulty here. On a brand-new world the player is ALREADY IN IT when the difficulty
+ * screen appears, so at login the answer does not exist yet and the config still reads Normal. Hooking this to
+ * login alone meant a Nightmare world handed out a bell and placed nothing, which is the exact opposite of the
+ * intent. So it runs from BOTH ends: from the difficulty answer, which is the fresh-world path, and from login,
+ * which is every session after that. The once-per-player flag makes the overlap harmless.
+ *
+ * <p>Because the bell has usually already been given by the time the answer arrives, this also takes it back.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class HostileStart {
@@ -31,9 +36,19 @@ public final class HostileStart {
     /** How many angles to try around the ring before giving up for this login. */
     private static final int TRIES = 24;
 
+    /** Every session after the first: the difficulty is already known by the time the player logs in. */
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.getEntity() instanceof ServerPlayer player) apply(player);
+    }
+
+    /**
+     * Give this player the hostile opening, once: take back the starter bell and place their brain node.
+     *
+     * <p>Called from the difficulty answer AND from login, because on a fresh world only the first exists and
+     * on every later session only the second does.
+     */
+    public static void apply(ServerPlayer player) {
         if (!Difficulty.current().placesBrainNodeAtSpawn()) return;
         if (!(player.level() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
@@ -42,6 +57,8 @@ public final class HostileStart {
         if (persisted.getBoolean(NBT_NODE_PLACED)) return;
         persisted.putBoolean(NBT_NODE_PLACED, true);
         player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+
+        takeBackStarterBell(player);
 
         BlockPos spot = findRingSpot(level, player.blockPosition());
         if (spot == null) {
@@ -57,6 +74,23 @@ public final class HostileStart {
         TheVillageFightsBack.LOGGER.info(
                 "[The Village Fights Back] {} difficulty: brain node placed at {} for {}.",
                 Difficulty.current().title(), spot, player.getGameProfile().getName());
+    }
+
+    /**
+     * Remove the starter bell the login handout already gave, since the answer arrives after it.
+     *
+     * <p>Only ONE, and only a bell. On a world this new the single bell in the inventory is certainly the one
+     * that was just handed over, but taking every bell would also confiscate any the player had legitimately
+     * carried in from a previous life on a server.
+     */
+    private static void takeBackStarterBell(ServerPlayer player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            net.minecraft.world.item.ItemStack st = player.getInventory().getItem(i);
+            if (st.is(net.minecraft.world.item.Items.BELL)) {
+                st.shrink(1);
+                return;
+            }
+        }
     }
 
     /**

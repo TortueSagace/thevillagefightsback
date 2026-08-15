@@ -3,6 +3,7 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import com.example.villagefightsback.Difficulty;
+import com.example.villagefightsback.HostileStart;
 import com.example.villagefightsback.TheVillageFightsBack;
 import com.example.villagefightsback.WorldModeData;
 import com.example.villagefightsback.WorldModeEvents;
@@ -55,6 +56,12 @@ public class ChooseDifficultyPacket {
             player.sendSystemMessage(Component.literal("[The Village Fights Back] Difficulty: ")
                     .withStyle(ChatFormatting.GRAY)
                     .append(Component.literal(chosen.title()).withStyle(chosen.colour())));
+
+            // THIS is where the hostile opening happens on a fresh world. It cannot be done at login: the
+            // player is already in the world when this screen appears, so at login the answer did not exist
+            // and the difficulty still read Normal. Every player online gets it, not just the one who
+            // answered, since the answer applies to the whole world.
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) HostileStart.apply(p);
         });
         ctx.get().setPacketHandled(true);
     }
