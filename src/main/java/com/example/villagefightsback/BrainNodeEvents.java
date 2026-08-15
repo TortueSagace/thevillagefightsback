@@ -1080,6 +1080,19 @@ public final class BrainNodeEvents {
     }
 
     /**
+     * A spot at or near {@code around} that a brain node can stand on and summon from, or null.
+     *
+     * <p>Exposed for {@link HostileStart}, which places a node near spawn on the hostile difficulties and must
+     * apply exactly the rules the village applies to itself. Duplicating the check there would mean a hostile
+     * start could produce a node wedged in a cave roof or stranded over water, which the ordinary placement
+     * path has specific tests to prevent.
+     */
+    public static BlockPos placeableNodeSpot(ServerLevel level, BlockPos around) {
+        if (isGoodNodeSpot(level, around, false)) return around;
+        return findBrainNodeSpot(level, around);
+    }
+
+    /**
      * The best brain-node spot near {@code center} (the village bell): on the surface, close to the centre in
      * both plan and height, and passing {@link #isGoodNodeSpot}. Never returns the bell cell itself, so it is
      * safe to use when MCA's Town Center bell has to survive. Prefers the spot nearest the centre.

@@ -30,6 +30,11 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> ENEMY_OF_THE_VILLAGE =
             EFFECTS.register("enemy_of_the_village", EnemyOfVillageEffect::new);
 
+    /** "Nightmare scent": the mark the brain node puts on a player at sunset in Nightmare difficulty, and the
+     *  thing a hunting raid follows. 10 min, uncurable by milk or death (see {@link NightmareScentEffect}). */
+    public static final RegistryObject<MobEffect> NIGHTMARE_SCENT =
+            EFFECTS.register("nightmare_scent", NightmareScentEffect::new);
+
     /** "Obliteration": harmless in itself, but dying with it strikes the species off the spawn tables
      *  (see {@link ObliterationEffect} / {@link ObliterationEvents}). */
     public static final RegistryObject<MobEffect> OBLITERATION =

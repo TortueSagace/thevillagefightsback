@@ -35,6 +35,9 @@ public final class StartingItems {
         if (Config.playerIsHostile()) enforceHostile(player);
 
         if (!Config.playerGivenBellAtSpawn()) return;               // bell handout disabled by config
+        // Hard and Nightmare start you with a village instead of the means to found one (see HostileStart).
+        // The bell is a gift to someone the village has not judged yet, and on those difficulties it already has.
+        if (Difficulty.current().placesBrainNodeAtSpawn()) return;
         CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_GOT_BELL)) return;             // already received the starter bell
         persisted.putBoolean(NBT_GOT_BELL, true);
