@@ -60,7 +60,7 @@ public final class NightmareRaid {
     /** Who it is hunting, so a raider that loses its target can be told it is done. */
     private static final String NBT_HUNTED = "vgun_nightmare_hunted";
 
-    /** The last sunset period this node raided on, so one sunset raises exactly one raid. */
+    /** The last DAY this node raided on, so each night raises exactly one raid however the clock moves. */
     private static final java.util.Map<GlobalPos, Long> LAST_RAID = new java.util.HashMap<>();
 
     /** Which chunk each raider currently holds a ticket on, so the old one can be released when it moves. */
@@ -86,17 +86,17 @@ public final class NightmareRaid {
      * <p>Called from the brain node's existing sunset pass, so it fires on the same schedule as the village's
      * reinforcements rather than needing a clock of its own.
      */
-    public static void trySunsetRaid(ServerLevel level, BrainNodeData data, GlobalPos node, long period) {
+    public static void trySunsetRaid(ServerLevel level, BrainNodeData data, GlobalPos node, long day) {
         if (!Difficulty.current().huntsAtSunset()) return;
         // AT SUNSET, and only then. The period counter this hangs off ticks over the first time a world runs
         // whatever the hour, so without this the very first raid went out the moment the player spawned in --
         // at dawn, on a brand-new world, before they had done anything at all.
         if (net.minecraft.util.Mth.positiveModulo(level.getDayTime(), 24000L) < SUNSET_TIME) return;
-        if (LAST_RAID.getOrDefault(node, Long.MIN_VALUE) == period) return;   // already raided this sunset
+        if (LAST_RAID.getOrDefault(node, Long.MIN_VALUE) == day) return;      // already raided tonight
 
         ServerPlayer target = nearestPlayerTo(level, node.pos());
         if (target == null) return;
-        LAST_RAID.put(node, period);
+        LAST_RAID.put(node, day);
 
         int stage = Math.max(0, Math.min(RAID_SIZE_BY_STAGE.length - 1, data.econ(node).getLevel()));
         int size = RAID_SIZE_BY_STAGE[stage];
