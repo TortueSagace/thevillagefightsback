@@ -47,9 +47,6 @@ public final class NightmareRaid {
     /** Raid size by village stage: the village commits more of itself the further it has evolved. */
     private static final int[] RAID_SIZE_BY_STAGE = {4, 4, 8, 16, 32};
 
-    /** How far from the node the roster is drawn. Matches the village's own sense of "its people". */
-    private static final double ROSTER_RANGE = 96.0;
-
     /** Set on a raider for as long as it is hunting. Read by SettlerGoal, and by the bell-on-kill below. */
     public static final String NBT_HUNTING = "vgun_nightmare_hunting";
     /**
@@ -104,7 +101,7 @@ public final class NightmareRaid {
         int stage = Math.max(0, Math.min(RAID_SIZE_BY_STAGE.length - 1, data.econ(node).getLevel()));
         int size = RAID_SIZE_BY_STAGE[stage];
 
-        List<PathfinderMob> roster = drawRoster(level, node.pos(), size);
+        List<PathfinderMob> roster = raiseRaid(level, target, size, stage);
         if (roster.isEmpty()) return;
 
         mark(target);
@@ -133,35 +130,78 @@ public final class NightmareRaid {
         return best;
     }
 
+    /** How far from the player the raid forms up. Close enough to find you, far enough not to land on you. */
+    private static final int RAID_DISTANCE = 20;
+
     /**
-     * Pick up to {@code size} of the village's people, at random, from those not currently defending it.
+     * Raise the raid beside the player, rather than drafting whoever happened to be standing near the node.
      *
-     * <p>"Not actively fighting to protect the village" is read as having no target: a defender mid-fight is
-     * doing the job the village needs doing, and pulling it away to chase a player across the map would leave
-     * the thing it was fighting standing in the village square.
+     * <p>Drafting was the first design and it did not survive contact: the village's people are spread over
+     * chunks that are simply not loaded when the player is a thousand blocks away, so the draft counted
+     * whatever was near the node and found almost nothing. Force-loading the village made that better and
+     * never good, and it cost twenty-five chunks a node to do it.
+     *
+     * <p>Spawning beside the player sidesteps all of it. The raid is real either way -- the same villagers,
+     * guards and golems the village fields, in the same proportions -- and it arrives where it can actually
+     * walk to you.
      */
-    private static List<PathfinderMob> drawRoster(ServerLevel level, BlockPos node, int size) {
-        AABB box = new AABB(node).inflate(ROSTER_RANGE);
-        List<PathfinderMob> pool = new ArrayList<>();
-        for (PathfinderMob m : level.getEntitiesOfClass(PathfinderMob.class, box, NightmareRaid::eligible)) {
-            pool.add(m);
+    private static List<PathfinderMob> raiseRaid(ServerLevel level, ServerPlayer target, int size, int stage) {
+        BlockPos anchor = musterPoint(level, target.blockPosition());
+        if (anchor == null) return List.of();
+
+        List<PathfinderMob> out = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            net.minecraft.world.entity.EntityType<?> type = unitFor(level, stage, i);
+            if (type == null) continue;
+            net.minecraft.world.entity.Entity e = com.example.villagefightsback.BrainNodeEvents
+                    .spawnUnitNear(level, anchor, type, spawned ->
+                            com.example.villagefightsback.compat.MCACompat.makeGuard(spawned));
+            if (e instanceof PathfinderMob m) out.add(m);
         }
-        Collections.shuffle(pool, new java.util.Random(level.random.nextLong()));
-        return pool.subList(0, Math.min(size, pool.size()));
+        return out;
     }
 
-    /** A villager, guard, golem or Darius that belongs to the village and is not already busy. */
-    private static boolean eligible(net.minecraft.world.entity.Entity e) {
-        if (!(e instanceof PathfinderMob m) || !m.isAlive()) return false;
-        if (isHunting(m)) return false;                                  // already out on a hunt
-        if (m.getTarget() != null && m.getTarget().isAlive()) return false; // busy defending
-        if (Factions.isInfected(m) || Factions.isEmerald(m)) return false;  // not the village's to send
-        if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(m)) return false;
-        // A builder is mid-job on the village's wall; taking it on a hunt strands a half-built course and, when
-        // it had the dig goal, buried the builder in its own hole.
-        if (m instanceof Villager v && com.example.villagefightsback.BuilderRole.isBuilder(v)) return false;
-        return m instanceof Villager || m instanceof IronGolem
-                || m instanceof GeneralDariusEntity || Factions.isGuard(m);
+    /**
+     * What the raid is made of: mostly villagers, a guard in every four, and one golem from stage 3.
+     *
+     * <p>The same shape as the village's own sunset reinforcement, so a raid looks like the place it came from
+     * rather than like a separate monster.
+     */
+    private static net.minecraft.world.entity.EntityType<?> unitFor(ServerLevel level, int stage, int index) {
+        if (stage >= 3 && index == 1) return net.minecraft.world.entity.EntityType.IRON_GOLEM;
+        if (index % 4 == 0) {
+            net.minecraft.world.entity.EntityType<?> guard =
+                    com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+            if (guard != null) return guard;   // no MCA and no Guard Villagers: fall through to a villager
+        }
+        return com.example.villagefightsback.compat.MCACompat.villagerType(level.getRandom());
+    }
+
+    /**
+     * Somewhere {@value #RAID_DISTANCE} blocks from the player that a raid can actually stand on.
+     *
+     * <p>Tried at random angles, and every candidate has to be open ground: solid underfoot, room to stand, and
+     * no fluid. Without the fluid test a raid could muster in a lava lake and burn to death before it took a
+     * step, and on an ocean it would drown -- which would read as the village giving up rather than as the
+     * village drowning.
+     */
+    private static BlockPos musterPoint(ServerLevel level, BlockPos around) {
+        for (int i = 0; i < 16; i++) {
+            double a = level.random.nextDouble() * Math.PI * 2.0;
+            int x = around.getX() + (int) Math.round(Math.cos(a) * RAID_DISTANCE);
+            int z = around.getZ() + (int) Math.round(Math.sin(a) * RAID_DISTANCE);
+            BlockPos surface = level.getHeightmapPos(
+                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    new BlockPos(x, 0, z));
+            if (!level.getFluidState(surface).isEmpty()) continue;            // not in water or lava
+            if (!level.getFluidState(surface.below()).isEmpty()) continue;    // nor standing on its surface
+            if (!level.getBlockState(surface.below()).isFaceSturdy(
+                    level, surface.below(), net.minecraft.core.Direction.UP)) continue;
+            if (level.getBlockState(surface).blocksMotion()
+                    || level.getBlockState(surface.above()).blocksMotion()) continue;   // room to stand
+            return surface;
+        }
+        return null;
     }
 
     /** The scoreboard team that exists only to colour the glow. */

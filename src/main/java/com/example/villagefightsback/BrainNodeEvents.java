@@ -870,8 +870,15 @@ public final class BrainNodeEvents {
         }
     }
 
-    /** Chunks held either side of a node. 2 keeps roughly the village itself alive, at 25 chunks per node. */
-    private static final int NODE_CHUNK_RADIUS = 2;
+    /**
+     * Chunks held either side of a node.
+     *
+     * <p>Back to 1 (nine chunks) now that the Nightmare raid musters beside the player instead of drafting
+     * whoever is standing near the village. The radius of 2 existed only to make that draft find anybody, and
+     * twenty-five permanently loaded chunks per node is a steep price for a feature that no longer needs it.
+     * Nine still keeps the node and its immediate surroundings ticking, which is what the village itself needs.
+     */
+    private static final int NODE_CHUNK_RADIUS = 1;
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the brain node. */
     private static List<BlockPos> collectBeds(ServerLevel level, BlockPos center) {
@@ -1352,6 +1359,18 @@ public final class BrainNodeEvents {
 
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),
      *  spawn just outside that inner wall; otherwise on the surface near {@code center}. */
+    /**
+     * Spawn one village unit near {@code center}, using the village's own placement vetting.
+     *
+     * <p>Exposed for {@link NightmareRaid}, which raises its raid beside the player rather than at the village.
+     * It goes through findSpawnSpot like everything else, so a raider cannot appear inside a wall, on a roof or
+     * halfway up a cliff -- the rules that keep the village's own summons out of trouble apply unchanged.
+     */
+    public static Entity spawnUnitNear(ServerLevel level, BlockPos center, EntityType<?> type,
+                                       java.util.function.Consumer<Entity> beforeJoin) {
+        return spawnDefender(level, center, type, null, beforeJoin);
+    }
+
     private static Entity spawnDefender(ServerLevel level, BlockPos center, EntityType<?> type, WallPlan outsideWall) {
         return spawnDefender(level, center, type, outsideWall, null);
     }
