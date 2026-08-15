@@ -38,10 +38,12 @@ public final class VillageDiscoveryHud {
     private static final int YELLOW = 0xFFFF55;  // ChatFormatting.YELLOW rgb
 
     private static int ticksLeft;     // discovery message: counts down to 0, then it is gone
+    private static boolean warn;      // whether this showing includes the consequences line
     private static int hintTicksLeft; // starter-bell hint: its own timer, so the two never interfere
 
     /** Show the message for {@code ticks} (called on the client when the discovery packet arrives). */
-    public static void show(int ticks) {
+    public static void show(int ticks, boolean withWarning) {
+        warn = withWarning;
         ticksLeft = ticks;
     }
 
@@ -76,7 +78,8 @@ public final class VillageDiscoveryHud {
         int alpha = ticksLeft < FADE_TICKS ? Math.max(16, 255 * ticksLeft / FADE_TICKS) : 255;
         int top = h - 72, bot = h - 60;
         line(g, mc, LINE1, w / 2, top, (alpha << 24) | GREEN);
-        line(g, mc, LINE2, w / 2, bot, (alpha << 24) | RED);
+        // Peaceful has no consequences to promise, so it does not promise any.
+        if (warn) line(g, mc, LINE2, w / 2, bot, (alpha << 24) | RED);
     }
 
     private static void line(GuiGraphics g, Minecraft mc, String s, int cx, int y, int color) {

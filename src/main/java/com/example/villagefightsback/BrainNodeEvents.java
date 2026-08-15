@@ -1042,7 +1042,8 @@ public final class BrainNodeEvents {
             // Plus a two-line on-screen message (bottom of the screen, NOT chat) for the players who found it.
             for (ServerPlayer p : near) {
                 com.example.villagefightsback.network.ModNetwork.sendTo(
-                        p, new com.example.villagefightsback.network.VillageDiscoveryPacket(DISCOVERY_HUD_TICKS));
+                        p, new com.example.villagefightsback.network.VillageDiscoveryPacket(
+                                DISCOVERY_HUD_TICKS, !Difficulty.current().forcesHero()));
             }
             data.markAnnounced(gp);
         }
