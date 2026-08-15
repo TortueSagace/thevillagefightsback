@@ -62,6 +62,14 @@ public final class NightmareRaid {
     private static final java.util.Map<java.util.UUID, net.minecraft.world.level.ChunkPos> HELD =
             new java.util.HashMap<>();
 
+    /** The player this mob is hunting, or null. Public so the pursuit goal can steer by it. */
+    public static ServerPlayer huntedBy(net.minecraft.world.entity.Entity e) {
+        if (!isHunting(e) || !(e.level() instanceof ServerLevel level)) return null;
+        String id = e.getPersistentData().getString(NBT_HUNTED);
+        if (id.isEmpty()) return null;
+        return level.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(id));
+    }
+
     /** True while this mob is out hunting a player, which is what suspends its ordinary village duties. */
     public static boolean isHunting(net.minecraft.world.entity.Entity e) {
         return e.getPersistentData().getBoolean(NBT_HUNTING);
@@ -145,6 +153,37 @@ public final class NightmareRaid {
                 || m instanceof GeneralDariusEntity || Factions.isGuard(m);
     }
 
+    /** The scoreboard team that exists only to colour the glow. */
+    private static final String SCENT_TEAM = "tvfb_nightmare_scent";
+
+    /**
+     * Put {@code p} on the scent team, which is what makes the outline RED.
+     *
+     * <p>Vanilla's glow has no colour of its own: it is drawn in the entity's TEAM colour, and an entity with
+     * no team glows white. There is no other hook for it short of replacing the outline renderer, so the team
+     * is the mechanism. It carries no other meaning here -- nothing in this mod reads it -- and the player is
+     * taken off it again the moment the scent lapses.
+     */
+    private static void joinScentTeam(ServerPlayer p) {
+        net.minecraft.world.scores.Scoreboard sb = p.serverLevel().getScoreboard();
+        net.minecraft.world.scores.PlayerTeam team = sb.getPlayerTeam(SCENT_TEAM);
+        if (team == null) {
+            team = sb.addPlayerTeam(SCENT_TEAM);
+            team.setColor(ChatFormatting.DARK_RED);
+            team.setDisplayName(Component.literal("Hunted"));
+        }
+        sb.addPlayerToTeam(p.getScoreboardName(), team);
+    }
+
+    /** Take a player off the scent team once the scent is gone, so they stop glowing red. */
+    private static void leaveScentTeam(ServerPlayer p) {
+        net.minecraft.world.scores.Scoreboard sb = p.serverLevel().getScoreboard();
+        net.minecraft.world.scores.PlayerTeam team = sb.getPlayerTeam(SCENT_TEAM);
+        if (team != null && team.getPlayers().contains(p.getScoreboardName())) {
+            sb.removePlayerFromTeam(p.getScoreboardName(), team);
+        }
+    }
+
     /** Mark the player: the scent, the glow that makes them visible through walls, and the warning. */
     private static void mark(ServerPlayer p) {
         MobEffectInstance scent = new MobEffectInstance(
@@ -154,6 +193,7 @@ public final class NightmareRaid {
         // The red glow the brief calls for. Vanilla GLOWING is the only outline the client can draw, and it is
         // also the honest one: it tells the hunted player exactly what the raid can see.
         p.addEffect(new MobEffectInstance(MobEffects.GLOWING, SCENT_TICKS, 0, false, false, true));
+        joinScentTeam(p);   // the glow is drawn in the team colour; without a team it is white
         p.sendSystemMessage(Component.literal("Prepare...").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
     }
 
@@ -172,6 +212,12 @@ public final class NightmareRaid {
         raider.getPersistentData().putString(NBT_HUNTED, target.getStringUUID());
         raider.setTarget(target);
         markAggro(raider, target);
+        // The pursuit goal is what carries a raider across ground it cannot see over. Added once, and harmless
+        // when idle: it does nothing at all unless this mob is actually out on a hunt.
+        if (raider.goalSelector.getAvailableGoals().stream()
+                .noneMatch(g -> g.getGoal() instanceof com.example.villagefightsback.goal.NightmareHuntGoal)) {
+            raider.goalSelector.addGoal(3, new com.example.villagefightsback.goal.NightmareHuntGoal(raider));
+        }
         raider.setPersistenceRequired();                                 // never despawn mid-hunt
     }
 
@@ -192,6 +238,11 @@ public final class NightmareRaid {
         // seconds is far inside the window where a target being re-asserted late would be visible, and it is
         // 40x cheaper than doing it every tick.
         if (server.getTickCount() % 40 != 0) return;
+
+        // Anyone off the scent goes back to glowing like everybody else.
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (!p.hasEffect(ModEffects.NIGHTMARE_SCENT.get())) leaveScentTeam(p);
+        }
 
         for (ServerLevel level : server.getAllLevels()) {
             for (PathfinderMob m : level.getEntitiesOfClass(PathfinderMob.class,
