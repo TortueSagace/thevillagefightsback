@@ -43,7 +43,10 @@ public final class DifficultyEffects {
         if (d == Difficulty.NORMAL) return;                    // the village judges you itself
 
         for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
-            if (p.isCreative() || p.isSpectator()) continue;    // not a participant in the village's opinion
+            // Creative counts, spectator does not. A creative player is standing there and the village has no
+            // way of knowing otherwise; excluding them also made the hostile difficulties impossible to test
+            // without dying to them. A spectator is not present in any sense the village could react to.
+            if (p.isSpectator()) continue;
             if (d.forcesHero()) {
                 force(p, new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, DURATION, 0, false, false, true));
                 p.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());

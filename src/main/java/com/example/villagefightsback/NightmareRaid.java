@@ -55,6 +55,10 @@ public final class NightmareRaid {
     /** The last sunset period this node raided on, so one sunset raises exactly one raid. */
     private static final java.util.Map<GlobalPos, Long> LAST_RAID = new java.util.HashMap<>();
 
+    /** Which chunk each raider currently holds a ticket on, so the old one can be released when it moves. */
+    private static final java.util.Map<java.util.UUID, net.minecraft.world.level.ChunkPos> HELD =
+            new java.util.HashMap<>();
+
     /** True while this mob is out hunting a player, which is what suspends its ordinary village duties. */
     public static boolean isHunting(net.minecraft.world.entity.Entity e) {
         return e.getPersistentData().getBoolean(NBT_HUNTING);
@@ -88,12 +92,18 @@ public final class NightmareRaid {
                 roster.size(), node.pos(), target.getGameProfile().getName(), stage);
     }
 
-    /** The living player nearest this node, ignoring anyone who is not a participant. */
+    /**
+     * The living player nearest this node.
+     *
+     * <p>CREATIVE COUNTS. A creative player is standing right there and the village has no way of knowing the
+     * difference; excluding them also made the whole feature untestable without dying to it. Spectators are
+     * still skipped, because a spectator is not present in any sense the village could react to.
+     */
     private static ServerPlayer nearestPlayerTo(ServerLevel level, BlockPos node) {
         ServerPlayer best = null;
         double bestD = Double.MAX_VALUE;
         for (ServerPlayer p : level.players()) {
-            if (p.isCreative() || p.isSpectator() || !p.isAlive()) continue;
+            if (p.isSpectator() || !p.isAlive()) continue;
             double d = p.blockPosition().distSqr(node);
             if (d < bestD) { bestD = d; best = p; }
         }
@@ -174,17 +184,48 @@ public final class NightmareRaid {
                 String hunted = m.getPersistentData().getString(NBT_HUNTED);
                 ServerPlayer p = hunted.isEmpty() ? null
                         : server.getPlayerList().getPlayer(java.util.UUID.fromString(hunted));
-                if (p == null || !p.isAlive() || p.isCreative() || p.isSpectator()) {
+                if (p == null || !p.isAlive() || p.isSpectator()) {
                     stopHunting(m);
                     continue;
                 }
                 if (m.getTarget() != p) m.setTarget(p);
+                holdChunk(level, m);
             }
         }
     }
 
+    /**
+     * Keep the chunk a raider stands in loaded, following it as it moves.
+     *
+     * <p>Without this the hunt quietly ends at the edge of the player's view distance: a raider a thousand
+     * blocks away sits in an unloaded chunk, stops ticking, and never arrives -- which reads as the village
+     * giving up rather than as a technical limit. One ticket per raider, moved rather than accumulated, and
+     * released the moment the hunt ends.
+     */
+    private static void holdChunk(ServerLevel level, PathfinderMob m) {
+        net.minecraft.world.level.ChunkPos now = m.chunkPosition();
+        net.minecraft.world.level.ChunkPos was = HELD.get(m.getUUID());
+        if (now.equals(was)) return;
+        if (was != null) {
+            net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                    level, TheVillageFightsBack.MODID, m.getUUID(), was.x, was.z, false, true);
+        }
+        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                level, TheVillageFightsBack.MODID, m.getUUID(), now.x, now.z, true, true);
+        HELD.put(m.getUUID(), now);
+    }
+
+    /** Drop a raider's chunk ticket. Called when its hunt ends, so nothing is force-loaded forever. */
+    private static void releaseChunk(PathfinderMob m) {
+        net.minecraft.world.level.ChunkPos was = HELD.remove(m.getUUID());
+        if (was == null || !(m.level() instanceof ServerLevel level)) return;
+        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                level, TheVillageFightsBack.MODID, m.getUUID(), was.x, was.z, false, true);
+    }
+
     /** The hunt is over for this unit: it keeps where it stands, as the brief asks, and goes back to normal. */
     private static void stopHunting(PathfinderMob m) {
+        releaseChunk(m);
         m.getPersistentData().remove(NBT_HUNTING);
         m.getPersistentData().remove(NBT_HUNTED);
         m.setTarget(null);

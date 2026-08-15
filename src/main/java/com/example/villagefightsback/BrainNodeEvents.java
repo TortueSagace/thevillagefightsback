@@ -80,6 +80,7 @@ public final class BrainNodeEvents {
 
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);
+        holdNodeChunks(server, data);          // a village that stops thinking when you walk away is not a village
         processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node
         spawnInVillages(server, data);
         announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
@@ -827,6 +828,35 @@ public final class BrainNodeEvents {
     public static void recordRemoval(GlobalPos brainNode) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) recentRemovals.put(brainNode, (long) server.getTickCount());
+    }
+
+    /**
+     * Force-load the chunk each brain node sits in, so a village keeps running when nobody is near it.
+     *
+     * <p>Everything the node does is driven from this tick, and an unloaded chunk does not tick. Walk a
+     * thousand blocks away and the village stopped evolving, stopped reinforcing and -- on Nightmare -- stopped
+     * being able to send anything after you, which reads as the mod switching itself off rather than as a
+     * technical limit.
+     *
+     * <p>Keyed by the node's own BlockPos, so re-forcing an already-forced chunk every tick is idempotent
+     * rather than an accumulating pile of tickets. A node that is removed drops out of {@code data.blocks()},
+     * and its ticket is released in {@link #releaseNodeChunk}.
+     */
+    private static void holdNodeChunks(MinecraftServer server, BrainNodeData data) {
+        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
+            ServerLevel level = server.getLevel(gp.dimension());
+            if (level == null) continue;
+            net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(gp.pos());
+            net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                    level, TheVillageFightsBack.MODID, gp.pos(), cp.x, cp.z, true, true);
+        }
+    }
+
+    /** Drop a node's chunk ticket when it is destroyed, so nothing stays force-loaded after the village dies. */
+    public static void releaseNodeChunk(ServerLevel level, BlockPos node) {
+        net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(node);
+        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
+                level, TheVillageFightsBack.MODID, node, cp.x, cp.z, false, true);
     }
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the brain node. */

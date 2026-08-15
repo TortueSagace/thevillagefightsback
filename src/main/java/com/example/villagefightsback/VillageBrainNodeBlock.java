@@ -192,6 +192,9 @@ public class VillageBrainNodeBlock extends Block {
             data.removeBlock(key);
             data.removeWallPlan(key); // forget the wall plan too -> replacing the brain node recomputes it fresh
             BrainNodeEvents.clearSurveyBackoff(key);
+            // Hand back the chunk this node was keeping loaded. Without this a destroyed village would go on
+            // pinning its chunk in memory for the rest of the server's life.
+            BrainNodeEvents.releaseNodeChunk(sl, pos.immutable());
             // Any removal that is NOT a clean silk-touch / creative pickup unleashes the brain node boss here.
             boolean cleanBreak = cleanBreakPos == pos.asLong() && level.getGameTime() - cleanBreakTick <= 1;
             if (!cleanBreak) {
