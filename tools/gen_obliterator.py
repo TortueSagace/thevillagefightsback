@@ -23,6 +23,7 @@ metal so the weapon still reads as a sword rather than a glowing bar.
 Output: src/main/resources/assets/thevillagefightsback/textures/item/obliterator.png  (32x256, 8 frames)
         plus its .mcmeta animation strip
 """
+import math
 import os
 import random
 
@@ -50,8 +51,38 @@ PEPPER = (86, 42, 140, 255)
 MCMETA = '{"animation": {"frametime": 3, "interpolate": false}}' + chr(10)
 
 
+def principal_angle(img):
+    """The angle of the blade's long axis, by PCA over the opaque pixels."""
+    px = img.load()
+    xs, ys = [], []
+    for y in range(img.height):
+        for x in range(img.width):
+            if px[x, y][3] > 0:
+                xs.append(x)
+                ys.append(y)
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs) / n
+    syy = sum((y - my) ** 2 for y in ys) / n
+    sxy = sum((xs[i] - mx) * (ys[i] - my) for i in range(n)) / n
+    return math.degrees(0.5 * math.atan2(2 * sxy, sxx - syy))
+
+
 def keyed_reference():
-    """Reference with the checkerboard removed, cropped to content and padded square."""
+    """
+    Reference with the checkerboard removed, ROTATED onto the conventional blade axis, then squared.
+
+    <p>The rotation is the fix for a weapon that looked wrong in the hand. Minecraft draws a held item along
+    the sprite's bottom-left to top-right diagonal, so every vanilla tool is drawn climbing at roughly 45
+    degrees and the hand transform lines the blade up with the arm. This reference is a TALL rectangle: padding
+    it to a square (which is what the first version did) preserved its proportions but left the blade sitting
+    at a much shallower angle than vanilla's, and the result read as a sword being held sideways and drooping
+    rather than pointed. Measured against the diamond sword, its tip climbed barely half as far.
+
+    So the art is rotated so its long axis lands on that diagonal before anything else happens. PCA finds the
+    axis rather than a hard-coded angle, which means this keeps working if the reference is ever swapped for
+    another weapon drawn at a different tilt.
+    """
     src = Image.open(REF).convert("RGBA")
     w, h = src.size
     keyed = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -62,11 +93,18 @@ def keyed_reference():
             if r > 232 and g > 232 and b > 232 and abs(r - g) < 4 and abs(g - b) < 4:
                 continue                      # a checker square, not the sword
             kp[x, y] = (r, g, b, 255)
-    crop = keyed.crop(keyed.getbbox())
-    cw, ch = crop.size
+
+    keyed = keyed.crop(keyed.getbbox())
+    # Screen coordinates run downward, so "up and to the right" is -45 degrees.
+    delta = principal_angle(keyed) - (-45.0)
+    keyed = keyed.rotate(-delta, resample=Image.BICUBIC, expand=True,
+                         fillcolor=(0, 0, 0, 0))
+    keyed = keyed.crop(keyed.getbbox())
+
+    cw, ch = keyed.size
     side = max(cw, ch)
     square = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    square.paste(crop, ((side - cw) // 2, (side - ch) // 2))
+    square.paste(keyed, ((side - cw) // 2, (side - ch) // 2))
     return square
 
 

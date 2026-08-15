@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:obliteration_furnace"
+    },
+    "title": "Never Again",
+    "description": "Ban a creature from spawning anywhere, with an Obliterator and a burning furnace.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "banned": {
+      "trigger": "thevillagefightsback:obliterated"
+    }
+  },
+  "requirements": [
+    [
+      "banned"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/obliterator"
+}

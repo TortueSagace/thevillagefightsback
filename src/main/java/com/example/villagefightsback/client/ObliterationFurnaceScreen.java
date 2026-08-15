@@ -15,6 +15,9 @@ import net.minecraft.network.chat.Component;
  * right-clicking it with emeralds, so the screen only ever REPORTS -- and a report that owns no slots cannot
  * desync, cannot be hoppered, and does not need a menu type registered for it.
  *
+ * <p>The countdown is live: the server sends one snapshot and the client runs it down against wall time (see
+ * {@link #currentTicks()}), which costs no packets and keeps ticking while the game is paused.
+ *
  * <p>The list is the point of the screen and gets the room: the fuel line is one sentence at the top, and
  * everything below it is the roll of what can no longer spawn. When it is empty the screen says so in words,
  * because a blank panel reads as broken while "Nothing obliterated yet" reads as ready.
@@ -24,13 +27,32 @@ public class ObliterationFurnaceScreen extends Screen {
     private static final int ROW_H = 12;
     private static final int MAX_ROWS = 12;
 
-    private final int burnTicks;
+    private final int snapshotTicks;
+    private final long openedAtNanos;
     private final List<String> names;
 
     private ObliterationFurnaceScreen(int burnTicks, List<String> names) {
         super(Component.literal("Obliteration Furnace"));
-        this.burnTicks = burnTicks;
+        this.snapshotTicks = burnTicks;
+        this.openedAtNanos = System.nanoTime();
         this.names = names;
+    }
+
+    /**
+     * The countdown as it stands right now: the snapshot the server sent, less the real time since it arrived.
+     *
+     * <p>Counted down on the CLIENT rather than pushed from the server, so the number moves every second
+     * without a packet per second per open screen. The snapshot cannot drift meaningfully while the screen is
+     * up, because {@link #isPauseScreen} is false: the world keeps ticking behind it, at the same rate this
+     * clock does.
+     *
+     * <p>Measured with {@link System#nanoTime()} and not with game ticks, which is what keeps it running while
+     * the game is paused. A tick-based clock stops dead the moment the pause menu appears, and a countdown
+     * that freezes is exactly what this was meant to stop being.
+     */
+    private int currentTicks() {
+        long elapsedSeconds = (System.nanoTime() - openedAtNanos) / 1_000_000_000L;
+        return Math.max(0, snapshotTicks - (int) (elapsedSeconds * 20L));
     }
 
     /** Called from the packet handler, client side only. */
@@ -40,6 +62,8 @@ public class ObliterationFurnaceScreen extends Screen {
 
     /** How much bigger the countdown is than body text. It is the number the player came here to read. */
     private static final float CLOCK_SCALE = 3.0F;
+    /** Footnote size for the feeding instructions, which overflowed the panel at full size. */
+    private static final float SMALL_SCALE = 0.75F;
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
@@ -62,12 +86,13 @@ public class ObliterationFurnaceScreen extends Screen {
 
         // How to feed it. The furnace has no slot on purpose, which is exactly why the screen has to say so:
         // a player who has met every other machine in Minecraft will look for one and find nothing.
-        g.drawString(font, Component.literal("Right-click the furnace with emeralds to feed it.")
-                .withStyle(ChatFormatting.GRAY), x + 10, y + 70, 0xFFFFFF, false);
-        g.drawString(font, Component.literal("Emerald = 1 min").withStyle(ChatFormatting.GREEN),
-                x + 10, y + 82, 0xFFFFFF, false);
-        g.drawString(font, Component.literal("Emerald Block = 10 min").withStyle(ChatFormatting.GREEN),
-                x + 108, y + 82, 0xFFFFFF, false);
+        //
+        // Drawn SMALL. At full size the instruction ran the whole width of the panel and touched the frame,
+        // which reads as text that has overflowed rather than text that fits. It is a footnote, not a heading,
+        // so it is sized like one.
+        drawSmall(g, "Right-click the furnace with emeralds to feed it.", x + 10, y + 70, 0xFFAAAAAA);
+        drawSmall(g, "Emerald = 1 min", x + 10, y + 82, 0xFF55FF55);
+        drawSmall(g, "Emerald Block = 10 min", x + 96, y + 82, 0xFF55FF55);
 
         g.fill(x + 10, y + 96, x + PANEL_W - 10, y + 97, 0x40A855F7);   // hairline before the roll
 
@@ -97,8 +122,9 @@ public class ObliterationFurnaceScreen extends Screen {
      * it should, which is the part that is easy to get wrong and ends with the number off the panel.
      */
     private void drawClock(GuiGraphics g, int panelX, int panelY) {
-        boolean lit = burnTicks > 0;
-        String clock = lit ? clockText(burnTicks) : "COLD";
+        int ticks = currentTicks();
+        boolean lit = ticks > 0;
+        String clock = lit ? clockText(ticks) : "COLD";
         int colour = lit ? 0xFFE9D5FF : 0xFF6B7280;
 
         g.pose().pushPose();
@@ -113,6 +139,19 @@ public class ObliterationFurnaceScreen extends Screen {
                         .withStyle(ChatFormatting.DARK_GRAY),
                 panelX + PANEL_W / 2 - font.width(lit ? "remaining" : "feed it to relight it") / 2,
                 panelY + 30, 0xFFFFFF, false);
+    }
+
+    /**
+     * Draw {@code text} at {@value #SMALL_SCALE} of normal size, positioned as if it were normal size.
+     *
+     * <p>Minecraft ships exactly one font, so the only way to make text smaller is to scale the pose and
+     * divide the coordinates back out. Same mechanism as the big clock, in the other direction.
+     */
+    private void drawSmall(GuiGraphics g, String text, int x, int y, int colour) {
+        g.pose().pushPose();
+        g.pose().scale(SMALL_SCALE, SMALL_SCALE, 1.0F);
+        g.drawString(font, text, (int) (x / SMALL_SCALE), (int) (y / SMALL_SCALE), colour, false);
+        g.pose().popPose();
     }
 
     /** m:ss while under an hour, h:mm above it, so the big number never overflows the panel. */

@@ -11,10 +11,13 @@ public final class ModTriggers {
     public static final SimpleModTrigger RESURRECTION = new SimpleModTrigger("resurrection");
     /** The Limbo Scythe spent a soul to buy back the player's own death. */
     public static final SimpleModTrigger SCYTHE_SAVE = new SimpleModTrigger("scythe_save");
+    /** An Obliterator kill struck a species off the spawn tables. */
+    public static final SimpleModTrigger OBLITERATED = new SimpleModTrigger("obliterated");
 
     public static void register() {
         CriteriaTriggers.register(BRAIN_NODE_STAGE);
         CriteriaTriggers.register(RESURRECTION);
         CriteriaTriggers.register(SCYTHE_SAVE);
+        CriteriaTriggers.register(OBLITERATED);
     }
 }

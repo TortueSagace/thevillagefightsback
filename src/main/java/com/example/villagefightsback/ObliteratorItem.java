@@ -41,11 +41,21 @@ public class ObliteratorItem extends SwordItem {
         return true;
     }
 
+    /**
+     * Say the whole rule, not a hint at it.
+     *
+     * <p>Split across lines by hand because a tooltip does not wrap: one long line runs off the screen edge and
+     * takes the important half of the sentence with it.
+     */
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
         lines.add(Component.literal("An evolved Limbo Sword.").withStyle(ChatFormatting.GRAY));
-        lines.add(Component.literal("With an Obliteration Furnace burning, its hits mark prey for erasure.")
+        lines.add(Component.literal("As long as an Obliteration Furnace is burning, killing")
                 .withStyle(ChatFormatting.DARK_PURPLE));
+        lines.add(Component.literal("a mob with this sword bans it from spawning anywhere.")
+                .withStyle(ChatFormatting.DARK_PURPLE));
+        lines.add(Component.literal("Very efficient to stop an alien invasion.")
+                .withStyle(ChatFormatting.LIGHT_PURPLE));
         super.appendHoverText(stack, level, lines, flag);
     }
 

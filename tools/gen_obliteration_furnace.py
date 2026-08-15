@@ -33,11 +33,11 @@ N = 16
 FRAMES = 4
 
 VOID = (6, 3, 12, 255)          # the nothing inside the arch
-STONE_D = (24, 16, 36, 255)     # Limbo stone, shadow
-STONE = (42, 29, 60, 255)
-STONE_L = (63, 46, 86, 255)     # its lit face
-BAND_D = (16, 10, 26, 255)      # the iron bands
-BAND = (33, 23, 47, 255)
+STONE_D = (20, 13, 32, 255)     # Limbo stone, shadow
+STONE = (56, 40, 78, 255)
+STONE_L = (86, 66, 116, 255)    # its lit face
+BAND_D = (12, 7, 20, 255)       # the iron bands
+BAND = (40, 28, 58, 255)
 AME_D = (74, 36, 122, 255)      # amethyst, inert
 AME = (132, 78, 196, 255)
 AME_L = (188, 146, 246, 255)    # amethyst, live
@@ -56,6 +56,9 @@ def base_casing(rng):
     for y in (0, 1, 14, 15):                      # the bands
         for x in range(N):
             px[x, y] = BAND if (x + y) % 5 else BAND_D
+    for x in range(N):                            # lit lip under the top band, shadow over the bottom one
+        px[x, 2] = STONE_L if x % 3 else STONE
+        px[x, 13] = STONE_D
     return img
 
 
@@ -131,6 +134,9 @@ def make_top():
             if 2.4 <= ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5 <= 3.6]
     for x, y in ring:
         px[x, y] = BAND_D
+    for x, y in [(x, y) for x in range(3, 13) for y in range(3, 13)
+                 if 3.6 < ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5 <= 4.4]:
+        px[x, y] = STONE_L      # a lit collar outside the vent, so the ring has an edge to read against
     eye = [(x, y) for x in range(6, 10) for y in range(6, 10)
            if ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5 <= 1.6]
     for x, y in eye:

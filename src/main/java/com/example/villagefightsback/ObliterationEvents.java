@@ -71,6 +71,9 @@ public final class ObliterationEvents {
         if (!data.obliterate(furnace, type)) return;
 
         // Tell whoever swung. This is a permanent, world-wide change and it must never happen silently.
+        if (event.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            ModTriggers.OBLITERATED.trigger(sp);
+        }
         if (event.getSource().getEntity() instanceof Player p) {
             p.displayClientMessage(net.minecraft.network.chat.Component
                     .literal("Obliterated: " + dead.getType().getDescription().getString()
