@@ -39,6 +39,21 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class EmeraldDigGoal extends Goal {
     private static final int RECHECK_TICKS = 20; // how often to (re)test reachability with a real pathfind
 
+    /**
+     * Digging is only considered this close to the prey.
+     *
+     * <p>The whole goal turns on "a pathfind to the target failed, so something is in the way". That inference
+     * is only sound within the pathfinder's reach. Ask it for a path to something a thousand blocks off and it
+     * fails for the mundane reason that it gave up, not because anything is blocking -- and the digger, reading
+     * that as an obstruction, starts tunnelling through open ground. On a superflat that is exactly as absurd
+     * as it sounds: a clear horizon, and the raider digs into the dirt.
+     *
+     * <p>32 blocks is comfortably inside what the pathfinder will actually search, so inside it a failure means
+     * what the goal thinks it means. Further out, walking is the answer, and for a Nightmare raider the hunt
+     * goal is already doing exactly that.
+     */
+    private static final double DIG_RANGE = 32.0;
+
     private final Mob mob;
     /** Whether this digger may draw an emerald tool. Guards do; emerald units keep clawing bare-handed. */
     private final boolean toolUser;
@@ -135,6 +150,8 @@ public class EmeraldDigGoal extends Goal {
         // Only dig once the mob has actually WALKED to the end of its path (it is stuck), never mid-stride -- this is
         // what stops it gouging random holes in the floor on the way to reachable prey.
         if (!mob.getNavigation().isDone()) return false;
+        // Too far for "no path" to mean "blocked": see DIG_RANGE.
+        if (mob.distanceToSqr(target) > DIG_RANGE * DIG_RANGE) return false;
         if (!stuckCheckDue()) return false;            // only run the (costly) reach test a few times a second
         if (canReachTarget(target)) return false;      // a clear path exists -> walk, don't dig
         dig = findDiggable(target);
@@ -145,6 +162,8 @@ public class EmeraldDigGoal extends Goal {
     public boolean canContinueToUse() {
         LivingEntity target = currentTarget();
         if (target == null || !target.isAlive() || dig == null || !isDiggable(mob.level(), dig)) return false;
+        // The prey walked away: stop tunnelling after it and follow instead.
+        if (mob.distanceToSqr(target) > DIG_RANGE * DIG_RANGE) return false;
         if (stuckCheckDue() && canReachTarget(target)) return false; // a path opened up -> stop digging and walk it
         return true;
     }
