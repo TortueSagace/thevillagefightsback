@@ -69,6 +69,15 @@ public final class BrainNodeEvents {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
 
+        // HOLD while the world-creation screens are still up. The world is genuinely RUNNING behind them: the
+        // player has joined and the server is ticking, and only their client is showing a GUI. So without this
+        // the village spent those seconds evolving, spawning and handing out advancements under whatever the
+        // config happened to say -- and the answer that was about to arrive might have switched the emerald
+        // faction off entirely. Deciding the world's rules and then applying them retroactively is not
+        // possible; not starting until the question is answered is.
+        WorldModeData mode = WorldModeData.getExisting(server);
+        if (mode != null && mode.isPending()) return;
+
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);
         processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node

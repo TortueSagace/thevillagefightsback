@@ -21,8 +21,8 @@ import net.minecraft.network.chat.Component;
  * things instead of one choice, and the captions ran into the buttons above and below them.
  */
 public class DifficultySelectScreen extends ModeArtScreen {
-    /** Wide enough for the longest label, and never wider than the window. */
-    private static final int BUTTON_MAX_W = 440;
+    /** Breathing room either side of the widest label. */
+    private static final int BUTTON_PADDING = 16;
     private static final int BUTTON_MARGIN = 20;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
@@ -41,7 +41,11 @@ public class DifficultySelectScreen extends ModeArtScreen {
         this.questionY = logoBottom() + 12;
         int contentY = questionY + 26;
 
-        int buttonW = Math.min(BUTTON_MAX_W, this.width - BUTTON_MARGIN * 2);
+        // Measured, not guessed: as wide as the LONGEST label needs and not a pixel more, so the column is
+        // tight around the Nightmare line rather than sized to a round number someone picked.
+        int widest = 0;
+        for (Difficulty d : Difficulty.values()) widest = Math.max(widest, this.font.width(d.label()));
+        int buttonW = Math.min(widest + BUTTON_PADDING, this.width - BUTTON_MARGIN * 2);
         int x = (this.width - buttonW) / 2;
         int y = contentY;
         for (Difficulty d : Difficulty.values()) {
