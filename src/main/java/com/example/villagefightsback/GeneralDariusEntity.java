@@ -37,8 +37,8 @@ import org.jetbrains.annotations.Nullable;
  * ZombieVillager-bodied fighter), but he wields the {@link GuardWeapons#alienSmasher() Alien Smasher} (no
  * crossbow), wears the FULL Limbo set including the Limbo Elytra Chestplate, and gets every Limbo full-set
  * advantage (fire/fall immunity, harmful-effect clearing, contact soft-block breaking, and -- below 50% HP --
- * the Limbo banish beam). He is immune to Limbo banishment (see {@link LimboDimension#sendToLimbo}), has a boss
- * bar, and a persistent "Darius" name tag. His combat brain is {@link GeneralDariusGoal}; his navigation is the
+ * the Limbo banish beam). He CAN be banished to Limbo himself, by the potion or by another beam, and returns
+ * via his gravel like anything else. He has a boss bar and a persistent "Darius" name tag. His combat brain is {@link GeneralDariusGoal}; his navigation is the
  * {@link DariusNavigation} (routes around village walls, plows through generic terrain).
  *
  * On the locked-target queue dying out, Darius walks back to his home brain node and despawns, REFUNDING the

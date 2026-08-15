@@ -63,7 +63,7 @@ at the bottom.
   HP, or a player who has killed >= 3 villagers/guards in 3 minutes. Wields the **Alien Smasher** and the full
   **Limbo set** (incl. the elytra chestplate), so he gets every full-set advantage (fire/fall immunity,
   harmful-effect clearing, contact soft-block breaking, and -- below 50% HP -- the **banish beam** on a 30s
-  cooldown). Limbo-banish immune like the Vindictive Village Spirit; has a boss bar and the name "Darius". He
+  cooldown). Bannable to Limbo himself, like the Vindictive Village Spirit; has a boss bar and the name "Darius". He
   **locks onto the single biggest threat** and ignores all others (retaliating only against whoever hits him),
   hunts it anywhere, then picks the next biggest; with none left he walks home and despawns. **Hires** nearby
   idle village guards into a follow-squad, **double-jumps** (no ceiling -- he breaks through), pillars out of
