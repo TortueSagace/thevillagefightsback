@@ -1297,9 +1297,14 @@ public final class BrainNodeEvents {
     }
 
     private static void reinforceVillage(ServerLevel level, WallPlan innerWall, BlockPos pos, int stage) {
-        int villagersToSpawn = 2 * stage;            // 2 / 4 / 6 / 8
-        int guardsToSpawn = stage;                   // 1 / 2 / 3 / 4
-        int golemsToSpawn = stage >= 3 ? 1 : 0;      // 0 / 0 / 1 / 1  (stage-4 daily golem is 1, not 2)
+        // Nightmare sends the same sunset that raids you, so it has to replace what it sends away as well as
+        // arm the village that stays. Doubling here rather than in each of the three lines below keeps the
+        // stage ratios (villagers to guards to golems) exactly as they are on every other difficulty -- the
+        // village gets bigger, not differently shaped.
+        int reinforcement = Difficulty.current().huntsAtSunset() ? 2 : 1;
+        int villagersToSpawn = 2 * stage * reinforcement;   // 2 / 4 / 6 / 8, doubled on Nightmare
+        int guardsToSpawn = stage * reinforcement;          // 1 / 2 / 3 / 4, doubled on Nightmare
+        int golemsToSpawn = (stage >= 3 ? 1 : 0) * reinforcement;  // 0 / 0 / 1 / 1  (the stage-4 daily golem is 1)
 
         // From stage 4 the village is capped by a glass dome, so the centre's heightmap surface is the DOME
         // ROOF -- spawning there would drop reinforcements on top of the dome. Instead, once a stage-4 village
