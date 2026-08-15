@@ -763,7 +763,7 @@ public final class VillageEvents {
 
     /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on, and EMPTY curative
      *  items so milk can never cure it (it still clears on death). Shared by every ETV grant. */
-    private static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
+    static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
         net.minecraft.world.effect.MobEffectInstance inst = new net.minecraft.world.effect.MobEffectInstance(
                 ModEffects.ENEMY_OF_THE_VILLAGE.get(), ticks, 0, false, false, true);
         inst.setCurativeItems(new ArrayList<>()); // milk cannot cure it

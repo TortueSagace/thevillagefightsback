@@ -1,0 +1,93 @@
+package com.example.villagefightsback;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * Enforces the standing the chosen {@link Difficulty} gives you with the village.
+ *
+ * <p>Easy pins Hero of the Village on and Enemy off; Hard and Nightmare do the reverse. Normal is not mentioned
+ * anywhere below, which is the point: on Normal this class does nothing at all and the village's ordinary rules
+ * decide where you stand.
+ *
+ * <p>It works by REFRESHING rather than by granting once. There is no infinite duration in 1.20.1, and even if
+ * there were, "permanent" has to survive a death, a milk bucket, a totem, and every place in this mod that
+ * removes the opposite status -- {@code VillageEvents} strips Hero when it brands you an Enemy, and the brain
+ * node strips Enemy when you buy Hero with emeralds. Rather than teach all of those about difficulty, the
+ * status is simply re-asserted a few times a minute, so anything that removes it has it back within a second.
+ *
+ * <p>The other half is {@link #onApplicable}: the status you are not supposed to have is refused at the door.
+ * Without that the refresh loop and a grant elsewhere would fight, and you would flicker between the two.
+ */
+@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class DifficultyEffects {
+    private DifficultyEffects() {}
+
+    /** How often the forced status is re-asserted. Cheap: a handful of players, once a second. */
+    private static final int REFRESH_INTERVAL = 20;
+    /** Long enough that the gap between refreshes never shows, short enough to lapse if difficulty changes. */
+    private static final int DURATION = 20 * 30;
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (event.getServer().getTickCount() % REFRESH_INTERVAL != 0) return;
+
+        Difficulty d = Difficulty.current();
+        if (d == Difficulty.NORMAL) return;                    // the village judges you itself
+
+        for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
+            if (p.isCreative() || p.isSpectator()) continue;    // not a participant in the village's opinion
+            if (d.forcesHero()) {
+                force(p, new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, DURATION, 0, false, false, true));
+                p.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+            } else if (d.forcesEnemy()) {
+                force(p, VillageEvents.enemyInstance(DURATION));
+                p.removeEffect(MobEffects.HERO_OF_THE_VILLAGE);
+            }
+        }
+    }
+
+    /**
+     * Re-assert {@code inst}, and make it uncurable.
+     *
+     * <p>The cure set is emptied on the instance itself rather than on the effect, because one of the two is
+     * vanilla's Hero of the Village and this mod does not own it. Emptying the set is what makes milk and a
+     * totem powerless against a status the difficulty says you have permanently.
+     *
+     * <p>Only re-applied once the existing one is running low, so the icon does not visibly reset every second.
+     */
+    private static void force(ServerPlayer p, MobEffectInstance inst) {
+        MobEffectInstance held = p.getEffect(inst.getEffect());
+        if (held != null && held.getDuration() > DURATION / 2) return;
+        inst.setCurativeItems(new java.util.ArrayList<>()); // milk and totems cannot lift a forced status
+        p.addEffect(inst);
+    }
+
+    /**
+     * Refuse the status the difficulty forbids, before it can land.
+     *
+     * <p>HIGHEST priority so it beats anything that might grant it, and it fires for every source -- the brain
+     * node's emerald donation, a raid win, this mod's own branding -- rather than needing each of those to
+     * check the difficulty itself. On Easy you cannot become an Enemy however hard you try; on Hard and
+     * Nightmare no amount of donating buys you Hero.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onApplicable(MobEffectEvent.Applicable event) {
+        if (!(event.getEntity() instanceof ServerPlayer)) return;
+        Difficulty d = Difficulty.current();
+        if (d == Difficulty.NORMAL) return;
+
+        var effect = event.getEffectInstance().getEffect();
+        boolean forbidden = d.forcesHero()
+                ? effect == ModEffects.ENEMY_OF_THE_VILLAGE.get()
+                : effect == MobEffects.HERO_OF_THE_VILLAGE;
+        if (forbidden) event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+    }
+}
