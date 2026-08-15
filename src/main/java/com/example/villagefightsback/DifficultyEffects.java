@@ -12,7 +12,7 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Enforces the standing the chosen {@link Difficulty} gives you with the village.
  *
- * <p>Easy pins Hero of the Village on and Enemy off; Hard and Nightmare do the reverse. Normal is not mentioned
+ * <p>Peaceful pins Hero of the Village on and Enemy off; Hostile and Nightmare do the reverse. Neutral is not
  * anywhere below, which is the point: on Normal this class does nothing at all and the village's ordinary rules
  * decide where you stand.
  *
@@ -40,7 +40,7 @@ public final class DifficultyEffects {
         if (event.getServer().getTickCount() % REFRESH_INTERVAL != 0) return;
 
         Difficulty d = Difficulty.current();
-        if (d == Difficulty.NORMAL) return;                    // the village judges you itself
+        if (d == Difficulty.NEUTRAL) return;                    // the village judges you itself
 
         for (ServerPlayer p : event.getServer().getPlayerList().getPlayers()) {
             // Creative counts, spectator does not. A creative player is standing there and the village has no
@@ -78,14 +78,14 @@ public final class DifficultyEffects {
      *
      * <p>HIGHEST priority so it beats anything that might grant it, and it fires for every source -- the brain
      * node's emerald donation, a raid win, this mod's own branding -- rather than needing each of those to
-     * check the difficulty itself. On Easy you cannot become an Enemy however hard you try; on Hard and
+     * check the difficulty itself. On Peaceful you cannot become an Enemy however hard you try; on Hostile and
      * Nightmare no amount of donating buys you Hero.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onApplicable(MobEffectEvent.Applicable event) {
         if (!(event.getEntity() instanceof ServerPlayer)) return;
         Difficulty d = Difficulty.current();
-        if (d == Difficulty.NORMAL) return;
+        if (d == Difficulty.NEUTRAL) return;
 
         var effect = event.getEffectInstance().getEffect();
         boolean forbidden = d.forcesHero()

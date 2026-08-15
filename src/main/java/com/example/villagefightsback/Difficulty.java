@@ -14,12 +14,12 @@ import net.minecraft.ChatFormatting;
  */
 public enum Difficulty {
     /** Permanently a Hero of the Village, and never its Enemy. The village will not turn on you at all. */
-    EASY(0, "Easy", ChatFormatting.BLUE, ": permanent \"Hero of the Village\" effect"),
+    PEACEFUL(0, "Peaceful", ChatFormatting.BLUE, ": permanent \"Hero of the Village\" effect"),
     /** The village's normal rules: earn Hero status, lose it, become an Enemy, all as usual. */
-    NORMAL(1, "Normal", ChatFormatting.YELLOW, " (recommended mode)"),
+    NEUTRAL(1, "Neutral", ChatFormatting.YELLOW, " (recommended mode)"),
     /** Permanently an Enemy of the Village, and never its Hero. Every defender is hostile from the first day. */
-    HARD(2, "Hard", ChatFormatting.RED, ": permanent \"Enemy of the Village\" effect"),
-    /** Hard, plus the nightly hunt: at sunset the brain node marks you and sends a raid after you. */
+    HOSTILE(2, "Hostile", ChatFormatting.RED, ": permanent \"Enemy of the Village\" effect"),
+    /** Hostile, plus the nightly hunt: at sunset the brain node marks you and sends a raid after you. */
     NIGHTMARE(3, "Nightmare", ChatFormatting.DARK_RED, ": villagers will chase you anywhere in the Overworld");
 
     private final int id;
@@ -51,10 +51,10 @@ public enum Difficulty {
     }
 
     /** True when the player should be permanently, uncurably a Hero of the Village. */
-    public boolean forcesHero() { return this == EASY; }
+    public boolean forcesHero() { return this == PEACEFUL; }
 
     /** True when the player should be permanently, uncurably an Enemy of the Village. */
-    public boolean forcesEnemy() { return this == HARD || this == NIGHTMARE; }
+    public boolean forcesEnemy() { return this == HOSTILE || this == NIGHTMARE; }
 
     /** True when the village hunts the player at sunset (see {@code NightmareRaid}). */
     public boolean huntsAtSunset() { return this == NIGHTMARE; }
@@ -62,17 +62,17 @@ public enum Difficulty {
     /**
      * True when the world starts you with a brain node already placed near spawn instead of a bell in hand.
      *
-     * <p>Both hostile difficulties, not just Nightmare. On Hard you are an Enemy of the Village from the first
+     * <p>Both hostile difficulties, not just Nightmare. On Hostile you are an Enemy of the Village from the first
      * morning, and handing an Enemy the bell that founds the village reads backwards: the village should already
      * be there, and already against you. The bell is a gift to someone the village has not yet judged.
      */
-    public boolean placesBrainNodeAtSpawn() { return this == HARD || this == NIGHTMARE; }
+    public boolean placesBrainNodeAtSpawn() { return this == HOSTILE || this == NIGHTMARE; }
 
-    /** The difficulty with this id, or {@link #NORMAL} for anything unexpected. Never trust a number off the
+    /** The difficulty with this id, or {@link #NEUTRAL} for anything unexpected. Never trust a number off the
      *  network or out of a hand-edited .toml: an unknown value should play normally, not crash or lock you out. */
     public static Difficulty byId(int id) {
         for (Difficulty d : values()) if (d.id == id) return d;
-        return NORMAL;
+        return NEUTRAL;
     }
 
     /** The difficulty currently in force, read from the config the world-mode data pushes into. */

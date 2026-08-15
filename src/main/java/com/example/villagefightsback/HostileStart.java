@@ -12,7 +12,7 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * The opening move on the hostile difficulties: no bell in your hand, a village already watching you.
  *
- * <p>On Hard and Nightmare you are an Enemy of the Village from the first morning, and handing an Enemy the
+ * <p>On Hostile and Nightmare you are an Enemy of the Village from the first morning, and handing an Enemy the
  * bell that FOUNDS a village reads backwards. Instead a brain node is placed for you, close enough to find on
  * the first day and far enough that you do not spawn inside its garrison.
  *
@@ -51,7 +51,7 @@ public final class HostileStart {
     public static void apply(ServerPlayer player) {
         // Not while the creation screens are still open. At login on a brand-new world the difficulty is
         // whatever the LAST world left in the config, and acting on it here is what put a brain node and no
-        // bell into an Easy world. The answer calls this again a moment later, with the real value.
+        // bell into a Peaceful world. The answer calls this again a moment later, with the real value.
         net.minecraft.server.MinecraftServer server = player.getServer();
         if (server != null) {
             WorldModeData data = WorldModeData.getExisting(server);

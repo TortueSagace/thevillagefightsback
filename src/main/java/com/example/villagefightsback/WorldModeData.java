@@ -28,7 +28,7 @@ public class WorldModeData extends SavedData {
     private boolean blockInfection;
     private boolean mobInfection;
     private boolean emeraldInfestation;
-    /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Easy. */
+    /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Peaceful. */
     private int difficulty = -1;
     /** True from world creation until BOTH creation screens have been answered. */
     private boolean setupPending;

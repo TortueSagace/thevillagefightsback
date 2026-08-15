@@ -156,7 +156,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 
 **Switches and values:**
 
-*   `difficulty`: how the village treats you, picked on the difficulty screen when the world is created and changeable afterwards. `0` Easy (permanent Hero of the Village, and you can never become its Enemy), `1` Normal (the village judges you on what you do, and the recommended setting), `2` Hard (permanent Enemy of the Village, and you can never become its Hero), `3` Nightmare (Hard, plus a raid sent to hunt you down every sunset). On Easy and Hard the forced status cannot be cured, by milk or by dying.
+*   `difficulty`: how the village treats you, picked on the difficulty screen when the world is created and changeable afterwards. `0` Peaceful (permanent Hero of the Village, and you can never become its Enemy), `1` Neutral (the village judges you on what you do, and the recommended setting), `2` Hostile (permanent Enemy of the Village, and you can never become its Hero), `3` Nightmare (Hostile, plus a raid sent to hunt you down every sunset). On Peaceful and Hostile the forced status cannot be cured, by milk or by dying.
 *   `enable_block_infection`: master switch for the village's own fertile-zone takeover (the Brain Node's natural spread)
 *   `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
 *   `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)

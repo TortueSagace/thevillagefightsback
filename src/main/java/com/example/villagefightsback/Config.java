@@ -225,11 +225,11 @@ public final class Config {
                 .define("mca_compat", true);
         DIFFICULTY = b
                 .comment("How the village TREATS YOU, picked on the difficulty screen when a world is created.",
-                        "0 = Easy      -- permanent Hero of the Village; you can never become its Enemy.",
-                        "1 = Normal    -- the village judges you on what you do. The recommended setting.",
-                        "2 = Hard      -- permanent Enemy of the Village; you can never become its Hero.",
-                        "3 = Nightmare -- Hard, plus a raid sent to hunt you down every sunset.",
-                        "On Easy and Hard the forced status cannot be cured, by milk or by dying. This is separate from",
+                        "0 = Peaceful  -- permanent Hero of the Village; you can never become its Enemy.",
+                        "1 = Neutral   -- the village judges you on what you do. The recommended setting.",
+                        "2 = Hostile   -- permanent Enemy of the Village; you can never become its Hero.",
+                        "3 = Nightmare -- Hostile, plus a raid sent to hunt you down every sunset.",
+                        "On Peaceful and Hostile the forced status cannot be cured, by milk or by dying. This is separate from",
                         "the GAME MODE (what spreads and spawns); the two are chosen on two screens. Default: 1.")
                 .defineInRange("difficulty", 1, 0, 3);
         b.pop();
