@@ -64,6 +64,16 @@ public class NightmareHuntGoal extends Goal {
 
     @Override
     public void tick() {
+        // Villagers are BRAIN-driven, and the brain issues its own walk target every tick. Without erasing it
+        // the brain simply wins: the raider wanders off about its village business and reads as ignoring you
+        // entirely, which is exactly what it looked like. Six other goals in this mod do this for the same
+        // reason. Sleeping is broken off for the same reason -- a raid that arrives at night finds villagers
+        // trying to go to bed.
+        if (mob instanceof net.minecraft.world.entity.npc.Villager v) {
+            if (v.isSleeping()) v.stopSleeping();
+            v.getBrain().eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET);
+        }
+
         Player quarry0 = NightmareRaid.huntedBy(mob);
         if (quarry0 != null && --swingCooldown <= 0 && mob.distanceToSqr(quarry0) <= REACH_SQR) {
             swingCooldown = SWING_TICKS;
@@ -76,9 +86,11 @@ public class NightmareHuntGoal extends Goal {
 
         Player quarry = NightmareRaid.huntedBy(mob);
         if (quarry == null) return;
-        // Only lead the raider while it cannot see its quarry. Once it can, the combat goals own the approach,
-        // and two goals steering the same legs is how a mob ends up vibrating between two destinations.
-        if (mob.getSensing().hasLineOfSight(quarry)) return;
+        // Lead the raider whenever it is not already within reach. It used to stand down as soon as it could
+        // SEE the player, on the theory that the combat goals would take the approach from there -- but those
+        // goals decline for their own reasons (a creative player is invulnerable, so vanilla targeting will not
+        // look at one at all), and when they declined nobody was steering and the raider just stood there.
+        if (mob.distanceToSqr(quarry) <= REACH_SQR) return;
 
         Vec3 to = quarry.position().subtract(mob.position());
         double dist = to.length();
