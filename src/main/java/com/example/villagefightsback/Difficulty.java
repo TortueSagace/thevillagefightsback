@@ -14,34 +14,41 @@ import net.minecraft.ChatFormatting;
  */
 public enum Difficulty {
     /** Permanently a Hero of the Village, and never its Enemy. The village will not turn on you at all. */
-    EASY(0, "Easy", ChatFormatting.BLUE,
-            "Permanent Hero of the Village. The village never turns on you."),
+    EASY(0, "Easy", ChatFormatting.BLUE, ": permanent \"Hero of the Village\" effect"),
     /** The village's normal rules: earn Hero status, lose it, become an Enemy, all as usual. */
-    NORMAL(1, "Normal", ChatFormatting.YELLOW,
-            "The village judges you on what you do. Recommended."),
+    NORMAL(1, "Normal", ChatFormatting.YELLOW, " (recommended mode)"),
     /** Permanently an Enemy of the Village, and never its Hero. Every defender is hostile from the first day. */
-    HARD(2, "Hard", ChatFormatting.RED,
-            "Permanent Enemy of the Village. Its defenders are hostile from day one."),
+    HARD(2, "Hard", ChatFormatting.RED, ": permanent \"Enemy of the Village\" effect"),
     /** Hard, plus the nightly hunt: at sunset the brain node marks you and sends a raid after you. */
-    NIGHTMARE(3, "Nightmare", ChatFormatting.DARK_RED,
-            "Enemy of the Village, and every sunset it sends a raid to hunt you down.");
+    NIGHTMARE(3, "Nightmare", ChatFormatting.DARK_RED, ": villagers will chase you anywhere in the Overworld");
 
     private final int id;
     private final String title;
     private final ChatFormatting colour;
-    private final String blurb;
+    private final String suffix;
 
-    Difficulty(int id, String title, ChatFormatting colour, String blurb) {
+    Difficulty(int id, String title, ChatFormatting colour, String suffix) {
         this.id = id;
         this.title = title;
         this.colour = colour;
-        this.blurb = blurb;
+        this.suffix = suffix;
     }
 
     public int id() { return id; }
     public String title() { return title; }
     public ChatFormatting colour() { return colour; }
-    public String blurb() { return blurb; }
+    /**
+     * The whole button label: the name in this difficulty's colour, then what it does, in white.
+     *
+     * <p>All of it on ONE line inside the button. A separate caption line underneath was tried and was wrong:
+     * it read as two competing things rather than one choice, and the captions collided with the buttons above
+     * and below them.
+     */
+    public net.minecraft.network.chat.Component label() {
+        return net.minecraft.network.chat.Component.literal(title).withStyle(colour)
+                .append(net.minecraft.network.chat.Component.literal(suffix)
+                        .withStyle(ChatFormatting.WHITE));
+    }
 
     /** True when the player should be permanently, uncurably a Hero of the Village. */
     public boolean forcesHero() { return this == EASY; }

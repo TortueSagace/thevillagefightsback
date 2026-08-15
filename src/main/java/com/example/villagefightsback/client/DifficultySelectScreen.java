@@ -16,20 +16,20 @@ import net.minecraft.network.chat.Component;
  * DOES to the world; the difficulty decides where you STAND with the village. Offering the twelve combinations
  * as one menu would bury both.
  *
- * <p>Each button is coloured by its difficulty and carries a one-line consequence underneath, because "Hard"
- * on its own does not tell you that the village will be hostile before you have done anything, and that is the
- * kind of thing a player should learn here rather than by being shot.
+ * <p>Each button carries its whole meaning on one line: the name in its own colour, then what it does. A first
+ * version put the consequence on a caption line under each button and it was wrong -- it read as two competing
+ * things instead of one choice, and the captions ran into the buttons above and below them.
  */
 public class DifficultySelectScreen extends ModeArtScreen {
-    private static final int BUTTON_W = 260;
+    /** Wide enough for the longest label, and never wider than the window. */
+    private static final int BUTTON_MAX_W = 440;
+    private static final int BUTTON_MARGIN = 20;
     private static final int BUTTON_H = 20;
-    /** Room for the button plus its blurb line beneath it. */
-    private static final int ROW_H = BUTTON_H + 12;
+    private static final int BUTTON_GAP = 6;
 
     /** Set the instant an answer is picked, so a double click cannot send it twice. */
     private boolean answered;
 
-    private int contentY;
     private int questionY;
 
     public DifficultySelectScreen() {
@@ -39,18 +39,15 @@ public class DifficultySelectScreen extends ModeArtScreen {
     @Override
     protected void init() {
         this.questionY = logoBottom() + 12;
-        this.contentY = questionY + 26;
+        int contentY = questionY + 26;
 
-        int x = (this.width - BUTTON_W) / 2;
+        int buttonW = Math.min(BUTTON_MAX_W, this.width - BUTTON_MARGIN * 2);
+        int x = (this.width - buttonW) / 2;
         int y = contentY;
         for (Difficulty d : Difficulty.values()) {
-            Component label = Component.literal(d.title()).withStyle(d.colour());
-            if (d == Difficulty.NORMAL) {
-                label = label.copy().append(Component.literal("  (recommended)").withStyle(ChatFormatting.GRAY));
-            }
-            addRenderableWidget(Button.builder(label, b -> choose(d))
-                    .bounds(x, y, BUTTON_W, BUTTON_H).build());
-            y += ROW_H;
+            addRenderableWidget(Button.builder(d.label(), b -> choose(d))
+                    .bounds(x, y, buttonW, BUTTON_H).build());
+            y += BUTTON_H + BUTTON_GAP;
         }
     }
 
@@ -69,15 +66,6 @@ public class DifficultySelectScreen extends ModeArtScreen {
 
         drawScaled(g, Component.literal("Choose your difficulty mode").withStyle(ChatFormatting.WHITE),
                 this.width / 2, questionY, 1.5F, 0xFFFFFFFF);
-
-        // The blurbs sit under their own buttons, drawn after the art and before the widgets so a hovered
-        // button still paints over its own row rather than being dimmed by text drawn on top of it.
-        int y = contentY + BUTTON_H + 2;
-        for (Difficulty d : Difficulty.values()) {
-            g.drawCenteredString(this.font, Component.literal(d.blurb()).withStyle(ChatFormatting.GRAY),
-                    this.width / 2, y, 0xFFBFBFBF);
-            y += ROW_H;
-        }
 
         super.render(g, mouseX, mouseY, partial);
     }
