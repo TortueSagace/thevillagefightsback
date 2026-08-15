@@ -74,6 +74,27 @@ public final class DifficultyEffects {
     }
 
     /**
+     * On Peaceful, the village never takes a swing at you, whatever you do to it.
+     *
+     * <p>Forcing Hero and refusing Enemy was not enough, and the report proved it: the player kept Hero, never
+     * became an Enemy, and was beaten to death anyway. Retaliation does not consult the Enemy status at all --
+     * hitting a villager stamps a personal grudge straight onto that villager, and hitting the node aggroes
+     * every defender in range directly. Both are separate paths, and there is no reason to believe those are
+     * the only two.
+     *
+     * <p>So this gates the OUTCOME rather than the causes: a village unit may not take a player as its target
+     * while Peaceful is on. One rule at the door beats hunting down every route to the door, and any future
+     * route is covered by it automatically.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onVillageTargetsPlayer(net.minecraftforge.event.entity.living.LivingChangeTargetEvent event) {
+        if (!Difficulty.current().forcesHero()) return;
+        if (!(event.getNewTarget() instanceof net.minecraft.world.entity.player.Player)) return;
+        if (!Factions.isVillage(event.getEntity())) return;
+        event.setCanceled(true);
+    }
+
+    /**
      * Refuse the status the difficulty forbids, before it can land.
      *
      * <p>HIGHEST priority so it beats anything that might grant it, and it fires for every source -- the brain

@@ -747,6 +747,10 @@ public final class VillageEvents {
     /** The current valid attack target for a mob: its recent retaliation target, or -- failing that -- the
      *  nearest "Enemy of the Village" player within {@link #NODE_DEFEND_RADIUS}. Null if none. */
     public static Player getAggroPlayer(Mob mob) {
+        // Peaceful: the village holds no grudge against a player, so there is nothing to retaliate for. Gated
+        // here as well as at the target event so the combat goals stop asking rather than being refused every
+        // tick -- being told no repeatedly is how a villager ends up jittering in place.
+        if (Difficulty.current().forcesHero()) return null;
         CompoundTag data = mob.getPersistentData();
         if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
             Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
@@ -845,6 +849,7 @@ public final class VillageEvents {
      */
     public static void aggroDefendersAgainst(ServerLevel level, BlockPos center, double radius,
                                              Player attacker, int ticks) {
+        if (Difficulty.current().forcesHero()) return;   // Peaceful: no rally against a player, ever
         long until = level.getGameTime() + ticks;
         AABB box = new AABB(center).inflate(radius);
         for (Mob m : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && isAlly(e))) {
