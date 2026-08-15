@@ -46,6 +46,9 @@ public class SettlerGoal extends Goal {
         if (!(villager.level() instanceof ServerLevel level)) return false;
         if (villager.isBaby() || villager.isSleeping()) return false;
         if (com.example.villagefightsback.BuilderRole.isBuilder(villager)) return false; // builders belong to a village
+        // Out on a Nightmare hunt: a settler that stops to found a village halfway across the map is not
+        // hunting. Lifts itself the moment the hunt ends, so the same villager settles normally afterwards.
+        if (com.example.villagefightsback.NightmareRaid.isHunting(villager)) return false;
         if (villager.getPersistentData().getBoolean(NBT_SETTLED)) return false;
         if (villager.tickCount < nextTryTick) return false;
         nextTryTick = villager.tickCount + RETRY_TICKS;

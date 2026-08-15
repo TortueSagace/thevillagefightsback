@@ -1161,6 +1161,10 @@ public final class BrainNodeEvents {
             if (lastReinforcePeriod.getOrDefault(gp, Long.MIN_VALUE) == period) continue;
             lastReinforcePeriod.put(gp, period);
             reinforceVillage(level, data.getWallPlan(gp), gp.pos(), data.econ(gp).getLevel());
+            // Nightmare difficulty only, and a no-op on every other one: the same sunset that calls in
+            // reinforcements also sends a raid out after the nearest player. Hung here rather than on a clock of
+            // its own so the two can never drift apart -- the village reinforces and hunts on the same breath.
+            NightmareRaid.trySunsetRaid(level, data, gp, period);
         }
 
         // EMERALD HARVEST + the stage-3 one-time expansion wave stay ONCE PER DAY, at sunset.

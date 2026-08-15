@@ -1,94 +1,162 @@
 """
-Generate the Obliteration Furnace's block textures from the vanilla blast furnace.
+Draw the Obliteration Furnace's block textures.
 
-The furnace is the blast furnace recoloured into the Obliterator's violet, animation and all, so the two read
-as one system: the weapon marks, the furnace erases, and they share a palette nobody has to be told about.
+DRAWN, not recoloured. The first version of this file ran vanilla's blast furnace through a violet luminance
+ramp, which kept every rivet, hinge and grate Mojang drew and only changed the hue -- a purple blast furnace,
+not a new block. What follows is authored from scratch so the block says what it does.
 
-The recolour is a LUMINANCE REMAP, not a hue rotation. The blast furnace is mostly neutral greys with a few
-warm accents, and rotating hue on a grey does nothing at all -- the block would have come out unchanged except
-for the fire. Reading each pixel's brightness and looking that up in a violet ramp repaints the whole thing
-while keeping every bit of its shading and rivet detail.
+What it is supposed to say: this thing does not SMELT, it ERASES. So the front is not a grate with a fire
+behind it, it is a torn arch with nothing inside -- a hole in the world with an edge that glows when it is
+running. The casing is Limbo stone shot through with the same amethyst the Obliterator is tipped with, so the
+weapon and the furnace obviously belong together, and the amethyst is what lights up: veins that are dull rock
+when cold and lit filament when burning.
 
-Two things get special treatment:
+Everything is procedural and seeded, so re-running this reproduces the same block exactly rather than
+reshuffling the noise.
 
-  * THE FIRE, on blast_furnace_front_on. Vanilla's is orange, and orange is the one part of this texture that
-    is NOT neutral, so the same warm test the Obliterator's trace uses picks it out and sends it to a hot violet
-    ramp instead of the cold structural one. Otherwise the fire would have gone the same purple as the casing
-    and the furnace would look unlit while burning.
-  * ITS ANIMATION. The source is a 16x32 two-frame strip with its own mcmeta (interpolate, frametime 10). The
-    strip is recoloured frame by frame and the mcmeta copied verbatim, so the fire keeps flickering at exactly
-    vanilla's cadence rather than being reinvented.
+Faces:
+  front      arch closed, veins dark        front_on   arch open onto the void, veins lit, 4-frame pulse
+  side       casing + crystal cluster       top        vent ring around an amethyst eye
 
 Output: textures/block/obliteration_furnace_{front,front_on,side,top}.png (+ the front_on mcmeta)
 """
 import os
-import zipfile
+import random
 
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefightsback",
                        "textures", "block")
-CLIENT_EXTRA = os.path.expanduser(
-    "~/.gradle/caches/forge_gradle/minecraft_repo/versions/1.20.1/client-extra.jar")
 
-# Cold ramp: the casing. Dark violet through to a pale amethyst highlight.
-COLD = [(10, 5, 18), (28, 14, 46), (48, 24, 78), (72, 34, 116), (100, 50, 158),
-        (134, 82, 196), (170, 124, 226), (206, 168, 255), (232, 210, 255)]
-# Hot ramp: the fire. Bright enough to read as flame against the cold casing.
-HOT = [(60, 10, 90), (120, 20, 170), (180, 40, 230), (220, 110, 255), (245, 190, 255), (255, 240, 255)]
+N = 16
+FRAMES = 4
 
-SOURCES = {
-    "blast_furnace_front": "obliteration_furnace_front",
-    "blast_furnace_front_on": "obliteration_furnace_front_on",
-    "blast_furnace_side": "obliteration_furnace_side",
-    "blast_furnace_top": "obliteration_furnace_top",
-}
-
-
-def ramp(value, table):
-    """Pick from a colour ramp by 0..255 brightness."""
-    idx = min(len(table) - 1, max(0, int(value / 256.0 * len(table))))
-    return table[idx]
+VOID = (6, 3, 12, 255)          # the nothing inside the arch
+STONE_D = (24, 16, 36, 255)     # Limbo stone, shadow
+STONE = (42, 29, 60, 255)
+STONE_L = (63, 46, 86, 255)     # its lit face
+BAND_D = (16, 10, 26, 255)      # the iron bands
+BAND = (33, 23, 47, 255)
+AME_D = (74, 36, 122, 255)      # amethyst, inert
+AME = (132, 78, 196, 255)
+AME_L = (188, 146, 246, 255)    # amethyst, live
+CORE = (242, 220, 255, 255)     # the hottest filament
+MCMETA = '{"animation": {"frametime": 4, "interpolate": true}}' + chr(10)
 
 
-def recolour(img, allow_fire):
-    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    sp, op = img.convert("RGBA").load(), out.load()
-    w, h = img.size
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = sp[x, y]
-            if a == 0:
+def base_casing(rng):
+    """Limbo stone with a seeded speckle, plus a band across the top and bottom courses."""
+    img = Image.new("RGBA", (N, N), STONE)
+    px = img.load()
+    for y in range(N):
+        for x in range(N):
+            r = rng.random()
+            px[x, y] = STONE_D if r < 0.22 else (STONE_L if r > 0.86 else STONE)
+    for y in (0, 1, 14, 15):                      # the bands
+        for x in range(N):
+            px[x, y] = BAND if (x + y) % 5 else BAND_D
+    return img
+
+
+def arch(px, lit, phase):
+    """The maw: a torn arch, dark when cold, opening onto lit void when burning."""
+    # Column extents of the arch, row by row -- narrow at the crown, wide at the floor.
+    spans = {3: (6, 9), 4: (5, 10), 5: (4, 11), 6: (4, 11), 7: (3, 12),
+             8: (3, 12), 9: (3, 12), 10: (4, 11), 11: (4, 11), 12: (5, 10), 13: (6, 9)}
+    for y, (x0, x1) in spans.items():
+        for x in range(x0, x1 + 1):
+            px[x, y] = VOID
+    # The rim. Cold it is dead amethyst; lit it is filament, brightest at the crown and guttering at the floor.
+    for y, (x0, x1) in spans.items():
+        for x in (x0, x1):
+            if not lit:
+                px[x, y] = AME_D
                 continue
-            lum = 0.299 * r + 0.587 * g + 0.114 * b
-            # The fire is the only strongly warm thing on these textures; the casing is neutral grey.
-            if allow_fire and r > b + 40 and r > 90:
-                c = ramp(lum, HOT)
-            else:
-                c = ramp(lum, COLD)
-            op[x, y] = (c[0], c[1], c[2], a)
-    return out
+            # A slow pulse travelling down the rim, so the arch breathes instead of blinking.
+            wave = (y * 2 - phase * 3) % 8
+            px[x, y] = CORE if wave < 2 else (AME_L if wave < 5 else AME)
+    if lit:
+        # Something is in there. Sparse motes drifting up the void, seeded per frame so they move.
+        r = random.Random(0xB00 + phase)
+        for _ in range(7):
+            y = r.randint(4, 12)
+            x0, x1 = spans.get(y, (5, 10))
+            x = r.randint(x0 + 1, x1 - 1)
+            px[x, y] = AME_L if r.random() < 0.6 else CORE
+
+
+def veins(px, lit, rng):
+    """Amethyst veins through the casing: dull rock when cold, live filament when burning."""
+    seams = [(0, 5), (1, 4), (2, 4), (13, 11), (14, 11), (15, 10),
+             (1, 9), (2, 10), (13, 6), (14, 5)]
+    for x, y in seams:
+        px[x, y] = (AME_L if lit else AME_D)
+        if lit and rng.random() < 0.5:
+            px[x, y] = AME
+
+
+def make_front(lit, phase=0):
+    rng = random.Random(0x0B11)
+    img = base_casing(rng)
+    px = img.load()
+    arch(px, lit, phase)
+    veins(px, lit, random.Random(0x0B12 + phase))
+    return img
+
+
+def make_side():
+    rng = random.Random(0x0B21)
+    img = base_casing(rng)
+    px = img.load()
+    # A crystal cluster growing out of the stone: three shards of different heights, so the block has a
+    # readable silhouette from the side instead of being flat noise.
+    for x, top, tip in ((4, 10, 7), (6, 11, 5), (8, 10, 8), (11, 12, 9)):
+        for y in range(tip, top + 1):
+            px[x, y] = AME if y > tip + 1 else AME_L
+        px[x, tip] = CORE
+        px[x - 1, top] = AME_D
+        px[x + 1, top] = AME_D
+    for x, y in ((2, 6), (13, 8), (12, 5)):
+        px[x, y] = AME_D
+    return img
+
+
+def make_top():
+    rng = random.Random(0x0B31)
+    img = base_casing(rng)
+    px = img.load()
+    # A vent ring around an amethyst eye: what you see looking down at a running furnace.
+    ring = [(x, y) for x in range(4, 12) for y in range(4, 12)
+            if 2.4 <= ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5 <= 3.6]
+    for x, y in ring:
+        px[x, y] = BAND_D
+    eye = [(x, y) for x in range(6, 10) for y in range(6, 10)
+           if ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5 <= 1.6]
+    for x, y in eye:
+        px[x, y] = AME
+    px[7, 7] = CORE
+    px[8, 8] = AME_L
+    for x, y in ((3, 3), (12, 3), (3, 12), (12, 12)):   # bolts
+        px[x, y] = BAND_D
+    return img
 
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    with zipfile.ZipFile(CLIENT_EXTRA) as z:
-        for src, dst in SOURCES.items():
-            path = f"assets/minecraft/textures/block/{src}.png"
-            with z.open(path) as fh:
-                img = Image.open(fh).convert("RGBA")
-            fire = src.endswith("_on")
-            recolour(img, fire).save(os.path.join(OUT_DIR, dst + ".png"))
-            # Carry the animation across verbatim so the flicker keeps vanilla's cadence.
-            try:
-                meta = z.read(path + ".mcmeta").decode("utf-8")
-                with open(os.path.join(OUT_DIR, dst + ".png.mcmeta"), "w",
-                          encoding="utf-8", newline="\n") as f:
-                    f.write(meta if meta.endswith("\n") else meta + "\n")
-            except KeyError:
-                pass
-            print("wrote", dst, img.size, "(fire ramp)" if fire else "")
+    make_front(False).save(os.path.join(OUT_DIR, "obliteration_furnace_front.png"))
+    make_side().save(os.path.join(OUT_DIR, "obliteration_furnace_side.png"))
+    make_top().save(os.path.join(OUT_DIR, "obliteration_furnace_top.png"))
+
+    strip = Image.new("RGBA", (N, N * FRAMES), (0, 0, 0, 0))
+    for f in range(FRAMES):
+        strip.paste(make_front(True, f), (0, N * f))
+    strip.save(os.path.join(OUT_DIR, "obliteration_furnace_front_on.png"))
+    # interpolate: the rim pulse should slide, not step, which is the difference between breathing and blinking.
+    with open(os.path.join(OUT_DIR, "obliteration_furnace_front_on.png.mcmeta"), "w",
+              encoding="utf-8", newline="\n") as f:
+        f.write(MCMETA)
+    print("drew front, front_on (%d frames), side, top" % FRAMES)
 
 
 if __name__ == "__main__":
