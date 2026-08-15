@@ -87,10 +87,11 @@ public final class ObliterationEvents {
     }
 
     /**
-     * Refuse the spawn of anything currently struck off.
+     * Refuse the spawn of anything currently struck off, at the natural-spawn choke point.
      *
-     * <p>{@code FinalizeSpawn} is the choke point every natural spawn passes through, so one handler covers
-     * caves, spawners, breeding and structure spawns alike.
+     * <p>Cheapest place to say no: the creature is turned away before it ever enters the world. Covers caves,
+     * spawners, breeding and structure spawns. It does NOT cover everything, which is what
+     * {@link #onEntityJoin} is for.
      */
     @SubscribeEvent
     public static void onSpawn(MobSpawnEvent.FinalizeSpawn event) {
@@ -99,6 +100,36 @@ public final class ObliterationEvents {
         if (type == null) return;
         if (!ObliterationData.get(level.getServer()).isObliterated(type)) return;
         event.setSpawnCancelled(true);
+    }
+
+    /**
+     * The catch-all, and the reason MODDED creatures are banned as reliably as vanilla ones.
+     *
+     * <p>{@code FinalizeSpawn} only fires for spawns that go through vanilla's spawner machinery. Plenty of
+     * mods put creatures into the world by calling {@code addFreshEntity} directly -- summoned minions, ritual
+     * spawns, boss adds, custom spawners -- and every one of those would have walked straight past the handler
+     * above. Since the whole promise of the furnace is that an obliterated creature cannot appear ANYWHERE,
+     * a ban that quietly held only for vanilla mobs would be worse than no ban at all: you would not find out
+     * until the thing you paid an Obliterator to erase wandered back into view.
+     *
+     * <p>Every join passes through here, so this catches them all. Two exclusions:
+     * <ul>
+     *   <li>{@code loadedFromDisk} -- a chunk loading its existing residents. Obliteration erases a species
+     *       from the FUTURE, not from the world, so creatures already alive keep living.</li>
+     *   <li>Non-living entities, which are never obliterated and would otherwise pay for this lookup on every
+     *       arrow, item and particle-carrier that enters a level.</li>
+     * </ul>
+     */
+    @SubscribeEvent
+    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.loadedFromDisk()) return;                       // already alive: let it be
+        if (!(event.getEntity() instanceof LivingEntity living)) return;
+        if (living instanceof Player) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        ResourceLocation type = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
+        if (type == null) return;
+        if (!ObliterationData.get(level.getServer()).isObliterated(type)) return;
+        event.setCanceled(true);
     }
 
     /** Burn fuel once a second, server-wide, so a furnace runs down whether or not its chunk is loaded. */

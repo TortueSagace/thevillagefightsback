@@ -64,6 +64,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     public static final ForgeConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
     public static final ForgeConfigSpec.BooleanValue MCA_COMPAT;
+    public static final ForgeConfigSpec.IntValue DIFFICULTY;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ForgeConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -222,6 +223,15 @@ public final class Config {
                         "mix. MCA villagers extend the vanilla villager, so they take the same roles, weapons, walls and virus.",
                         "Turn OFF to spawn plain vanilla villagers alongside MCA's. Default: true.")
                 .define("mca_compat", true);
+        DIFFICULTY = b
+                .comment("How the village TREATS YOU, picked on the difficulty screen when a world is created.",
+                        "0 = Easy      -- permanent Hero of the Village; you can never become its Enemy.",
+                        "1 = Normal    -- the village judges you on what you do. The recommended setting.",
+                        "2 = Hard      -- permanent Enemy of the Village; you can never become its Hero.",
+                        "3 = Nightmare -- Hard, plus a raid sent to hunt you down every sunset.",
+                        "On Easy and Hard the forced status cannot be cured, by milk or by dying. This is separate from",
+                        "the GAME MODE (what spreads and spawns); the two are chosen on two screens. Default: 1.")
+                .defineInRange("difficulty", 1, 0, 3);
         b.pop();
 
         b.push("multipliers");
@@ -305,6 +315,7 @@ public final class Config {
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("enable_chunk_portals", ENABLE_CHUNK_PORTALS);
         INDEX.put("mca_compat", MCA_COMPAT);
+        INDEX.put("difficulty", DIFFICULTY);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);
@@ -411,6 +422,7 @@ public final class Config {
     public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
     public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }
     public static boolean organicMassEnabled()            { return ENABLE_ORGANIC_MASS_SYSTEM.get(); }
+    public static int difficulty()                        { return DIFFICULTY.get(); }
     public static double organicArmyMultiplier()          { return ORGANIC_ARMY_MULTIPLIER.get(); }
     public static double organicSpawnBudgetMultiplier()   { return ORGANIC_SPAWN_BUDGET_MULTIPLIER.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }

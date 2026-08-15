@@ -28,6 +28,8 @@ public class WorldModeData extends SavedData {
     private boolean blockInfection;
     private boolean mobInfection;
     private boolean emeraldInfestation;
+    /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Easy. */
+    private int difficulty = -1;
 
     public WorldModeData() {}
 
@@ -62,10 +64,28 @@ public class WorldModeData extends SavedData {
         pushToConfig();
     }
 
+    /**
+     * Record an answer to the DIFFICULTY screen, which is asked straight after the mode screen.
+     *
+     * <p>Separate from {@link #choose(WorldMode)} because the two screens ask different questions -- what the
+     * mod does, then how it treats you -- and because a world created before difficulties existed has answered
+     * the first and not the second. Such a world keeps difficulty -1 and simply plays on the config default.
+     */
+    public void chooseDifficulty(Difficulty d) {
+        difficulty = d.id();
+        setDirty();
+        pushToConfig();
+    }
+
+    /** The difficulty this world was created with, or null if it was never asked (a pre-existing save). */
+    public Difficulty chosenDifficulty() {
+        return difficulty < 0 ? null : Difficulty.byId(difficulty);
+    }
+
     /** Push the stored flags over the live config values (in memory only -- the .toml file is never written). */
     public void pushToConfig() {
-        if (!chosen) return;
-        Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+        if (chosen) Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+        if (difficulty >= 0) Config.DIFFICULTY.set(difficulty);
     }
 
     /** The preset these flags currently match, or null once the player has customised them individually. */
@@ -120,6 +140,7 @@ public class WorldModeData extends SavedData {
         data.blockInfection = tag.getBoolean("BlockInfection");
         data.mobInfection = tag.getBoolean("MobInfection");
         data.emeraldInfestation = tag.getBoolean("EmeraldInfestation");
+        data.difficulty = tag.contains("Difficulty") ? tag.getInt("Difficulty") : -1;
         return data;
     }
 
@@ -130,6 +151,7 @@ public class WorldModeData extends SavedData {
         tag.putBoolean("BlockInfection", blockInfection);
         tag.putBoolean("MobInfection", mobInfection);
         tag.putBoolean("EmeraldInfestation", emeraldInfestation);
+        tag.putInt("Difficulty", difficulty);
         return tag;
     }
 }

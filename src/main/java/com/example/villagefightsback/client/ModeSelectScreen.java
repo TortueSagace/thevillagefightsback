@@ -14,8 +14,9 @@ import net.minecraft.network.chat.Component;
  * world. Full-bleed key art, the stylised mod logo, the question, and one vanilla button per mode.
  *
  * <p>It cannot be dismissed until a mode is picked (no ESC, no close button). Picking one sends the choice and
- * hands over to {@link ThankYouScreen}, which carries the only way into the world. The server also acknowledges
- * the choice in chat (see {@link com.example.villagefightsback.network.ChooseModePacket}).
+ * hands over to {@link DifficultySelectScreen}, which asks the second question before {@link ThankYouScreen}
+ * carries the only way into the world. The server also acknowledges the choice in chat (see
+ * {@link com.example.villagefightsback.network.ChooseModePacket}).
  */
 public class ModeSelectScreen extends ModeArtScreen {
     private static final int BUTTON_W = 260;
@@ -49,12 +50,12 @@ public class ModeSelectScreen extends ModeArtScreen {
         }
     }
 
-    /** Send the answer, then hand over to the send-off panel (which has the only way into the world). */
+    /** Send the answer, then ask the second question: difficulty, which hands on to the send-off panel. */
     private void choose(WorldMode mode) {
         if (answered) return;
         answered = true;
         ModNetwork.CHANNEL.sendToServer(new ChooseModePacket(mode.id()));
-        this.minecraft.setScreen(new ThankYouScreen());
+        this.minecraft.setScreen(new DifficultySelectScreen());
     }
 
     @Override
