@@ -342,6 +342,7 @@ public final class Config {
 
     /** The .toml's own {block, mob, infestation} values, held while a world overrides them; null when none is. */
     private static boolean[] infectionSnapshot;
+    private static Integer difficultySnapshot;
 
     /** Remember the file's infection flags (server start), so {@link #restoreInfectionFlags()} can put them back. */
     public static void snapshotInfectionFlags() {
@@ -349,6 +350,10 @@ public final class Config {
             infectionSnapshot = new boolean[] {
                     ENABLE_BLOCK_INFECTION.get(), ENABLE_MOB_INFECTION.get(), ENABLE_EMERALD_INFESTATION.get() };
         }
+        // The DIFFICULTY rides along, and must. It is per-world state living in a process-global config, so
+        // without this a world created after a Nightmare one inherits Nightmare until its own answer arrives --
+        // and the login-time code that places the brain node and takes the bell runs inside exactly that window.
+        if (difficultySnapshot == null) difficultySnapshot = DIFFICULTY.get();
     }
 
     /** Put the file's infection flags back (server stop), so the next world starts from the file, not the last world. */
@@ -358,6 +363,10 @@ public final class Config {
         ENABLE_MOB_INFECTION.set(infectionSnapshot[1]);
         ENABLE_EMERALD_INFESTATION.set(infectionSnapshot[2]);
         infectionSnapshot = null;
+        if (difficultySnapshot != null) {
+            DIFFICULTY.set(difficultySnapshot);
+            difficultySnapshot = null;
+        }
     }
 
     /** Push a world's stored mode over the live values. In memory only -- the .toml file is not touched. */

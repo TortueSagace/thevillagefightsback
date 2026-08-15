@@ -49,6 +49,14 @@ public final class HostileStart {
      * on every later session only the second does.
      */
     public static void apply(ServerPlayer player) {
+        // Not while the creation screens are still open. At login on a brand-new world the difficulty is
+        // whatever the LAST world left in the config, and acting on it here is what put a brain node and no
+        // bell into an Easy world. The answer calls this again a moment later, with the real value.
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server != null) {
+            WorldModeData data = WorldModeData.getExisting(server);
+            if (data != null && data.isSetupPending()) return;
+        }
         if (!Difficulty.current().placesBrainNodeAtSpawn()) return;
         if (!(player.level() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;

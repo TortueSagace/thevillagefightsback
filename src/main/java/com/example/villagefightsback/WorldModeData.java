@@ -30,6 +30,8 @@ public class WorldModeData extends SavedData {
     private boolean emeraldInfestation;
     /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Easy. */
     private int difficulty = -1;
+    /** True from world creation until BOTH creation screens have been answered. */
+    private boolean setupPending;
 
     public WorldModeData() {}
 
@@ -50,8 +52,19 @@ public class WorldModeData extends SavedData {
     public void markPending() {
         if (pending || chosen) return;
         pending = true;
+        setupPending = true;
         setDirty();
     }
+
+    /**
+     * True while the world-creation screens are still being answered -- EITHER of them.
+     *
+     * <p>The mode is answered first and the difficulty a moment later, and the world is running throughout.
+     * Gating anything on the mode alone leaves a live window between the two screens, which is where "The birth
+     * of a brain" was being handed out before the player had finished being asked what kind of world they
+     * wanted. A save from before difficulties existed has this false and is unaffected.
+     */
+    public boolean isSetupPending() { return setupPending; }
 
     /** Record an answer to the mode screen and push it over the .toml values for this session. */
     public void choose(WorldMode mode) {
@@ -73,6 +86,7 @@ public class WorldModeData extends SavedData {
      */
     public void chooseDifficulty(Difficulty d) {
         difficulty = d.id();
+        setupPending = false;   // both questions are in; the world may start
         setDirty();
         pushToConfig();
     }
@@ -141,6 +155,7 @@ public class WorldModeData extends SavedData {
         data.mobInfection = tag.getBoolean("MobInfection");
         data.emeraldInfestation = tag.getBoolean("EmeraldInfestation");
         data.difficulty = tag.contains("Difficulty") ? tag.getInt("Difficulty") : -1;
+        data.setupPending = tag.getBoolean("SetupPending");
         return data;
     }
 
@@ -152,6 +167,7 @@ public class WorldModeData extends SavedData {
         tag.putBoolean("MobInfection", mobInfection);
         tag.putBoolean("EmeraldInfestation", emeraldInfestation);
         tag.putInt("Difficulty", difficulty);
+        tag.putBoolean("SetupPending", setupPending);
         return tag;
     }
 }
