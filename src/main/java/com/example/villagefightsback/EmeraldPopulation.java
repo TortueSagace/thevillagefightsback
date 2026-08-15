@@ -128,20 +128,60 @@ public final class EmeraldPopulation {
         }
     }
 
-    /** Pour {@code wouldBe}'s max health into the nearest non-mite emerald unit (which heals up to its new max). */
+    /** How many times its ORIGINAL max health one emerald unit may bank before it stops accepting more. */
+    private static final double MAX_HP_MULTIPLE = 5.0;
+
+    /** Where a unit's spawn-time max health is remembered, so the ceiling is measured from a fixed point. */
+    private static final String NBT_ORIGINAL_HP = "vgun_original_max_hp";
+
+    /**
+     * The max health this unit started with.
+     *
+     * <p>Recorded the first time anything pours HP into it, and never again. It has to be stored rather than
+     * read live, because the live value is exactly what absorption inflates: measuring the ceiling against
+     * "current times five" would mean every absorption raised the ceiling too, and the cap would never bind.
+     */
+    private static double originalMaxHp(LivingEntity e, AttributeInstance attr) {
+        net.minecraft.nbt.CompoundTag tag = e.getPersistentData();
+        if (!tag.contains(NBT_ORIGINAL_HP)) tag.putDouble(NBT_ORIGINAL_HP, attr.getBaseValue());
+        return tag.getDouble(NBT_ORIGINAL_HP);
+    }
+
+    /**
+     * Pour {@code wouldBe}'s max health into the emerald units around it, nearest first.
+     *
+     * <p>At the population cap a unit that cannot spawn used to dump its whole max health into whichever
+     * emerald happened to be closest, without limit, so a long siege ended with one absolutely enormous mob
+     * standing where a hundred should have been. Each unit now stops at {@value #MAX_HP_MULTIPLE} times the
+     * health it started with.
+     *
+     * <p>The overflow is not lost. It walks OUTWARD: fill the nearest unit to its ceiling, carry what is left
+     * to the next nearest with room, and so on. Only when every unit in range is full does the remainder become
+     * organic mass for the nearest brain. That last step cannot double-pay, because the death handler in
+     * {@link EmeraldVirusEvents} deliberately skips its own banking whenever the population is at cap, on the
+     * grounds that this method was already taking the payment.
+     */
     private static void absorbInto(ServerLevel level, LivingEntity wouldBe) {
-        double addHp = wouldBe.getMaxHealth();
+        double remaining = wouldBe.getMaxHealth();
         AABB box = new AABB(wouldBe.blockPosition()).inflate(RANGE);
-        LivingEntity nearest = null;
-        double best = Double.MAX_VALUE;
-        for (LivingEntity c : level.getEntitiesOfClass(LivingEntity.class, box, EmeraldPopulation::isAbsorbTarget)) {
-            double d = c.distanceToSqr(wouldBe);
-            if (d < best) { best = d; nearest = c; }
+        java.util.List<LivingEntity> nearestFirst = new java.util.ArrayList<>(
+                level.getEntitiesOfClass(LivingEntity.class, box, EmeraldPopulation::isAbsorbTarget));
+        nearestFirst.sort(java.util.Comparator.comparingDouble(c -> c.distanceToSqr(wouldBe)));
+
+        for (LivingEntity c : nearestFirst) {
+            if (remaining <= 0.0) break;
+            AttributeInstance attr = c.getAttribute(Attributes.MAX_HEALTH);
+            if (attr == null) continue;
+            double headroom = originalMaxHp(c, attr) * MAX_HP_MULTIPLE - attr.getBaseValue();
+            if (headroom <= 0.0) continue;                       // this one is full: try the next nearest
+            double take = Math.min(headroom, remaining);
+            attr.setBaseValue(attr.getBaseValue() + take);
+            c.setHealth((float) Math.min(c.getMaxHealth(), c.getHealth() + take));
+            remaining -= take;
         }
-        if (nearest == null) return;
-        AttributeInstance attr = nearest.getAttribute(Attributes.MAX_HEALTH);
-        if (attr == null) return;
-        attr.setBaseValue(attr.getBaseValue() + addHp);
-        nearest.setHealth((float) Math.min(nearest.getMaxHealth(), nearest.getHealth() + addHp));
+
+        if (remaining > 0.0) {
+            OrganicMass.addToNearestBrain(level, wouldBe.blockPosition(), (int) Math.round(remaining));
+        }
     }
 }

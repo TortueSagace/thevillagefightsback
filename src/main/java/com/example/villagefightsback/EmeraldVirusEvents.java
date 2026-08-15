@@ -338,8 +338,9 @@ public final class EmeraldVirusEvents {
             double x = p.corpse.getX(), y = p.corpse.getY() + 0.5, z = p.corpse.getZ();
             if (Config.emeraldVirusExplosion()) explodeWithFire(p.level, x, y, z); // master switch (no boom if off)
             // Bank the host's organic mass for the nearest brain -- but ONLY if its corpse unit will really spawn.
-            // At the population cap the corpse unit can't spawn (its HP is poured into the nearest emerald by
-            // EmeraldPopulation.absorbInto), so banking here too would be a second reward from a single death.
+            // At the population cap the corpse unit can't spawn: EmeraldPopulation.absorbInto takes the payment
+            // instead, pouring the HP into the emeralds around it and banking whatever they are too full to hold.
+            // Banking here as well would pay twice for one death, which is why this is gated on being under cap.
             if (p.spawnKind != SPAWN_NONE
                     && !EmeraldPopulation.atCap(p.level, new net.minecraft.world.phys.Vec3(x, y, z))) {
                 OrganicMass.addToNearestBrain(p.level, BlockPos.containing(x, y, z), Math.round(p.deadMaxHp));
