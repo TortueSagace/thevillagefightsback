@@ -71,9 +71,19 @@ public enum Difficulty {
     /** The difficulty with this id, or {@link #NEUTRAL} for anything unexpected. Never trust a number off the
      *  network or out of a hand-edited .toml: an unknown value should play normally, not crash or lock you out. */
     public static Difficulty byId(int id) {
-        for (Difficulty d : values()) if (d.id == id) return d;
+        for (Difficulty d : VALUES) if (d.id == id) return d;
         return NEUTRAL;
     }
+
+    /**
+     * {@link #values()} once, not once per call.
+     *
+     * <p>values() hands back a fresh clone of the array every time, because the caller could write to it. This
+     * is reached from {@link #current()}, and 1.4.0 put current() at the top of {@code VillageEvents
+     * .getAggroPlayer} -- which every combat goal in the mod asks, for every villager, guard, golem and wall
+     * defender, several times a second. A four-element array is nothing; one per mob per tick forever is not.
+     */
+    private static final Difficulty[] VALUES = values();
 
     /** The difficulty currently in force, read from the config the world-mode data pushes into. */
     public static Difficulty current() {

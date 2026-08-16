@@ -129,9 +129,14 @@ public final class ObliterationEvents {
         if (!(event.getEntity() instanceof LivingEntity living)) return;
         if (living instanceof Player) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+        // Ask the cheap question first. Every creature that enters the world reaches this line, and in a save
+        // where no Obliteration Furnace is lit -- which is nearly every save, nearly all of the time -- there is
+        // no reason to pay for a registry reverse-lookup per spawn to find that out.
+        ObliterationData data = ObliterationData.get(level.getServer());
+        if (!data.bansAnything()) return;
         ResourceLocation type = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
         if (type == null) return;
-        if (!ObliterationData.get(level.getServer()).isObliterated(type)) return;
+        if (!data.isObliterated(type)) return;
         event.setCanceled(true);
     }
 

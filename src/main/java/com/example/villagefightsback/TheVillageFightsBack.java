@@ -44,9 +44,40 @@ public class TheVillageFightsBack {
         LOGGER.info("[The Village Fights Back] loaded.");
     }
 
+    /**
+     * Hand back every chunk this mod ever force-loaded, on every level that loads.
+     *
+     * <p>1.4.0 pinned chunks in two places: nine ticking chunks around each brain node, so a village went on
+     * evolving with nobody near it, and one that followed each Nightmare raider so a hunt could outrun the
+     * player's view distance. Both are gone -- the raid musters beside the player and needs neither -- but
+     * Forge writes forced chunks into the level's save data, so a world that has already run 1.4.0 is carrying
+     * them and would go on reinstating them at every load with nothing left alive to release them.
+     *
+     * <p>So they are dropped as the level reinstates them, which is the only moment Forge offers. Nothing in
+     * the mod takes a ticket any more, so there is no live ticket this can take away by mistake; on a world
+     * that never ran 1.4.0 it finds nothing and says nothing.
+     */
+    private static void releaseStaleChunkTickets() {
+        net.minecraftforge.common.world.ForgeChunkManager.setForcedChunkLoadingCallback(MODID, (level, helper) -> {
+            int nodes = helper.getBlockTickets().size();
+            int raiders = helper.getEntityTickets().size();
+            if (nodes + raiders == 0) return;
+            for (net.minecraft.core.BlockPos owner : new java.util.ArrayList<>(helper.getBlockTickets().keySet())) {
+                helper.removeAllTickets(owner);
+            }
+            for (java.util.UUID owner : new java.util.ArrayList<>(helper.getEntityTickets().keySet())) {
+                helper.removeAllTickets(owner);
+            }
+            LOGGER.info("[The Village Fights Back] Released {} brain-node and {} raider chunk ticket(s) held over "
+                    + "from 1.4.0 in {}; villages tick with their chunks now.",
+                    nodes, raiders, level.dimension().location());
+        });
+    }
+
     private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             ModTriggers.register(); // custom advancement triggers (brainNode stage)
+            releaseStaleChunkTickets();
             // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder makes the splash
             // version. The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe),
             // so we deliberately do NOT add the lingering step (no expensive vanilla tipped-arrow path).

@@ -74,18 +74,19 @@ public class NightmareHuntGoal extends Goal {
             v.getBrain().eraseMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET);
         }
 
-        Player quarry0 = NightmareRaid.huntedBy(mob);
-        if (quarry0 != null && --swingCooldown <= 0 && mob.distanceToSqr(quarry0) <= REACH_SQR) {
+        // Resolved ONCE. It was looked up twice here and a third time in canContinueToUse, and each lookup
+        // parses a UUID out of the mob's NBT and walks the player list -- three times a tick, for every raider.
+        Player quarry = NightmareRaid.huntedBy(mob);
+        if (quarry == null) return;
+
+        if (--swingCooldown <= 0 && mob.distanceToSqr(quarry) <= REACH_SQR) {
             swingCooldown = SWING_TICKS;
             mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-            quarry0.hurt(mob.damageSources().mobAttack(mob), DAMAGE);
+            quarry.hurt(mob.damageSources().mobAttack(mob), DAMAGE);
         }
 
         if (--cooldown > 0) return;
         cooldown = REPATH_TICKS;
-
-        Player quarry = NightmareRaid.huntedBy(mob);
-        if (quarry == null) return;
         // Lead the raider whenever it is not already within reach. It used to stand down as soon as it could
         // SEE the player, on the theory that the combat goals would take the approach from there -- but those
         // goals decline for their own reasons (a creative player is invulnerable, so vanilla targeting will not

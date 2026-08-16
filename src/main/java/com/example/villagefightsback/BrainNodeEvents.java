@@ -80,7 +80,6 @@ public final class BrainNodeEvents {
 
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);
-        holdNodeChunks(server, data);          // a village that stops thinking when you walk away is not a village
         processPendingCats(server);            // emerald cats settled 2s ago now materialise above their brain node
         spawnInVillages(server, data);
         announceDiscoveredNodes(server, data); // brain-discovery banner the first time any player comes near a node
@@ -830,55 +829,29 @@ public final class BrainNodeEvents {
         if (server != null) recentRemovals.put(brainNode, (long) server.getTickCount());
     }
 
-    /**
-     * Force-load the chunk each brain node sits in, so a village keeps running when nobody is near it.
+    /*
+     * A brain node used to force-load the nine chunks around itself, ticking, for as long as it stood, so that
+     * a village went on evolving with nobody within a thousand blocks of it. That is gone, and it is the single
+     * biggest thing 1.4.0 did to the server tick.
      *
-     * <p>Everything the node does is driven from this tick, and an unloaded chunk does not tick. Walk a
-     * thousand blocks away and the village stopped evolving, stopped reinforcing and -- on Nightmare -- stopped
-     * being able to send anything after you, which reads as the mod switching itself off rather than as a
-     * technical limit.
+     * <p>What it actually bought was one feature: the Nightmare raid was drafted from whoever stood near the
+     * node, so the node's surroundings had to be loaded for there to be anybody to draft. The raid musters
+     * beside the PLAYER now, and needs none of it.
      *
-     * <p>Keyed by the node's own BlockPos, so re-forcing an already-forced chunk every tick is idempotent
-     * rather than an accumulating pile of tickets. A node that is removed drops out of {@code data.blocks()},
-     * and its ticket is released in {@link #releaseNodeChunk}.
+     * <p>What it cost was everything else. A ticking forced chunk runs the full tick with no player near it:
+     * random ticks, block entities, fluid ticks, mob spawning, and -- the expensive part -- the AI of every
+     * villager, guard, golem and wall defender in the village. Every village in the save, all at once, forever,
+     * on every difficulty. That is why the wall builders and the defence goals show up in a profile taken while
+     * standing nowhere near a village. Nine chunks per node also compounds: each new node the player founds
+     * adds nine more, and a node pruned as stale never handed its tickets back at all, so a save accumulated
+     * permanently ticking chunks it could never release.
+     *
+     * <p>A village now ticks when its chunks are loaded, like everything else in the game. Walk away and it
+     * waits for you.
+     *
+     * <p>Tickets already written into existing 1.4.0 saves are handed back by the loading-validation callback
+     * in {@code TheVillageFightsBack.releaseStaleChunkTickets}.
      */
-    private static void holdNodeChunks(MinecraftServer server, BrainNodeData data) {
-        for (GlobalPos gp : new ArrayList<>(data.blocks())) {
-            ServerLevel level = server.getLevel(gp.dimension());
-            if (level == null) continue;
-            // A RADIUS, not the single chunk the node stands in. The village's people are spread over many
-            // chunks, and with only the node's own chunk loaded a Nightmare raid could draft nobody but the
-            // two golems standing next to it -- everything else simply was not there to be counted.
-            net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(gp.pos());
-            for (int dx = -NODE_CHUNK_RADIUS; dx <= NODE_CHUNK_RADIUS; dx++) {
-                for (int dz = -NODE_CHUNK_RADIUS; dz <= NODE_CHUNK_RADIUS; dz++) {
-                    net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                            level, TheVillageFightsBack.MODID, gp.pos(), cp.x + dx, cp.z + dz, true, true);
-                }
-            }
-        }
-    }
-
-    /** Drop a node's chunk ticket when it is destroyed, so nothing stays force-loaded after the village dies. */
-    public static void releaseNodeChunk(ServerLevel level, BlockPos node) {
-        net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(node);
-        for (int dx = -NODE_CHUNK_RADIUS; dx <= NODE_CHUNK_RADIUS; dx++) {
-            for (int dz = -NODE_CHUNK_RADIUS; dz <= NODE_CHUNK_RADIUS; dz++) {
-                net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                        level, TheVillageFightsBack.MODID, node, cp.x + dx, cp.z + dz, false, true);
-            }
-        }
-    }
-
-    /**
-     * Chunks held either side of a node.
-     *
-     * <p>Back to 1 (nine chunks) now that the Nightmare raid musters beside the player instead of drafting
-     * whoever is standing near the village. The radius of 2 existed only to make that draft find anybody, and
-     * twenty-five permanently loaded chunks per node is a steep price for a feature that no longer needs it.
-     * Nine still keeps the node and its immediate surroundings ticking, which is what the village itself needs.
-     */
-    private static final int NODE_CHUNK_RADIUS = 1;
 
     /** Bed positions (HOME POIs) within {@value #BED_SCAN_RADIUS} blocks of the brain node. */
     private static List<BlockPos> collectBeds(ServerLevel level, BlockPos center) {

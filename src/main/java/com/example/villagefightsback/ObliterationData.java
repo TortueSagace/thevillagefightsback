@@ -100,6 +100,20 @@ public class ObliterationData extends SavedData {
 
     // --- the ban ---------------------------------------------------------------------------------------
 
+    /**
+     * True if ANY furnace is currently burning with something struck off.
+     *
+     * <p>The cheap question the entity-join handler asks before it bothers to look an entity's registry id up.
+     * That handler sees every creature that enters the world, and in a save where nobody has ever lit an
+     * Obliteration Furnace -- which is nearly all of them -- this answers no without touching a registry.
+     */
+    public boolean bansAnything() {
+        for (Furnace f : furnaces.values()) {
+            if (f.burnTicks > 0 && !f.obliterated.isEmpty()) return true;
+        }
+        return false;
+    }
+
     /** True if ANY burning furnace has struck this type off. Dimension-agnostic on purpose: the ban is global. */
     public boolean isObliterated(ResourceLocation type) {
         for (Furnace f : furnaces.values()) {

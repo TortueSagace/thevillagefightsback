@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.ChatFormatting;
@@ -15,10 +14,8 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -63,9 +60,20 @@ public final class NightmareRaid {
     /** The last DAY this node raided on, so each night raises exactly one raid however the clock moves. */
     private static final java.util.Map<GlobalPos, Long> LAST_RAID = new java.util.HashMap<>();
 
-    /** Which chunk each raider currently holds a ticket on, so the old one can be released when it moves. */
-    private static final java.util.Map<java.util.UUID, net.minecraft.world.level.ChunkPos> HELD =
-            new java.util.HashMap<>();
+    /**
+     * Every unit currently out on a hunt, by UUID. THE ONLY WAY THE SWEEP BELOW FINDS ITS RAIDERS.
+     *
+     * <p>It used to find them by asking the level for every PathfinderMob inside a box the size of the world,
+     * and filtering. That box spans 3.75 million section columns per axis, and vanilla's entity lookup walks
+     * every one of them against an AVL tree of section ids before it looks at a single entity -- roughly 3.75
+     * million tree operations per level, every two seconds, whether or not a raid was ever raised, and on every
+     * difficulty including the ones that never raid at all. That was the freeze.
+     *
+     * <p>A raid knows exactly who it sent, so nothing needs to be searched for. Membership is written in
+     * {@link #send} and cleared in {@link #stopHunting}; {@link #onEntityJoin} puts a raider back after a
+     * reload, since the hunt itself lives in the mob's saved NBT and outlives any server restart.
+     */
+    private static final java.util.Set<java.util.UUID> HUNTERS = new java.util.HashSet<>();
 
     /** The player this mob is hunting, or null. Public so the pursuit goal can steer by it. */
     public static ServerPlayer huntedBy(net.minecraft.world.entity.Entity e) {
@@ -262,6 +270,7 @@ public final class NightmareRaid {
         raider.getPersistentData().putBoolean(NBT_HUNTING, true);
         raider.getPersistentData().putString(NBT_HUNTED, target.getStringUUID());
         raider.addTag(TAG_RAIDER);
+        HUNTERS.add(raider.getUUID());   // the sweep finds its raiders here and nowhere else
         // Blocking the requisition only stops a raider being GIVEN a job. A villager that was already a miner
         // when it was drafted would keep it and try to do both, so the draft takes the job off it. Builders
         // cannot reach here at all -- they are not eligible in the first place.
@@ -299,10 +308,8 @@ public final class NightmareRaid {
     public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
         if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
         MinecraftServer server = event.getServer();
-        // Every 2s, not every tick. The sweep below is O(loaded entities) per level because a hunt has no
-        // bounding box -- the raiders are wherever the player led them -- so it cannot be a chunk query. Two
-        // seconds is far inside the window where a target being re-asserted late would be visible, and it is
-        // 40x cheaper than doing it every tick.
+        // Every 2s, not every tick. Two seconds is far inside the window where a target being re-asserted late
+        // would be visible, and it is 40x cheaper than doing it every tick.
         if (server.getTickCount() % 40 != 0) return;
 
         // Anyone off the scent goes back to glowing like everybody else.
@@ -310,53 +317,72 @@ public final class NightmareRaid {
             if (!p.hasEffect(ModEffects.NIGHTMARE_SCENT.get())) leaveScentTeam(p);
         }
 
-        for (ServerLevel level : server.getAllLevels()) {
-            for (PathfinderMob m : level.getEntitiesOfClass(PathfinderMob.class,
-                    new AABB(-30000000, level.getMinBuildHeight(), -30000000,
-                             30000000, level.getMaxBuildHeight(), 30000000),
-                    NightmareRaid::isHunting)) {
-                String hunted = m.getPersistentData().getString(NBT_HUNTED);
-                ServerPlayer p = hunted.isEmpty() ? null
-                        : server.getPlayerList().getPlayer(java.util.UUID.fromString(hunted));
-                if (p == null || !p.isAlive() || p.isSpectator()) {
-                    stopHunting(m);
-                    continue;
-                }
-                if (m.getTarget() != p) m.setTarget(p);
-                markAggro(m, p);          // the record expires on its own; a live hunt keeps renewing it
-                holdChunk(level, m);
+        // No raid out, nothing to re-assert. On every difficulty but Nightmare this is where the handler always
+        // ends, and it is why a world that never raids no longer pays for the raid.
+        if (HUNTERS.isEmpty()) return;
+
+        // Over a copy: stopHunting() takes its raider out of HUNTERS.
+        for (java.util.UUID id : new ArrayList<>(HUNTERS)) {
+            PathfinderMob m = findRaider(server, id);
+            // Dead, or standing in a chunk nobody has loaded. Forget it either way -- onEntityJoin puts a
+            // raider that was merely unloaded straight back when its chunk returns, so this set stays the size
+            // of the raid rather than the size of every raid the world has ever sent.
+            if (m == null) { HUNTERS.remove(id); continue; }
+
+            String hunted = m.getPersistentData().getString(NBT_HUNTED);
+            ServerPlayer p = hunted.isEmpty() ? null
+                    : server.getPlayerList().getPlayer(java.util.UUID.fromString(hunted));
+            if (p == null || !p.isAlive() || p.isSpectator()) {
+                stopHunting(m);
+                continue;
             }
+            if (m.getTarget() != p) m.setTarget(p);
+            markAggro(m, p);          // the record expires on its own; a live hunt keeps renewing it
         }
+    }
+
+    /** The raider with this UUID, wherever it stands, or null if it is dead or its chunk is not loaded. */
+    private static PathfinderMob findRaider(MinecraftServer server, java.util.UUID id) {
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level.getEntity(id) instanceof PathfinderMob m && isHunting(m)) return m;
+        }
+        return null;
     }
 
     /**
-     * Keep the chunk a raider stands in loaded, following it as it moves.
+     * Put a raider back on the books when its chunk loads, or when the world does.
      *
-     * <p>Without this the hunt quietly ends at the edge of the player's view distance: a raider a thousand
-     * blocks away sits in an unloaded chunk, stops ticking, and never arrives -- which reads as the village
-     * giving up rather than as a technical limit. One ticket per raider, moved rather than accumulated, and
-     * released the moment the hunt ends.
+     * <p>The hunt lives in the mob's saved NBT, so it survives a restart -- but {@link #HUNTERS} is in memory
+     * and does not. Without this, a player who quit mid-raid would come back to raiders that still believed
+     * they were hunting and were never told anything again.
+     *
+     * <p>The tag test first, deliberately. This fires for every entity that spawns or loads anywhere in the
+     * world, and {@code getTags()} is a plain set the entity already holds, where reading persistent data
+     * would build a compound tag for every mob in the world that is not a raider.
      */
-    private static void holdChunk(ServerLevel level, PathfinderMob m) {
-        net.minecraft.world.level.ChunkPos now = m.chunkPosition();
-        net.minecraft.world.level.ChunkPos was = HELD.get(m.getUUID());
-        if (now.equals(was)) return;
-        if (was != null) {
-            net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                    level, TheVillageFightsBack.MODID, m.getUUID(), was.x, was.z, false, true);
-        }
-        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                level, TheVillageFightsBack.MODID, m.getUUID(), now.x, now.z, true, true);
-        HELD.put(m.getUUID(), now);
+    @SubscribeEvent
+    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide()) return;
+        net.minecraft.world.entity.Entity e = event.getEntity();
+        if (!(e instanceof PathfinderMob) || !e.getTags().contains(TAG_RAIDER)) return;
+        if (isHunting(e)) HUNTERS.add(e.getUUID());
     }
 
-    /** Drop a raider's chunk ticket. Called when its hunt ends, so nothing is force-loaded forever. */
-    private static void releaseChunk(PathfinderMob m) {
-        net.minecraft.world.level.ChunkPos was = HELD.remove(m.getUUID());
-        if (was == null || !(m.level() instanceof ServerLevel level)) return;
-        net.minecraftforge.common.world.ForgeChunkManager.forceChunk(
-                level, TheVillageFightsBack.MODID, m.getUUID(), was.x, was.z, false, true);
-    }
+    /*
+     * A raider used to drag a ticking force-load ticket along with it, one per raider, moved chunk by chunk as
+     * it walked, so a hunt could carry on past the player's view distance. That was written when the raid was
+     * drafted from the village and had to cross the map to reach you. It musters twenty blocks from the player
+     * now: it is inside loaded ground from its first step to its last, and the tickets bought nothing.
+     *
+     * <p>They cost plenty. A ticking ticket runs a chunk's full tick with nobody near it, and the release only
+     * ever ran when a hunt ended tidily -- a raider cut down mid-hunt, which is how most of them go, kept its
+     * chunk forced with no owner left to release it. Forge writes those tickets to the level's save data, so
+     * they came back every load: a save accumulated a permanently ticking chunk per raider killed, night after
+     * night, and never gave one back.
+     *
+     * <p>Tickets already in existing 1.4.0 saves are handed back by the loading-validation callback in
+     * {@code TheVillageFightsBack.releaseStaleChunkTickets}.
+     */
 
     /** Stamp the village's aggro record, which is what the combat goals actually read. */
     private static void markAggro(PathfinderMob raider, ServerPlayer target) {
@@ -368,7 +394,7 @@ public final class NightmareRaid {
 
     /** The hunt is over for this unit: it keeps where it stands, as the brief asks, and goes back to normal. */
     private static void stopHunting(PathfinderMob m) {
-        releaseChunk(m);
+        HUNTERS.remove(m.getUUID());
         m.removeTag(TAG_RAIDER);
         m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UUID);
         m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UNTIL);
