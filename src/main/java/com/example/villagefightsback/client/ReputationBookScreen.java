@@ -172,7 +172,12 @@ public class ReputationBookScreen extends Screen {
                 good("+1   every emerald fed to the brain node"),
                 BLANK,
                 body("At sunset the brain node will name the biggest threat near it and pay its full health "
-                        + "in points to whoever brings it down. Ten minutes, and it must be your kill.")));
+                        + "in points to whoever brings it down. Ten minutes, and it must be your kill."),
+                BLANK,
+                // The two conditions that explain a quiet evening. Without them a player who never sees an
+                // offer has no way to tell whether the feature is broken or simply not applicable tonight.
+                body("Nothing under 75 health is worth naming, and the village will not hire you while "
+                        + "General Darius is already out.")));
         out.add(p2);
 
         if (!peaceful) {

@@ -18,7 +18,7 @@ Every village gets a **Village Brain Node**, a block that appears in place of th
 
 **It thinks for itself.** The Brain reads the state of the village and reacts: it sends out settlers, raises walls, and builds specific structures such as golem factories, barracks, and lure towers when the situation calls for them, spending emeralds as it goes. Right-click it to open its screen anytime, showing the current stage, stored emeralds, and live villager, guard, and golem counts. A **Logs** tab lists the last actions the Brain took, with the day each one happened.
 
-**Where you stand with the village.** The Brain is **neutral to you** by default. Attack a villager, strike the node, or **steal from the village's chests**, and you become an **Enemy of the Village**: its defenders turn on you and hunt you down. Earn its trust instead by **donating emeralds** to the Brain or helping the village **survive a raid**, and you become a **Hero of the Village**, which grants you **temporary permission to open and loot its chests**. Chests and barrels placed near the Brain are claimed by the village, so taking from them without Hero status counts as theft, and the village will know.
+**Where you stand with the village.** The Brain keeps a **reputation score** for you, and everything it decides about you comes from that number. Trade, fight its enemies, and feed it emeralds to raise it; hit its people, rob its chests, or mine its metal to lower it. Reach 100 and you are a **Hero of the Village**; fall to -100 and every defender attacks you on sight. The score is shown in the node's screen, on the same row as its organic mass, and a **Reputation** tab lists the last changes and their causes. See the reputation section below for the full picture.
 
 **It protects its own.** At sunset the village calls in reinforcements scaled to the Brain's current stage, and an **immunity aura** radiates from the node over the village's villagers, guards, and golems.
 
@@ -64,13 +64,13 @@ And it raises purpose-built structures as the situation demands: **golem factori
 
 ![Map showing the counter-infection (stage 3)](https://cdn.modrinth.com/data/cached_images/e3f1c4595b6c5af8bbba90bbf3ddd984829066b4.png)
 
-To answer the infection mods that rot the world, the village grows a green one of its own. Spreading out from the Brain Node, it slowly converts the world around it into **Fertile blocks** (with richer **Rich** variants), a full family of green-veined dirt, stone, sand, wood, deepslate, netherrack, end stone, sculk, leaves, and more. The spread is deliberately slow and capped, and it leaves your ores untouched. Those blocks are not just decoration: the **Rich** ones drop emeralds when mined, like a natural emerald ore, feeding the very economy the Brain runs on. The growth even has its own **fertile chorus plants**, whose fruit you can eat (it teleports you like ordinary chorus fruit, with a rare and unfortunate side effect). Out among the fertile fields you may meet the **Rich Sheep**, a green-touched sheep that drops lime wool and an emerald.
+To answer the infection mods that rot the world, the village grows a green one of its own. Spreading out from the Brain Node, it slowly converts the world around it into **Fertile blocks** (with richer **Rich** variants), a full family of green-veined dirt, stone, sand, wood, deepslate, netherrack, end stone, sculk, leaves, and more. The spread is deliberately slow and capped, and it leaves your ores untouched. Those blocks are not just decoration: the **Rich** ones hold emeralds, and the village's own miners dig them out to feed the economy the Brain runs on. You cannot do the same by hand. Mine a Rich block yourself and you get the block, not the emerald, because only villagers know how to extract it. To get the emerald you need the village's methods: right-click an **Obliteration Furnace** with the block while it is burning, or break the block with an **Obliterator**. The growth even has its own **fertile chorus plants**, whose fruit you can eat (it teleports you like ordinary chorus fruit, with a rare and unfortunate side effect). Out among the fertile fields you may meet the **Rich Sheep**, a green-touched sheep that drops lime wool and an emerald.
 
 ## Easier Mining
 
 ![A cave below the Brain node, without night vision](https://cdn.modrinth.com/data/cached_images/c3bb82a6159eba2eb6b86443229c577ce54bc064_0.webp)
 
-Because that green growth glows, mining beneath your village becomes far safer. As it creeps downward it turns the stone, deepslate, and even the Deep Dark under the village into a self-lit, lush cavern, with no darkness left for hostile mobs to spawn in and no need to place a single torch. It pays better, too: your natural ores are all preserved, so against the glowing backdrop every vein stands out at a glance, and the Rich blocks add emeralds on top, so the deeper the green reaches, the more there is to gather.
+Because that green growth glows, mining beneath your village becomes far safer. As it creeps downward it turns the stone, deepslate, and even the Deep Dark under the village into a self-lit, lush cavern, with no darkness left for hostile mobs to spawn in and no need to place a single torch. It pays better, too: your natural ores are all preserved, so against the glowing backdrop every vein stands out at a glance, and the Rich blocks are worth carrying home to an Obliteration Furnace, so the deeper the green reaches, the more there is to gather.
 
 ## The Emerald Virus
 
@@ -114,13 +114,35 @@ Beyond the war for the village lies **the Limbo**, a dark void dimension with a 
 
 **The Limbo raid.** Linger too long in the Limbo and you carry a curse home: come back to a village and a **Limbo raid** descends, a ghostly, oversized version of the vanilla raid roster, far tougher than the mobs it imitates. The whole journey is charted by its own advancements.
 
-## Where you stand: Hero or Enemy of the Village
+## Reputation: where you stand with the village
 
-The village keeps score of how you treat it, and it responds in kind.
+The village keeps a **reputation score** for you. It goes up when you are useful to the village and down when you are not, and everything the village decides about you follows from that one number. It is not a timer. Milk will not remove it, and neither will dying. Your difficulty decides where it starts and how far it can move, and on Neutral it starts at zero with no limit either way.
 
-**Become a Hero.** Donate emeralds to the Brain Node and you earn **Hero of the Village**, one minute per emerald, stacking onto whatever time you have left, in any game mode. Helping the village **win a raid** earns it the usual way too. As a Hero you are trusted, and may freely open and take from the village's chests.
+**Going up:**
 
-**Become an Enemy.** Cross the village and you are branded an **Enemy of the Village for 20 minutes**: strike a villager, guard, or golem, or steal from its stores. Any chest or barrel placed within a Brain Node's range is **claimed by the village**. Open one without Hero standing and you get a warning; take something anyway and the whole server hears that you are **stealing from the village**, your Hero standing is revoked, and every defender turns to hunt you. The mark sticks through milk and even the mod's own Immunity, and clears only when the timer runs out or you die.
+*   **+2** for every trade with a villager
+*   **+5** for killing anything the village would fight
+*   **+1** for every emerald you feed the Brain Node
+
+**Going down:**
+
+*   **-20** for hitting a villager, guard, or golem
+*   **-60** more for killing a villager
+*   **-10** for each stack you take from a village chest
+*   **-50** for mining the village's iron, gold, diamond, or emerald blocks
+*   **-500** for swinging at the Brain Node
+
+Every sunset the score moves one tenth back toward zero, in both directions. The village forgets slowly, so standing has to be kept up and a grudge does not last forever.
+
+**Hero of the Village** starts at **100** and gains a level every 100 points, up to **Hero V** at 500. Each level buys you better prices from every villager. At Hero I the village trusts you with its chests; at Hero V, with its metal. Fireworks go up each time you reach a new level.
+
+**Enemy of the Village** starts at **-100**. Every defender attacks you on sight. Below that is **Nightmare of the Village** at **-500**, and then the village sends a raid after you at every sunset until you climb back above it.
+
+One hit no longer makes you an enemy. It costs you 20 points, and nothing else happens until the number itself crosses -100. If you die while your score is negative, it returns to zero.
+
+**The sunset bounty.** On Peaceful and Neutral, if your score is above -100, the Brain Node picks the strongest hostile creature within 100 blocks each evening and offers you its full health in reputation points. You have ten minutes, and it has to be your kill. This is the fastest way to earn standing, and it is meant to get you out of the village and into the fight, so a monster from any other mod counts just as well as a vanilla one.
+
+**The Reputation Book.** You start with one, and you can craft another from a book and an emerald. It explains the whole system, and what it says depends on your difficulty. You can also see your current score and the last changes to it in the Brain Node's screen.
 
 ## Minecraft Comes Alive (MCA Reborn) compatibility
 
@@ -156,7 +178,7 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 
 **Switches and values:**
 
-*   `difficulty`: how the village treats you, picked on the difficulty screen when the world is created and changeable afterwards. `0` Peaceful (permanent Hero of the Village, and you can never become its Enemy), `1` Neutral (the village judges you on what you do, and the recommended setting), `2` Hostile (permanent Enemy of the Village, and you can never become its Hero), `3` Nightmare (Hostile, plus a raid sent to hunt you down every sunset). On Peaceful and Hostile the forced status cannot be cured, by milk or by dying.
+*   `difficulty`: where your reputation starts and how far it can move, picked on the difficulty screen when the world is created and changeable afterwards. `0` Peaceful (starts at **200**, so you begin as a Hero, and it can never fall below 0), `1` Neutral (starts at **0**, with no limit either way, and the recommended setting), `2` Hostile (starts at **-300** and can never rise above -100, so you are an Enemy of the Village for good), `3` Nightmare (starts at **-1000000** and can never rise above -500, so the sunset raid never stops). On the two hostile settings your score can still fall, and dying does not reset it.
 *   `enable_block_infection`: master switch for the village's own fertile-zone takeover (the Brain Node's natural spread)
 *   `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
 *   `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
@@ -175,7 +197,8 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   `general_darius_remains`: Darius holds the field instead of returning home
 *   `emeraldgers_size_variation`: emeraldgers sized by the HP of the host they sprang from
 *   `player_spawn_in_village` / `player_is_given_bell_at_spawn`: where you start and whether you start with a Bell
-*   `player_is_hostile`: you are permanently an Enemy of the Village and can never be its Hero
+*   `player_is_hostile`: bounds your reputation the way Hostile does, so you are an Enemy of the Village for good
+*   `darius_inflicts_obliteration`: every blow from General Darius marks its victim with Obliteration, and a stage-4 Brain Node builds an Obliteration Furnace beside itself and pays 1 emerald a minute to keep it lit. Anything Darius kills near the village is then struck off the spawn tables for as long as the fuel lasts. Players are never affected. Turn it off and Darius is simply a hard fighter
 *   `mega_expansion_mode`: the Brain Node founds a new building every minute
 *   `mega_brutal_mode`: every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
 
