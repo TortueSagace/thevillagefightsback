@@ -31,10 +31,15 @@ import net.minecraftforge.fml.common.Mod;
  *   <li>PLACE: putting a chest/barrel inside a brain node's range donates it to the village (a thank-you note).</li>
  *   <li>OPEN: a player without Hero of the Village who opens a village chest is warned (server-side, throttled to
  *       once per 10s per player). The open is never cancelled -- they can look, but taking is theft.</li>
- *   <li>THEFT: snapshot the container's total item count when a non-hero opens it, and on close re-read the same
- *       source; if the total dropped, the player took something -> brand them a thief (Enemy of the Village for
- *       1 min) with a red broadcast (see {@link VillageEvents#markThief}). Heroes are exempt.</li>
+ *   <li>THEFT: snapshot the container's OCCUPIED SLOT COUNT when a non-hero opens it, and on close re-read the
+ *       same source; every slot that emptied is a stack that left, and each one costs reputation (see
+ *       {@code ReputationEvents.STEAL_STACK}) with a red broadcast. Heroes are exempt.</li>
  * </ul>
+ *
+ * <p>Slots rather than items, and that is the whole reason it is not a running total any more: the charge is
+ * per STACK, so sixty-four cobblestone has to cost what one diamond costs. A partial take leaves the slot
+ * occupied and is free, which is the right way round to be wrong -- the village notices things going, not
+ * pilfering.
  *
  * Detection is snapshot-on-open + diff-on-close (no mixin). It guards against a null block entity, a chest
  * destroyed between open and close, and double chests (it snapshots and re-reads the SAME block entity).

@@ -82,6 +82,13 @@ public final class ModNetwork {
                 .decoder(ChooseModePacket::decode)
                 .consumerMainThread(ChooseModePacket::handle)
                 .add();
+        // Appended, never inserted: `id` is positional, so slotting a message into the middle silently
+        // renumbers every one after it and a mismatched client reads the wrong packet as the right one.
+        CHANNEL.messageBuilder(OpenReputationBookPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenReputationBookPacket::encode)
+                .decoder(OpenReputationBookPacket::decode)
+                .consumerMainThread(OpenReputationBookPacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */

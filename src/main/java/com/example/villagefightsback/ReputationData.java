@@ -49,10 +49,36 @@ public class ReputationData extends SavedData {
     /** At or below this it hunts you at every sunset. */
     public static final int NIGHTMARE_AT = -500;
 
-    /** What Hostile pins you to: permanently an Enemy, never a Nightmare. */
-    private static final int HOSTILE_FIXED = ENEMY_AT;
-    /** What Nightmare pins you to. */
-    private static final int NIGHTMARE_FIXED = NIGHTMARE_AT;
+    /** Where each difficulty starts you. Peaceful opens on Hero II; Nightmare opens on a number you feel. */
+    private static int startFor(Difficulty d) {
+        return switch (d) {
+            case PEACEFUL -> 200;
+            case NEUTRAL -> 0;
+            case HOSTILE -> -300;
+            case NIGHTMARE -> -1_000_000;
+        };
+    }
+
+    /**
+     * The CEILING each difficulty puts on standing, which is what makes the hostile two permanent.
+     *
+     * <p>They are not frozen -- reputation moves on every difficulty, and a Hostile player who keeps hitting
+     * villagers still sinks. What the ceiling does is make climbing out impossible: Hostile can rise to -100
+     * and no further, so you are an Enemy of the Village for good, and Nightmare stops at -500, so the sunset
+     * hunt never lifts. Nightly decay pulls both up to their ceiling and holds them there.
+     */
+    private static int maxFor(Difficulty d) {
+        return switch (d) {
+            case HOSTILE -> ENEMY_AT;
+            case NIGHTMARE -> NIGHTMARE_AT;
+            default -> Integer.MAX_VALUE;
+        };
+    }
+
+    /** Peaceful is the only difficulty with a floor: the village will not turn on you there, ever. */
+    private static int minFor(Difficulty d) {
+        return d == Difficulty.PEACEFUL ? 0 : Integer.MIN_VALUE;
+    }
 
     /** Long enough that the 20-tick re-derive never lets it lapse, short enough to expire if the mod is removed. */
     private static final int STATUS_TICKS = 20 * 30;
@@ -81,16 +107,15 @@ public class ReputationData extends SavedData {
     /**
      * This player's reputation.
      *
-     * <p>The difficulty answers for the two that pin it, rather than the stored number: Hostile IS -100 and
-     * Nightmare IS -500, from the first morning, whatever is in the save. Reporting it here rather than
-     * writing it means a world switched to Hostile and back has not lost the score it earned.
+     * <p>A player with nothing stored reads as their difficulty's STARTING value rather than as zero, so a
+     * new world opens where the difficulty says it should without having to write a row for everybody at
+     * login. The bounds are applied on the way out too, so a world switched to a harsher difficulty reports
+     * the truth immediately without the stored number being rewritten -- switch back and the old score is
+     * still there.
      */
     public int get(UUID player) {
         Difficulty d = standing();
-        if (d == Difficulty.HOSTILE) return HOSTILE_FIXED;
-        if (d == Difficulty.NIGHTMARE) return NIGHTMARE_FIXED;
-        int v = rep.getOrDefault(player, 0);
-        return d == Difficulty.PEACEFUL ? Math.max(0, v) : v;   // Peaceful never falls below zero
+        return clamp(d, rep.getOrDefault(player, startFor(d)));
     }
 
     /** Hero level 1..{@value #MAX_HERO}, or 0 for none. The effect amplifier is one less than this. */
@@ -113,17 +138,15 @@ public class ReputationData extends SavedData {
      * status effects and fires the celebration when a Hero level is reached, so no caller has to remember
      * any of that and no caller can get it half right.
      *
-     * <p>Hostile and Nightmare return at once: on those difficulties reputation never moves at all, which is
-     * what makes them the difficulties where your standing is not up for negotiation.
+     * <p>It moves on every difficulty, including the hostile two -- what those do is cap how far it can
+     * RISE, so the offences still land and the way out stays shut.
      */
     public void add(ServerPlayer player, int delta, String cause) {
         if (delta == 0) return;
         Difficulty d = standing();
-        if (d == Difficulty.HOSTILE || d == Difficulty.NIGHTMARE) return;   // pinned: nothing to change
-
         UUID id = player.getUUID();
         int before = get(id);
-        int after = clamp(d, rep.getOrDefault(id, 0) + delta);
+        int after = clamp(d, rep.getOrDefault(id, startFor(d)) + delta);
         if (after == before) return;
 
         rep.put(id, after);
@@ -141,11 +164,10 @@ public class ReputationData extends SavedData {
      */
     public void decayAll(MinecraftServer server, long day) {
         Difficulty d = standing();
-        if (d == Difficulty.HOSTILE || d == Difficulty.NIGHTMARE) return;
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();
             int before = get(id);
-            int stored = rep.getOrDefault(id, 0);
+            int stored = rep.getOrDefault(id, startFor(d));
             int after = clamp(d, (int) (stored * 0.9));
             if (after == stored) continue;
             rep.put(id, after);
@@ -164,9 +186,12 @@ public class ReputationData extends SavedData {
      */
     public void onDeath(ServerPlayer player) {
         Difficulty d = standing();
+        // Not on the hostile two. Their whole design is that the standing cannot be climbed out of, and a
+        // death that wiped the slate would be the cheapest possible way out -- on Nightmare it would trade a
+        // million points of debt for a respawn.
         if (d == Difficulty.HOSTILE || d == Difficulty.NIGHTMARE) return;
         UUID id = player.getUUID();
-        if (rep.getOrDefault(id, 0) >= 0) return;
+        if (rep.getOrDefault(id, startFor(d)) >= 0) return;
         int before = get(id);
         rep.put(id, 0);
         setDirty();
@@ -180,8 +205,8 @@ public class ReputationData extends SavedData {
      * <p>That switch predates the difficulty screen and does the same job by another route: it kept a
      * permanent Enemy of the Village on every player. It cannot do that by hand any more -- reputation is the
      * only source of the status, and {@code StandingEffects} refuses every other -- so instead it says the
-     * same thing in the new vocabulary: your standing is pinned where Hostile pins it. Nightmare outranks it,
-     * being strictly worse already.
+     * same thing in the new vocabulary: your standing is bounded where Hostile bounds it. Nightmare outranks
+     * it, being strictly worse already.
      */
     private static Difficulty standing() {
         Difficulty d = Difficulty.current();
@@ -189,12 +214,9 @@ public class ReputationData extends SavedData {
         return d;
     }
 
-    /** Hostile pins, Nightmare pins, Peaceful floors at zero, Neutral is free in both directions. */
+    /** Peaceful floors at zero, the hostile two are capped from above, Neutral is free in both directions. */
     private static int clamp(Difficulty d, int value) {
-        if (d == Difficulty.HOSTILE) return HOSTILE_FIXED;
-        if (d == Difficulty.NIGHTMARE) return NIGHTMARE_FIXED;
-        if (d == Difficulty.PEACEFUL) return Math.max(0, value);
-        return value;
+        return Math.max(minFor(d), Math.min(maxFor(d), value));
     }
 
     // --- the status effects this number casts --------------------------------------------------------

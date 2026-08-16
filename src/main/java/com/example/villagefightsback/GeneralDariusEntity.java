@@ -292,6 +292,36 @@ public class GeneralDariusEntity extends Monster {
         return best;
     }
 
+    /**
+     * The biggest thing worth fighting near {@code center}: highest max health, at least {@code minMaxHp}.
+     *
+     * <p>The same reach and the same faction filter Darius uses to pick his next target, lifted out so the
+     * brain node's sunset bounty can ask the identical question without a second, drifting copy of the rules
+     * for what counts as a threat. Players are never candidates: {@code Factions.isVillageThreat} tests
+     * {@code Enemy}, which a player is not.
+     *
+     * <p>Testing {@code Enemy} rather than a list of names is what makes this work with an infection mod the
+     * village has never heard of. An arbitrary third-party horror qualifies for a bounty the day it is
+     * installed, with no compatibility code at all.
+     */
+    @Nullable
+    public static LivingEntity biggestThreatNear(ServerLevel level, BlockPos center, double radius,
+                                                 double minMaxHp) {
+        LivingEntity best = null;
+        double bestHp = minMaxHp - 1.0;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class,
+                new net.minecraft.world.phys.AABB(center).inflate(radius), GeneralDariusEntity::isThreat)) {
+            if (e.getMaxHealth() > bestHp) { bestHp = e.getMaxHealth(); best = e; }
+        }
+        return best;
+    }
+
+    /** The faction half of {@link #isHuntable}, without the "not me" test an instance needs. */
+    private static boolean isThreat(LivingEntity e) {
+        if (!e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
+        return Factions.isVillageThreat(e);
+    }
+
     private boolean isHuntable(LivingEntity e) {
         // Emerald units are a separate faction the village never fights (see EmeraldConversion faction rules), so
         // Darius -- a village champion -- never hunts or chases them.

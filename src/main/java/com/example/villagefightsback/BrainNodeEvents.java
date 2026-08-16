@@ -94,6 +94,7 @@ public final class BrainNodeEvents {
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
         BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
         NodeFurnace.tick(server, data); // stage-4 Obliteration Furnace: 1 emerald buys 1 more minute of burn
+        NodeBounty.tick(server); // expire sunset bounties nobody collected (no-op when none is out)
         OrganicMass.tick(server, data); // v1.1.2: organic-mass army commander (no-op unless the config is on)
         handleSunsetIncome(server, data);
         collectLooseEmeralds(server, data); // brain vacuums up unpicked dropped emeralds near each node
@@ -1269,6 +1270,10 @@ public final class BrainNodeEvents {
             BrainNodeData.Econ econ = data.econ(gp);
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
+
+            // The night's bounty: the village pays reputation for the biggest thing near it, so the profitable
+            // play is out there rather than idling among the villagers.
+            NodeBounty.offer(level, gp);
 
             // Every sunset each village gets an emerald CAT -- a nightly scout that roams out to find prey (cats
             // and mites are the only real explorers). Count = 1 x the brain-spawn mult. Uncapped (a deliberate

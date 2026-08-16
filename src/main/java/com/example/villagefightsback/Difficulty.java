@@ -13,14 +13,20 @@ import net.minecraft.ChatFormatting;
  * changed afterwards with {@code /thevillagefightsback config difficulty <0-3>} like any other setting.
  */
 public enum Difficulty {
-    /** Permanently a Hero of the Village, and never its Enemy. The village will not turn on you at all. */
-    PEACEFUL(0, "Peaceful", ChatFormatting.BLUE, ": permanent \"Hero of the Village\" effect"),
-    /** The village's normal rules: earn Hero status, lose it, become an Enemy, all as usual. */
-    NEUTRAL(1, "Neutral", ChatFormatting.YELLOW, " (recommended mode)"),
-    /** Permanently an Enemy of the Village, and never its Hero. Every defender is hostile from the first day. */
-    HOSTILE(2, "Hostile", ChatFormatting.RED, ": permanent \"Enemy of the Village\" effect"),
-    /** Hostile, plus the nightly hunt: at sunset the brain node marks you and sends a raid after you. */
-    NIGHTMARE(3, "Nightmare", ChatFormatting.DARK_RED, ": villagers will chase you anywhere in the Overworld");
+    // The label after each name is the STARTING REPUTATION, because that is now the whole of what a
+    // difficulty is: where your standing with the village begins, and how far it is allowed to move from
+    // there. Everything the village then does to you follows from the number (see ReputationData), so
+    // quoting the number says more than a sentence describing its consequences ever did.
+
+    /** Starts a hero, and floored at 0: the village will never turn on you, whatever you do. */
+    PEACEFUL(0, "Peaceful", ChatFormatting.BLUE, ": start at reputation = 200"),
+    /** The village's normal rules, unbounded in both directions. */
+    NEUTRAL(1, "Neutral", ChatFormatting.YELLOW, ": start at reputation = 0"),
+    /** Starts an Enemy, and capped at -100: reputation can still fall, but it can never climb out. */
+    HOSTILE(2, "Hostile", ChatFormatting.RED, ": start at reputation = -300"),
+    /** Starts a Nightmare, and capped at -500: the sunset hunt is on from the first night and never lifts. */
+    NIGHTMARE(3, "Nightmare", ChatFormatting.DARK_RED,
+            ": start at reputation = -1000000 (I hope you run fast)");
 
     private final int id;
     private final String title;
