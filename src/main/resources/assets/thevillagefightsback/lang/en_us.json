@@ -299,5 +299,5 @@
   "item.thevillagefightsback.obliterator": "Obliterator",
   "effect.thevillagefightsback.obliteration": "Obliteration",
   "block.thevillagefightsback.obliteration_furnace": "Obliteration Furnace",
-  "block.thevillagefightsback.obliteration_furnace.desc": "Burns emeralds. While lit, anything an Obliterator kills is struck off the spawn tables everywhere, until the fuel runs out."
+  "block.thevillagefightsback.obliteration_furnace.desc": "Burns emeralds. While lit, anything an Obliterator or General Darius kills is struck off the spawn tables everywhere, until the fuel runs out. Never players."
 }

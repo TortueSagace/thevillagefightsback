@@ -93,6 +93,7 @@ public final class BrainNodeEvents {
         manageDome(server, data);      // level-4 protective glass dome
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
         BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
+        NodeFurnace.tick(server, data); // stage-4 Obliteration Furnace: 1 emerald buys 1 more minute of burn
         OrganicMass.tick(server, data); // v1.1.2: organic-mass army commander (no-op unless the config is on)
         handleSunsetIncome(server, data);
         collectLooseEmeralds(server, data); // brain vacuums up unpicked dropped emeralds near each node
@@ -1124,6 +1125,35 @@ public final class BrainNodeEvents {
     public static BlockPos placeableNodeSpot(ServerLevel level, BlockPos around) {
         if (isGoodNodeSpot(level, around, false)) return around;
         return findBrainNodeSpot(level, around);
+    }
+
+    /**
+     * A surface cell near {@code center} where the village can set a block down without it being in the way.
+     *
+     * <p>The same test a bell uses to decide where its brain node may stand -- real ground underfoot, an empty
+     * replaceable cell to occupy, headroom above, and level with the centre rather than up a cliff or on a roof
+     * -- minus the summoning ring, which only a node needs. Nearest first, so what the village builds ends up
+     * beside its node rather than out in a field.
+     *
+     * <p>{@code minAway} is the reason this is not just {@link #placeableNodeSpot}: the eight cells around a
+     * node ARE its summoning ring, and filling one with a furnace would slowly wall the node in from its own
+     * reinforcements. Used by {@code NodeFurnace} for the stage-4 Obliteration Furnace.
+     */
+    public static BlockPos placeableAsideSpot(ServerLevel level, BlockPos center, int minAway) {
+        BlockPos best = null;
+        for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
+            for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) < minAway) continue;   // keep out of the summoning ring
+                BlockPos surface = level.getHeightmapPos(
+                        Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
+                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue;  // roofs / cliffs
+                if (!level.getBlockState(surface).canBeReplaced()) continue;
+                if (!onRealGround(level, surface)) continue;
+                if (level.getBlockState(surface.above()).blocksMotion()) continue;          // room to stand over it
+                if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
+            }
+        }
+        return best;
     }
 
     /**

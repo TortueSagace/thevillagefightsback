@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
     {
-      "item": "thevillagefightsback:obliterator"
+      "item": "minecraft:dragon_breath"
     },
     {
       "item": "minecraft:blast_furnace"

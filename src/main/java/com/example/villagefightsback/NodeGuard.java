@@ -11,19 +11,24 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Peaceful's one and only defence: try to mine the brain node and the village throws you off it.
+ * Try to mine the brain node and the village throws you off it. Every difficulty, Peaceful included.
  *
- * <p>On Peaceful nothing in the village will raise a hand to you -- that is the whole difficulty. But a village
- * that cannot stop its own heart being dug out is not defended at all, it is furniture, so the node keeps this:
- * no damage, no hostility, no grudge, just a shove. You are thrown UP and AWAY, and whatever the landing costs
- * you is the landing's doing, not the village's.
+ * <p>No damage, no hostility, no grudge, just a shove: you are thrown UP and AWAY, and whatever the landing
+ * costs you is the landing's doing, not the village's. It started as Peaceful's ONLY defence, on the reasoning
+ * that every other difficulty answers a pickaxe on the node with defenders and did not need help. That was
+ * true and beside the point -- the node is the village's heart on every difficulty, and a village that stands
+ * there and watches its heart be dug out reads as furniture wherever it happens.
  *
- * <p>Peaceful only. Every other difficulty answers a pickaxe on the node with defenders, which is a real answer
- * and does not need help.
+ * <p>It does NOT stop the mining. It used to, on Peaceful, and that made the node simply unbreakable there;
+ * applied everywhere it would have taken the Unleashed Brain Node with it, since summoning that boss means
+ * breaking the node. So the swing lands, the progress counts, and the shove is what you have to fight through
+ * rather than a wall you cannot pass: get thrown, walk back, swing again. Peaceful loses its invulnerable node
+ * in the trade, which is the honest outcome -- Peaceful means the village will not hurt you, not that it owns
+ * an indestructible block.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public final class PeacefulNodeGuard {
-    private PeacefulNodeGuard() {}
+public final class NodeGuard {
+    private NodeGuard() {}
 
     /** Roughly four blocks of rise. Vanilla's jump is 0.42 for ~1.25 blocks, and height goes as the square. */
     private static final double LAUNCH_UP = 0.78;
@@ -37,7 +42,6 @@ public final class PeacefulNodeGuard {
 
     @SubscribeEvent
     public static void onMineNode(PlayerInteractEvent.LeftClickBlock event) {
-        if (!Difficulty.current().forcesHero()) return;                  // Peaceful only
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isCreative()) return;                                 // creative breaks it instantly anyway
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -45,8 +49,7 @@ public final class PeacefulNodeGuard {
         BlockPos pos = event.getPos();
         if (!level.getBlockState(pos).is(ModBlocks.VILLAGE_BRAIN_NODE.get())) return;
 
-        event.setCanceled(true);   // the swing does not land: no progress, no damage to the node
-
+        // The event is NOT cancelled: see the class note. The swing lands and the node can be broken.
         long now = level.getGameTime();
         Long last = LAST.get(player.getUUID());
         if (last != null && now - last < COOLDOWN_TICKS) return;

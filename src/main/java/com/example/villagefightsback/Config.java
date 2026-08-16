@@ -49,6 +49,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
     public static final ForgeConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
     public static final ForgeConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
+    public static final ForgeConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     public static final ForgeConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
@@ -150,6 +151,14 @@ public final class Config {
         GENERAL_DARIUS_REMAINS = b
                 .comment("If true, General Darius never returns to the brain node, even after every 100+ HP enemy is cleared.")
                 .define("general_darius_remains", true);
+        DARIUS_INFLICTS_OBLITERATION = b
+                .comment("If true, every one of General Darius's blows marks its victim with Obliteration, and a stage-4 brain",
+                        "node raises an Obliteration Furnace beside itself and pays 1 emerald per minute to keep it lit (never",
+                        "so much that the village drops back to stage 3). Together those mean a creature Darius kills near the",
+                        "village is struck off the spawn tables for as long as the village can afford the fuel. Players are",
+                        "never marked and can never be obliterated, whatever this is set to. Set false and Darius is simply a",
+                        "hard fighter: no mark, and the node neither builds nor fuels a furnace. Default: true.")
+                .define("darius_inflicts_obliteration", true);
         MEGA_BRUTAL_MODE = b
                 .comment("If true: all village units permanently gain Strength III, Regeneration III, Resistance III and Speed III",
                         "(no potion particles); guards wield Alien Smashers in place of the regular Mace; and golems can teleport",
@@ -300,6 +309,7 @@ public final class Config {
         INDEX.put("emeraldgers_size_variation", EMERALDGERS_SIZE_VARIATION);
         INDEX.put("mega_expansion_mode", MEGA_EXPANSION_MODE);
         INDEX.put("general_darius_remains", GENERAL_DARIUS_REMAINS);
+        INDEX.put("darius_inflicts_obliteration", DARIUS_INFLICTS_OBLITERATION);
         INDEX.put("mega_brutal_mode", MEGA_BRUTAL_MODE);
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
@@ -418,6 +428,7 @@ public final class Config {
     public static boolean emeraldgerSizeVariation()       { return EMERALDGERS_SIZE_VARIATION.get(); }
     public static boolean megaExpansionMode()             { return MEGA_EXPANSION_MODE.get(); }
     public static boolean generalDariusRemains()          { return GENERAL_DARIUS_REMAINS.get(); }
+    public static boolean dariusInflictsObliteration()    { return DARIUS_INFLICTS_OBLITERATION.get(); }
     public static boolean megaBrutalMode()                { return MEGA_BRUTAL_MODE.get(); }
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }

@@ -48,13 +48,27 @@ public final class LimboPickaxeEvents {
     @SubscribeEvent
     public static void onLeftClick(PlayerInteractEvent.LeftClickBlock event) {
         Player player = event.getEntity();
-        ItemStack held = player.getMainHandItem();
-        if (!held.is(ModItems.LIMBO_PICKAXE.get())) return;
         Level level = event.getLevel();
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
         if (!isUnmineableTarget(state)) return;
         if (player.getAbilities().instabuild) return; // creative already breaks instantly
+
+        ItemStack held = player.getMainHandItem();
+        if (!held.is(ModItems.LIMBO_PICKAXE.get())) {
+            // Say why, for the one block on this list a player meets in the ordinary world. Swinging at bedrock
+            // and getting nothing is a lesson Minecraft already taught them; swinging at a furnace they watched
+            // a village build, with a diamond pickaxe that works on everything else, is not.
+            //
+            // On the ACTION BAR, not in chat: a held left-click fires this event every tick, and the action bar
+            // overwrites itself where twenty lines of chat a second would bury everything else being said.
+            if (state.is(ModBlocks.OBLITERATION_FURNACE.get())) {
+                player.displayClientMessage(net.minecraft.network.chat.Component
+                        .literal("You need a Limbo Pickaxe to mine that!")
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+            }
+            return;
+        }
 
         event.setCanceled(true); // stop vanilla from doing nothing forever
         if (level instanceof ServerLevel sl) {

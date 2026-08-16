@@ -114,8 +114,11 @@ public class ObliterationData extends SavedData {
         return false;
     }
 
-    /** True if ANY burning furnace has struck this type off. Dimension-agnostic on purpose: the ban is global. */
+    /** True if ANY burning furnace has struck this type off. Dimension-agnostic on purpose: the ban is global.
+     *  Players are answered no before anything is consulted, so a save that somehow recorded the ban still lets
+     *  its players in. */
     public boolean isObliterated(ResourceLocation type) {
+        if (PLAYER.equals(type)) return false;
         for (Furnace f : furnaces.values()) {
             if (f.burnTicks > 0 && f.obliterated.contains(type)) return true;
         }
@@ -145,8 +148,20 @@ public class ObliterationData extends SavedData {
         return bestHere != null ? bestHere : bestAnywhere;
     }
 
+    /**
+     * The one type that can never be struck off, whatever asks.
+     *
+     * <p>A banned type cannot enter the world, and a player entering the world is a player logging in or
+     * respawning. Obliterating players would not read as a hard difficulty setting, it would read as a save
+     * that has stopped letting people in. Every caller already declines to obliterate a player, so this is the
+     * backstop rather than the rule -- but it is the one place a future caller cannot get wrong, and a ban
+     * written into the save once would outlive whatever bug wrote it.
+     */
+    private static final ResourceLocation PLAYER = new ResourceLocation("minecraft", "player");
+
     /** Strike {@code type} off, at {@code at}. Returns false if that furnace is cold or already had it. */
     public boolean obliterate(GlobalPos at, ResourceLocation type) {
+        if (PLAYER.equals(type)) return false;                     // never, by any route: see above
         Furnace f = furnaces.get(at);
         if (f == null || f.burnTicks <= 0) return false;
         if (!f.obliterated.add(type)) return false;

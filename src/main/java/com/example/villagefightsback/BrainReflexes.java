@@ -326,7 +326,7 @@ public final class BrainReflexes {
         if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusNear(level, brain)
                 && (witherStorm || heavyThreatNear(level, brain, gp))) {
             if (econ.spendEmeralds(64)) {
-                spawnDarius(level, gp, brain);
+                spawnDarius(level, data, gp, brain);
                 s.cdDarius = now + cd(WIN_5M); // brief anti-spam cooldown
                 log(s, level, "General Darius marches (-64)");
             }
@@ -466,7 +466,7 @@ public final class BrainReflexes {
     }
 
     /** Spawn General Darius just inside the wall near the brain node and record his home brain (for refund). */
-    private static void spawnDarius(ServerLevel level, GlobalPos node, BlockPos brain) {
+    private static void spawnDarius(ServerLevel level, BrainNodeData data, GlobalPos node, BlockPos brain) {
         GeneralDariusEntity d = ModEntities.GENERAL_DARIUS.get().create(level);
         if (d == null) return;
         BlockPos spot = findInsideSpot(level, brain, ModEntities.GENERAL_DARIUS.get());
@@ -483,6 +483,9 @@ public final class BrainReflexes {
                 spot.getX() + 0.5, spot.getY() + 1.0, spot.getZ() + 0.5, 30, 0.5, 0.8, 0.5, 0.02);
         level.playSound(null, spot, net.minecraft.sounds.SoundEvents.SCULK_CATALYST_BLOOM,
                 net.minecraft.sounds.SoundSource.HOSTILE, 1.2F, 0.6F);
+        // The general and the furnace arrive together: his blows mark, and the furnace is what makes a mark mean
+        // anything. Raising it here rather than on reaching stage 4 keeps the two halves of the rule in one place.
+        NodeFurnace.ensureFor(level, data, node, brain);
     }
 
     /**
