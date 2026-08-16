@@ -46,8 +46,18 @@ public final class VillageChestProtection {
     private static final int WARN_COOLDOWN_TICKS = 200; // 10s between warnings per player
     private static final Map<UUID, Long> lastWarn = new HashMap<>(); // player -> game time of last open warning
 
-    /** A non-hero player's open snapshot: which chest, and how many items it held at open time. */
-    private record Snapshot(BlockPos pos, int totalCount) {}
+    /**
+     * A non-hero player's open snapshot: which chest, and how many OCCUPIED SLOTS it held at open time.
+     *
+     * <p>Slots, not items, and that is the whole point of the change. Reputation charges
+     * {@value ReputationEvents#STEAL_STACK} per STACK taken, so a stack of sixty-four cobblestone has to cost
+     * the same as a single diamond -- which the old total-item count could not express: it saw 64 and 1. A
+     * slot that emptied is a stack that left.
+     *
+     * <p>It undercounts a partial take (grabbing 30 of 64 leaves the slot occupied and costs nothing), and
+     * that is the right way round to be wrong: the village notices things GOING, not pilfering.
+     */
+    private record Snapshot(BlockPos pos, int occupiedSlots) {}
     private static final Map<UUID, Snapshot> openSnapshots = new HashMap<>(); // player -> what they last opened
 
     // --- PLACE: a chest/barrel placed inside a brain node's range joins the village ----------------
@@ -72,21 +82,21 @@ public final class VillageChestProtection {
         BlockPos pos = event.getPos();
         BlockEntity be = level.getBlockEntity(pos);
         if (!isChestOrBarrel(be) || !withinBrainNodeRange(level, pos)) return;
-        if (hasHero(player)) return; // heroes (and the village's own villagers, which aren't players) are trusted
+        if (trusted(player)) return; // Hero of the Village I and up may take what they like
 
-        // Warn that taking from here is forbidden -- throttled to once per 10s, and never cancelling the open.
+        // Warn that taking from here costs standing -- throttled to once per 10s, and never cancelling the open.
         long now = level.getGameTime();
         Long last = lastWarn.get(player.getUUID());
         if (last == null || now - last >= WARN_COOLDOWN_TICKS) {
             lastWarn.put(player.getUUID(), now);
             player.displayClientMessage(Component.literal(
-                    "You don't have the right to take objects from here: you are not a hero of the village. "
-                    + "Feed the brain with emeralds to be temporary allowed to.").withStyle(ChatFormatting.YELLOW),
-                    false);
+                    "This chest belongs to the village. Taking from it costs "
+                    + (-ReputationEvents.STEAL_STACK) + " reputation a stack, until you are a Hero of the Village.")
+                    .withStyle(ChatFormatting.YELLOW), false);
         }
 
-        // Snapshot the SAME block entity's total item count so the close handler can diff it for theft.
-        openSnapshots.put(player.getUUID(), new Snapshot(pos.immutable(), totalItems((Container) be)));
+        // Snapshot the SAME block entity's occupied slots so the close handler can diff them for theft.
+        openSnapshots.put(player.getUUID(), new Snapshot(pos.immutable(), occupiedSlots((Container) be)));
     }
 
     // --- CLOSE: diff the snapshot; a drop in total item count is theft -----------------------------
@@ -97,14 +107,17 @@ public final class VillageChestProtection {
         Snapshot snap = openSnapshots.remove(player.getUUID()); // clear the snapshot either way
         if (snap == null) return;
         if (!(player.level() instanceof ServerLevel level)) return;
-        if (hasHero(player)) return; // gained hero while the chest was open -> no longer a thief
+        if (trusted(player)) return; // became a hero while the chest was open -> no longer a thief
 
         BlockEntity be = level.getBlockEntity(snap.pos());
         if (!isChestOrBarrel(be)) return; // chest destroyed / replaced between open and close -> can't diff
-        int nowCount = totalItems((Container) be);
-        if (nowCount < snap.totalCount()) {
-            VillageEvents.markThief(level, player); // ETV 1 min + red broadcast, milk-proof, removes hero
-        }
+        int taken = snap.occupiedSlots() - occupiedSlots((Container) be);
+        if (taken <= 0) return;
+        ReputationData.get(level.getServer())
+                .add(player, ReputationEvents.STEAL_STACK * taken, "stole " + taken + " stack");
+        level.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal(player.getName().getString() + " is stealing from the village!")
+                        .withStyle(ChatFormatting.RED), false);
     }
 
     // --- helpers -----------------------------------------------------------------------------------
@@ -114,14 +127,19 @@ public final class VillageChestProtection {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity;
     }
 
-    /** Sum of every stack count in {@code container} (a single block entity's own slots). */
-    private static int totalItems(Container container) {
-        int total = 0;
+    /** How many slots hold anything at all. One emptied slot is one stack gone; see {@link Snapshot}. */
+    private static int occupiedSlots(Container container) {
+        int used = 0;
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack stack = container.getItem(i);
-            if (!stack.isEmpty()) total += stack.getCount();
+            if (!stack.isEmpty()) used++;
         }
-        return total;
+        return used;
+    }
+
+    /** True if a chest or barrel at {@code pos} belongs to a village. Used by the break-in penalty. */
+    public static boolean isProtectedContainer(ServerLevel level, BlockPos pos) {
+        return isChestOrBarrel(level.getBlockEntity(pos)) && withinBrainNodeRange(level, pos);
     }
 
     /** True if {@code pos} is within {@link VillageEvents#NODE_DEFEND_RADIUS} of any tracked brain node here. */
@@ -134,7 +152,14 @@ public final class VillageChestProtection {
         return false;
     }
 
-    private static boolean hasHero(Player player) {
+    /**
+     * Trusted with the village's stores: Hero of the Village, any level.
+     *
+     * <p>Reads the STATUS rather than the reputation number on purpose. The status is a cached copy of
+     * "is this reputation at or above 100" that {@link ReputationData} keeps in step, and reading it here
+     * keeps a chest interaction from touching saved data.
+     */
+    private static boolean trusted(Player player) {
         return player.hasEffect(MobEffects.HERO_OF_THE_VILLAGE);
     }
 }

@@ -95,14 +95,17 @@ public final class NightmareRaid {
      * reinforcements rather than needing a clock of its own.
      */
     public static void trySunsetRaid(ServerLevel level, BrainNodeData data, GlobalPos node, long day) {
-        if (!Difficulty.current().huntsAtSunset()) return;
         // AT SUNSET, and only then. The period counter this hangs off ticks over the first time a world runs
         // whatever the hour, so without this the very first raid went out the moment the player spawned in --
         // at dawn, on a brand-new world, before they had done anything at all.
         if (net.minecraft.util.Mth.positiveModulo(level.getDayTime(), 24000L) < SUNSET_TIME) return;
         if (LAST_RAID.getOrDefault(node, Long.MIN_VALUE) == day) return;      // already raided tonight
 
-        ServerPlayer target = nearestPlayerTo(level, node.pos());
+        // WHO, not WHICH DIFFICULTY. The hunt used to be a property of the Nightmare difficulty setting; it is
+        // now a property of a player, earned by falling to -500 reputation -- a "Nightmare of the Village". The
+        // Nightmare difficulty simply pins you there from the first morning, so it behaves exactly as it did,
+        // and a Neutral world can now produce the same nightly hunt if somebody works hard enough at it.
+        ServerPlayer target = nearestHuntedTo(level, node.pos());
         if (target == null) return;
         LAST_RAID.put(node, day);
 
@@ -127,11 +130,14 @@ public final class NightmareRaid {
      * difference; excluding them also made the whole feature untestable without dying to it. Spectators are
      * still skipped, because a spectator is not present in any sense the village could react to.
      */
-    private static ServerPlayer nearestPlayerTo(ServerLevel level, BlockPos node) {
+    private static ServerPlayer nearestHuntedTo(ServerLevel level, BlockPos node) {
         ServerPlayer best = null;
         double bestD = Double.MAX_VALUE;
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator() || !p.isAlive()) continue;
+            // Only a Nightmare of the Village is hunted. Everybody else, however badly the village thinks of
+            // them, is dealt with by the defenders who are already standing there.
+            if (!p.hasEffect(ModEffects.NIGHTMARE_OF_THE_VILLAGE.get())) continue;
             double d = p.blockPosition().distSqr(node);
             if (d < bestD) { bestD = d; best = p; }
         }

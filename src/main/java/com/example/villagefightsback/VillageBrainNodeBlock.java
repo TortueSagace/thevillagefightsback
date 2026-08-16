@@ -58,9 +58,13 @@ public class VillageBrainNodeBlock extends Block {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
             if (!player.getAbilities().instabuild) held.shrink(donated);
-            // Donating emeralds buys Hero of the Village -- 1 minute per emerald, STACKING onto any time left
-            // (both creative and survival). The instance has empty curative items so milk cannot cure it.
-            if (player instanceof ServerPlayer hero) grantDonationHero(hero, donated);
+            // An emerald is worth one point of standing, and nothing else. It used to BUY Hero of the Village
+            // outright, a minute at a time, which meant a single emerald bought a village's trust -- the exact
+            // thing the reputation system exists to stop. A hundred emeralds is still a route to Hero I; it is
+            // just no longer a shortcut past every other way of earning it.
+            if (player instanceof ServerPlayer donor) {
+                ReputationData.get(sl.getServer()).add(donor, donated, "fed " + donated + " emerald");
+            }
             // Reflect any level-up on the clicked block immediately; the rest sync via BrainNodeEvents.
             int target = chargesForLevel(econ.getLevel());
             if (state.getValue(CHARGES) != target) {
@@ -94,29 +98,6 @@ public class VillageBrainNodeBlock extends Block {
         return InteractionResult.CONSUME;
     }
 
-    private static final int HERO_TICKS_PER_EMERALD = 60 * 20; // 1 minute of Hero of the Village per emerald
-
-    /**
-     * Grant (or EXTEND) Hero of the Village by {@code emeralds} minutes. The new duration is whatever time was
-     * left on any current Hero of the Village PLUS {@code emeralds * 60 * 20} ticks, so repeated donations
-     * stack. The instance carries EMPTY curative items so milk can never cure it (it still clears on death).
-     */
-    private static void grantDonationHero(ServerPlayer player, int emeralds) {
-        if (emeralds <= 0) return;
-        if (Config.playerIsHostile()) return; // a permanently-hostile player can never become a Hero of the Village
-        net.minecraft.world.effect.MobEffectInstance current =
-                player.getEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
-        int remaining = current != null ? current.getDuration() : 0;
-        int newDuration = remaining + emeralds * HERO_TICKS_PER_EMERALD;
-        net.minecraft.world.effect.MobEffectInstance hero = new net.minecraft.world.effect.MobEffectInstance(
-                net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE, newDuration, 0, false, false, true);
-        hero.setCurativeItems(new java.util.ArrayList<>()); // milk cannot cure it
-        player.addEffect(hero);
-        // Hero and Enemy of the Village are mutually exclusive: becoming a hero clears any enemy status
-        // (the reverse -- becoming an enemy clears hero -- is done in VillageEvents.markVillageEnemy/markThief).
-        player.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
-    }
-
     private static Component info(BrainNodeData.Econ econ) {
         if (econ.isMaxLevel()) {
             return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
@@ -128,15 +109,21 @@ public class VillageBrainNodeBlock extends Block {
     }
 
     /**
-     * Anti-grief: the instant any player starts mining the brain node, the whole village turns on them (and the
-     * miner is added to the village enemy list + a warning shown). This stops players from mining + replacing
-     * the brain node to farm bonuses. See {@link VillageEvents#markVillageEnemy} (throttled per player).
+     * Anti-grief: swinging at the brain node costs {@value ReputationEvents#NODE_MINING_PENALTY} reputation.
+     *
+     * <p>Enough, from nothing, to make you a Nightmare of the Village in one swing -- which is the intent. The
+     * node is the village's heart and there is no reading of a pickaxe against it that the village could take
+     * as anything but the worst thing you could do to it.
+     *
+     * <p>ONCE PER DAY, because this fires on the swing rather than the break and a held left-click fires it
+     * every tick. Without that the first second of mining would cost thirty thousand points, and reputation
+     * would stop being a scale and start being a switch.
      */
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
+        if (player instanceof ServerPlayer sp) ReputationEvents.onMinedBrainNode(sp);
     }
 
     @Override

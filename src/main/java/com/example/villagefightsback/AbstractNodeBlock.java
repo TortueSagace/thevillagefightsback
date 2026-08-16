@@ -22,12 +22,15 @@ public abstract class AbstractNodeBlock extends Block {
     /** Spawn this node's reinforcement at/near {@code node}, given the in-range brain node's {@code stage} (1..4). */
     public abstract void spawnPayload(ServerLevel level, BlockPos node, int stage);
 
-    /** Mining a node turns the village on the miner -- same anti-grief response as the brain node. */
+    /** Mining a node costs reputation -- village property, priced like the village's metal rather than like
+     *  its heart. The brain node itself is a far heavier charge; see {@code VillageBrainNodeBlock.attack}. */
     @Override
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            ReputationEvents.onMinedVillageNode(sp);
+        }
     }
 
     @Override

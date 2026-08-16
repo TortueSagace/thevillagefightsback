@@ -636,10 +636,27 @@ public final class BrainNodeEvents {
         }
     }
 
+    /** The last day reputation decayed, so it happens once a night however many villages the world holds. */
+    private static long lastDecayDay = Long.MIN_VALUE;
+
     // Bright firework burst palette for the wall-completion celebration.
     private static final int[] FIREWORK_COLORS = {
             0xFF2D2D, 0xFF9A2D, 0xFFE92D, 0x57FF2D, 0x2DFFD0, 0x2D8CFF, 0x9A2DFF, 0xFF2DD0, 0xFFFFFF
     };
+
+    /**
+     * Fire {@code count} celebratory rockets at {@code where}.
+     *
+     * <p>The gate-side celebration below was the mod's only firework, and it could only celebrate a wall
+     * because it took a {@link WallPlan}. This is the same rockets at an arbitrary point, so a player being
+     * named Hero of the Village can be met with the same fanfare the village gives its own finished walls.
+     */
+    public static void launchCelebration(ServerLevel level, net.minecraft.world.phys.Vec3 where, int count) {
+        for (int i = 0; i < count; i++) {
+            level.addFreshEntity(new net.minecraft.world.entity.projectile.FireworkRocketEntity(
+                    level, where.x, where.y, where.z, celebrationRocket(level.getRandom())));
+        }
+    }
 
     /** Launch a handful of celebratory fireworks above the gates the moment the wall is finished. */
     private static void launchWallFireworks(ServerLevel level, WallPlan plan) {
@@ -1236,6 +1253,16 @@ public final class BrainNodeEvents {
 
         // EMERALD HARVEST + the stage-3 one-time expansion wave stay ONCE PER DAY, at sunset.
         if (timeOfDay < SUNSET_TIME) return;
+
+        // Reputation decays once a DAY and once for the WHOLE WORLD, so it sits above the per-village loop
+        // below rather than inside it. A player's standing is with the village faction, not with each
+        // settlement, and running it per node would multiply the nightly forgetting by however many villages
+        // happen to exist -- ten villages would wipe out a hero's standing in a night.
+        if (lastDecayDay != day) {
+            lastDecayDay = day;
+            ReputationData.get(server).decayAll(server, day);
+        }
+
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;

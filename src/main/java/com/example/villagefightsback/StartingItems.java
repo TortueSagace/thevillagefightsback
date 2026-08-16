@@ -2,8 +2,6 @@ package com.example.villagefightsback;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -19,9 +17,9 @@ import com.example.villagefightsback.network.ModNetwork;
  * Village Brain Node (gated by {@link Config#playerGivenBellAtSpawn()}). Tracked with a flag in the player's
  * PERSISTED data so it is granted exactly once and survives death, dimension changes and relogs.
  *
- * <p>Also enforces {@link Config#playerIsHostile()}: while that switch is on, every player is kept permanently
- * marked as an Enemy of the Village and can never hold Hero of the Village -- re-applied on login and policed by
- * a cheap once-a-second sweep (so milk, expiry or a donation can never lift it).
+ * <p>It used to police {@link Config#playerIsHostile()} here too, stamping a permanent Enemy of the Village on
+ * every player once a second. Standing is derived from reputation now, so that switch is honoured where the
+ * number is decided instead ({@code ReputationData.standing()}), and nothing here touches a status effect.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StartingItems {
@@ -32,7 +30,6 @@ public final class StartingItems {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (Config.playerIsHostile()) enforceHostile(player);
 
         if (!Config.playerGivenBellAtSpawn()) return;               // bell handout disabled by config
         // Hostile and Nightmare start you with a village instead of the means to found one (see HostileStart).
@@ -125,7 +122,7 @@ public final class StartingItems {
                 new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
     }
 
-    /** Once a second, while player_is_hostile is on, keep every player an Enemy of the Village and never a Hero. */
+    /** Releases the queued starter-bell hint the moment the player takes their first steps. */
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -141,22 +138,13 @@ public final class StartingItems {
                     player.getGameProfile().getName());
         }
 
-        if (!Config.playerIsHostile()) return;
-        if (player.tickCount % 20 != 0) return;                     // cheap: ~1/s
-        enforceHostile(player);
     }
 
-    /** Strip Hero of the Village and (re)apply a permanent Enemy of the Village mark. */
-    private static void enforceHostile(ServerPlayer player) {
-        if (player.hasEffect(MobEffects.HERO_OF_THE_VILLAGE)) {
-            player.removeEffect(MobEffects.HERO_OF_THE_VILLAGE);
-        }
-        var enemy = ModEffects.ENEMY_OF_THE_VILLAGE.get();
-        if (!player.hasEffect(enemy)) {
-            // Permanent, no particles (visible=false), shows icon; empty curatives so milk cannot lift it.
-            MobEffectInstance inst = new MobEffectInstance(enemy, Integer.MAX_VALUE, 0, false, false, true);
-            inst.setCurativeItems(new java.util.ArrayList<>());
-            player.addEffect(inst);
-        }
-    }
+    /*
+     * The permanent Enemy of the Village that used to be stamped on here, once a second, while
+     * `player_is_hostile` was on is gone. Not the setting -- the stamping. Standing is derived from a
+     * reputation number now and nothing else may grant it, so the switch says the same thing where the
+     * number is decided instead: see ReputationData.standing(), which pins a hostile world's reputation
+     * exactly where the Hostile difficulty pins it.
+     */
 }

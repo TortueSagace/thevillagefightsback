@@ -296,7 +296,15 @@ public class GeneralDariusEntity extends Monster {
         // Emerald units are a separate faction the village never fights (see EmeraldConversion faction rules), so
         // Darius -- a village champion -- never hunts or chases them.
         if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
-        if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
+        // A player only when the village has actually turned on them. This used to be every player who was not
+        // in creative, which meant the village's own champion hunted somebody the village had no quarrel with
+        // -- the one hostility path that never consulted their standing at all. StandingEffects would refuse
+        // the target anyway, so without this he would spend every retarget pass picking somebody he cannot
+        // attack and ignoring the mob he should be fighting.
+        if (e instanceof Player p) {
+            return !p.isCreative() && !p.isSpectator()
+                    && p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+        }
         return com.example.villagefightsback.Factions.isVillageThreat(e);
     }
 

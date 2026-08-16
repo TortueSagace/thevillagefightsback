@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -731,36 +732,50 @@ public final class VillageEvents {
         }
 
         // A player hurting a real (non-infected) village defender -- villager / guard / iron golem / wall
-        // defender -- brands them an Enemy of the Village. (Boss-faction golems like the vindictive gigachad
-        // are isAlly but infected, so hitting THEM doesn't make you a village enemy.)
+        // defender -- loses reputation for it. (Boss-faction golems like the vindictive gigachad are isAlly
+        // but infected, so hitting THEM costs nothing: they are not the village.)
+        //
+        // NO IMMEDIATE RETALIATION. A grudge used to be stamped on the struck villager on the spot, which
+        // meant one punch turned a village hostile for a hundred ticks whatever your history with it. The
+        // village answers a REPUTATION now, so one blow is a price (-20) and not a verdict; land enough of
+        // them to reach -100 and the whole village turns on you, which is the intended way to earn that.
         DamageSource src = event.getSource();
-        if (src.getEntity() instanceof Player player
+        if (src.getEntity() instanceof ServerPlayer player
                 && isAlly(event.getEntity()) && !Factions.isInfected(event.getEntity())
                 && event.getEntity().level() instanceof ServerLevel sl) {
-            markVillageEnemy(sl, event.getEntity().blockPosition(), player);
-            // Immediate personal retaliation for the hurt villager / wall defender (snappier than the rally throttle).
-            if (event.getEntity() instanceof Villager || event.getEntity() instanceof WallDefenderEntity) {
-                CompoundTag data = event.getEntity().getPersistentData();
-                data.putUUID(NBT_AGGRO_UUID, player.getUUID());
-                data.putLong(NBT_AGGRO_UNTIL, sl.getGameTime() + AGGRO_TICKS);
-            }
+            ReputationData.get(sl.getServer()).add(player, -20, "hit " + allyName(event.getEntity()));
         }
     }
 
-    /** The current valid attack target for a mob: its recent retaliation target, or -- failing that -- the
-     *  nearest "Enemy of the Village" player within {@link #NODE_DEFEND_RADIUS}. Null if none. */
+    /** A short word for what was struck, for the reputation log. Kept tiny: the log panel is 252px wide. */
+    private static String allyName(net.minecraft.world.entity.Entity e) {
+        if (e instanceof IronGolem) return "golem";
+        if (isGuard(e)) return "guard";
+        if (e instanceof WallDefenderEntity) return "defender";
+        if (e instanceof GeneralDariusEntity) return "Darius";
+        return "villager";
+    }
+
+    /**
+     * The current valid attack target for a mob: its recent retaliation target, or -- failing that -- the
+     * nearest "Enemy of the Village" player within {@link #NODE_DEFEND_RADIUS}. Null if none.
+     *
+     * <p>Still reads the STATUS rather than the reputation number, deliberately. Four combat goals ask this
+     * for every village unit several times a second, and the status is exactly a cached copy of "is this
+     * reputation at or below -100" that {@link ReputationData} keeps in step. Reaching for the saved data
+     * here would put a map lookup and a data-storage fetch on the hottest path in the mod.
+     */
     public static Player getAggroPlayer(Mob mob) {
-        // Peaceful: the village holds no grudge against a player, so there is nothing to retaliate for. Gated
-        // here as well as at the target event so the combat goals stop asking rather than being refused every
-        // tick -- being told no repeatedly is how a villager ends up jittering in place.
-        if (Difficulty.current().forcesHero()) return null;
         CompoundTag data = mob.getPersistentData();
         if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
             Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
-            if (p != null && p.isAlive()) return p;
+            // The record outlives the standing that justified it -- a raider keeps hunting after the scent
+            // lapses -- but an ordinary defender must not, or one old grudge would survive a full pardon.
+            if (p != null && p.isAlive()
+                    && (p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get())
+                        || NightmareRaid.isHunting(mob))) return p;
         }
-        // Any nearby player carrying the Enemy of the Village status is hunted on sight (the status itself
-        // expires after 20 min or on death, so no separate bookkeeping is needed here).
+        // Any nearby player carrying the Enemy of the Village status is hunted on sight.
         if (mob.level() instanceof ServerLevel sl) {
             Player best = null;
             double bestSq = NODE_DEFEND_RADIUS * NODE_DEFEND_RADIUS;
@@ -778,70 +793,25 @@ public final class VillageEvents {
     /** Allies within this radius of an attack rush the attacker. */
     public static final double NODE_DEFEND_RADIUS = 30.0;
     private static final int NODE_AGGRO_TICKS = 200;          // ...for ~10s per trigger
-    public static final int ENEMY_STATUS_TICKS = 24000;      // Enemy of the Village lasts 20 minutes
-    public static final int THIEF_STATUS_TICKS = 1200;       // a chest thief is an Enemy of the Village for 1 min
-
-    /** Build an Enemy of the Village instance for {@code ticks}: no particles, HUD icon on, and EMPTY curative
-     *  items so milk can never cure it (it still clears on death). Shared by every ETV grant. */
-    static net.minecraft.world.effect.MobEffectInstance enemyInstance(int ticks) {
-        net.minecraft.world.effect.MobEffectInstance inst = new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.ENEMY_OF_THE_VILLAGE.get(), ticks, 0, false, false, true);
-        inst.setCurativeItems(new ArrayList<>()); // milk cannot cure it
-        return inst;
-    }
 
     /**
-     * Brand a player a chest THIEF: Enemy of the Village for {@value #THIEF_STATUS_TICKS} ticks (1 min) with a RED
-     * broadcast. Distinct from {@link #markVillageEnemy} (20 min) -- a short, sharp punishment for taking from a
-     * village chest. Like every ETV grant it removes Hero of the Village, uses empty curative items (milk-proof),
-     * and -- via the {@link MobEffectEvent.Added} handler -- rallies the village the instant it lands.
+     * A player has just fallen to Enemy of the Village: rally the defenders around them and say so, once.
+     *
+     * <p>Called by {@link ReputationData} at the moment reputation crosses -100, and only then. It used to be
+     * called on every offence, which is why a single punch could turn a village hostile -- the offence and
+     * the verdict were the same event. They are separate now: an offence moves a number, and only the number
+     * crossing the line brings the village down on you.
+     *
+     * <p>The rally is not what makes them hostile. {@link #getAggroPlayer} already hands any Enemy within
+     * {@link #NODE_DEFEND_RADIUS} to every combat goal that asks. This writes the aggro record so defenders
+     * will follow you PAST that radius rather than losing interest at its edge.
      */
-    public static void markThief(ServerLevel level, Player player) {
-        if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators can't steal
-        player.addEffect(enemyInstance(THIEF_STATUS_TICKS));
-        player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
+    public static void onBecameEnemy(ServerLevel level, Player player) {
+        if (player.isSpectator()) return;
+        aggroDefendersAgainst(level, player.blockPosition(), NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
         level.getServer().getPlayerList().broadcastSystemMessage(
                 net.minecraft.network.chat.Component.literal(
-                        player.getName().getString() + " is stealing from the village!")
-                        .withStyle(net.minecraft.ChatFormatting.RED), false);
-    }
-
-    /** Rally every defender within {@link #NODE_DEFEND_RADIUS} of {@code player} against them (used by the
-     *  event-driven hostility handler the moment Enemy of the Village is added). */
-    public static void aggroDefendersAgainst(ServerLevel level, Player player) {
-        aggroDefendersAgainst(level, player.blockPosition(), NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
-    }
-    // Per-player throttle so a sustained attack doesn't re-broadcast / re-rally every tick.
-    private static final java.util.Map<java.util.UUID, Long> lastEnemyTrigger = new java.util.HashMap<>();
-
-    /**
-     * A player attacked the village -- by mining a Village Brain Node / Emerald Node, or by harming a
-     * villager / guard / iron golem. Brand them an {@link ModEffects#ENEMY_OF_THE_VILLAGE} for 20 min (always
-     * refreshed, so re-offending resets the timer; it clears on death), rally every defender within
-     * {@link #NODE_DEFEND_RADIUS} of {@code center}, and -- the first time they become an enemy -- warn the
-     * server. The rally + broadcast are throttled per player (~2s); the status refresh is not.
-     */
-    public static void markVillageEnemy(ServerLevel level, BlockPos center, Player player) {
-        if (player.isSpectator()) return; // ETV/HTV apply in any game mode (creative included); spectators excluded
-        boolean wasEnemy = player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
-        // visible=false -> no particles; showIcon=true -> the bad-omen icon shows in the HUD. Empty curative
-        // items -> milk cannot cure it (it still clears on death). The MobEffectEvent.Added handler rallies
-        // every defender the moment this lands (event-driven hostility, no per-tick scan).
-        player.addEffect(enemyInstance(ENEMY_STATUS_TICKS));
-        // You can't be a hero of the village and its enemy at once -- the enemy status revokes Hero of the Village.
-        player.removeEffect(net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE);
-
-        long now = level.getGameTime();
-        Long last = lastEnemyTrigger.get(player.getUUID());
-        if (last != null && now - last < 40L) return;        // rally + broadcast at most once per ~2s per player
-        lastEnemyTrigger.put(player.getUUID(), now);
-
-        aggroDefendersAgainst(level, center, NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
-        if (!wasEnemy) {
-            level.getServer().getPlayerList().broadcastSystemMessage(
-                    net.minecraft.network.chat.Component.literal(
-                            "§c" + player.getName().getString() + " attacks the village!"), false);
-        }
+                        "§c" + player.getName().getString() + " is an enemy of the village!"), false);
     }
 
     /**
@@ -852,7 +822,6 @@ public final class VillageEvents {
      */
     public static void aggroDefendersAgainst(ServerLevel level, BlockPos center, double radius,
                                              Player attacker, int ticks) {
-        if (Difficulty.current().forcesHero()) return;   // Peaceful: no rally against a player, ever
         long until = level.getGameTime() + ticks;
         AABB box = new AABB(center).inflate(radius);
         for (Mob m : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && isAlly(e))) {
@@ -866,21 +835,14 @@ public final class VillageEvents {
         }
     }
 
-    // --- EVENT-DRIVEN hostility: the village treats a player as hostile iff they hold Enemy of the Village ---
-
-    /**
-     * The instant Enemy of the Village lands on a player, rally every nearby defender against them. This is the
-     * single hook that turns ETV into hostility -- golems setTarget, villagers/guards get the aggro NBT --
-     * no matter HOW the status was applied (mining, hitting a defender, theft, ...). No per-tick verifier needed.
-     */
-    @SubscribeEvent
-    public static void onEnemyEffectAdded(net.minecraftforge.event.entity.living.MobEffectEvent.Added event) {
-        if (event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
-        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
-                && player.level() instanceof ServerLevel sl) {
-            aggroDefendersAgainst(sl, player);
-        }
-    }
+    // --- The village treats a player as hostile iff they hold Enemy of the Village ---
+    //
+    // The ADDED hook that used to live here is gone. It rallied the village the instant the status landed,
+    // which was right when the status was stamped on by a single offence, and wrong now: the status is
+    // derived from a reputation number and is re-asserted a few times a minute, so rallying on every
+    // application would re-rally the whole village every refresh. ReputationData calls onBecameEnemy once,
+    // at the crossing. The REMOVE and EXPIRE hooks below stay, and matter more than they used to: climbing
+    // back above -100 is now a real thing that happens, and the village has to let go when it does.
 
     /** When Enemy of the Village is removed early (e.g. it was cleared), stop the hunt immediately. */
     @SubscribeEvent
@@ -930,6 +892,12 @@ public final class VillageEvents {
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the
      *  village's summoned champion General Darius. (Darius is an Enemy/Monster, so he must be listed explicitly
      *  to be covered by the friendly-fire and change-target guards below.) */
+    /** A real member of the village: villager, guard, iron golem, wall defender or Darius.
+     *  Public because the reputation rules price a blow against any of them the same way. */
+    public static boolean isVillageAlly(Entity e) {
+        return isAlly(e);
+    }
+
     private static boolean isAlly(Entity e) {
         return e instanceof Villager || e instanceof IronGolem || e instanceof WallDefenderEntity
                 || e instanceof GeneralDariusEntity || isGuard(e);
