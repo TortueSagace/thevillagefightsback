@@ -360,10 +360,15 @@ public class StageThreeGuardGoal extends Goal {
     private void refreshTarget() {
         // Honor an externally-set target first (a vindictive guard's broad target goal sets guard.getTarget()
         // to villagers/players/animals -- things that aren't Enemy), as long as it's valid and not a faction-mate.
+        // A player is only ever a valid target while they are an Enemy of the Village, and that can lapse
+        // mid-fight -- so it is re-asked here rather than trusted from whenever the target was first set.
+        // Both branches need it: the external target, and the one this goal is already holding.
         LivingEntity ext = guard.getTarget();
         if (ext != null && ext.isAlive() && !isFactionMate(ext)
+                && com.example.villagefightsback.VillageEvents.mayStillAttack(ext)
                 && guard.distanceToSqr(ext) <= FOLLOW_RANGE * FOLLOW_RANGE) { target = ext; return; }
         if (target != null && target.isAlive() && !isFactionMate(target)
+                && com.example.villagefightsback.VillageEvents.mayStillAttack(target)
                 && guard.distanceToSqr(target) <= FOLLOW_RANGE * FOLLOW_RANGE) return;
         target = nearestEnemy(FOLLOW_RANGE, null, true); // include creepers -- the crossbow can shoot them
     }

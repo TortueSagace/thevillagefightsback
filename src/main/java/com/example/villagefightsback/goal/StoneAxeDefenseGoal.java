@@ -79,7 +79,10 @@ public class StoneAxeDefenseGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return inRange(this.target) && !VillageEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
+        // mayStillAttack, not just range: a player pardoned mid-fight (their reputation climbed back above
+        // -100) stops being a target the instant it happens, rather than when they finally walk away.
+        return inRange(this.target) && VillageEvents.mayStillAttack(this.target)
+                && !VillageEvents.beyondHomeWall(villager, this.target); // stop if it leaves our wall
     }
 
     @Override

@@ -892,6 +892,24 @@ public final class VillageEvents {
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the
      *  village's summoned champion General Darius. (Darius is an Enemy/Monster, so he must be listed explicitly
      *  to be covered by the friendly-fire and change-target guards below.) */
+    /**
+     * May a village unit go on attacking {@code target}?
+     *
+     * <p>For anything but a player, yes: the village's quarrel with a zombie does not depend on paperwork.
+     * For a PLAYER it asks the standing, every time, because standing changes mid-fight -- feed the brain
+     * node enough emeralds while a villager is swinging at you and the village has, as of that moment, no
+     * grievance left to swing about.
+     *
+     * <p>This exists because gating the moment a target is SET is not enough. {@code StandingEffects} refuses
+     * to let a village unit take a non-Enemy player as its target, but a goal that latched on while you were
+     * an Enemy keeps its own copy and never asks again -- so the village went on hunting a pardoned player
+     * until they walked out of range. Every retention check in the mod's combat goals asks this now.
+     */
+    public static boolean mayStillAttack(LivingEntity target) {
+        if (!(target instanceof Player p)) return true;
+        return p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+    }
+
     /** A real member of the village: villager, guard, iron golem, wall defender or Darius.
      *  Public because the reputation rules price a blow against any of them the same way. */
     public static boolean isVillageAlly(Entity e) {

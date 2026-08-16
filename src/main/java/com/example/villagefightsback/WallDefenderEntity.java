@@ -143,7 +143,10 @@ public class WallDefenderEntity extends Mob {
 
     /** Cheap per-tick check (no raytrace) so we can keep a target between full re-acquisitions. */
     private boolean isValidTarget(LivingEntity t) {
-        return t != null && t.isAlive() && distanceToSqr(t) <= RANGE * RANGE;
+        // Standing is re-asked here as well as at acquisition. A player pardoned while the turret is firing
+        // would otherwise keep being shot until the retarget cooldown next came round.
+        return t != null && t.isAlive() && VillageEvents.mayStillAttack(t)
+                && distanceToSqr(t) <= RANGE * RANGE;
     }
 
     private LivingEntity acquireTarget() {
