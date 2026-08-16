@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:obliterator"
+    },
+    "title": "The Unmaker",
+    "description": "Forge the Obliterator, and give a dragon egg a second purpose.",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:obliterator"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/sword"
+}

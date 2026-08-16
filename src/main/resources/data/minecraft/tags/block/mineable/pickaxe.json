@@ -26,6 +26,11 @@
     "thevillagefightsback:debris",
     "thevillagefightsback:limbo_block",
     "thevillagefightsback:elegant_stand",
-    "thevillagefightsback:memorial"
+    "thevillagefightsback:memorial",
+    "thevillagefightsback:x_ray_obsidian",
+    "thevillagefightsback:fake_cobblestone",
+    "thevillagefightsback:x_ray_cobblestone",
+    "thevillagefightsback:fertile_sandstone",
+    "thevillagefightsback:rich_sandstone"
   ]
 }

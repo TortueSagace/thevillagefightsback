@@ -1,0 +1,24 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:memorial"
+    },
+    "title": "An Invincible Army",
+    "description": "Bring a fallen defender back from their memorial with the Limbo Scythe.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "raise": {
+      "trigger": "thevillagefightsback:resurrection"
+    }
+  },
+  "requirements": [
+    [
+      "raise"
+    ]
+  ],
+  "parent": "thevillagefightsback:limbo/scythe"
+}

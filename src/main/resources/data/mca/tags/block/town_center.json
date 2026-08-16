@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "thevillagefightsback:village_brain_node",
+      "required": false
+    }
+  ]
+}

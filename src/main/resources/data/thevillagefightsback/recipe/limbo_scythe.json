@@ -3,13 +3,24 @@
   "pattern": [
     "AGA",
     "SHS",
-    "ASA"
+    "ATA"
   ],
   "key": {
-    "A": { "item": "minecraft:amethyst_block" },
-    "G": { "item": "minecraft:golden_apple" },
-    "S": { "item": "minecraft:soul_sand" },
-    "H": { "item": "thevillagefightsback:limbo_hoe" }
+    "A": {
+      "item": "minecraft:amethyst_block"
+    },
+    "G": {
+      "item": "minecraft:golden_apple"
+    },
+    "S": {
+      "item": "minecraft:soul_sand"
+    },
+    "T": {
+      "item": "thevillagefightsback:limbo_smithing_template"
+    },
+    "H": {
+      "item": "thevillagefightsback:limbo_hoe"
+    }
   },
   "result": {
     "id": "thevillagefightsback:limbo_scythe",

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:dragon_breath"
+    },
+    {
+      "item": "minecraft:blast_furnace"
+    },
+    {
+      "item": "thevillagefightsback:forgotten_powder"
+    },
+    {
+      "item": "thevillagefightsback:limbo_potion"
+    }
+  ],
+  "result": {
+    "id": "thevillagefightsback:obliteration_furnace",
+    "count": 1
+  }
+}

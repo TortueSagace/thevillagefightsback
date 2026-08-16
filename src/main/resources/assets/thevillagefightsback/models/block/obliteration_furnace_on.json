@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "thevillagefightsback:block/obliteration_furnace_top",
+    "front": "thevillagefightsback:block/obliteration_furnace_front_on",
+    "side": "thevillagefightsback:block/obliteration_furnace_side"
+  }
+}
