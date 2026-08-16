@@ -64,6 +64,8 @@ public final class Config {
     public static final ModConfigSpec.BooleanValue GUARDS_DROP_FIRE_GRENADE_UPON_DEATH;
     public static final ModConfigSpec.BooleanValue ENABLE_CHUNK_PORTALS;
     public static final ModConfigSpec.BooleanValue MCA_COMPAT;
+    public static final ModConfigSpec.IntValue DIFFICULTY;
+    public static final ModConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -222,6 +224,23 @@ public final class Config {
                         "mix. MCA villagers extend the vanilla villager, so they take the same roles, weapons, walls and virus.",
                         "Turn OFF to spawn plain vanilla villagers alongside MCA's. Default: true.")
                 .define("mca_compat", true);
+        DIFFICULTY = b
+                .comment("Where your REPUTATION with the village starts and how far it can move, picked on the difficulty",
+                        "screen when a world is created.",
+                        "0 = Peaceful  -- start at 200 (already a Hero) and never fall below 0.",
+                        "1 = Neutral   -- start at 0, no bound either way. The recommended setting.",
+                        "2 = Hostile   -- start at -300 and never rise above -100: an Enemy of the Village for good.",
+                        "3 = Nightmare -- start at -1000000 and never rise above -500: the sunset hunt never lifts.",
+                        "Separate from the GAME MODE (what spreads and spawns); the two are asked on two screens. Default: 1.")
+                .defineInRange("difficulty", 1, 0, 3);
+        DARIUS_INFLICTS_OBLITERATION = b
+                .comment("If true, every one of General Darius's blows marks its victim with Obliteration, and a stage-4 brain",
+                        "node raises an Obliteration Furnace beside itself and pays 1 emerald per minute to keep it lit (never",
+                        "so much that the village drops back to stage 3). Together those mean a creature Darius kills near the",
+                        "village is struck off the spawn tables for as long as the village can afford the fuel. Players are",
+                        "never marked and can never be obliterated, whatever this is set to. Set false and Darius is simply a",
+                        "hard fighter: no mark, and the node neither builds nor fuels a furnace. Default: true.")
+                .define("darius_inflicts_obliteration", true);
         b.pop();
 
         b.push("multipliers");
@@ -305,6 +324,8 @@ public final class Config {
         INDEX.put("guards_drop_fire_grenade_upon_death", GUARDS_DROP_FIRE_GRENADE_UPON_DEATH);
         INDEX.put("enable_chunk_portals", ENABLE_CHUNK_PORTALS);
         INDEX.put("mca_compat", MCA_COMPAT);
+        INDEX.put("difficulty", DIFFICULTY);
+        INDEX.put("darius_inflicts_obliteration", DARIUS_INFLICTS_OBLITERATION);
         INDEX.put("multiplier_level_up_emerald_threshold", MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD);
         INDEX.put("multiplier_unit_spawn_frequency", MULTIPLIER_UNIT_SPAWN_FREQUENCY);
         INDEX.put("multiplier_number_of_settlers", MULTIPLIER_NUMBER_OF_SETTLERS);
@@ -331,6 +352,7 @@ public final class Config {
 
     /** The .toml's own {block, mob, infestation} values, held while a world overrides them; null when none is. */
     private static boolean[] infectionSnapshot;
+    private static Integer difficultySnapshot;
 
     /** Remember the file's infection flags (server start), so {@link #restoreInfectionFlags()} can put them back. */
     public static void snapshotInfectionFlags() {
@@ -338,6 +360,10 @@ public final class Config {
             infectionSnapshot = new boolean[] {
                     ENABLE_BLOCK_INFECTION.get(), ENABLE_MOB_INFECTION.get(), ENABLE_EMERALD_INFESTATION.get() };
         }
+        // The DIFFICULTY rides along, and must. It is per-world state living in a process-global config, so
+        // without this a world created after a Nightmare one inherits Nightmare until its own answer arrives --
+        // and the login-time code that places the brain node and takes the bell runs inside exactly that window.
+        if (difficultySnapshot == null) difficultySnapshot = DIFFICULTY.get();
     }
 
     /** Put the file's infection flags back (server stop), so the next world starts from the file, not the last world. */
@@ -347,6 +373,10 @@ public final class Config {
         ENABLE_MOB_INFECTION.set(infectionSnapshot[1]);
         ENABLE_EMERALD_INFESTATION.set(infectionSnapshot[2]);
         infectionSnapshot = null;
+        if (difficultySnapshot != null) {
+            DIFFICULTY.set(difficultySnapshot);
+            difficultySnapshot = null;
+        }
     }
 
     /** Push a world's stored mode over the live values. In memory only -- the .toml file is not touched. */
@@ -411,6 +441,8 @@ public final class Config {
     public static double emeraldBrainSpawnMult()          { return MULTIPLIER_EMERALD_MOBS_SPAWNED_BY_BRAIN.get(); }
     public static int emeraldMobsMaxNumber()              { return EMERALD_MOBS_MAX_NUMBER.get(); }
     public static boolean organicMassEnabled()            { return ENABLE_ORGANIC_MASS_SYSTEM.get(); }
+    public static int difficulty()                        { return DIFFICULTY.get(); }
+    public static boolean dariusInflictsObliteration()    { return DARIUS_INFLICTS_OBLITERATION.get(); }
     public static double organicArmyMultiplier()          { return ORGANIC_ARMY_MULTIPLIER.get(); }
     public static double organicSpawnBudgetMultiplier()   { return ORGANIC_SPAWN_BUDGET_MULTIPLIER.get(); }
     public static boolean guardsDropFireGrenadeUponDeath() { return GUARDS_DROP_FIRE_GRENADE_UPON_DEATH.get(); }

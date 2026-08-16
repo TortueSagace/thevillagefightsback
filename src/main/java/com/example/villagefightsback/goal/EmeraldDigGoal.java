@@ -37,8 +37,17 @@ public class EmeraldDigGoal extends Goal {
     private float progress;       // 0..1 accumulated break progress on `dig`
     private int shownStage = -1;  // last cracking stage broadcast (0..9), -1 = none
 
+    /** Whether this digger may draw an emerald tool. Guards do; emerald units keep clawing bare-handed. */
+    private final boolean toolUser;
+
+    /** Bare-handed digger (the emerald faction). */
     public EmeraldDigGoal(Mob mob) {
+        this(mob, false);
+    }
+
+    public EmeraldDigGoal(Mob mob, boolean toolUser) {
         this.mob = mob;
+        this.toolUser = toolUser;
         this.setFlags(EnumSet.noneOf(Goal.Flag.class)); // no flags -> runs concurrently with combat/movement goals
     }
 

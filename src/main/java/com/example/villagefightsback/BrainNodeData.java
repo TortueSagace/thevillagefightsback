@@ -60,6 +60,7 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> domeBuilt = new HashSet<>();       // brainNodes whose level-4 glass dome is placed
     private final Set<GlobalPos> expanded = new HashSet<>();        // brainNodes that have run their stage-3 expansion
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
+    private final Map<GlobalPos, GlobalPos> nodeFurnaces = new HashMap<>(); // brainNode -> the ONE furnace it fuels
 
     public BrainNodeData() {}
 
@@ -237,6 +238,29 @@ public class BrainNodeData extends SavedData {
 
     // --- who placed a village bell (so the brain node that rises there rewards them) ---
 
+    /**
+     * The Obliteration Furnace this brain node keeps lit, or null.
+     *
+     * <p>ONE per node, which is the whole point of storing it rather than searching for the nearest furnace: a
+     * node that paid for a furnace goes on paying for that one, and a player who builds their own next door
+     * never finds the village quietly funding it. A node whose furnace has been mined drops the link (see
+     * {@code NodeFurnace}) and may raise another the next time General Darius musters.
+     */
+    public GlobalPos getNodeFurnace(GlobalPos brainNode) { return nodeFurnaces.get(brainNode); }
+    public void setNodeFurnace(GlobalPos brainNode, GlobalPos furnace) {
+        nodeFurnaces.put(brainNode, furnace);
+        setDirty();
+    }
+    public void removeNodeFurnace(GlobalPos brainNode) {
+        if (nodeFurnaces.remove(brainNode) != null) setDirty();
+    }
+    /** Every node that has one, as a copy safe to iterate while the upkeep pass drops dead links. */
+    public java.util.List<Map.Entry<GlobalPos, GlobalPos>> nodeFurnaces() {
+        return new java.util.ArrayList<>(nodeFurnaces.entrySet());
+    }
+    /** True if ANY node keeps a furnace, so the upkeep pass can cost nothing in the worlds that have none. */
+    public boolean hasNodeFurnaces() { return !nodeFurnaces.isEmpty(); }
+
     public void recordBellPlacer(GlobalPos bell, java.util.UUID player) { bellPlacers.put(bell, player); setDirty(); }
     /** The player who placed the bell at {@code bell}, removing the record (one-time reward); null if none. */
     public java.util.UUID takeBellPlacer(GlobalPos bell) {
@@ -293,6 +317,14 @@ public class BrainNodeData extends SavedData {
             ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
             d.bellPlacers.put(GlobalPos.of(dim, BlockPos.of(c.getLong("pos"))), c.getUUID("player"));
         }
+        ListTag furnaces = tag.getList("nodeFurnaces", Tag.TAG_COMPOUND);
+        for (int i = 0; i < furnaces.size(); i++) {
+            CompoundTag c = furnaces.getCompound(i);
+            ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("dim")));
+            ResourceKey<Level> fdim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(c.getString("fdim")));
+            d.nodeFurnaces.put(GlobalPos.of(dim, BlockPos.of(c.getLong("node"))),
+                    GlobalPos.of(fdim, BlockPos.of(c.getLong("furnace"))));
+        }
         return d;
     }
 
@@ -333,6 +365,16 @@ public class BrainNodeData extends SavedData {
             bells.add(c);
         }
         tag.put("bellPlacers", bells);
+        ListTag furnaces = new ListTag();
+        for (Map.Entry<GlobalPos, GlobalPos> e : nodeFurnaces.entrySet()) {
+            CompoundTag c = new CompoundTag();
+            c.putString("dim", e.getKey().dimension().location().toString());
+            c.putLong("node", e.getKey().pos().asLong());
+            c.putString("fdim", e.getValue().dimension().location().toString());
+            c.putLong("furnace", e.getValue().pos().asLong());
+            furnaces.add(c);
+        }
+        tag.put("nodeFurnaces", furnaces);
         return tag;
     }
 

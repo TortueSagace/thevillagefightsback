@@ -171,6 +171,16 @@ public final class ModItems {
 
     /** Limbo Scythe: the reaper's tool, crafted from a Limbo hoe. Stores souls reaped from substantial
      *  creatures and spends them raising the village's dead from their graves. See {@link LimboScytheItem}. */
+    /** Obliterator: an evolved Limbo Sword (14 damage). With an Obliteration Furnace burning, its hits mark
+     *  prey for erasure from the spawn tables. See {@link ObliteratorItem} / {@link ObliterationEvents}. */
+    public static final DeferredHolder<Item, Item> OBLITERATOR = ITEMS.register("obliterator",
+            () -> new ObliteratorItem(new Item.Properties().stacksTo(1).fireResistant()));
+
+    /** Reputation Book: the rules of standing with the village, read-only, handed out at spawn and craftable
+     *  from a book and an emerald. Its pages change with the difficulty. See {@link ReputationBookItem}. */
+    public static final DeferredHolder<Item, Item> REPUTATION_BOOK = ITEMS.register("reputation_book",
+            () -> new ReputationBookItem(new Item.Properties().stacksTo(1)));
+
     public static final DeferredHolder<Item, Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",
             () -> new LimboScytheItem(new Item.Properties().stacksTo(1).fireResistant()));
 

@@ -250,7 +250,36 @@ public class GeneralDariusEntity extends Monster {
      * small fry and marches home, but a hand-placed one has no home to march to and no treasury to refund, so
      * with the floor in place he simply stood inert in any ordinary village, every mob in it being under 50 HP.
      */
+    /**
+     * The biggest thing worth fighting near {@code center}: highest max health, at least {@code minMaxHp}.
+     *
+     * <p>The same reach and the same faction filter Darius uses to pick his next target, lifted out so the
+     * brain node's sunset bounty can ask the identical question without a second, drifting copy of the rules
+     * for what counts as a threat. Players are never candidates: {@code Factions.isVillageThreat} tests
+     * {@code Enemy}, which a player is not.
+     *
+     * <p>Testing {@code Enemy} rather than a list of names is what makes this work with an infection mod the
+     * village has never heard of. An arbitrary third-party horror qualifies for a bounty the day it is
+     * installed, with no compatibility code at all.
+     */
     @Nullable
+    public static LivingEntity biggestThreatNear(ServerLevel level, BlockPos center, double radius,
+                                                 double minMaxHp) {
+        LivingEntity best = null;
+        double bestHp = minMaxHp - 1.0;
+        for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class,
+                new net.minecraft.world.phys.AABB(center).inflate(radius), GeneralDariusEntity::isThreat)) {
+            if (e.getMaxHealth() > bestHp) { bestHp = e.getMaxHealth(); best = e; }
+        }
+        return best;
+    }
+
+    /** The faction half of {@link #isHuntable}, without the "not me" test an instance needs. */
+    private static boolean isThreat(LivingEntity e) {
+        if (!e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
+        return Factions.isVillageThreat(e);
+    }
+
     public LivingEntity pickBiggestThreat() {
         if (!(level() instanceof ServerLevel sl)) return null;
         LivingEntity best = null;

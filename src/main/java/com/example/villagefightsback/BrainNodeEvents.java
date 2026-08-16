@@ -82,7 +82,9 @@ public final class BrainNodeEvents {
         driveOuterWalls(server, data); // level-3 OUTER obsidian wall around the expansion buildings
         manageDome(server, data);      // level-4 protective glass dome
         manageAirStrikes(server, data); // level-4 air strikes (every 10 min, if the village was attacked)
-        BrainReflexes.tick(server, data); // emerald-funded immune reflexes (settlers, guards, golems, door regen)
+        BrainReflexes.tick(server, data);
+        NodeFurnace.tick(server, data); // stage-4 Obliteration Furnace: 1 emerald buys 1 more minute of burn
+        NodeBounty.tick(server); // expire sunset bounties nobody collected (no-op when none is out) // emerald-funded immune reflexes (settlers, guards, golems, door regen)
         OrganicMass.tick(server, data); // v1.1.2: organic-mass army commander (no-op unless the config is on)
         handleSunsetIncome(server, data);
         collectLooseEmeralds(server, data); // brain vacuums up unpicked dropped emeralds near each node
@@ -569,6 +571,20 @@ public final class BrainNodeEvents {
     };
 
     /** Launch a handful of celebratory fireworks above the gates the moment the wall is finished. */
+    /**
+     * Fire {@code count} celebratory rockets at {@code where}.
+     *
+     * <p>The gate-side celebration below was the mod's only firework, and it could only celebrate a wall
+     * because it took a {@link WallPlan}. This is the same rockets at an arbitrary point, so a player being
+     * named Hero of the Village can be met with the same fanfare the village gives its own finished walls.
+     */
+    public static void launchCelebration(ServerLevel level, net.minecraft.world.phys.Vec3 where, int count) {
+        for (int i = 0; i < count; i++) {
+            level.addFreshEntity(new net.minecraft.world.entity.projectile.FireworkRocketEntity(
+                    level, where.x, where.y, where.z, celebrationRocket(level.getRandom())));
+        }
+    }
+
     private static void launchWallFireworks(ServerLevel level, WallPlan plan) {
         List<BlockPos> spots = new ArrayList<>(plan.gates());
         if (spots.isEmpty()) spots.add(plan.brainNode().pos()); // wall with no gates -> fire over the centre
@@ -1015,6 +1031,48 @@ public final class BrainNodeEvents {
     }
 
     /**
+     * A spot at or near {@code around} where a brain node may actually be placed, or null.
+     *
+     * <p>Exposed for {@link HostileStart}, which places a node near spawn on the hostile difficulties and must
+     * apply exactly the rules the village applies to itself. Duplicating the check there would mean a hostile
+     * start could produce a node wedged in a cave roof or stranded over water, which the ordinary placement
+     * path has specific tests to prevent.
+     */
+    /**
+     * A surface cell near {@code center} where the village can set a block down without it being in the way.
+     *
+     * <p>The same test a bell uses to decide where its brain node may stand -- real ground underfoot, an empty
+     * replaceable cell to occupy, headroom above, and level with the centre rather than up a cliff or on a roof
+     * -- minus the summoning ring, which only a node needs. Nearest first, so what the village builds ends up
+     * beside its node rather than out in a field.
+     *
+     * <p>{@code minAway} is the reason this is not just {@link #placeableNodeSpot}: the eight cells around a
+     * node ARE its summoning ring, and filling one with a furnace would slowly wall the node in from its own
+     * reinforcements. Used by {@code NodeFurnace} for the stage-4 Obliteration Furnace.
+     */
+    public static BlockPos placeableAsideSpot(ServerLevel level, BlockPos center, int minAway) {
+        BlockPos best = null;
+        for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
+            for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) < minAway) continue;   // keep out of the summoning ring
+                BlockPos surface = level.getHeightmapPos(
+                        Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
+                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue;  // roofs / cliffs
+                if (!level.getBlockState(surface).canBeReplaced()) continue;
+                if (!onRealGround(level, surface)) continue;
+                if (level.getBlockState(surface.above()).blocksMotion()) continue;          // room to stand over it
+                if (best == null || center.distSqr(surface) < center.distSqr(best)) best = surface;
+            }
+        }
+        return best;
+    }
+
+    public static BlockPos placeableNodeSpot(ServerLevel level, BlockPos around) {
+        if (isGoodNodeSpot(level, around, false)) return around;
+        return findBrainNodeSpot(level, around);
+    }
+
+    /**
      * The best brain-node spot near {@code center} (the village bell): on the surface, close to the centre in
      * both plan and height, and passing {@link #isGoodNodeSpot}. Never returns the bell cell itself, so it is
      * safe to use when MCA's Town Center bell has to survive. Prefers the spot nearest the centre.
@@ -1080,6 +1138,12 @@ public final class BrainNodeEvents {
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
+            // BEFORE the reinforcement guard, and keyed on the DAY rather than the spawn period, because the
+            // two answer different questions. Reinforcements fire N times a day on an even cadence; the raid
+            // fires once, at dusk. Sitting downstream of that guard meant a period that had already reinforced
+            // -- which with any spawn frequency above 1, or after a manual time change lands mid-period -- hit
+            // the continue below and the raid silently never ran that night.
+            NightmareRaid.trySunsetRaid(level, data, gp, day);
             if (lastReinforcePeriod.getOrDefault(gp, Long.MIN_VALUE) == period) continue;
             lastReinforcePeriod.put(gp, period);
             reinforceVillage(level, data.getWallPlan(gp), gp.pos(), data.econ(gp).getLevel());
@@ -1093,6 +1157,10 @@ public final class BrainNodeEvents {
             BrainNodeData.Econ econ = data.econ(gp);
             if (econ.getLastIncomeDay() == day) continue; // this village already received income today
             econ.setLastIncomeDay(day);
+
+            // The night's bounty: the village pays reputation for the biggest thing near it, so the profitable
+            // play is out there rather than idling among the villagers.
+            NodeBounty.offer(level, gp);
 
             // Every sunset each village gets an emerald CAT -- a nightly scout that roams out to find prey (cats
             // and mites are the only real explorers). Count = 1 x the brain-spawn mult. Uncapped (a deliberate
@@ -1209,6 +1277,18 @@ public final class BrainNodeEvents {
             com.example.villagefightsback.compat.MCACompat.makeGuard(spawnDefender(level, pos, guardType, outside));
         }
         for (int i = 0; i < golemsToSpawn; i++) spawnDefender(level, pos, EntityType.IRON_GOLEM, outside);
+    }
+
+    /**
+     * Spawn one village unit near {@code center}, using the village's own placement vetting.
+     *
+     * <p>Exposed for {@link NightmareRaid}, which raises its raid beside the player rather than at the village.
+     * It goes through findSpawnSpot like everything else, so a raider cannot appear inside a wall, on a roof or
+     * halfway up a cliff -- the rules that keep the village's own summons out of trouble apply unchanged.
+     */
+    public static Entity spawnUnitNear(ServerLevel level, BlockPos center, EntityType<?> type,
+                                       java.util.function.Consumer<Entity> beforeJoin) {
+        return spawnDefender(level, center, type, null, beforeJoin);
     }
 
     /** Spawn one entity of {@code type} (it auto-arms on join). When {@code outsideWall} is non-null (stage 4),

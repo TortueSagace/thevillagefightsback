@@ -29,6 +29,10 @@ public class WorldModeData extends SavedData {
     private boolean blockInfection;
     private boolean mobInfection;
     private boolean emeraldInfestation;
+    /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Peaceful. */
+    private int difficulty = -1;
+    /** True from world creation until BOTH creation screens have been answered. */
+    private boolean setupPending;
 
     public WorldModeData() {}
 
@@ -60,7 +64,37 @@ public class WorldModeData extends SavedData {
     public void markPending() {
         if (pending || chosen) return;
         pending = true;
+        setupPending = true;
         setDirty();
+    }
+
+    /**
+     * True while the world-creation screens are still being answered -- EITHER of them.
+     *
+     * <p>The mode is answered first and the difficulty a moment later, and the world is running throughout.
+     * Gating anything on the mode alone leaves a live window between the two screens, which is where "The birth
+     * of a brain" was being handed out before the player had finished being asked what kind of world they
+     * wanted. A save from before difficulties existed has this false and is unaffected.
+     */
+    public boolean isSetupPending() { return setupPending; }
+
+    /**
+     * Record an answer to the DIFFICULTY screen, which is asked straight after the mode screen.
+     *
+     * <p>Separate from {@link #choose(WorldMode)} because the two screens ask different questions -- what the
+     * mod does, then how it treats you -- and because a world created before difficulties existed has answered
+     * the first and not the second. Such a world keeps difficulty -1 and simply plays on the config default.
+     */
+    public void chooseDifficulty(Difficulty d) {
+        difficulty = d.id();
+        setupPending = false;   // both questions are in; the world may start
+        setDirty();
+        pushToConfig();
+    }
+
+    /** The difficulty this world was created with, or null if it was never asked (a pre-existing save). */
+    public Difficulty chosenDifficulty() {
+        return difficulty < 0 ? null : Difficulty.byId(difficulty);
     }
 
     /** Record an answer to the mode screen and push it over the .toml values for this session. */
@@ -76,8 +110,8 @@ public class WorldModeData extends SavedData {
 
     /** Push the stored flags over the live config values (in memory only -- the .toml file is never written). */
     public void pushToConfig() {
-        if (!chosen) return;
-        Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+        if (chosen) Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+        if (difficulty >= 0) Config.DIFFICULTY.set(difficulty);
     }
 
     /** The preset these flags currently match, or null once the player has customised them individually. */
@@ -132,6 +166,10 @@ public class WorldModeData extends SavedData {
         data.blockInfection = tag.getBoolean("BlockInfection");
         data.mobInfection = tag.getBoolean("MobInfection");
         data.emeraldInfestation = tag.getBoolean("EmeraldInfestation");
+        // Absent on a save from before difficulties existed: -1 means "never asked", which is not the same as
+        // having answered Peaceful (0), so the sentinel cannot be a plain getInt default.
+        data.difficulty = tag.contains("Difficulty") ? tag.getInt("Difficulty") : -1;
+        data.setupPending = tag.getBoolean("SetupPending");
         return data;
     }
 
@@ -142,6 +180,8 @@ public class WorldModeData extends SavedData {
         tag.putBoolean("BlockInfection", blockInfection);
         tag.putBoolean("MobInfection", mobInfection);
         tag.putBoolean("EmeraldInfestation", emeraldInfestation);
+        tag.putInt("Difficulty", difficulty);
+        tag.putBoolean("SetupPending", setupPending);
         return tag;
     }
 }

@@ -33,21 +33,32 @@ public final class VillageDiscoveryHud {
     private static final int RED = 0xFF5555;    // ChatFormatting.RED rgb
     private static final int FADE_TICKS = 20;   // fade out over the last second
 
-    /** Shown once to a player who spawns away from any village, alongside the starter Bell they were given. */
-    private static final String HINT = "If you need company, you might want to place this bell on the floor...";
+    /**
+     * The bottom-of-screen hints, indexed by the id {@code SpawnHintPacket} sends.
+     *
+     * <p>Kept here rather than on the wire so a hint costs one int to send. The order must match the
+     * HINT_* constants on the packet.
+     */
+    private static final String[] HINTS = {
+            "If you need company, you might want to place this bell on the floor...",
+            "Only villagers know how to extract emeralds from these...",
+            "You need to obliterate that block to extract an emerald from it...",
+    };
     private static final int YELLOW = 0xFFFF55;  // ChatFormatting.YELLOW rgb
 
     private static int ticksLeft;     // discovery message: counts down to 0, then it is gone
-    private static int hintTicksLeft; // starter-bell hint: its own timer, so the two never interfere
+    private static int hintTicksLeft; // hint line: its own timer, so it and the discovery block never interfere
+    private static int hintId;        // which line of HINTS the timer is currently showing
 
     /** Show the message for {@code ticks} (called on the client when the discovery packet arrives). */
     public static void show(int ticks) {
         ticksLeft = ticks;
     }
 
-    /** Show the starter-bell hint for {@code ticks}, or hide it at once with 0 (the bell has been placed). */
-    public static void showHint(int ticks) {
+    /** Show hint {@code id} for {@code ticks}, or hide whatever is up with 0 ticks. */
+    public static void showHint(int ticks, int id) {
         hintTicksLeft = ticks;
+        if (ticks > 0 && id >= 0 && id < HINTS.length) hintId = id;
     }
 
     /** Decrement both timers one tick (called from {@link VillageDiscoveryTicker} each unpaused client tick). */
@@ -73,7 +84,7 @@ public final class VillageDiscoveryHud {
         // The hint sits one line ABOVE the discovery block, so if both are ever up at once they stack cleanly.
         if (hintTicksLeft > 0) {
             int a = hintTicksLeft < FADE_TICKS ? Math.max(16, 255 * hintTicksLeft / FADE_TICKS) : 255;
-            line(g, mc, HINT, w / 2, h - 84, (a << 24) | YELLOW);
+            line(g, mc, HINTS[hintId], w / 2, h - 84, (a << 24) | YELLOW);
         }
 
         if (ticksLeft <= 0) return;

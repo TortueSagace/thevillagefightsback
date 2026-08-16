@@ -148,6 +148,11 @@ public final class VillageEvents {
         boolean upgraded = UpgradeState.isUpgraded(mob);
         if (mob instanceof IronGolem golem) {
             if (golem.isPlayerCreated()) return;       // village golems only
+            // Golems never consulted the village's grievance, so an Enemy of the Village could stroll past a
+            // yard full of them. The villagers' goals have always read getAggroPlayer; the golems now do too.
+            if (!hasGoal(golem, com.example.villagefightsback.goal.VillageEnemyTargetGoal.class)) {
+                golem.targetSelector.addGoal(2, new com.example.villagefightsback.goal.VillageEnemyTargetGoal(golem));
+            }
             // A gigachad is its own type: re-apply its kit on every load (goals aren't saved to NBT). Plain
             // village golems are converted into GigachadGolemEntity by UpgradeEvents near a lvl-3 brainNode.
             if (golem instanceof GigachadGolemEntity) armGolemFull(golem);
@@ -725,7 +730,11 @@ public final class VillageEvents {
         CompoundTag data = mob.getPersistentData();
         if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
             Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
-            if (p != null && p.isAlive()) return p;
+            // The record outlives the standing that justified it -- a raider keeps hunting after the scent
+            // lapses -- but an ordinary defender must not, or one old grudge would survive a full pardon.
+            if (p != null && p.isAlive()
+                    && (p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE)
+                        || NightmareRaid.isHunting(mob))) return p;
         }
         // Any nearby player carrying the Enemy of the Village status is hunted on sight (the status itself
         // expires after 20 min or on death, so no separate bookkeeping is needed here).
@@ -898,6 +907,31 @@ public final class VillageEvents {
     /** Defenders that must never fight each other: villagers, iron golems, guards, wall defenders, and the
      *  village's summoned champion General Darius. (Darius is an Enemy/Monster, so he must be listed explicitly
      *  to be covered by the friendly-fire and change-target guards below.) */
+    /**
+     * A player just crossed into Enemy of the Village: rally the defenders around them and say so, once.
+     *
+     * <p>Called by {@link ReputationData} at the moment reputation crosses -100, and only then. The status is
+     * re-derived a few times a minute, so rallying on every application would re-rally the whole village
+     * forever. An offence moves a number; only the number crossing the line brings the village down on you.
+     *
+     * <p>The rally is not what makes them hostile -- {@link #getAggroPlayer} already hands any Enemy within
+     * {@link #NODE_DEFEND_RADIUS} to every combat goal that asks. This writes the aggro record so defenders
+     * will follow PAST that radius rather than losing interest at its edge.
+     */
+    public static void onBecameEnemy(ServerLevel level, Player player) {
+        if (player.isSpectator()) return;
+        aggroDefendersAgainst(level, player.blockPosition(), NODE_DEFEND_RADIUS, player, NODE_AGGRO_TICKS);
+        level.getServer().getPlayerList().broadcastSystemMessage(
+                net.minecraft.network.chat.Component.literal(
+                        "§c" + player.getName().getString() + " is an enemy of the village!"), false);
+    }
+
+    /** Public read of {@link #isAlly}: is this entity a member of the village faction? Asked by
+     *  {@link ReputationEvents#onDeath} to price a kill. */
+    public static boolean isVillageAlly(Entity e) {
+        return isAlly(e);
+    }
+
     private static boolean isAlly(Entity e) {
         return e instanceof Villager || e instanceof IronGolem || e instanceof WallDefenderEntity
                 || e instanceof GeneralDariusEntity || isGuard(e);

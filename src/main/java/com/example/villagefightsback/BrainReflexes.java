@@ -301,7 +301,7 @@ public final class BrainReflexes {
         if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusNear(level, brain)
                 && (witherStorm || heavyThreatNear(level, brain, gp))) {
             if (econ.spendEmeralds(64)) {
-                spawnDarius(level, gp, brain);
+                spawnDarius(level, data, gp, brain);
                 s.cdDarius = now + cd(WIN_5M); // brief anti-spam cooldown
                 log(s, level, "General Darius marches (-64)");
             }
@@ -442,7 +442,7 @@ public final class BrainReflexes {
     }
 
     /** Spawn General Darius just inside the wall near the brain node and record his home brain (for refund). */
-    private static void spawnDarius(ServerLevel level, GlobalPos node, BlockPos brain) {
+    private static void spawnDarius(ServerLevel level, BrainNodeData data, GlobalPos node, BlockPos brain) {
         GeneralDariusEntity d = ModEntities.GENERAL_DARIUS.get().create(level);
         if (d == null) return;
         BlockPos spot = findInsideSpot(level, brain, ModEntities.GENERAL_DARIUS.get());

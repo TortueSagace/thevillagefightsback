@@ -27,7 +27,9 @@ public abstract class AbstractNodeBlock extends Block {
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
+        if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+            ReputationEvents.onMinedVillageNode(sp);
+        }
     }
 
     @Override

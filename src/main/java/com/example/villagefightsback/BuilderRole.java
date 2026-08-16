@@ -32,6 +32,9 @@ public final class BuilderRole {
 
     public static void promote(Villager v, int door) {
         if (isLimboSage(v)) return; // the Limbo Sage keeps its job; it never builds
+        // A raider is out hunting. Requisitioning it as a builder gives it a wall to build in a place it is not
+        // going to be, and gives the wall a builder that is not coming back.
+        if (com.example.villagefightsback.NightmareRaid.isHunting(v)) return;
         v.getPersistentData().putBoolean(NBT_BUILDER, true);
         v.getPersistentData().putInt(NBT_DOOR, door);
         v.setCustomName(Component.literal(BUILDER_NAME));

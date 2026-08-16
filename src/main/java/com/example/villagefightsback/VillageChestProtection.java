@@ -110,6 +110,11 @@ public final class VillageChestProtection {
     // --- helpers -----------------------------------------------------------------------------------
 
     /** A chest (incl. trapped chest, which extends {@link ChestBlockEntity}) or a barrel. */
+    /** True if a chest or barrel at {@code pos} belongs to a village. Used by the break-in penalty. */
+    public static boolean isProtectedContainer(ServerLevel level, BlockPos pos) {
+        return isChestOrBarrel(level.getBlockEntity(pos)) && withinBrainNodeRange(level, pos);
+    }
+
     private static boolean isChestOrBarrel(BlockEntity be) {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity;
     }
