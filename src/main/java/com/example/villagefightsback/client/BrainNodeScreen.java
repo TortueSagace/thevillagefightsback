@@ -84,6 +84,25 @@ public class BrainNodeScreen extends Screen {
         }).bounds(leftPos + PANEL_W - 78, topPos + 4, 72, 16).build());
     }
 
+    /**
+     * No blur behind this panel.
+     *
+     * <p>This is why the mod's screens look soft on 1.21 and sharp on 1.20.1, and nothing in the mod causes
+     * it. 1.20.5 added a full-screen gaussian pass to {@code Screen.renderBackground}: it now calls
+     * {@code renderBlurredBackground}, which runs {@code gameRenderer.processBlurEffect} over the whole
+     * world behind the screen. On 1.20.1 the same call only laid a dark gradient down. Every screen that
+     * asks for the vanilla background inherits the blur, so a panel that read as crisp on the original
+     * version reads as out of focus here.
+     *
+     * <p>Overriding it away leaves the rest of {@code renderBackground} alone -- the translucent in-world
+     * menu tile still goes down, which is what stands in for 1.20.1's gradient -- so the result matches the
+     * original version rather than merely removing something.
+     */
+    @Override
+    protected void renderBlurredBackground(float partial) {
+        // Intentionally empty: see above. 1.20.1 had no blur and these panels were designed without one.
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
         this.renderBackground(g, mouseX, mouseY, partial);
