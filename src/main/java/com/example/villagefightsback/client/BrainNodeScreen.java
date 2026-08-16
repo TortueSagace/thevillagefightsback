@@ -35,17 +35,20 @@ public class BrainNodeScreen extends Screen {
     private final int golems;
     private final int fertilized;
     private final int organic;
+    private final int reputation;
     private final List<String> reflexLog;
     private final List<String> organicLog;
+    private final List<String> reputationLog;
 
     private int leftPos;
     private int topPos;
     private int panelH;
-    private int view; // 0 = upgrade tree, 1 = reflex (emerald) log, 2 = organic log
+    private int view; // 0 = upgrade tree, 1 = reflex log, 2 = organic log, 3 = reputation log
 
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
                            int villagers, int guards, int golems, int fertilized, int organic,
-                           List<String> reflexLog, List<String> organicLog) {
+                           int reputation, List<String> reflexLog, List<String> organicLog,
+                           List<String> reputationLog) {
         super(Component.literal("Village Brain Node"));
         this.level = level;
         this.maxLevel = maxLevel;
@@ -56,19 +59,27 @@ public class BrainNodeScreen extends Screen {
         this.golems = golems;
         this.fertilized = fertilized;
         this.organic = organic;
+        this.reputation = reputation;
         this.reflexLog = reflexLog;
         this.organicLog = organicLog;
+        this.reputationLog = reputationLog;
     }
 
-    /** The view the toggle button cycles to next (skips the organic tab when the organic system is off). */
+    /**
+     * The view the toggle button cycles to next.
+     *
+     * <p>Four views now, and the organic tab is still skipped when the organic system is off -- but only that
+     * one. Reputation is never optional, so the skip has to name the tab it means rather than "the last one",
+     * which is what the old {@code n == 2} test amounted to.
+     */
     private int nextView(int v) {
-        int n = (v + 1) % 3;
-        if (n == 2 && !com.example.villagefightsback.Config.organicMassEnabled()) n = 0;
+        int n = (v + 1) % 4;
+        if (n == 2 && !com.example.villagefightsback.Config.organicMassEnabled()) n = 3;
         return n;
     }
 
     private static String viewLabel(int v) {
-        return v == 0 ? "Upgrades" : v == 1 ? "Reflex log" : "Organic log";
+        return v == 0 ? "Upgrades" : v == 1 ? "Reflex log" : v == 2 ? "Organic log" : "Reputation";
     }
 
     @Override
@@ -106,6 +117,11 @@ public class BrainNodeScreen extends Screen {
         }
         if (view == 2) {
             renderLog(g, "Organic log (last 10)", organicLog, "No organic activity yet.");
+            super.render(g, mouseX, mouseY, partial);
+            return;
+        }
+        if (view == 3) {
+            renderLog(g, "Reputation log (last 10)", reputationLog, "The village has no opinion yet.");
             super.render(g, mouseX, mouseY, partial);
             return;
         }
@@ -161,14 +177,22 @@ public class BrainNodeScreen extends Screen {
         }
         g.drawString(font, progress, leftPos + 8, footerY, 0xFFFFFFFF, false);
 
-        // Organic mass (1.1.2): a dark-green line under the emerald line when the organic system is on. The lines
-        // below are pushed down by `extra` so nothing overlaps.
+        // The standing row: organic mass on the LEFT when the organic system is on, and this village's opinion
+        // of you on the RIGHT, always.
+        //
+        // `extra` is unconditional now, where it used to follow the organic flag. Reputation always occupies
+        // this row, so the lines below always have to be pushed down by it -- leaving it conditional would
+        // have dropped the defender counts straight on top of the reputation readout in every world with the
+        // organic system switched off.
         boolean organicShown = com.example.villagefightsback.Config.organicMassEnabled();
         if (organicShown) {
             g.drawString(font, Component.literal(organic + " organic mass").withStyle(ChatFormatting.DARK_GREEN),
                     leftPos + 8, footerY + 12, 0xFFFFFFFF, false);
         }
-        int extra = organicShown ? 12 : 0;
+        String rep = "Reputation: " + reputation;
+        g.drawString(font, Component.literal(rep).withStyle(ChatFormatting.GOLD),
+                leftPos + PANEL_W - 8 - font.width(rep), footerY + 12, 0xFFFFFFFF, false);
+        int extra = 12;
 
         // Defenders currently within the brain node's radius, by type.
         Component counts = Component.literal("Villagers: ").withStyle(ChatFormatting.GRAY)

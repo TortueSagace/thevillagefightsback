@@ -22,12 +22,15 @@ public class OpenBrainNodeScreenPacket {
     public final int golems;
     public final int fertilized; // count of fertilized (fertile/rich) blocks in this dimension
     public final int organic; // banked organic mass (1.1.2 organic system; 0 / hidden when that mode is off)
+    public final int reputation; // the OPENING player's standing with the village faction (global, not per node)
     public final List<String> reflexLog; // the brain's last (up to 10) reflex (emerald-spend) log lines, oldest first
     public final List<String> organicLog; // the brain's last (up to 10) organic-spawn decisions, oldest first
+    public final List<String> reputationLog; // the last (up to 10) reputation changes, world-wide, oldest first
 
     public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
                                      int villagers, int guards, int golems, int fertilized, int organic,
-                                     List<String> reflexLog, List<String> organicLog) {
+                                     int reputation, List<String> reflexLog, List<String> organicLog,
+                                     List<String> reputationLog) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -37,8 +40,10 @@ public class OpenBrainNodeScreenPacket {
         this.golems = golems;
         this.fertilized = fertilized;
         this.organic = organic;
+        this.reputation = reputation;
         this.reflexLog = reflexLog;
         this.organicLog = organicLog;
+        this.reputationLog = reputationLog;
     }
 
     public static void encode(OpenBrainNodeScreenPacket msg, FriendlyByteBuf buf) {
@@ -53,12 +58,24 @@ public class OpenBrainNodeScreenPacket {
         buf.writeVarInt(msg.organic);
         buf.writeCollection(msg.reflexLog, FriendlyByteBuf::writeUtf);
         buf.writeCollection(msg.organicLog, FriendlyByteBuf::writeUtf);
+        // Appended, not inserted: encode and decode are positional, so a field added in the middle would be
+        // read back into the wrong one.
+        buf.writeVarInt(msg.reputation);
+        buf.writeCollection(msg.reputationLog, FriendlyByteBuf::writeUtf);
     }
 
     public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
-        return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readList(FriendlyByteBuf::readUtf), buf.readList(FriendlyByteBuf::readUtf));
+        // Read in WIRE order, which is not constructor order: reputation travels last but is the tenth
+        // argument, so the reads are named rather than inlined.
+        int level = buf.readVarInt(), maxLevel = buf.readVarInt(), emeralds = buf.readVarInt();
+        int costNext = buf.readVarInt(), villagers = buf.readVarInt(), guards = buf.readVarInt();
+        int golems = buf.readVarInt(), fertilized = buf.readVarInt(), organic = buf.readVarInt();
+        List<String> reflexLog = buf.readList(FriendlyByteBuf::readUtf);
+        List<String> organicLog = buf.readList(FriendlyByteBuf::readUtf);
+        int reputation = buf.readVarInt();
+        List<String> reputationLog = buf.readList(FriendlyByteBuf::readUtf);
+        return new OpenBrainNodeScreenPacket(level, maxLevel, emeralds, costNext, villagers, guards, golems,
+                fertilized, organic, reputation, reflexLog, organicLog, reputationLog);
     }
 
     public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {

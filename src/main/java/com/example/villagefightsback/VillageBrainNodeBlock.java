@@ -89,11 +89,14 @@ public class VillageBrainNodeBlock extends Block {
             net.minecraft.core.GlobalPos brainGp = net.minecraft.core.GlobalPos.of(sl.dimension(), pos.immutable());
             java.util.List<String> reflexLog = BrainReflexes.logFor(brainGp);
             java.util.List<String> organicLog = OrganicMass.logFor(brainGp);
+            // Reputation is the faction's, not this node's, so both the number and the log are world-wide --
+            // every brain node shows the same pair.
+            ReputationData rep = ReputationData.get(sl.getServer());
             com.example.villagefightsback.network.ModNetwork.sendTo(sp,
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
                             defenders[0], defenders[1], defenders[2], fertilized, econ.getOrganicPoints(),
-                            reflexLog, organicLog));
+                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines()));
         }
         return InteractionResult.CONSUME;
     }

@@ -117,6 +117,34 @@ public class ObliterationFurnaceBlock extends BaseEntityBlock {
             return InteractionResult.CONSUME;
         }
 
+        // A rich block, fed in, comes back out as the emerald inside it. This is one of the only two ways the
+        // player can get an emerald out of a rich block since they stopped dropping one when mined, and it
+        // sits BETWEEN the fuel branch and the screen: anything the furnace does not eat opens the screen, so
+        // a conversion added after that fall-through would never be reached.
+        //
+        // The furnace has to be BURNING. A cold one is a decorative block, and the whole economy of the thing
+        // is that it costs fuel to do anything at all.
+        if (com.example.villagefightsback.infection.BlockMatcher.isRich(
+                net.minecraft.world.level.block.Block.byItem(held.getItem()).defaultBlockState())) {
+            if (!data.isBurning(key)) {
+                player.displayClientMessage(net.minecraft.network.chat.Component
+                        .literal("The furnace is cold. Feed it an emerald first.")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY), true);
+                return InteractionResult.CONSUME;
+            }
+            int converted = player.getAbilities().instabuild ? 1 : held.getCount();
+            if (!player.getAbilities().instabuild) held.shrink(converted);
+            ItemStack emeralds = new ItemStack(net.minecraft.world.item.Items.EMERALD, converted);
+            if (!player.getInventory().add(emeralds)) player.drop(emeralds, false);
+            player.displayClientMessage(net.minecraft.network.chat.Component
+                    .literal("The furnace renders it down: " + converted + " emerald"
+                            + (converted == 1 ? "" : "s") + ".")
+                    .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE), true);
+            sl.playSound(null, pos, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME,
+                    net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.2F);
+            return InteractionResult.CONSUME;
+        }
+
         ObliterationFurnaceScreenPacket.open(player, key, data);
         return InteractionResult.CONSUME;
     }
