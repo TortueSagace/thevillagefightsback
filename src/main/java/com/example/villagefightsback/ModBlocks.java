@@ -307,6 +307,7 @@ public final class ModBlocks {
         registerFertileRich("end_stone", Blocks.END_STONE, FertileKind.CUBE);
         registerFertileRich("sculk", Blocks.SCULK, FertileKind.SCULK); // emissive glow like vanilla sculk
         registerFertileRich("sand", Blocks.SAND, FertileKind.FALLING);
+        registerFertileRich("sandstone", Blocks.SANDSTONE, FertileKind.CUBE); // sandstone is solid, it never falls
         registerFertileRich("gravel", Blocks.GRAVEL, FertileKind.FALLING);
         registerFertileRich("log", Blocks.OAK_LOG, FertileKind.LOG); // "log" = any log; oak is the basis
         registerFertileRich("deepslate", Blocks.DEEPSLATE, FertileKind.LOG); // axis pillar like logs

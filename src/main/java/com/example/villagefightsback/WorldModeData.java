@@ -54,6 +54,13 @@ public class WorldModeData extends SavedData {
 
     /** The stored data, or null when this world has never had any (used to tell a brand-new save from an old one). */
     public static WorldModeData getExisting(MinecraftServer server) {
+        // The overworld can be null even when the server object is not. A config file rewrite fires
+        // ModConfigEvent.Reloading on the FileWatcher thread, and NeoForge rewrites the .toml during startup
+        // whenever the key set has changed -- which every version that adds a config option does, once, to
+        // every existing world. That lands here before the levels exist, and dereferencing it threw an NPE
+        // that FML caught and logged as a failed event dispatch: harmless in the end, but a red exception in
+        // everybody's log on their first launch after an update, for a question that simply has no answer yet.
+        if (server.overworld() == null) return null;
         return server.overworld().getDataStorage().get(factory(), NAME);
     }
 
