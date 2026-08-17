@@ -63,7 +63,13 @@ public class VillageBrainNodeBlock extends Block {
         if (!player.getAbilities().instabuild) held.shrink(donated);
         // Donating emeralds buys Hero of the Village -- 1 minute per emerald, STACKING onto any time left
         // (both creative and survival).
-        if (player instanceof ServerPlayer hero) grantDonationHero(hero, donated);
+        // An emerald is worth one point of standing, and nothing else. It used to BUY Hero of the Village
+        // outright, a minute at a time, which meant a single emerald bought a village's trust -- the exact
+        // thing the reputation system exists to stop. A hundred emeralds is still a route to Hero I; it is
+        // just no longer a shortcut past every other way of earning it.
+        if (player instanceof ServerPlayer donor) {
+            ReputationData.get(sl.getServer()).add(donor, donated, "fed " + donated + " emerald");
+        }
         // Reflect any level-up on the clicked block immediately; the rest sync via BrainNodeEvents.
         int target = chargesForLevel(econ.getLevel());
         if (state.getValue(CHARGES) != target) {
@@ -96,11 +102,14 @@ public class VillageBrainNodeBlock extends Block {
             net.minecraft.core.GlobalPos brainGp = net.minecraft.core.GlobalPos.of(sl.dimension(), pos.immutable());
             java.util.List<String> reflexLog = BrainReflexes.logFor(brainGp);
             java.util.List<String> organicLog = OrganicMass.logFor(brainGp);
+            // Reputation is the faction's, not this node's, so both the number and the log are world-wide --
+            // every brain node shows the same pair.
+            ReputationData rep = ReputationData.get(sl.getServer());
             com.example.villagefightsback.network.ModNetwork.sendTo(sp,
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
                             defenders[0], defenders[1], defenders[2], fertilized, econ.getOrganicPoints(),
-                            reflexLog, organicLog));
+                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines()));
         }
         return InteractionResult.CONSUME;
     }
@@ -154,7 +163,7 @@ public class VillageBrainNodeBlock extends Block {
     public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         super.attack(state, level, pos, player);
         if (level.isClientSide) return;
-        VillageEvents.markVillageEnemy((ServerLevel) level, pos, player);
+        if (player instanceof ServerPlayer sp) ReputationEvents.onMinedBrainNode(sp);
     }
 
     @Override

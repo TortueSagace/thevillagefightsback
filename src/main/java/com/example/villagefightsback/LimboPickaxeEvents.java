@@ -24,23 +24,50 @@ public final class LimboPickaxeEvents {
 
     private static boolean isUnmineableTarget(BlockState state) {
         return state.is(Blocks.BEDROCK) || state.is(Blocks.REINFORCED_DEEPSLATE)
-                || state.is(ModBlocks.FAKE_BEDROCK.get()); // the Limbo's fake bedrock breaks like real bedrock
+                || state.is(ModBlocks.FAKE_BEDROCK.get())   // the Limbo's fake bedrock breaks like real bedrock
+                || state.is(ModBlocks.OBLITERATION_FURNACE.get()); // bedrock-tough by design, so it needs this too
+    }
+
+    /**
+     * Whether breaking {@code state} with the Limbo Pickaxe should yield the block back.
+     *
+     * <p>Only OURS. Real bedrock and reinforced deepslate stay unobtainable: the pickaxe exists to let you
+     * carve the Limbo and clear a path, not to hand out the two blocks Mojang made unobtainable on purpose.
+     * Our own look-alikes are bought or crafted, so giving them back is just letting you move a wall you have
+     * already paid for.
+     */
+    private static boolean dropsWhenBroken(BlockState state) {
+        return state.is(ModBlocks.OBLITERATION_FURNACE.get());
     }
 
     @SubscribeEvent
     public static void onLeftClick(PlayerInteractEvent.LeftClickBlock event) {
         Player player = event.getEntity();
-        ItemStack held = player.getMainHandItem();
-        if (!held.is(ModItems.LIMBO_PICKAXE.get())) return;
         Level level = event.getLevel();
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
         if (!isUnmineableTarget(state)) return;
         if (player.getAbilities().instabuild) return; // creative already breaks instantly
 
+        ItemStack held = player.getMainHandItem();
+        if (!held.is(ModItems.LIMBO_PICKAXE.get())) {
+            // Say why, for the one block on this list a player meets in the ordinary world. Swinging at
+            // bedrock and getting nothing is a lesson Minecraft already taught them; swinging at a furnace
+            // they watched a village build, with a diamond pickaxe that works on everything else, is not.
+            //
+            // On the ACTION BAR, not in chat: a held left-click fires this event every tick, and the action
+            // bar overwrites itself where chat would bury everything else being said.
+            if (state.is(ModBlocks.OBLITERATION_FURNACE.get())) {
+                player.displayClientMessage(net.minecraft.network.chat.Component
+                        .literal("You need a Limbo Pickaxe to mine that!")
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+            }
+            return;
+        }
+
         event.setCanceled(true); // stop vanilla from doing nothing forever
         if (level instanceof ServerLevel sl) {
-            sl.destroyBlock(pos, false, player); // remove it (these blocks have no drops anyway)
+            sl.destroyBlock(pos, dropsWhenBroken(state), player); // ours come back; vanilla's two do not
             sl.playSound(null, pos, state.getSoundType().getBreakSound(), SoundSource.BLOCKS, 1.0F, 0.7F);
             // 1.21: ItemStack.hurtAndBreak takes the EquipmentSlot the stack is in; the old
             // broadcastBreakEvent callback is gone (the slot drives the break animation now).

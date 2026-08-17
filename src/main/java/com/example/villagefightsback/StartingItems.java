@@ -28,13 +28,36 @@ public final class StartingItems {
     private StartingItems() {}
 
     private static final String NBT_GOT_BELL = "vgun_got_starter_bell";
+    private static final String NBT_GOT_BOOK = "vgun_got_reputation_book";
+
+    /**
+     * Hand {@code stack} over once ever, remembered under {@code flag}.
+     *
+     * <p>The flag lives in {@code Player.PERSISTED_NBT_TAG}, the one bag of player data that survives death, a
+     * dimension change and a relog -- so "once" means once, not once per life.
+     *
+     * <p>Unlike the bell, the Reputation Book goes out on EVERY difficulty. The bell is the means to found a
+     * village and Hostile and Nightmare hand you one already built, so offering it there reads backwards. The
+     * book is the rules, and the rules apply to everyone -- it just says something very different on the
+     * difficulties where your standing is not up for negotiation.
+     */
+    private static void giveOnce(ServerPlayer player, String flag, ItemStack stack) {
+        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        if (persisted.getBoolean(flag)) return;
+        persisted.putBoolean(flag, true);
+        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        if (!player.getInventory().add(stack)) player.drop(stack, false);
+    }
 
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (Config.playerIsHostile()) enforceHostile(player);
+        giveOnce(player, NBT_GOT_BOOK, new ItemStack(ModItems.REPUTATION_BOOK.get()));
 
         if (!Config.playerGivenBellAtSpawn()) return;               // bell handout disabled by config
+        // Hostile and Nightmare start you with a village instead of the means to found one (see HostileStart).
+        // The bell is a gift to someone the village has not judged yet, and on those difficulties it already has.
+        if (Difficulty.current().placesBrainNodeAtSpawn()) return;
         CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_GOT_BELL)) return;             // already received the starter bell
         persisted.putBoolean(NBT_GOT_BELL, true);

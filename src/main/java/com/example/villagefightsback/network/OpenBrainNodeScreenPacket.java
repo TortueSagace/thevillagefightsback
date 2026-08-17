@@ -23,13 +23,15 @@ public record OpenBrainNodeScreenPacket(
         int golems,
         int fertilized, // count of fertilized (fertile/rich) blocks in this dimension
         int organic, // banked organic mass (1.1.2 organic system; 0 / hidden when that mode is off)
+        int reputation, // the OPENING player's standing with the village faction (global, not per node)
         List<String> reflexLog, // the brain's last (up to 10) reflex (emerald-spend) log lines, oldest first
-        List<String> organicLog // the brain's last (up to 10) organic-spawn decisions, oldest first
+        List<String> organicLog, // the brain's last (up to 10) organic-spawn decisions, oldest first
+        List<String> reputationLog // the last (up to 10) reputation changes, world-wide, oldest first
 ) implements CustomPacketPayload {
     public static final Type<OpenBrainNodeScreenPacket> TYPE =
             new Type<>(TheVillageFightsBack.id("open_brain_node_screen"));
 
-    // 11 fields exceeds StreamCodec.composite's max arity, so mirror the old encode/decode byte-for-byte.
+    // 13 fields exceeds StreamCodec.composite's max arity, so the codec is written out by hand.
     public static final StreamCodec<RegistryFriendlyByteBuf, OpenBrainNodeScreenPacket> STREAM_CODEC =
             StreamCodec.ofMember(OpenBrainNodeScreenPacket::write, OpenBrainNodeScreenPacket::read);
 
@@ -43,14 +45,18 @@ public record OpenBrainNodeScreenPacket(
         buf.writeVarInt(this.golems);
         buf.writeVarInt(this.fertilized);
         buf.writeVarInt(this.organic);
+        // Signed, not a var-int: standing goes below zero, and a var-int spends five bytes on every negative.
+        buf.writeInt(this.reputation);
         buf.writeCollection(this.reflexLog, (b, s) -> b.writeUtf(s));
         buf.writeCollection(this.organicLog, (b, s) -> b.writeUtf(s));
+        buf.writeCollection(this.reputationLog, (b, s) -> b.writeUtf(s));
     }
 
     private static OpenBrainNodeScreenPacket read(RegistryFriendlyByteBuf buf) {
         return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()));
+                buf.readInt(),
+                buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()));
     }
 
     @Override

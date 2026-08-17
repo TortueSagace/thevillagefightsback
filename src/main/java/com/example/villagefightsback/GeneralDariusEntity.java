@@ -118,6 +118,35 @@ public class GeneralDariusEntity extends Monster {
         return r;
     }
 
+    /** How long Darius's mark lasts. The same minute the Obliterator gives, so one rule covers both. */
+    private static final int OBLITERATION_TICKS = 20 * 60;
+
+    /**
+     * Every blow marks its victim with Obliteration, so what Darius kills near a burning furnace is struck off
+     * the world's spawn tables.
+     *
+     * <p>On DARIUS, deliberately, and not on the Alien Smasher he carries. He drops that weapon when he dies
+     * and the player picks it up, so putting the mark on the item would hand the village's own power of
+     * erasure to whoever beat him -- and it would spread further than that, since {@code
+     * GuardWeapons.alienSmasher()} arms every guard in the village once mega-brutal mode is on. The mark
+     * belongs to the general, not the sword.
+     *
+     * <p>NEVER a player. {@link ObliterationEvents} already refuses to obliterate one, so the mark could not
+     * erase anybody -- but a purple HARMFUL icon that does nothing reads as a threat the game never carries
+     * out. See {@code Config.dariusInflictsObliteration}, which switches the whole mechanism off.
+     */
+    @Override
+    public boolean doHurtTarget(net.minecraft.world.entity.Entity target) {
+        boolean hit = super.doHurtTarget(target);
+        if (hit && Config.dariusInflictsObliteration()
+                && target instanceof LivingEntity victim
+                && !(target instanceof net.minecraft.world.entity.player.Player)) {
+            victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                    ModEffects.OBLITERATION, OBLITERATION_TICKS, 0, false, true, true));
+        }
+        return hit;
+    }
+
     private void equipLimbo(EquipmentSlot slot, net.minecraft.world.item.Item piece) {
         setItemSlot(slot, new net.minecraft.world.item.ItemStack(piece));
         setDropChance(slot, 0.0F);

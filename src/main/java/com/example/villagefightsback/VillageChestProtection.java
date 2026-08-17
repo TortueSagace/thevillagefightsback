@@ -47,7 +47,17 @@ public final class VillageChestProtection {
     private static final Map<UUID, Long> lastWarn = new HashMap<>(); // player -> game time of last open warning
 
     /** A non-hero player's open snapshot: which chest, and how many items it held at open time. */
-    private record Snapshot(BlockPos pos, int totalCount) {}
+    /**
+     * A non-hero player's open snapshot: which chest, and how many OCCUPIED SLOTS it held at open time.
+     *
+     * <p>Slots, not items, and that is the whole point. Reputation charges per STACK taken, so a stack of
+     * sixty-four cobblestone has to cost the same as a single diamond -- which a running item total could not
+     * express: it saw 64 and 1. A slot that emptied is a stack that left.
+     *
+     * <p>It undercounts a partial take (grabbing 30 of 64 leaves the slot occupied and costs nothing), and
+     * that is the right way round to be wrong: the village notices things GOING, not pilfering.
+     */
+    private record Snapshot(BlockPos pos, int occupiedSlots) {}
     private static final Map<UUID, Snapshot> openSnapshots = new HashMap<>(); // player -> what they last opened
 
     // --- PLACE: a chest/barrel placed inside a brain node's range joins the village ----------------
@@ -86,10 +96,10 @@ public final class VillageChestProtection {
         }
 
         // Snapshot the SAME block entity's total item count so the close handler can diff it for theft.
-        openSnapshots.put(player.getUUID(), new Snapshot(pos.immutable(), totalItems((Container) be)));
+        openSnapshots.put(player.getUUID(), new Snapshot(pos.immutable(), occupiedSlots((Container) be)));
     }
 
-    // --- CLOSE: diff the snapshot; a drop in total item count is theft -----------------------------
+    // --- CLOSE: diff the snapshot; every slot that emptied is a stack that left ---------------------
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {
@@ -101,26 +111,31 @@ public final class VillageChestProtection {
 
         BlockEntity be = level.getBlockEntity(snap.pos());
         if (!isChestOrBarrel(be)) return; // chest destroyed / replaced between open and close -> can't diff
-        int nowCount = totalItems((Container) be);
-        if (nowCount < snap.totalCount()) {
-            VillageEvents.markThief(level, player); // ETV 1 min + red broadcast, milk-proof, removes hero
+        int taken = snap.occupiedSlots() - occupiedSlots((Container) be);
+        if (taken > 0) {
+            ReputationData.get(level.getServer())
+                    .add(player, ReputationEvents.STEAL_STACK * taken, "stole " + taken + " stack");
+            level.getServer().getPlayerList().broadcastSystemMessage(
+                    net.minecraft.network.chat.Component.literal(
+                            player.getName().getString() + " is stealing from the village!")
+                            .withStyle(net.minecraft.ChatFormatting.RED), false);
         }
     }
 
     // --- helpers -----------------------------------------------------------------------------------
 
-    /** A chest (incl. trapped chest, which extends {@link ChestBlockEntity}) or a barrel. */
     /** True if a chest or barrel at {@code pos} belongs to a village. Used by the break-in penalty. */
     public static boolean isProtectedContainer(ServerLevel level, BlockPos pos) {
         return isChestOrBarrel(level.getBlockEntity(pos)) && withinBrainNodeRange(level, pos);
     }
 
+    /** A chest (incl. trapped chest, which extends {@link ChestBlockEntity}) or a barrel. */
     private static boolean isChestOrBarrel(BlockEntity be) {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity;
     }
 
     /** Sum of every stack count in {@code container} (a single block entity's own slots). */
-    private static int totalItems(Container container) {
+    private static int occupiedSlots(Container container) {
         int total = 0;
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack stack = container.getItem(i);
