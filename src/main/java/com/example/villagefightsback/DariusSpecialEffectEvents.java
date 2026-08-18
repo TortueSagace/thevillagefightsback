@@ -65,26 +65,42 @@ public final class DariusSpecialEffectEvents {
     /**
      * Deflect harmful status effects onto the attacker: a harmful effect a creature inflicts on a Darius' Special Sauce
      * holder is stripped from the holder and inflicted on the attacker instead (e.g. a wither's Wither lands on
-     * the wither). Fired post-add, so we remove it from the holder and re-add it to the attacker. Re-adding with
+     * the wither). Fired PRE-add (Forge posts it before the instance is stored), so the removal is deferred by one
+     * server task and the copy goes straight to the attacker. Re-adding with
      * NO source means it is never bounced again (and a holder's own beneficial Darius' Special Sauce is never reflected).
      */
     @SubscribeEvent
     public static void onEffectAdded(MobEffectEvent.Added event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
-        if (!target.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT.get())) return;
         MobEffectInstance inst = event.getEffectInstance();
         MobEffect effect = inst.getEffect();
-        if (effect == ModEffects.DARIUS_SPECIAL_EFFECT.get()) {   // our own effect landing: never deflected, just noted
+
+        // Our own effect landing: never deflected, just noted.
+        //
+        // Tested BEFORE the holder check below, and that ordering is the whole fix. Forge posts this event
+        // from addEffect BEFORE putting the instance into activeEffects, so while the sauce is being applied
+        // for the FIRST time hasEffect() is still false -- the old order bailed one line early and the root
+        // advancement could never be earned by drinking the potion at all.
+        if (effect == ModEffects.DARIUS_SPECIAL_EFFECT.get()) {
             if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/root");
             return;
         }
+        if (!target.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT.get())) return;
         if (effect.getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
         if (!(event.getEffectSource() instanceof LivingEntity attacker) || attacker == target) return;
         MobEffectInstance copy = new MobEffectInstance(effect, inst.getDuration(), inst.getAmplifier(),
                 inst.isAmbient(), inst.isVisible(), inst.showIcon());
-        target.removeEffect(effect); // not on the protected holder...
-        attacker.addEffect(copy);    // ...on the attacker instead (no source -> never re-bounced)
+        attacker.addEffect(copy);    // on the attacker instead (no source -> never re-bounced)
+        // ...and NOT on the holder. Removed TWICE on purpose, because the two loaders disagree about when
+        // this event fires: Forge posts it from addEffect BEFORE the instance is stored, so removing it here
+        // removed nothing and vanilla then added it anyway -- the "deflection" quietly handed the attacker a
+        // copy while the holder kept the original. The immediate call covers the post-store ordering and the
+        // queued one covers the pre-store ordering; removing an effect that is not there is a no-op, so doing
+        // both is correct either way and does not depend on the loader.
+        target.removeEffect(effect);
+        net.minecraft.server.MinecraftServer server = target.level().getServer();
+        if (server != null) server.execute(() -> target.removeEffect(effect));
         if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/own_medicine");
     }
 
