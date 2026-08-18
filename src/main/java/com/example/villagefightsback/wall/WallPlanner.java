@@ -1,8 +1,11 @@
 package com.example.villagefightsback.wall;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -34,6 +37,7 @@ public final class WallPlanner {
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
     private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
     private static final int MAX_WALL_ELEVATION = 10; // inner wall: ignore columns whose ground is >this far above/below the brain node
+    private static final int CLUSTER_LINK = 24;    // two beds belong to the same village if within this far of each other
 
     /** Compute the inner (cobblestone) wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds) {
@@ -42,7 +46,7 @@ public final class WallPlanner {
 
     /** Compute the wall plan. {@code obsidian} = the stage-3 OUTER wall (obsidian + fake-obsidian gates). */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds, boolean obsidian) {
-        List<int[]> pts = distinctXz(beds);
+        List<int[]> pts = mainCluster(distinctXz(beds), brainNode);
         if (pts.size() < MIN_BEDS) return null;
 
         double[] centroid = centroid(pts);
@@ -64,6 +68,12 @@ public final class WallPlanner {
             int[] a = pts.get(e[0]), b = pts.get(e[1]);                               // so scattered houses
             rasterizeTube(interior, W, H, a[0] - ox, a[1] - oz, b[0] - ox, b[1] - oz); // enclose as ONE ring
         }
+
+        // Close any pocket of non-interior cells the footprint completely surrounds. The boundary pass below
+        // calls ANY interior cell with an outside neighbour a wall column, and an enclosed courtyard is exactly
+        // that -- so without this a gap in the middle of a village grows its own little wall ring inside the
+        // real one. (The obsidian wall never showed this: convexify fills every pocket on its way past.)
+        fillEnclosed(interior, W, H);
 
         // The OUTER (obsidian) wall is deliberately CONVEX -- the opposite of the inner wall's concave hug.
         // Replace the concave footprint with its filled convex hull (which still clears every bed, since the
@@ -148,6 +158,112 @@ public final class WallPlanner {
         }
         if (columns.isEmpty()) return null;
         return new WallPlan(brainNode, columns);
+    }
+
+    /**
+     * Keep only the bed cluster the brain node belongs to, and drop every outlier.
+     *
+     * <p>Anything with a bed inside the village radius used to be claimed as part of the village, so a
+     * pillager outpost 80 blocks out dragged the whole ring out with it: the inner wall stretched far past
+     * the village, stage-3 buildings were then placed against that inflated footprint, and the obsidian wall
+     * gave up entirely.
+     *
+     * <p>A village is a dense cluster -- no house sits more than about ten blocks from its neighbour -- so
+     * membership is single-linkage: beds within {@value #CLUSTER_LINK} of each other are the same village, and
+     * the component containing the brain node is the village. {@value #CLUSTER_LINK} is generous against a
+     * legitimately spread-out village while an outlier at 80 blocks is nowhere near joining.
+     *
+     * <p>Cheap by bucketing: beds go into cells {@value #CLUSTER_LINK} across, so a bed can only link to one of
+     * the nine cells around it and never compares against the whole village. That is O(n) with a small
+     * constant instead of the O(n^2) every pair would cost, and it runs once per plan, not per tick.
+     */
+    private static List<int[]> mainCluster(List<int[]> pts, GlobalPos brainNode) {
+        int n = pts.size();
+        if (n <= 1) return pts;
+
+        Map<Long, List<Integer>> buckets = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            buckets.computeIfAbsent(bucketKey(pts.get(i)[0], pts.get(i)[1]), k -> new ArrayList<>()).add(i);
+        }
+
+        int seed = 0;
+        long bestD = Long.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            long dx = pts.get(i)[0] - brainNode.pos().getX();
+            long dz = pts.get(i)[1] - brainNode.pos().getZ();
+            long d = dx * dx + dz * dz;
+            if (d < bestD) { bestD = d; seed = i; }
+        }
+
+        long link2 = (long) CLUSTER_LINK * CLUSTER_LINK;
+        boolean[] seen = new boolean[n];
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        seen[seed] = true;
+        queue.add(seed);
+        List<int[]> out = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            int[] a = pts.get(queue.poll());
+            out.add(a);
+            long cx = Math.floorDiv(a[0], CLUSTER_LINK);
+            long cz = Math.floorDiv(a[1], CLUSTER_LINK);
+            for (long gx = cx - 1; gx <= cx + 1; gx++) {
+                for (long gz = cz - 1; gz <= cz + 1; gz++) {
+                    List<Integer> bucket = buckets.get((gx << 32) ^ (gz & 0xFFFFFFFFL));
+                    if (bucket == null) continue;
+                    for (int j : bucket) {
+                        if (seen[j]) continue;
+                        int[] b = pts.get(j);
+                        long dx = a[0] - b[0], dz = a[1] - b[1];
+                        if (dx * dx + dz * dz <= link2) { seen[j] = true; queue.add(j); }
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    private static long bucketKey(int x, int z) {
+        long gx = Math.floorDiv(x, CLUSTER_LINK);
+        long gz = Math.floorDiv(z, CLUSTER_LINK);
+        return (gx << 32) ^ (gz & 0xFFFFFFFFL);
+    }
+
+    /**
+     * Mark every non-interior cell the footprint fully encloses as interior, so only the OUTER edge survives
+     * the boundary pass. Flood the outside inward from the grid border: whatever the flood cannot reach is a
+     * pocket. The border is always outside, because the grid is padded by CLEARANCE + 2 around every bed.
+     */
+    private static void fillEnclosed(boolean[] interior, int W, int H) {
+        boolean[] outside = new boolean[W * H];
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        for (int gx = 0; gx < W; gx++) {
+            flood(interior, outside, queue, W, H, gx, 0);
+            flood(interior, outside, queue, W, H, gx, H - 1);
+        }
+        for (int gz = 0; gz < H; gz++) {
+            flood(interior, outside, queue, W, H, 0, gz);
+            flood(interior, outside, queue, W, H, W - 1, gz);
+        }
+        while (!queue.isEmpty()) {
+            int idx = queue.poll();
+            int gx = idx % W, gz = idx / W;
+            flood(interior, outside, queue, W, H, gx + 1, gz);
+            flood(interior, outside, queue, W, H, gx - 1, gz);
+            flood(interior, outside, queue, W, H, gx, gz + 1);
+            flood(interior, outside, queue, W, H, gx, gz - 1);
+        }
+        for (int i = 0; i < interior.length; i++) {
+            if (!interior[i] && !outside[i]) interior[i] = true;   // an enclosed pocket -> part of the village
+        }
+    }
+
+    private static void flood(boolean[] interior, boolean[] outside, ArrayDeque<Integer> queue,
+                              int W, int H, int gx, int gz) {
+        if (gx < 0 || gz < 0 || gx >= W || gz >= H) return;
+        int idx = gz * W + gx;
+        if (interior[idx] || outside[idx]) return;
+        outside[idx] = true;
+        queue.add(idx);
     }
 
     // --- column -> course stack ---
