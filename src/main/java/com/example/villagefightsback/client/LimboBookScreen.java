@@ -23,19 +23,27 @@ import net.minecraft.world.level.ItemLike;
  * may carry an item, drawn at its left with the text indented past it. That is what makes the gear pages worth
  * reading, because "smith a Limbo Ingot onto netherite" means very little next to a picture of the ingot.
  *
+ * <p>The panel height is worked out at open time rather than fixed, because the pages were overflowing the
+ * bottom of a fixed 194. It grows to {@value #MAX_PANEL_H} but never past the window, so it still fits a small
+ * screen or a large GUI scale.
+ *
  * <p>The first page is deliberately not an explanation. Someone opening this book is very often standing in a
- * black room wondering how to leave, so the way out comes before the lore, in red, before anything else.
+ * black room wondering how to leave, so the way out comes before anything else, in red.
  */
 public class LimboBookScreen extends Screen {
     private static final int PANEL_W = 244;
-    private static final int PANEL_H = 194;
+    private static final int MAX_PANEL_H = 240;
+    private static final int MIN_PANEL_H = 160;
     private static final int MARGIN = 12;
     private static final int ICON_W = 20;      // item is 16 wide; 4px of air before the text
+    private static final int ICON_H = 18;      // least vertical space an icon row may take
+    private static final int LINE = 10;
 
     private final List<List<Line>> pages = buildPages();
 
     private int leftPos;
     private int topPos;
+    private int panelH;
     private int page;
 
     /** One rendered row: text, and optionally an item drawn to its left. */
@@ -52,14 +60,15 @@ public class LimboBookScreen extends Screen {
 
     @Override
     protected void init() {
+        this.panelH = Math.max(MIN_PANEL_H, Math.min(MAX_PANEL_H, this.height - 20));
         this.leftPos = (this.width - PANEL_W) / 2;
-        this.topPos = (this.height - PANEL_H) / 2;
+        this.topPos = (this.height - panelH) / 2;
         addRenderableWidget(Button.builder(Component.literal("<"), b -> turn(-1))
-                .bounds(leftPos + MARGIN, topPos + PANEL_H - 26, 24, 18).build());
+                .bounds(leftPos + MARGIN, topPos + panelH - 26, 24, 18).build());
         addRenderableWidget(Button.builder(Component.literal(">"), b -> turn(1))
-                .bounds(leftPos + PANEL_W - MARGIN - 24, topPos + PANEL_H - 26, 24, 18).build());
+                .bounds(leftPos + PANEL_W - MARGIN - 24, topPos + panelH - 26, 24, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .bounds(leftPos + (PANEL_W - 60) / 2, topPos + PANEL_H - 26, 60, 18).build());
+                .bounds(leftPos + (PANEL_W - 60) / 2, topPos + panelH - 26, 60, 18).build());
     }
 
     private void turn(int by) {
@@ -70,30 +79,30 @@ public class LimboBookScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
         renderBackground(g);
         // Black rather than the Reputation Book's slate: this is the Limbo's book.
-        g.fill(leftPos - 1, topPos - 1, leftPos + PANEL_W + 1, topPos + PANEL_H + 1, 0xFF000000);
-        g.fill(leftPos, topPos, leftPos + PANEL_W, topPos + PANEL_H, 0xFF16161C);
+        g.fill(leftPos - 1, topPos - 1, leftPos + PANEL_W + 1, topPos + panelH + 1, 0xFF000000);
+        g.fill(leftPos, topPos, leftPos + PANEL_W, topPos + panelH, 0xFF16161C);
 
         Component title = Component.literal("The Limbo").withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD);
         g.drawString(font, title, leftPos + MARGIN, topPos + 10, 0xFFFFFFFF, false);
 
         int y = topPos + 30;
         for (Line line : pages.get(page)) {
-            if (line.icon != null) {
-                g.renderItem(line.icon, leftPos + MARGIN, y - 4);
-            }
-            int x = leftPos + MARGIN + (line.icon != null ? ICON_W : 0);
-            int wrap = PANEL_W - MARGIN * 2 - (line.icon != null ? ICON_W : 0);
             if (line.text.getString().isEmpty()) { y += 5; continue; }
+            boolean hasIcon = line.icon != null;
+            int rowTop = y;
+            if (hasIcon) g.renderItem(line.icon, leftPos + MARGIN, y - 4);
+            int x = leftPos + MARGIN + (hasIcon ? ICON_W : 0);
+            int wrap = PANEL_W - MARGIN * 2 - (hasIcon ? ICON_W : 0);
             for (FormattedCharSequence seq : font.split(line.text, wrap)) {
                 g.drawString(font, seq, x, y, 0xFFFFFFFF, false);
-                y += 10;
+                y += LINE;
             }
-            if (line.icon != null) y += 4;     // keep the next row clear of a 16px item
+            if (hasIcon) y = Math.max(y, rowTop + ICON_H);   // never let the next row clip a 16px item
         }
 
         String n = (page + 1) + " / " + pages.size();
         g.drawString(font, Component.literal(n).withStyle(ChatFormatting.DARK_GRAY),
-                leftPos + (PANEL_W - font.width(n)) / 2, topPos + PANEL_H - 40, 0xFF555555, false);
+                leftPos + (PANEL_W - font.width(n)) / 2, topPos + panelH - 40, 0xFF555555, false);
         super.render(g, mouseX, mouseY, partial);
     }
 
@@ -104,6 +113,8 @@ public class LimboBookScreen extends Screen {
     }
 
     // --- the text ------------------------------------------------------------------------------------
+    // Plain, direct English on purpose: short sentences, common words, one idea at a time. This is a manual
+    // for somebody who is lost, not a piece of writing.
 
     private static Line head(String s) {
         return new Line(Component.literal(s).withStyle(ChatFormatting.GRAY, ChatFormatting.BOLD), null);
@@ -126,7 +137,6 @@ public class LimboBookScreen extends Screen {
     private static List<List<Line>> buildPages() {
         List<List<Line>> out = new ArrayList<>();
 
-        // 1. The way out, before anything else.
         out.add(new ArrayList<>(List.of(
                 head("Are you currently in the Limbo?"),
                 BLANK,
@@ -134,106 +144,109 @@ public class LimboBookScreen extends Screen {
                 red("GET OUT."),
                 BLANK,
                 item(ModBlocks.LIMBO_BED_ITEM.get(),
-                        "The black bed with the bedrock blanket, in the holding cell you woke up in. It puts you "
-                        + "back exactly where you were taken from."),
+                        "It is the black bed with the bedrock cover, in the room where you arrived."),
                 BLANK,
-                body("Any other bed works too, while you are here. Trying to sleep is the way home."))));
+                body("It sends you back to the exact place you were taken from."),
+                BLANK,
+                body("Any bed works here. Trying to sleep is how you go home."))));
 
-        // 2. Where you are.
         out.add(new ArrayList<>(List.of(
                 head("What this place is"),
                 BLANK,
-                body("A dark dimension of nothing, with a 22x22x22 bedrock holding cell at its centre. The cell "
-                        + "is where every newcomer arrives."),
+                body("A dark world with very little in it. You arrive in a bedrock room at its centre, 22 blocks "
+                        + "across."),
                 BLANK,
-                body("The shell only looks like bedrock. Beyond it the void is scattered with floating bedrock "
-                        + "cubes, crusted on the outside with Forgotten Glowstone."),
+                body("The walls only look like bedrock. You can walk straight through them."),
                 BLANK,
-                item(ModItems.FORGOTTEN_POWDER.get(),
-                        "Forgotten Powder, what that glowstone drops. The rest of the Limbo is built out of "
-                        + "what you can pry off those cubes."))));
+                body("Outside, blocks of bedrock float in the dark. Green Forgotten Glowstone grows on them."),
+                BLANK,
+                item(ModItems.FORGOTTEN_POWDER.get(), "Break the glowstone and you get Forgotten Powder."))));
 
-        // 3. How you got here.
+        out.add(new ArrayList<>(List.of(
+                head("The glitching chunks"),
+                BLANK,
+                body("The Limbo is not completely empty. Parts of it are copies of the real world."),
+                BLANK,
+                body("About 2 chunks in 100 copy the same chunk in the Overworld. About 1 in 100 copies the "
+                        + "Nether."),
+                BLANK,
+                body("The copy works BOTH ways. Break a block or empty a chest in one of these chunks and it "
+                        + "changes in the real world too."),
+                BLANK,
+                body("Living creatures do not cross. Only the world is shared."))));
+
         out.add(new ArrayList<>(List.of(
                 head("How you got here"),
                 BLANK,
-                item(ModItems.LIMBO_POTION.get(), "Drinking a Limbo Potion banishes you."),
-                item(ModItems.VOLATILE_LIMBO_POTION.get(), "The volatile one is thrown, and banishes an area."),
+                item(ModItems.LIMBO_POTION.get(), "Drink a Limbo Potion and you are sent here."),
+                item(ModItems.VOLATILE_LIMBO_POTION.get(),
+                        "Throw the volatile one to send everything near it."),
                 BLANK,
-                body("Falling out of the world drops you in here rather than killing you. Fall out of the "
-                        + "Limbo and you land in the End, and THAT one is fatal."),
+                body("If you fall out of the world, you land here instead of dying. If you fall out of the "
+                        + "Limbo, you land in the End, and that fall does kill you."),
                 BLANK,
-                body("A frame of fake obsidian, lit, opens a green portal. It travels sixteen blocks for "
-                        + "every one you walk."))));
+                body("You can also light a frame of fake obsidian. It opens a green portal. One block here is "
+                        + "sixteen blocks at home."))));
 
-        // 4. The gear line.
         out.add(new ArrayList<>(List.of(
                 head("Arming yourself"),
                 BLANK,
-                item(ModItems.LIMBO_MEMBRANE.get(), "Limbo Membrane, from a Limbo Phantom."),
-                item(ModItems.LIMBO_INGOT.get(), "Melt membrane into a Limbo Ingot."),
+                item(ModItems.LIMBO_MEMBRANE.get(), "Limbo Membrane comes from a Limbo Phantom."),
+                item(ModItems.LIMBO_INGOT.get(), "Melt the membrane into a Limbo Ingot."),
                 item(ModItems.LIMBO_SMITHING_TEMPLATE.get(),
-                        "The template. Rare, in village chests. This is the ingredient that costs you."),
-                BLANK,
+                        "The template is rare. Look in village chests."),
                 item(ModItems.LIMBO_PICKAXE.get(),
-                        "Smith netherite with all three. The pickaxe mines bedrock and reinforced deepslate."),
+                        "Smith netherite with all three. The pickaxe breaks bedrock."),
                 BLANK,
-                body("The full armour set grants knockback immunity, fire and fall immunity, and lets you "
-                        + "walk through bedrock. Press G for the banish beam."))));
+                body("The full armour set stops knockback, fire and fall damage, and lets you walk through "
+                        + "bedrock. Press G for the banish beam."))));
 
-        // 5. The Scythe.
         out.add(new ArrayList<>(List.of(
                 head("The Limbo Scythe"),
                 BLANK,
                 item(ModItems.LIMBO_SCYTHE.get(),
-                        "Smithed from a Limbo Hoe: amethyst at the corners, a golden apple above, soul sand "
-                        + "either side, and a second Smithing Template beneath."),
+                        "Made from a Limbo Hoe, with amethyst, a golden apple, soul sand and a second template."),
                 BLANK,
-                body("It works by souls. Reap anything with 20 hearts of maximum health or more and the scythe "
-                        + "keeps its soul. It holds eight."),
+                body("It collects souls. Kill a creature with 20 hearts or more and the scythe keeps its soul. "
+                        + "It holds eight."),
                 BLANK,
-                body("Spend a soul on a grave and the villager buried there walks back out of it. Only "
-                        + "defenders that fought are ever buried, so it can only return someone who earned "
-                        + "the headstone."))));
+                body("Spend a soul on a grave and the villager buried there comes back. Only defenders who "
+                        + "fought ever get a grave."))));
 
-        // 6. The Obliterator.
         out.add(new ArrayList<>(List.of(
                 head("The Obliterator"),
                 BLANK,
-                item(ModItems.LIMBO_SWORD.get(), "The Limbo Sword deals 9."),
-                item(ModItems.OBLITERATOR.get(),
-                        "The Obliterator deals 14. That is what the dragon egg in its recipe buys you."),
+                item(ModItems.LIMBO_SWORD.get(), "The Limbo Sword does 9 damage."),
+                item(ModItems.OBLITERATOR.get(), "The Obliterator does 14."),
                 BLANK,
                 body("That is all it does, until an Obliteration Furnace is burning somewhere in the world."),
                 BLANK,
-                body("From then on every hit also marks its victim. A marked creature that dies is struck off "
-                        + "the world's spawn tables entirely, for as long as that furnace stays lit."))));
+                body("After that, every hit marks the target. If a marked creature dies, that species stops "
+                        + "spawning for as long as the furnace stays lit."))));
 
-        // 7. What lives here.
         out.add(new ArrayList<>(List.of(
                 head("What lives here"),
                 BLANK,
-                body("Limbo Phantoms. Three times the size, glowing eyed, and they phase through bedrock. One "
-                        + "will grab you and haul you off through a wall."),
+                body("Limbo Phantoms. They are three times the normal size and they fly through bedrock."),
                 BLANK,
-                body("They hatch from the black and white eggs in the ancient debris nests on the largest "
-                        + "cubes. Break one without Silk Touch and you have made a phantom."),
+                body("One will pick you up and carry you off through a wall."),
                 BLANK,
-                body("Stay a while and you will be marked with Very Bad Omen. Carry that back to a village "
-                        + "and the Limbo comes with you."))));
+                body("They hatch from the black and white eggs in the nests on the largest cubes. Break an egg "
+                        + "without Silk Touch and you have made a phantom."),
+                BLANK,
+                body("Stay too long and you get Very Bad Omen. Carry it back to a village and the Limbo "
+                        + "follows you."))));
 
-        // 8. The Sage.
         out.add(new ArrayList<>(List.of(
                 head("The Limbo Sage"),
                 BLANK,
-                body("A black-robed villager whose workplace is the Village Brain Node itself. One per "
-                        + "village, and never more."),
+                body("A villager in a black robe. He works at the Village Brain Node, and each village has "
+                        + "only one."),
                 BLANK,
-                body("He sells Limbo goods, badly overpriced, from useless blocks up to randomly enchanted "
-                        + "Limbo tools. He will never sell you armour."),
+                body("He sells Limbo goods at high prices, from simple blocks up to enchanted Limbo tools. He "
+                        + "never sells armour."),
                 BLANK,
-                body("He is not defenceless. Anything above 10 hearts that comes near him gets a Volatile "
-                        + "Limbo Potion thrown at it."))));
+                body("He can defend himself. He throws a Volatile Limbo Potion at anything above 10 hearts."))));
 
         return out;
     }
