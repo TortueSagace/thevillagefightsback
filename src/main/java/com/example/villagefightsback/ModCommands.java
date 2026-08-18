@@ -73,7 +73,51 @@ public final class ModCommands {
         root.then(Commands.literal("clear_forced_chunks").requires(s -> s.hasPermission(OP))
                 .executes(c -> clearForcedChunks(c.getSource())));
 
+        // --- unstick: pull every villager / guard in range back to its brain node NOW, without waiting for
+        //     UnstickVillagerGoal's clock. The manual trigger for testing the rescue, and the get-out for a
+        //     village that has already lost units to a pit or a current. ---
+        root.then(Commands.literal("unstick").requires(s -> s.hasPermission(OP))
+                .executes(c -> unstick(c.getSource(), 64))
+                .then(Commands.argument("radius", IntegerArgumentType.integer(8, 256))
+                        .executes(c -> unstick(c.getSource(), IntegerArgumentType.getInteger(c, "radius")))));
+
         event.getDispatcher().register(root);
+    }
+
+    /**
+     * Pull every villager and guard within {@code radius} back to its brain node, whatever they are doing.
+     *
+     * <p>Deliberately unconditional: {@link com.example.villagefightsback.goal.UnstickVillagerGoal} has to be
+     * careful, because it fires on its own and a wrong teleport is a bug. This is somebody typing a command,
+     * so it just does it.
+     */
+    private static int unstick(CommandSourceStack src, int radius) {
+        net.minecraft.server.level.ServerLevel level = src.getLevel();
+        net.minecraft.core.BlockPos centre = net.minecraft.core.BlockPos.containing(src.getPosition());
+        java.util.List<net.minecraft.world.entity.PathfinderMob> units = level.getEntitiesOfClass(
+                net.minecraft.world.entity.PathfinderMob.class,
+                new net.minecraft.world.phys.AABB(centre).inflate(radius),
+                m -> m.isAlive() && (m instanceof net.minecraft.world.entity.npc.Villager
+                        || com.example.villagefightsback.Factions.isGuard(m)));
+
+        int moved = 0;
+        for (net.minecraft.world.entity.PathfinderMob m : units) {
+            net.minecraft.core.GlobalPos node = BrainNodeEvents.nearestNodeTo(level, m.blockPosition(), 100.0);
+            if (node == null) continue;
+            net.minecraft.core.BlockPos fit = BrainNodeEvents.nearestFit(level, node.pos(), m.getType(), 5);
+            if (fit == null) continue;
+            if (m instanceof net.minecraft.world.entity.npc.Villager v && v.isSleeping()) v.stopSleeping();
+            m.getNavigation().stop();
+            m.moveTo(fit.getX() + 0.5, fit.getY(), fit.getZ() + 0.5, m.getYRot(), 0.0F);
+            m.fallDistance = 0.0F;
+            moved++;
+        }
+        final int n = moved;
+        final int scanned = units.size();
+        src.sendSuccess(() -> Component.literal(n > 0
+                ? "§aPulled §e" + n + "§a of §e" + scanned + "§a unit(s) back to their brain node."
+                : "§7No unit within " + radius + " blocks could be moved (none found, or no brain node in range)."), true);
+        return moved;
     }
 
     // --- config command building -------------------------------------------------------------------

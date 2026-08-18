@@ -698,8 +698,13 @@ public final class ModBlocks {
                 acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT_LONG);  // ...and the long one
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
-                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS);         // Emerald Virus
-                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG);  // Emerald Virus II
+                // No tipped arrow for these two: the Emerald Virus Arrow below is the mod's own arrow
+                // for this effect, and listing vanilla's beside it put two near-identical arrows in
+                // the tab. Vanilla makes a tipped arrow available for ANY registered potion, so the
+                // "Arrow of Emerald Virus" still exists and still brews -- it is just not advertised
+                // here next to the real one.
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS, false);         // Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG, false);  // Emerald Virus II
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
                 for (DeferredHolder<Item, Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
@@ -800,11 +805,21 @@ public final class ModBlocks {
      */
     private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
             net.minecraft.core.Holder<net.minecraft.world.item.alchemy.Potion> potion) {
-        for (net.minecraft.world.item.Item base : new net.minecraft.world.item.Item[] {
-                net.minecraft.world.item.Items.POTION,
-                net.minecraft.world.item.Items.SPLASH_POTION,
-                net.minecraft.world.item.Items.LINGERING_POTION,
-                net.minecraft.world.item.Items.TIPPED_ARROW }) {
+        acceptPotionFamily(output, potion, true);
+    }
+
+    /** {@code withTippedArrow} false where the mod ships its own arrow item for the same effect. */
+    private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
+            net.minecraft.core.Holder<net.minecraft.world.item.alchemy.Potion> potion, boolean withTippedArrow) {
+        net.minecraft.world.item.Item[] bases = withTippedArrow
+                ? new net.minecraft.world.item.Item[] { net.minecraft.world.item.Items.POTION,
+                        net.minecraft.world.item.Items.SPLASH_POTION,
+                        net.minecraft.world.item.Items.LINGERING_POTION,
+                        net.minecraft.world.item.Items.TIPPED_ARROW }
+                : new net.minecraft.world.item.Item[] { net.minecraft.world.item.Items.POTION,
+                        net.minecraft.world.item.Items.SPLASH_POTION,
+                        net.minecraft.world.item.Items.LINGERING_POTION };
+        for (net.minecraft.world.item.Item base : bases) {
             ItemStack stack = new ItemStack(base);
             stack.set(net.minecraft.core.component.DataComponents.POTION_CONTENTS,
                     new net.minecraft.world.item.alchemy.PotionContents(potion));
