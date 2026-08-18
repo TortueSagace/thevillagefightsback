@@ -694,11 +694,12 @@ public final class ModBlocks {
 
                 // === Potions ===
                 output.accept(potionStack(ModPotions.IMMUNITY)); // Potion of Immunity
-                output.accept(potionStack(ModPotions.DARIUS_SPECIAL_EFFECT)); // Potion of Darius' Special Sauce
-                output.accept(potionStack(ModPotions.DARIUS_SPECIAL_EFFECT_LONG)); // Darius' Special Sauce (long)
+                acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT);       // Darius' Special Sauce
+                acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT_LONG);  // ...and the long one
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
-                output.accept(potionStack(ModPotions.EMERALD_VIRUS)); // Potion of Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS);         // Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG);  // Emerald Virus II
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
                 for (DeferredHolder<Item, Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
@@ -791,6 +792,25 @@ public final class ModBlocks {
                 output.accept(ModItems.RICKROLL_PAINTING.get());
             })
             .build());
+
+    /**
+     * Every form of one of our potions, for the creative tab: drinkable, splash, lingering, and the tipped
+     * arrow. All four are brewable and all four already have names in the lang file, so listing only the
+     * drinkable one meant the rest existed but could not be found without the vanilla search tab.
+     */
+    private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
+            net.minecraft.core.Holder<net.minecraft.world.item.alchemy.Potion> potion) {
+        for (net.minecraft.world.item.Item base : new net.minecraft.world.item.Item[] {
+                net.minecraft.world.item.Items.POTION,
+                net.minecraft.world.item.Items.SPLASH_POTION,
+                net.minecraft.world.item.Items.LINGERING_POTION,
+                net.minecraft.world.item.Items.TIPPED_ARROW }) {
+            ItemStack stack = new ItemStack(base);
+            stack.set(net.minecraft.core.component.DataComponents.POTION_CONTENTS,
+                    new net.minecraft.world.item.alchemy.PotionContents(potion));
+            output.accept(stack);
+        }
+    }
 
     /** A regular potion bottle carrying the given potion (1.21 stores it on the POTION_CONTENTS component). */
     private static ItemStack potionStack(net.minecraft.core.Holder<net.minecraft.world.item.alchemy.Potion> potion) {
