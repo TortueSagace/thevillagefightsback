@@ -13,12 +13,15 @@ Two knobs and why they are where they are:
          which is about the length of the original clip. The full 159 frames would make a strip eight
          times taller for motion nobody can see at this size.
 
-Also writes the inventory icon: one recognisable frame, at 16x16.
+The inventory icon is the SAME animated strip, not a still frame. Item sprites are stitched into the
+block atlas exactly like painting sprites are, so they animate from a .mcmeta the same way -- which means
+the item in the creative menu and in your hand plays the clip too.
 
 Outputs:
   assets/thevillagefightsback/textures/painting/rickroll.png        (32 x 32*COUNT strip)
   assets/thevillagefightsback/textures/painting/rickroll.png.mcmeta
-  assets/thevillagefightsback/textures/item/rickroll_painting.png   (16x16)
+  assets/thevillagefightsback/textures/item/rickroll_painting.png   (the same strip)
+  assets/thevillagefightsback/textures/item/rickroll_painting.png.mcmeta
 """
 import json
 import os
@@ -32,11 +35,11 @@ ASSETS = os.path.join(HERE, "..", "src", "main", "resources", "assets", "thevill
 OUT_TEX = os.path.join(ASSETS, "textures", "painting", "rickroll.png")
 OUT_META = OUT_TEX + ".mcmeta"
 OUT_ICON = os.path.join(ASSETS, "textures", "item", "rickroll_painting.png")
+OUT_ICON_META = OUT_ICON + ".mcmeta"
 
 FRAME = 32
 COUNT = 40
 FRAMETIME = 3
-ICON_FRAME = 0.45          # fraction through the clip to lift the inventory icon from
 
 
 def square(frame):
@@ -68,17 +71,18 @@ def main():
         json.dump(meta, fh, indent=2)
         fh.write("\n")
 
-    icon_src = frames[min(total - 1, int(total * ICON_FRAME))]
-    img = icon_src.convert("RGBA")
-    w, h = img.size
-    side = min(w, h)
-    icon = img.crop(((w - side) // 2, (h - side) // 2, (w - side) // 2 + side, (h - side) // 2 + side))
-    icon.resize((16, 16), Image.LANCZOS).save(os.path.normpath(OUT_ICON))
+    # The icon is the same strip and the same timing, so the item animates in the inventory too.
+    os.makedirs(os.path.dirname(os.path.normpath(OUT_ICON)), exist_ok=True)
+    strip.save(os.path.normpath(OUT_ICON))
+    with open(os.path.normpath(OUT_ICON_META), "w", encoding="utf-8") as fh:
+        json.dump(meta, fh, indent=2)
+        fh.write("\n")
 
     print("strip  %s (%dx%d, %d frames @ %d ticks)"
           % (os.path.normpath(OUT_TEX), FRAME, FRAME * COUNT, COUNT, FRAMETIME))
     print("mcmeta %s" % os.path.normpath(OUT_META))
-    print("icon   %s (16x16)" % os.path.normpath(OUT_ICON))
+    print("icon   %s (animated, same strip)" % os.path.normpath(OUT_ICON))
+    print("icon   %s" % os.path.normpath(OUT_ICON_META))
 
 
 if __name__ == "__main__":
