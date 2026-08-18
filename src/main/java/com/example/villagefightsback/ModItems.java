@@ -186,6 +186,11 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> LIMBO_BOOK = ITEMS.register("limbo_book",
             () -> new LimboBookItem(new Item.Properties().stacksTo(1)));
 
+    /** Rickroll painting: a 1x1 animated painting, creative-only, and purely a joke. No recipe, nothing drops
+     *  it, and it is the last entry in the creative tab. See {@link RickrollPaintingItem}. */
+    public static final DeferredHolder<Item, Item> RICKROLL_PAINTING = ITEMS.register("rickroll_painting",
+            () -> new RickrollPaintingItem(new Item.Properties()));
+
     public static final DeferredHolder<Item, Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",
             () -> new LimboScytheItem(new Item.Properties().stacksTo(1).fireResistant()));
 

@@ -31,6 +31,7 @@ public class TheVillageFightsBack {
         ModArmor.register(modBus);
         ModEffects.register(modBus);
         ModPotions.register(modBus);
+        ModPaintings.register(modBus);
         ModEntities.register(modBus);
         ModVillagers.register(modBus); // Limbo Sage profession + its POI
         ModParticles.register(modBus);

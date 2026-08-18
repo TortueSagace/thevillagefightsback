@@ -21,6 +21,9 @@ public final class ModLoot {
     public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<LimboTemplateLootModifier>> LIMBO_SMITHING_TEMPLATE =
             SERIALIZERS.register("limbo_smithing_template", () -> LimboTemplateLootModifier.CODEC);
 
+    public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<RickrollLootModifier>> RICKROLL =
+            SERIALIZERS.register("rickroll", () -> RickrollLootModifier.CODEC);
+
     public static void register(IEventBus modBus) {
         SERIALIZERS.register(modBus);
     }
