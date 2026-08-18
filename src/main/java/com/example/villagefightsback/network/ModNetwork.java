@@ -38,6 +38,7 @@ public final class ModNetwork {
         registrar.playToClient(ScytheSavePacket.TYPE, ScytheSavePacket.STREAM_CODEC, ScytheSavePacket::handle);
         registrar.playToClient(OpenReputationBookPacket.TYPE, OpenReputationBookPacket.STREAM_CODEC, OpenReputationBookPacket::handle);
         registrar.playToClient(ReversedGravityPacket.TYPE, ReversedGravityPacket.STREAM_CODEC, ReversedGravityPacket::handle);
+        registrar.playToClient(OpenLimboBookPacket.TYPE, OpenLimboBookPacket.STREAM_CODEC, OpenLimboBookPacket::handle);
         // The Obliteration Furnace screen snapshot. Its payload class deliberately lives beside the block in
         // the root package rather than here (see its javadoc), hence the qualified names.
         registrar.playToClient(com.example.villagefightsback.ObliterationFurnaceScreenPacket.TYPE,

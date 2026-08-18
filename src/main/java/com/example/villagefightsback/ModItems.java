@@ -181,6 +181,11 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> REPUTATION_BOOK = ITEMS.register("reputation_book",
             () -> new ReputationBookItem(new Item.Properties().stacksTo(1)));
 
+    /** Limbo Book: what the Limbo is, how to leave it, and what to arm yourself with. Handed over on a
+     *  player's first arrival there rather than at spawn. See {@link LimboBookItem} / {@link LimboBookEvents}. */
+    public static final DeferredHolder<Item, Item> LIMBO_BOOK = ITEMS.register("limbo_book",
+            () -> new LimboBookItem(new Item.Properties().stacksTo(1)));
+
     public static final DeferredHolder<Item, Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",
             () -> new LimboScytheItem(new Item.Properties().stacksTo(1).fireResistant()));
 

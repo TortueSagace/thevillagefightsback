@@ -110,6 +110,10 @@ at the bottom.
     randomly-enchanted limbo tools, never limbo armour) and hurls a Volatile Limbo Potion at enemies above
     20 HP on a 60s cooldown.
   - **Limbo Block** -- 9 limbo ingots, bedrock-tough, animated green, and a valid beacon base.
+  - **Limbo Book** -- handed over automatically the first time a player arrives, and only when a slot is
+    free (it never drops on the floor here). Nine pages: the way out in red on page one, then the
+    dimension, how you got in, the gear line, the Scythe, the Obliterator, what lives here, and the Sage.
+    Item icons are drawn inline. The Reputation Book's sibling, recoloured black.
   - A 9-node **advancement tree** for the Limbo journey (added **Dark deal**: buy from the Limbo Sage).
 
 ### 8. Expanded arsenal
