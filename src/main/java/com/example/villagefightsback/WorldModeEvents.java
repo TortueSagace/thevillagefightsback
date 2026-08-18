@@ -89,7 +89,11 @@ public final class WorldModeEvents {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         WorldModeData data = WorldModeData.get(server);
-        if (!data.isPending() || data.isChosen()) return; // already answered, or not a new world
+        // Ask whenever setup is UNFINISHED, which is not the same as "the mode is unanswered". The old test was
+        // `isPending() && !isChosen()`, and answering the mode clears pending -- so a player who answered the
+        // mode but never the difficulty was never asked again, and the world stayed held forever. An
+        // established save has setupPending false and is still never prompted.
+        if (!data.isSetupPending()) return;
         if (!canChoose(player)) return;                   // a guest on a dedicated server just plays the host's mode
         ModNetwork.sendTo(player, new OpenModeSelectPacket());
     }

@@ -76,7 +76,7 @@ public final class BrainNodeEvents {
         // faction off entirely. Deciding the world's rules and then applying them retroactively is not
         // possible; not starting until the question is answered is.
         WorldModeData mode = WorldModeData.getExisting(server);
-        if (mode != null && mode.isSetupPending()) return;
+        if (mode != null && mode.holdForSetup(server)) return;
 
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);

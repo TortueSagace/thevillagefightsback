@@ -63,7 +63,7 @@ public final class HostileStart {
         net.minecraft.server.MinecraftServer server = player.getServer();
         if (server != null) {
             WorldModeData data = WorldModeData.getExisting(server);
-            if (data != null && data.isSetupPending()) return;
+            if (data != null && data.holdForSetup(server)) return;
         }
         if (!Difficulty.current().placesBrainNodeAtSpawn()) return;
         if (!(player.level() instanceof ServerLevel level)) return;
