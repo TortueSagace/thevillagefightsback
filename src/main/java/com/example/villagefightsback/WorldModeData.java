@@ -34,6 +34,16 @@ public class WorldModeData extends SavedData {
     /** True from world creation until BOTH creation screens have been answered. */
     private boolean setupPending;
 
+    /**
+     * Server tick this world was first seen still waiting for an answer. Deliberately NOT saved: it restarts
+     * with the server, so a save that was left waiting gets one fresh grace period per load and then unsticks
+     * itself for good.
+     */
+    private transient long firstPendingTick = -1L;
+
+    /** How long the whole mod will hold for an answer before giving up and running on the config defaults. */
+    private static final long SETUP_GRACE_TICKS = 20L * 120L;   // 2 minutes
+
     public WorldModeData() {}
 
     /**
@@ -84,6 +94,35 @@ public class WorldModeData extends SavedData {
      * wanted. A save from before difficulties existed has this false and is unaffected.
      */
     public boolean isSetupPending() { return setupPending; }
+
+    /**
+     * Should the mod hold still and wait for the creation screens? True while they are genuinely being
+     * answered, false once they are -- or once we have waited long enough that they clearly never will be.
+     *
+     * <p><b>The grace period is the point.</b> {@code setupPending} is only ever cleared by an answer to the
+     * DIFFICULTY screen, and that answer comes from the client. Anything that stops it arriving -- another
+     * mod's GUI taking the screen, the player pressing escape, a disconnect between the two questions -- used
+     * to leave this true forever, and it is written to the save, so the world stayed that way across restarts.
+     * With the whole server tick gated on it, the result was a world where the mod simply did nothing: a bell
+     * raised no brain node, and a node placed by hand just sat there. Worse, the re-prompt on login keyed off
+     * {@code pending}, which the MODE answer had already cleared, so nothing ever asked again.
+     *
+     * <p>So the wait is now bounded. After {@value #SETUP_GRACE_TICKS} ticks the world starts anyway on the
+     * config defaults, and the flag is cleared and saved so it never blocks again.
+     */
+    public boolean holdForSetup(MinecraftServer server) {
+        if (!setupPending) return false;
+        long now = server.getTickCount();
+        if (firstPendingTick < 0L) firstPendingTick = now;
+        if (now - firstPendingTick < SETUP_GRACE_TICKS) return true;
+        setupPending = false;
+        setDirty();
+        TheVillageFightsBack.LOGGER.warn(
+                "[The Village Fights Back] the world-creation screens were never answered ({}s). Starting on the "
+                + "config defaults so the mod is not held back; use /thevillagefightsback config to change them.",
+                SETUP_GRACE_TICKS / 20L);
+        return false;
+    }
 
     /**
      * Record an answer to the DIFFICULTY screen, which is asked straight after the mode screen.
