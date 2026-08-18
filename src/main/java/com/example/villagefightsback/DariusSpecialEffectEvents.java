@@ -75,18 +75,32 @@ public final class DariusSpecialEffectEvents {
     public static void onEffectAdded(MobEffectEvent.Added event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
-        if (!target.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT)) return;
         MobEffectInstance inst = event.getEffectInstance();
         Holder<MobEffect> effect = inst.getEffect();
+
+        // Our own effect landing: never deflected, just noted.
+        //
+        // Tested BEFORE the holder check, and that ordering is the whole fix. Forge posts this event from
+        // addEffect BEFORE the instance is stored, so on a FIRST application hasEffect() is still false --
+        // the old order bailed one line early and the root advancement could never be earned by drinking it.
         if (effect.value() == ModEffects.DARIUS_SPECIAL_EFFECT.value()) {   // our own effect landing: noted, never deflected
             if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/root");
             return;
         }
+        if (!target.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT)) return;
         if (effect.value().getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
         if (!(event.getEffectSource() instanceof LivingEntity attacker) || attacker == target) return;
         MobEffectInstance copy = new MobEffectInstance(effect, inst.getDuration(), inst.getAmplifier(),
                 inst.isAmbient(), inst.isVisible(), inst.showIcon());
-        target.removeEffect(effect); // not on the protected holder...
+        // ...and NOT on the holder. Removed TWICE on purpose, because the two loaders disagree about when
+        // this event fires: Forge posts it from addEffect BEFORE the instance is stored, so removing it here
+        // removed nothing and vanilla then added it anyway -- the "deflection" quietly handed the attacker a
+        // copy while the holder kept the original. The immediate call covers the post-store ordering and the
+        // queued one covers the pre-store ordering; removing an effect that is not there is a no-op, so doing
+        // both is correct either way and does not depend on the loader.
+        target.removeEffect(effect);
+        net.minecraft.server.MinecraftServer server = target.level().getServer();
+        if (server != null) server.execute(() -> target.removeEffect(effect));
         attacker.addEffect(copy);    // ...on the attacker instead (no source -> never re-bounced)
         if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/own_medicine");
     }
