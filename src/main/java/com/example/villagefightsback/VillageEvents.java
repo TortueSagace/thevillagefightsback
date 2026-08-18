@@ -130,6 +130,14 @@ public final class VillageEvents {
             strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
         }
 
+        // A unit that falls in a hole and stops getting anywhere is lifted back to its node. Villagers AND
+        // guards -- both walk into pits, and neither noticed before. Idempotent, and cheap when nothing is
+        // stuck: see the goal's own note on why the gate order is the design.
+        if (!emeraldger && (mob instanceof Villager || isGuard(mob))
+                && !hasGoal(mob, com.example.villagefightsback.goal.UnstickVillagerGoal.class)) {
+            mob.goalSelector.addGoal(7, new com.example.villagefightsback.goal.UnstickVillagerGoal(mob));
+        }
+
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.
@@ -191,17 +199,17 @@ public final class VillageEvents {
      * a besieger's makeshift cover but cannot chew a hole in the wall it is defending.
      */
     private static void ensureVillageDigGoal(PathfinderMob mob) {
-        if (hasGoal(mob, com.example.villagefightsback.goal.EmeraldDigGoal.class)) return; // re-added each load
-        // toolUser: a village defender draws an emerald pickaxe/shovel/axe for whatever is in the way, and digs
-        // at that tool's real speed. The emerald faction keeps the bare-handed version it has always had.
+        // DIGGING IS GONE FROM ORDINARY VILLAGE LIFE. A guard used to carry EmeraldDigGoal at every stage,
+        // and the trade never paid: the goal only wakes when a pathfind fails, which turns out to happen
+        // constantly in a normal village -- around a fence, across a doorway, up its own wall -- so guards
+        // spent their days quarrying the ground they were standing on, and the holes they left were a bigger
+        // problem than the walls they got through.
         //
-        // Golems get it too, and they cannot hold a tool in any meaningful sense -- but EmeraldDigGoal reads the
-        // speed off whatever is in the main hand and falls back to bare hands, so a golem simply digs slowly
-        // rather than needing a second version of the goal. Being able to follow at all matters more than pace:
-        // a hunt that stops at the first wall is not a hunt.
-        mob.goalSelector.addGoal(5, new com.example.villagefightsback.goal.EmeraldDigGoal(mob, true));
+        // A raider still digs. NightmareRaid.send hands the goal out at the moment a unit is drafted, which
+        // is the one time in the mod when following a player through terrain is the entire point.
+        if (hasGoal(mob, com.example.villagefightsback.goal.CobwebCutGoal.class)) return; // re-added each load
         // Cutting free of a web is a separate problem from tunnelling to prey: no enemy and no failed path
-        // needed, just a caught defender. Priority 4, above digging, since being stuck beats being slow.
+        // needed, just a caught defender. It stays -- being stuck in a web is not digging.
         mob.goalSelector.addGoal(4, new com.example.villagefightsback.goal.CobwebCutGoal(mob));
     }
 

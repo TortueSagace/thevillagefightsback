@@ -137,7 +137,10 @@ public final class NightmareRaid {
             if (p.isSpectator() || !p.isAlive()) continue;
             // Only a Nightmare of the Village is hunted. Everybody else, however badly the village thinks of
             // them, is dealt with by the defenders who are already standing there.
-            if (!p.hasEffect(ModEffects.NIGHTMARE_OF_THE_VILLAGE.get())) continue;
+            // Tier TWO of Enemy of the Village, not a second effect. Amplifier 1 is what -500 reputation
+            // buys; amplifier 0 is an ordinary enemy, whom the defenders standing there already handle.
+            MobEffectInstance mark = p.getEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
+            if (mark == null || mark.getAmplifier() < 1) continue;
             double d = p.blockPosition().distSqr(node);
             if (d < bestD) { bestD = d; best = p; }
         }
@@ -182,13 +185,16 @@ public final class NightmareRaid {
      * rather than like a separate monster.
      */
     private static net.minecraft.world.entity.EntityType<?> unitFor(ServerLevel level, int stage, int index) {
-        if (stage >= 3 && index == 1) return net.minecraft.world.entity.EntityType.IRON_GOLEM;
-        if (index % 4 == 0) {
-            net.minecraft.world.entity.EntityType<?> guard =
-                    com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
-            if (guard != null) return guard;   // no MCA and no Guard Villagers: fall through to a villager
-        }
-        return com.example.villagefightsback.compat.MCACompat.villagerType(level.getRandom());
+        // GUARDS AND GOLEMS, never a plain villager. A raid used to be three quarters civilians, and it read
+        // as one: a crowd of farmers walking at you and losing. The village sends soldiers now, and the roster
+        // sizes in RAID_SIZE_BY_STAGE mean the same number of far more dangerous units.
+        if (index % 4 == 1) return net.minecraft.world.entity.EntityType.IRON_GOLEM;
+        net.minecraft.world.entity.EntityType<?> guard =
+                com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+        // Guard Villagers is a hard dependency, so this is unreachable in a correctly installed game. The
+        // fallback is a GOLEM rather than the villager it used to be: if the roster ever cannot field a
+        // soldier, it fields a heavier one rather than quietly breaking the rule this method exists to keep.
+        return guard != null ? guard : net.minecraft.world.entity.EntityType.IRON_GOLEM;
     }
 
     /**
@@ -259,6 +265,13 @@ public final class NightmareRaid {
         // also the honest one: it tells the hunted player exactly what the raid can see.
         p.addEffect(new MobEffectInstance(MobEffects.GLOWING, SCENT_TICKS, 0, false, false, true));
         joinScentTeam(p);   // the glow is drawn in the team colour; without a team it is white
+        // Thunder, and it has to reach the player rather than the muster point. level.playSound is
+        // position-attenuated, so a raid forming twenty blocks behind you is audible and one forming behind a
+        // hill is not -- and "the village has sent something after you" is not a fact that should depend on
+        // the wind. playNotifySound is delivered straight to this client at full volume. The positional crack
+        // over the muster point stays as well, so anyone else nearby hears where it came from.
+        p.playNotifySound(net.minecraft.sounds.SoundEvents.LIGHTNING_BOLT_THUNDER,
+                net.minecraft.sounds.SoundSource.WEATHER, 1.0F, 1.0F);
         p.sendSystemMessage(Component.literal("Prepare...").withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
     }
 

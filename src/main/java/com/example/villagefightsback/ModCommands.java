@@ -61,6 +61,12 @@ public final class ModCommands {
         root.then(Commands.literal("tp_to_nearest_node").requires(s -> s.hasPermission(OP))
                 .executes(c -> tpToNearestNode(c.getSource())));
 
+        // --- firework: play the village's victory fanfare where the sender stands. ---
+        root.then(Commands.literal("firework").requires(s -> s.hasPermission(OP))
+                .executes(c -> firework(c.getSource(), 5))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 32))
+                        .executes(c -> firework(c.getSource(), IntegerArgumentType.getInteger(c, "count")))));
+
         // --- clear_forced_chunks: release every force-loaded chunk in the current dimension. Cleans up chunks
         //     orphaned by air strikes that were interrupted before they could free their force-load (those kept
         //     villages/guards ticking forever). NOTE: also clears any chunks you set with vanilla /forceload. ---
@@ -181,6 +187,22 @@ public final class ModCommands {
         int count = forced.size();
         src.sendSuccess(() -> Component.literal("§aReleased §e" + count
                 + "§a force-loaded chunk(s) in this dimension."), true);
+        return 1;
+    }
+
+    /**
+     * Fire the village's celebration rockets over the sender.
+     *
+     * <p>The same fanfare the village gives a finished wall and a new Hero of the Village, on demand, for
+     * showing the thing off without having to earn it first. It reuses {@code launchCelebration} rather than
+     * building its own rockets, so the command can never drift from what the village actually does.
+     */
+    private static int firework(CommandSourceStack src, int count)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = src.getPlayerOrException();
+        BrainNodeEvents.launchCelebration(player.serverLevel(), player.position().add(0.0, 1.0, 0.0), count);
+        src.sendSuccess(() -> Component.literal("§aLaunched §e" + count + "§a firework"
+                + (count == 1 ? "" : "s") + "."), false);
         return 1;
     }
 

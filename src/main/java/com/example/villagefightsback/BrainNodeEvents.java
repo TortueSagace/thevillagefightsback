@@ -1536,7 +1536,7 @@ public final class BrainNodeEvents {
      *
      * @return null when nothing within {@code max} fits, so the caller can SKIP the spawn instead of choking it
      */
-    static BlockPos nearestFit(ServerLevel level, BlockPos center, EntityType<?> type, int max) {
+    public static BlockPos nearestFit(ServerLevel level, BlockPos center, EntityType<?> type, int max) {
         int[] dys = {0, -1, -2, 1};
         for (int r = 1; r <= max; r++) {
             for (int dx = -r; dx <= r; dx++) {
@@ -1571,6 +1571,17 @@ public final class BrainNodeEvents {
     }
 
     /** Find the nearest brain node to {@code pos} (same dimension) within {@code radius}; null if none. */
+    /**
+     * The nearest brain node to {@code pos} within {@code radius}, or null.
+     *
+     * <p>Public wrapper so goals can ask without holding a {@link BrainNodeData} of their own. It fetches the
+     * saved data itself, so callers on a cold path stay one line -- do not call this from anything that runs
+     * per-tick.
+     */
+    public static GlobalPos nearestNodeTo(ServerLevel level, BlockPos pos, double radius) {
+        return nearestBrainNode(BrainNodeData.get(level.getServer()), level, pos, radius);
+    }
+
     static GlobalPos nearestBrainNode(BrainNodeData data, ServerLevel level, BlockPos pos, double radius) {
         double best = radius * radius;
         GlobalPos nearest = null;

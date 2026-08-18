@@ -249,18 +249,16 @@ public class ReputationData extends SavedData {
             player.removeEffect(MobEffects.HERO_OF_THE_VILLAGE);
         }
 
+        // ONE effect, TWO TIERS. Nightmare of the Village used to be a second registered effect riding on top
+        // of Enemy, and carrying two markers for one idea cost more than it bought: two icons stacked in the
+        // HUD saying the same thing, two things to keep in step on every derive, and -- because nobody ever
+        // drew it -- the second one rendered as the missing-texture checker. It is an AMPLIFIER now. Vanilla
+        // renders it as "Enemy of the Village II", which is exactly what it means.
         boolean enemy = reputation <= ENEMY_AT;
         if (enemy) {
-            hold(player, ModEffects.ENEMY_OF_THE_VILLAGE.get(), 0);
+            hold(player, ModEffects.ENEMY_OF_THE_VILLAGE.get(), reputation <= NIGHTMARE_AT ? 1 : 0);
         } else if (player.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get())) {
             player.removeEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get());
-        }
-
-        boolean nightmare = reputation <= NIGHTMARE_AT;
-        if (nightmare) {
-            hold(player, ModEffects.NIGHTMARE_OF_THE_VILLAGE.get(), 0);
-        } else if (player.hasEffect(ModEffects.NIGHTMARE_OF_THE_VILLAGE.get())) {
-            player.removeEffect(ModEffects.NIGHTMARE_OF_THE_VILLAGE.get());
         }
     }
 

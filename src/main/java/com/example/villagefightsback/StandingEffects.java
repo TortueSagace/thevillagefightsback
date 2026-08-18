@@ -94,8 +94,7 @@ public final class StandingEffects {
         if (ReputationData.isDeriving()) return;                          // our own re-derive
         var effect = event.getEffectInstance().getEffect();
         if (effect == net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE
-                || effect == ModEffects.ENEMY_OF_THE_VILLAGE.get()
-                || effect == ModEffects.NIGHTMARE_OF_THE_VILLAGE.get()) {
+                || effect == ModEffects.ENEMY_OF_THE_VILLAGE.get()) {
             event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
         }
     }
