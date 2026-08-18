@@ -244,7 +244,7 @@ public class ReputationBookScreen extends Screen {
                     body("Every defender it has will attack you on sight. Nothing else will: hit a villager "
                             + "once and you have paid for it, not declared war."),
                     BLANK,
-                    bad("-500   Nightmare of the Village"),
+                    bad("-500   Enemy of the Village II"),
                     body("At every sunset the village raises a raid and sends it after you, wherever you "
                             + "are. It stops when you climb back above -500."),
                     BLANK,

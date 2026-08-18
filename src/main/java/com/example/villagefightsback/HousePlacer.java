@@ -114,6 +114,24 @@ public final class HousePlacer {
         int ox = center.getX() - hx, oy = center.getY() - 1 - floorLayer, oz = center.getZ() - hz;
         BlockPos offset = new BlockPos(ox, oy, oz);
 
+        // 0a) REFUSE outright if this footprint would eat a building that already exists.
+        //
+        // The carve below turns the whole footprint to air, and until this check existed it consulted nothing:
+        // the only thing it spared was a brain node. So a settler that picked a spot on top of a house simply
+        // deleted the house, and the death fallback -- which drops a building wherever a settler happened to
+        // die -- could do it in the middle of the village. Every route into a build comes through here, so one
+        // refusal covers all of them, which no amount of vetting inside the settler goals could.
+        //
+        // BEFORE the addBox below, and that ordering is load-bearing: after it, the build would always find
+        // its own freshly-registered box and refuse itself.
+        if (com.example.villagefightsback.infection.StructureZones.get(level)
+                .intersectsForeign(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1)) {
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] Refused a build at {}: it would have carved through a building "
+                    + "that is already there.", center);
+            return false;
+        }
+
         // 0) Claim this exact volume as PROTECTED: block infection (fertile spread + emerald infested paths) is
         // refused inside it from now on, so the village never digests its own buildings. Every structure the
         // village raises comes through here -- Blue TNT houses, Green TNT towers, and the StructureTnt node

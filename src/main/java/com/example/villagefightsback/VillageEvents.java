@@ -128,6 +128,14 @@ public final class VillageEvents {
             strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
         }
 
+        // A unit that falls in a hole and stops getting anywhere is lifted back to its node. Villagers AND
+        // guards -- both walk into pits, and neither noticed before. Idempotent, and cheap when nothing is
+        // stuck: see the goal's own note on why the gate order is the design.
+        if (!emeraldger && (mob instanceof Villager || isGuard(mob))
+                && !hasGoal(mob, com.example.villagefightsback.goal.UnstickVillagerGoal.class)) {
+            mob.goalSelector.addGoal(7, new com.example.villagefightsback.goal.UnstickVillagerGoal(mob));
+        }
+
         // A wall builder must not ignore a point-blank threat: every villager carries this (dormant) goal;
         // it only fires when the villager is a builder and a hostile is within ~3 blocks, interrupting the
         // build (priority 2, above WallBuildGoal's 3) until the threat is dead or leaves. Idempotent.

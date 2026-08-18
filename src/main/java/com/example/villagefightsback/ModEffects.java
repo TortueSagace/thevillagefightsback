@@ -26,14 +26,11 @@ public final class ModEffects {
             EFFECTS.register("emerald_diarrhea", EmeraldDiarrheaEffect::new);
 
     /** "Enemy of the Village": marks a player who attacked the village so defenders hunt them; 20 min, cleared
-     *  on death, refreshed by re-offending (see {@link EnemyOfVillageEffect} / {@link VillageEvents}). */
+     *  on death, refreshed by re-offending. TWO TIERS: amplifier 0 is an ordinary enemy; amplifier 1 is what
+     *  -500 reputation buys, and is what the sunset raid hunts (see {@link EnemyOfVillageEffect} /
+     *  {@link ReputationData} / {@link NightmareRaid}). */
     public static final DeferredHolder<MobEffect, MobEffect> ENEMY_OF_THE_VILLAGE =
             EFFECTS.register("enemy_of_the_village", EnemyOfVillageEffect::new);
-
-    /** "Nightmare of the Village": Enemy, and hunted at every sunset. Derived from reputation at -500
-     *  (see {@link NightmareOfVillageEffect} / {@link ReputationData} / {@link NightmareRaid}). */
-    public static final DeferredHolder<MobEffect, MobEffect> NIGHTMARE_OF_THE_VILLAGE =
-            EFFECTS.register("nightmare_of_the_village", NightmareOfVillageEffect::new);
 
     /** "Nightmare scent": the mark the brain node puts on a player at sunset in Nightmare difficulty, and the
      *  thing a hunting raid follows. 10 min, uncurable by milk or death (see {@link NightmareScentEffect}). */

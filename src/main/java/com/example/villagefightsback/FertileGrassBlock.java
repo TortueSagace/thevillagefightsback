@@ -73,6 +73,13 @@ public class FertileGrassBlock extends BushBlock {
         BlockState converted = BlockMatcher.convertedState(soil, false); // fertile (not rich)
         if (converted == null || converted.is(soil.getBlock())) return;
         level.setBlock(below, converted, 3);
-        InfectionData.get(level).incConverted();
+        InfectionData data = InfectionData.get(level);
+        data.incConverted();
+        // AND join the frontier, which this never did. A block converted here but left out of the frontier is
+        // an orphan: the engine never walks it, so it never spreads -- the whole point of fertilizing the soil
+        // under a plant -- and when something breaks it, the branch in InfectionManager that notices a lost
+        // cell (the only caller of decConverted) never runs either, so the converted tally drifts up forever
+        // and inflates both the brain node's count and the footprint cap.
+        data.addFrontier(below.asLong());
     }
 }

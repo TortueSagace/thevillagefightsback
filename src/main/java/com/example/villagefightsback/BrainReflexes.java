@@ -235,7 +235,7 @@ public final class BrainReflexes {
         // its cost. We never give up while armed; we just keep waiting for the gems.
         if (s.firstHurtArmed) {
             if (econ.spendEmeralds(10)) {
-                ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_YELLOW);
+                ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_YELLOW, 10);
                 s.firstHurtArmed = false;
                 s.firstHurtFiredStage = stage;
                 log(s, level, "Settler sent: Golem Factory (-10)");
@@ -278,7 +278,7 @@ public final class BrainReflexes {
         if (stage >= 3 && s.pendingGolemKill) {
             s.pendingGolemKill = false;
             if (now >= s.cdLure && beds < BED_CAP && econ.spendEmeralds(12)) {
-                ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_PURPLE);
+                ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_PURPLE, 12);
                 s.cdLure = now + cd(CD_30M);
                 log(s, level, "Settler sent: Lure Tower (-12)");
             }
@@ -286,7 +286,7 @@ public final class BrainReflexes {
 
         // A5 (stage 2+): 3+ guards killed in the past 10 min -> a settler builds a Barracks (orange TNT). 12 gems, 30-min cd, off at 100+ beds.
         if (stage >= 2 && s.guardKills.size() >= 3 && now >= s.cdBarracks && beds < BED_CAP && econ.spendEmeralds(12)) {
-            ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_ORANGE);
+            ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_ORANGE, 12);
             s.cdBarracks = now + cd(CD_30M); // rolling-window + 30-min cooldown (kills age out of the 10-min window)
             log(s, level, "Settler sent: Barracks (-12)");
         }
@@ -313,7 +313,7 @@ public final class BrainReflexes {
                 && econ.spendEmeralds(5)) {
             spawnInside(level, brain, com.example.villagefightsback.compat.MCACompat
                     .villagerType(level.getRandom()));
-            ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_BLUE);
+            ExpansionManager.summonReflexSettler(level, gp, inner, ExpansionManager.TNT_BLUE, 5);
             s.cdPeacetime = now + cd(CD_10M);
             log(s, level, "Villager + house settler (-5)");
         }
