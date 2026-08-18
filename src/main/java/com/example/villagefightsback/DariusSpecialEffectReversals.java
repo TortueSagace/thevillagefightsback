@@ -114,6 +114,26 @@ public final class DariusSpecialEffectReversals {
             return;
         }
 
+        // An anvil or a stalactite dropped on the holder destroys ITSELF. The falling block is the damage's
+        // direct entity, so discarding it stops the fall dead and it never lands.
+        if (src.is(DamageTypes.FALLING_ANVIL) || src.is(DamageTypes.FALLING_STALACTITE)) {
+            event.setCanceled(true);
+            if (src.getDirectEntity() != null) src.getDirectEntity().discard();
+            grant(victim, "darius_special_effect/fall");
+            return;
+        }
+
+        // Landing ON a pointed dripstone shatters the dripstone instead. MUST be tested before IS_FALL:
+        // vanilla puts STALAGMITE inside that tag, so otherwise this falls through to the generic terrain
+        // shatter and the spike that did the damage is left standing.
+        if (src.is(DamageTypes.STALAGMITE)) {
+            event.setCanceled(true);
+            breakTouching(sl, victim, Blocks.POINTED_DRIPSTONE);
+            victim.fallDistance = 0.0F;
+            grant(victim, "darius_special_effect/fall");
+            return;
+        }
+
         // Fall damage hurts gravity.
         if (src.is(DamageTypeTags.IS_FALL)) {
             event.setCanceled(true);
