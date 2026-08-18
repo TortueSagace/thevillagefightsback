@@ -102,7 +102,9 @@ public class ExpansionSettlerGoal extends Goal {
         double dx = spot.getX() - brainNode.getX();
         double dz = spot.getZ() - brainNode.getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
-        return dist >= wallRadius + WALL_CLEAR && ExpansionManager.isClear(level, spot, MIN_SPACING);
+        return dist >= wallRadius + WALL_CLEAR && ExpansionManager.isClear(level, spot, MIN_SPACING)
+                // isClear only knows this wave's own claims; this one knows what is already built.
+                && ExpansionManager.footprintFree(level, spot, 8);
     }
 
     private void finish() {

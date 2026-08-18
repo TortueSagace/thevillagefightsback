@@ -55,13 +55,28 @@ public class FoundingSettlerGoal extends Goal {
         startTick = villager.tickCount;
     }
 
+    /** How long the settler keeps looking for somewhere legal before it gives up and stays a villager. */
+    private static final int MAX_SEEK = 300;
+
     @Override
     public void tick() {
         if (villager.tickCount - startTick < SCATTER_TICKS) {
             scatter();
-        } else {
-            placeTnt();
+            return;
+        }
+        // THE HOUSE ONLY GOES DOWN SOMEWHERE LEGAL. This used to place unconditionally the moment the scatter
+        // ran out, wherever the villager's feet happened to be -- on top of an existing house, inside the
+        // wall, halfway up a roof -- and the build then carved whatever was there to air. A settler that has
+        // not found a spot keeps wandering instead, and if it never finds one it simply goes back to being an
+        // ordinary villager. A village that gains no house is a far smaller loss than one that loses a house.
+        if (placeTnt()) {
             placed = true;
+            return;
+        }
+        scatter();
+        if (villager.tickCount - startTick > SCATTER_TICKS + MAX_SEEK) {
+            villager.getPersistentData().remove(com.example.villagefightsback.FoundingManager.NBT_FOUNDING);
+            placed = true;   // ends the goal; nothing was built
         }
     }
 
@@ -112,14 +127,17 @@ public class FoundingSettlerGoal extends Goal {
         return best;
     }
 
-    private void placeTnt() {
+    /** @return true if the house was actually placed; false means "not here, keep looking". */
+    private boolean placeTnt() {
         ServerLevel level = (ServerLevel) villager.level();
         BlockPos pos = keepClearOfBrainNode(villager.blockPosition());
+        if (!com.example.villagefightsback.ExpansionManager.footprintFree(level, pos, 8)) return false;
         // door faces the brain node (village centre)
         Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
         if (face.getAxis().isVertical()) face = villager.getDirection();
         BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, face);
         level.setBlock(pos, tnt, 3); // detonates instantly on placement -> builds the house (no fuse, no fleeing)
+        return true;
     }
 }

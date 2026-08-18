@@ -41,6 +41,8 @@ public final class ExpansionManager {
 
     /** Marks a villager as an unplaced expansion settler. Removed once it drops its TNT (or on the death fallback). */
     public static final String NBT_EXPANSION = "vgun_expansion";
+    /** Gems the brain node paid for this settler, so a settler that cannot build can hand them back. 0 = free. */
+    public static final String NBT_COST = "vgun_settler_cost";
     public static final String NBT_TNT = "vgun_exp_tnt";   // 0 = blue (house), 1 = green (tower)
     public static final String NBT_BRAIN_NODE = "vgun_exp_gm"; // packed brainNode pos, for door facing
 
@@ -111,6 +113,11 @@ public final class ExpansionManager {
     // --- spawning ------------------------------------------------------------------------------------
     private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos gm,
                                      double angle, double wallRadius, int color, int delay) {
+        spawnSettler(level, spot, gm, angle, wallRadius, color, delay, 0);
+    }
+
+    private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos gm,
+                                     double angle, double wallRadius, int color, int delay, int cost) {
         // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
         Villager v = com.example.villagefightsback.compat.MCACompat.createVillager(level);
         if (v == null) return;
@@ -120,6 +127,7 @@ public final class ExpansionManager {
         v.getPersistentData().putBoolean(NBT_EXPANSION, true);
         v.getPersistentData().putInt(NBT_TNT, color);
         v.getPersistentData().putLong(NBT_BRAIN_NODE, gm.asLong());
+        if (cost > 0) v.getPersistentData().putInt(NBT_COST, cost);
         com.example.villagefightsback.compat.VillagerRoleTags.mirror(v); // survive an MCA replacement we did not cause
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant villager goals
         v.goalSelector.addGoal(1, new ExpansionSettlerGoal(v, gm, angle, wallRadius, color, delay));
@@ -149,7 +157,14 @@ public final class ExpansionManager {
     /** A brain-node reflex dispatches ONE settler that walks out past the wall and founds the structure for
      *  {@code tntColor} (golem factory / barracks / lure tower / house). Reuses the full expansion machinery
      *  (clear-spot seeking, no bulldozing, death fallback). No-op if no spot just outside the wall is found. */
+    /** The free form: the stage-3 wave and mega-expansion, which cost the node nothing. */
     public static void summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor) {
+        summonReflexSettler(level, brainNode, plan, tntColor, 0);
+    }
+
+    /** {@code cost} gems were debited for this settler; it hands them back if it never manages to build. */
+    public static void summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor,
+                                           int cost) {
         BlockPos gm = brainNode.pos();
         double wallRadius = wallRadius(plan, gm);
         double angle = level.random.nextDouble() * 2.0 * Math.PI;
@@ -157,7 +172,46 @@ public final class ExpansionManager {
         BlockPos spot = surfaceStandable(level, aim, SPAWN_SEARCH);
         if (spot == null) return;
         int delay = STAGGER_BASE + level.random.nextInt(STAGGER_RAND);
-        spawnSettler(level, spot, gm, angle, wallRadius, tntColor, delay);
+        spawnSettler(level, spot, gm, angle, wallRadius, tntColor, delay, cost);
+    }
+
+    /**
+     * Would a building centred here fit without eating one that already exists?
+     *
+     * <p>{@link #isClear} answers a different and much weaker question: it consults a static, transient map of
+     * THIS WAVE's own pending claims, which is empty after a restart and has never known anything about the
+     * houses already standing in the world. This asks the durable record instead.
+     *
+     * <p>{@code radius} is the half-extent to reserve. 8 covers the largest template (a 15x15 tower) without
+     * threading the real template size through every settler goal, none of which knows it.
+     */
+    public static boolean footprintFree(ServerLevel level, BlockPos centre, int radius) {
+        return !com.example.villagefightsback.infection.StructureZones.get(level).intersectsForeign(
+                centre.getX() - radius, centre.getY() - 2, centre.getZ() - radius,
+                centre.getX() + radius, centre.getY() + 12, centre.getZ() + radius);
+    }
+
+    /**
+     * Hand a dead or dismissed settler's gems back to the node that paid for them.
+     *
+     * <p>Modelled on {@code GeneralDariusEntity.refundAndDespawn}: check the node is still there before
+     * crediting it, so a refund to a village that has since been destroyed is dropped rather than
+     * materialising an economy for a node that no longer exists.
+     *
+     * <p>Founding and stage-3 settlers are FREE and store no cost, so this is a no-op for them -- which is
+     * deliberate. They are not despawned either: a settler that cannot find a spot simply goes back to being
+     * an ordinary villager. Deleting one would be population loss in the phase where the village can least
+     * afford it, and there is nothing to refund to justify it.
+     */
+    static void refund(ServerLevel level, Villager v, BlockPos brainNode, String reason) {
+        int cost = v.getPersistentData().getInt(NBT_COST);
+        if (cost <= 0) return;
+        v.getPersistentData().remove(NBT_COST);
+        GlobalPos gp = GlobalPos.of(level.dimension(), brainNode);
+        BrainNodeData data = BrainNodeData.get(level.getServer());
+        if (!data.blocks().contains(gp)) return;   // the village it belonged to is gone
+        data.econ(gp).addEmeralds(cost);
+        com.example.villagefightsback.BrainReflexes.logExternal(level, brainNode, reason + " (+" + cost + ")");
     }
 
     // --- build-spot claims (so settlers don't drop overlapping buildings) ----------------------------
@@ -198,7 +252,16 @@ public final class ExpansionManager {
         int color = v.getPersistentData().getInt(NBT_TNT);
         BlockPos gm = BlockPos.of(v.getPersistentData().getLong(NBT_BRAIN_NODE));
         v.getPersistentData().remove(NBT_EXPANSION); // consume so it can't fire twice
-        placeTnt(level, v.blockPosition(), color, gm); // wherever it died, per spec
+
+        // ONLY WHERE IT WOULD HAVE BEEN LEGAL ANYWAY. This used to drop the building wherever the settler
+        // happened to fall, which is the worst case in the whole feature: a settler killed inside its own
+        // village raised a house on top of the one it was standing next to, and the build carved that one to
+        // air. A death is not a permit. If the spot is not free, the gems go back instead.
+        if (footprintFree(level, v.blockPosition(), 8)) {
+            placeTnt(level, v.blockPosition(), color, gm);
+            return;
+        }
+        refund(level, v, gm, "Settler lost, no room to build");
     }
 
     // --- helpers -------------------------------------------------------------------------------------

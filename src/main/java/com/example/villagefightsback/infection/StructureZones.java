@@ -81,6 +81,43 @@ public class StructureZones extends SavedData {
         return false;
     }
 
+    /**
+     * Does the box {@code (minX..maxZ)} overlap a protected structure that is not itself?
+     *
+     * <p>Asked by {@code HousePlacer} before it builds. A build carves its whole footprint to air, and until
+     * this existed it consulted nothing -- so a house dropped next to another house simply deleted the
+     * neighbour, which is the single most destructive thing the mod could do to a village it had just spent
+     * an hour raising.
+     *
+     * <p>"Not itself" is load-bearing. {@link #addBox} deliberately drops an exact duplicate so a rebuild on
+     * the same footprint works; a byte-identical box must therefore read as NOT foreign here, or that rebuild
+     * would be refused forever instead.
+     *
+     * <p>Cold path -- once per build, never per block -- so it walks the chunk span plainly.
+     */
+    public boolean intersectsForeign(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        if (byChunk.isEmpty()) return false;
+        int x0 = Math.min(minX, maxX), y0 = Math.min(minY, maxY), z0 = Math.min(minZ, maxZ);
+        int x1 = Math.max(minX, maxX), y1 = Math.max(minY, maxY), z1 = Math.max(minZ, maxZ);
+        for (int cx = x0 >> 4; cx <= (x1 >> 4); cx++) {
+            for (int cz = z0 >> 4; cz <= (z1 >> 4); cz++) {
+                int[] run = byChunk.get(ChunkPos.asLong(cx, cz));
+                if (run == null) continue;
+                for (int i = 0; i < run.length; i += STRIDE) {
+                    if (run[i] == x0 && run[i + 1] == y0 && run[i + 2] == z0
+                            && run[i + 3] == x1 && run[i + 4] == y1 && run[i + 5] == z1) {
+                        continue;   // this very footprint: a rebuild, not a neighbour
+                    }
+                    if (x1 < run[i] || x0 > run[i + 3]) continue;
+                    if (y1 < run[i + 1] || y0 > run[i + 4]) continue;
+                    if (z1 < run[i + 2] || z0 > run[i + 5]) continue;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Convenience for the cold call sites that only have a BlockPos. */
     public boolean contains(BlockPos pos) {
         return contains(pos.getX(), pos.getY(), pos.getZ());
