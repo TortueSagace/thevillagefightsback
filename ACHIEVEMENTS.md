@@ -128,6 +128,20 @@ at the bottom.
   damage -- carving a fiery pit the enemy falls into.
 - **Emerald Hammer**: the 3x3 now orients to the actual mined face, works in creative, and costs one
   durability per 3x3 (not nine).
+- **Darius' Special Sauce** (was Karat's Will; the registry id is unchanged, so old bottles still work). The
+  effect, now **Darius Special Power**, reverses *everything* rather than just attacks: drowning deletes the
+  water and refills the air bar, a cactus breaks itself, fire and lava are wiped from a 5x5 around the holder,
+  suffocation breaks the offending block, fall damage shatters a 3-block sphere of anything softer than
+  obsidian, and an ownerless blast (redstone TNT, a bed, an anchor) can no longer kill. Falling out of the
+  world flips gravity for the **whole dimension** for 5 seconds -- creatures, items and falling blocks all rise
+  and every screen turns upside down -- in every dimension except the Limbo, whose void is a doorway. Icon is a
+  Reverse Uno card. An 11-node **advancement branch** covers acquiring it plus each of the ten reversals
+  (**No U**, **A Taste Of Your Own Medicine**, **Water Is Drowning**, **Prickly Situation**, **Fire Burns
+  Itself**, **Gravity Hurts**, **Blocks Self-Suffocate**, **Lava Burns Itself**, **Gravity Breaks**, **Return
+  To Sender**).
+- **Every villager and guard can MLG water-clutch** a fall, from stage 1, not just the stage-3 knights who
+  could already do it mid-combat. They drop a water source at their feet on landing and pick it back up. This
+  is what keeps a village standing when reversed gravity drops everything at once.
 - **Drops**: villagers/guards have a 5% chance to drop their used weapon on death; guards also drop 1-5 wind
   charges. The native mace + wind charges + mace-enchant books are sold by the **Weaponsmith** (not craftable).
 

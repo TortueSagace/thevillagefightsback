@@ -2,9 +2,11 @@ package com.example.villagefightsback.network;
 
 import com.example.villagefightsback.TheVillageFightsBack;
 
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -89,6 +91,11 @@ public final class ModNetwork {
                 .decoder(OpenReputationBookPacket::decode)
                 .consumerMainThread(OpenReputationBookPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(ReversedGravityPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ReversedGravityPacket::encode)
+                .decoder(ReversedGravityPacket::decode)
+                .consumerMainThread(ReversedGravityPacket::handle)
+                .add();
     }
 
     /** Send a packet to one player (server -> client). */
@@ -99,5 +106,10 @@ public final class ModNetwork {
     /** Send a packet to every client tracking {@code entity} (server -> clients), including the entity itself. */
     public static void sendToTracking(Entity entity, Object msg) {
         CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), msg);
+    }
+
+    /** Send a packet to every player currently in {@code dim} (server -> clients). */
+    public static void sendToDimension(ResourceKey<Level> dim, Object msg) {
+        CHANNEL.send(PacketDistributor.DIMENSION.with(() -> dim), msg);
     }
 }

@@ -50,6 +50,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
     public static final ForgeConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
     public static final ForgeConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
+    public static final ForgeConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     public static final ForgeConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
@@ -151,6 +152,12 @@ public final class Config {
         GENERAL_DARIUS_REMAINS = b
                 .comment("If true, General Darius never returns to the brain node, even after every 100+ HP enemy is cleared.")
                 .define("general_darius_remains", true);
+        REVERSED_GRAVITY_FLIPS_SCREEN = b
+                .comment("If true, the five seconds of reversed gravity that follow a Special Sauce holder falling out of",
+                        "the world also turn every player's view upside down. The physics are unaffected either way -- this",
+                        "only controls the camera. Set false if a 180 degree world roll makes anyone on the server queasy.",
+                        "Default: true.")
+                .define("reversed_gravity_flips_screen", true);
         DARIUS_INFLICTS_OBLITERATION = b
                 .comment("If true, every one of General Darius's blows marks its victim with Obliteration, and a stage-4 brain",
                         "node raises an Obliteration Furnace beside itself and pays 1 emerald per minute to keep it lit (never",

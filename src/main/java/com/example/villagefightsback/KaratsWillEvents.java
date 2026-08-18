@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -18,9 +19,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Drives the "Karat's Will" potion effect ({@link KaratsWillEffect}): while a creature holds it, it DEFLECTS the
+ * Drives the potion effect shown in game as "Darius' Special Sauce" / "Darius Special Power"
+ * ({@link KaratsWillEffect}). The registry id is still {@code karats_will} on purpose: freezing it keeps
+ * every bottle already sitting in a world working, so only the display strings changed.
+ *
+ * <p>While a creature holds it, it DEFLECTS the
  * whole attack -- combat damage is dealt to the attacker instead, and any harmful status effect an attacker
  * would inflict lands on the attacker instead. Also lets the priest (cleric) villager sell the potion.
+ *
+ * <p>Everything the WORLD does to the holder is reversed too, in {@link KaratsWillReversals}.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class KaratsWillEvents {
@@ -43,6 +50,7 @@ public final class KaratsWillEvents {
         float amount = event.getAmount();
         event.setCanceled(true);                          // the protected holder takes nothing...
         if (amount <= 0.0F) return;
+        if (victim instanceof ServerPlayer p) Achievements.award(p, "karats_will/no_u");
         // A wither storm's chomp is a Float.MAX_VALUE instakill, and its own invulnerability would just shrug
         // off the reflected damage -- so deflecting it back KILLS the storm instead, WITH its full death
         // sequence (death roar + sound + animation), not a silent removal.
@@ -67,12 +75,17 @@ public final class KaratsWillEvents {
         if (!target.hasEffect(ModEffects.KARATS_WILL.get())) return;
         MobEffectInstance inst = event.getEffectInstance();
         MobEffect effect = inst.getEffect();
+        if (effect == ModEffects.KARATS_WILL.get()) {   // our own effect landing: never deflected, just noted
+            if (target instanceof ServerPlayer p) Achievements.award(p, "karats_will/root");
+            return;
+        }
         if (effect.getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
         if (!(event.getEffectSource() instanceof LivingEntity attacker) || attacker == target) return;
         MobEffectInstance copy = new MobEffectInstance(effect, inst.getDuration(), inst.getAmplifier(),
                 inst.isAmbient(), inst.isVisible(), inst.showIcon());
         target.removeEffect(effect); // not on the protected holder...
         attacker.addEffect(copy);    // ...on the attacker instead (no source -> never re-bounced)
+        if (target instanceof ServerPlayer p) Achievements.award(p, "karats_will/own_medicine");
     }
 
     /** The priest (Cleric) sometimes sells the Karat's Will potion, at master level. */
