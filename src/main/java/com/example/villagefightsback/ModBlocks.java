@@ -746,14 +746,12 @@ public final class ModBlocks {
                 // === Potions ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.DARIUS_SPECIAL_EFFECT.get())); // Potion of Darius' Special Sauce
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get())); // Darius' Special Sauce (long)
+                acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT.get());       // Darius' Special Sauce
+                acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get());  // ...and the long one
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
-                output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.EMERALD_VIRUS.get())); // Potion of Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS.get());         // Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG.get());  // Emerald Virus II
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
@@ -854,5 +852,22 @@ public final class ModBlocks {
         ITEMS.register(modBus);
         TABS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
+    }    /**
+     * Every form of one of our potions, for the creative tab: drinkable, splash, lingering, and the tipped
+     * arrow. All four are brewable and all four already have names in the lang file, so listing only the
+     * drinkable one meant the rest existed but could not be found without the vanilla search tab.
+     */
+    private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
+                                           net.minecraft.world.item.alchemy.Potion potion) {
+        output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                new ItemStack(net.minecraft.world.item.Items.POTION), potion));
+        output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                new ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), potion));
+        output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                new ItemStack(net.minecraft.world.item.Items.LINGERING_POTION), potion));
+        output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                new ItemStack(net.minecraft.world.item.Items.TIPPED_ARROW), potion));
     }
+
+
 }
