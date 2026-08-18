@@ -750,8 +750,13 @@ public final class ModBlocks {
                 acceptPotionFamily(output, ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get());  // ...and the long one
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
-                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS.get());         // Emerald Virus
-                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG.get());  // Emerald Virus II
+                // No tipped arrow for these two: the Emerald Virus Arrow below is the mod's own arrow
+                // for this effect, and listing vanilla's beside it put two near-identical arrows in
+                // the tab. Vanilla makes a tipped arrow available for ANY registered potion, so the
+                // "Arrow of Emerald Virus" still exists and still brews -- it is just not advertised
+                // here next to the real one.
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS.get(), false);         // Emerald Virus
+                acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG.get(), false);  // Emerald Virus II
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
                 for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
@@ -859,14 +864,23 @@ public final class ModBlocks {
      */
     private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
                                            net.minecraft.world.item.alchemy.Potion potion) {
+        acceptPotionFamily(output, potion, true);
+    }
+
+    /** {@code withTippedArrow} false where the mod ships its own arrow item for the same effect. */
+    private static void acceptPotionFamily(net.minecraft.world.item.CreativeModeTab.Output output,
+                                           net.minecraft.world.item.alchemy.Potion potion,
+                                           boolean withTippedArrow) {
         output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                 new ItemStack(net.minecraft.world.item.Items.POTION), potion));
         output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                 new ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), potion));
         output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                 new ItemStack(net.minecraft.world.item.Items.LINGERING_POTION), potion));
-        output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                new ItemStack(net.minecraft.world.item.Items.TIPPED_ARROW), potion));
+        if (withTippedArrow) {
+            output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+                    new ItemStack(net.minecraft.world.item.Items.TIPPED_ARROW), potion));
+        }
     }
 
 
