@@ -36,7 +36,10 @@ file="META-INF/accesstransformer.cfg"
 [[dependencies.${mod_id}]]
     modId="guardvillagers"
     type="optional"
-    versionRange="[1,)"
+    # Any version. We never touch a Guard Villagers class -- every reference in the mod goes through the
+    # "guardvillagers:guard" entity id -- so there is no API surface to be picky about, and a version floor
+    # would only lock players out of a build that works fine.
+    versionRange="[0,)"
     ordering="AFTER"
     side="BOTH"
 
