@@ -67,6 +67,7 @@ public final class Config {
     public static final ModConfigSpec.IntValue DIFFICULTY;
     public static final ModConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     public static final ModConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
+    public static final ModConfigSpec.BooleanValue UNSTICK_TEST_MODE;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -158,6 +159,13 @@ public final class Config {
                         "only controls the camera. Set false if a 180 degree world roll makes anyone on the server queasy.",
                         "Default: true.")
                 .define("reversed_gravity_flips_screen", true);
+        UNSTICK_TEST_MODE = b
+                .comment("TESTING ONLY. A villager or guard that has not left a 1x1 spot is normally rescued by the",
+                        "brain node after 30 seconds if it is stuck in a pit, or after 60 seconds whatever the reason.",
+                        "Set this true and both clocks drop to a few seconds, so the rescue can be watched without",
+                        "standing around waiting for it. Leave it false in a real world: it makes the mod quick to",
+                        "decide that a villager doing something slow is stuck. Default: false.")
+                .define("unstick_test_mode", false);
         MEGA_BRUTAL_MODE = b
                 .comment("If true: all village units permanently gain Strength III, Regeneration III, Resistance III and Speed III",
                         "(no potion particles); guards wield Alien Smashers in place of the regular Mace; and golems can teleport",
@@ -319,6 +327,7 @@ public final class Config {
         INDEX.put("mega_brutal_mode", MEGA_BRUTAL_MODE);
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
+        INDEX.put("unstick_test_mode", UNSTICK_TEST_MODE);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
         INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
         INDEX.put("enable_emerald_infestation", ENABLE_EMERALD_INFESTATION);
@@ -438,6 +447,7 @@ public final class Config {
     public static boolean megaBrutalMode()                { return MEGA_BRUTAL_MODE.get(); }
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
+    public static boolean unstickTestMode()               { return UNSTICK_TEST_MODE.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }

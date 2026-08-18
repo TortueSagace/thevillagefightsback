@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * "Blue TNT" -- a house-spawning TNT. It detonates the instant it is placed (by a player or the settler
@@ -53,11 +55,63 @@ public class BlueTntBlock extends Block {
         if (!(level instanceof ServerLevel sl)) return;
         Direction doorFacing = state.getValue(FACING);
         BlockPos at = pos.immutable();
-        HouseBuildManager.detonateNextTick(sl, at, () -> {
-            sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 2.0F, 1.0F);
-            sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
-                    8, 1.5, 1.5, 1.5, 0.0);
-            HousePlacer.place(sl, at, doorFacing, HousePlacer.HOUSES[sl.random.nextInt(HousePlacer.HOUSES.length)]);
-        });
+        HouseBuildManager.detonateNextTick(sl, at, () -> detonate(sl, at, doorFacing));
+    }
+
+    /** How far out to look for somewhere clear, when the spot the TNT is sitting on is already built on. */
+    private static final int[] RELOCATE_RADII = {6, 10, 14, 18};
+    /** Refuse a relocation that would climb a cliff or drop into a hole rather than move along the ground. */
+    private static final int RELOCATE_MAX_STEP = 6;
+
+    /**
+     * Go off, and build.
+     *
+     * <p>If the spot is refused because a building is already standing there, the TNT MOVES and goes off
+     * somewhere that works. It used to simply do nothing and stay put -- a live-looking blue block lying in the
+     * village forever, which reads as a bug whatever the reason for it.
+     */
+    private static void detonate(ServerLevel sl, BlockPos at, Direction doorFacing) {
+        ResourceLocation house = HousePlacer.HOUSES[sl.random.nextInt(HousePlacer.HOUSES.length)];
+        BlockPos spot = HousePlacer.place(sl, at, doorFacing, house) ? at : relocate(sl, at, doorFacing, house);
+
+        // Wherever it ended up, this charge is spent. The carve removes the block when the house lands on it;
+        // when the house lands elsewhere -- or nowhere -- nothing else will, so clear it by hand.
+        if (spot == null || !spot.equals(at)) {
+            if (sl.getBlockState(at).is(ModBlocks.BLUE_TNT.get())) sl.removeBlock(at, false);
+        }
+        effect(sl, spot == null ? at : spot);
+        if (spot == null) {
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] Blue TNT at {} found nowhere clear within {} blocks; spent "
+                    + "without a house rather than left lying there.", at, RELOCATE_RADII[RELOCATE_RADII.length - 1]);
+        }
+    }
+
+    /**
+     * Look outward in rings for a spot the house is actually allowed to occupy, and build at the first one.
+     *
+     * <p>{@code HousePlacer.place} refuses BEFORE it touches the world, so attempting a candidate costs nothing
+     * when it fails. The cheap free-footprint test still runs first, to keep the number of attempts down.
+     */
+    private static BlockPos relocate(ServerLevel sl, BlockPos from, Direction doorFacing, ResourceLocation house) {
+        for (int r : RELOCATE_RADII) {
+            for (int i = 0; i < 8; i++) {
+                double a = i * Math.PI / 4.0;
+                int x = from.getX() + (int) Math.round(Math.cos(a) * r);
+                int z = from.getZ() + (int) Math.round(Math.sin(a) * r);
+                int y = sl.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                if (Math.abs(y - from.getY()) > RELOCATE_MAX_STEP) continue;
+                BlockPos cand = new BlockPos(x, y, z);
+                if (!ExpansionManager.footprintFree(sl, cand, 8)) continue;
+                if (HousePlacer.place(sl, cand, doorFacing, house)) return cand;
+            }
+        }
+        return null;
+    }
+
+    private static void effect(ServerLevel sl, BlockPos at) {
+        sl.playSound(null, at, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 2.0F, 1.0F);
+        sl.sendParticles(ParticleTypes.EXPLOSION, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
+                8, 1.5, 1.5, 1.5, 0.0);
     }
 }
