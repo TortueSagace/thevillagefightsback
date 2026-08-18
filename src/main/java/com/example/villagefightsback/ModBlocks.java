@@ -843,6 +843,8 @@ public final class ModBlocks {
                 output.accept(ModItems.OBLITERATOR.get());
                 output.accept(OBLITERATION_FURNACE_ITEM.get());
                 output.accept(MEMORIAL_ITEM.get());
+                // Last on purpose: it is a joke, and it belongs at the very bottom of the tab.
+                output.accept(ModItems.RICKROLL_PAINTING.get());
             })
             .build());
 

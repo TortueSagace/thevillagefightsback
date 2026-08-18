@@ -169,6 +169,11 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_BOOK = ITEMS.register("limbo_book",
             () -> new LimboBookItem(new Item.Properties().stacksTo(1)));
 
+    /** Rickroll painting: a 1x1 animated painting, creative-only, and purely a joke. No recipe, nothing drops
+     *  it, and it is the last entry in the creative tab. See {@link RickrollPaintingItem}. */
+    public static final RegistryObject<Item> RICKROLL_PAINTING = ITEMS.register("rickroll_painting",
+            () -> new RickrollPaintingItem(new Item.Properties()));
+
     /** Obliterator: an evolved Limbo Sword (14 damage). With an Obliteration Furnace burning, its hits mark
      *  prey for erasure from the spawn tables. See {@link ObliteratorItem} / {@link ObliterationEvents}. */
     public static final RegistryObject<Item> OBLITERATOR = ITEMS.register("obliterator",
