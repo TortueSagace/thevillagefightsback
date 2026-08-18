@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "item": "minecraft:shield"
+      "item": "minecraft:water_bucket"
     },
-    "title": "No U",
-    "description": "Send an attack straight back where it came from.",
+    "title": "Water Is Drowning",
+    "description": "Drown so hard that the water gives up instead.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

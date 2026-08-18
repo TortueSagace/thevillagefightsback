@@ -32,18 +32,18 @@ public final class ModPotions {
             () -> new Potion(new MobEffectInstance(
                     ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS / 2, 1)));
 
-    public static final int KARATS_WILL_TICKS = 10 * 20;       // base: 10 seconds
-    public static final int KARATS_WILL_LONG_TICKS = 20 * 20;  // extended ("long"): 20 seconds
+    public static final int DARIUS_SPECIAL_EFFECT_TICKS = 10 * 20;       // base: 10 seconds
+    public static final int DARIUS_SPECIAL_EFFECT_LONG_TICKS = 20 * 20;  // extended ("long"): 20 seconds
 
-    /** Potion of Karat's Will: orange potion granting {@link ModEffects#KARATS_WILL}. The BASE potion is only
+    /** Potion of Darius' Special Sauce: orange potion granting {@link ModEffects#DARIUS_SPECIAL_EFFECT}. The BASE potion is only
      *  looted / sold by the priest (no awkward-base brew); from it the standard brewing rules make the volatile
-     *  (splash), lingering and long variants. Both share the name "karats_will" so they read as one potion. */
-    public static final RegistryObject<Potion> KARATS_WILL = POTIONS.register("karats_will",
-            () -> new Potion("karats_will", new MobEffectInstance(ModEffects.KARATS_WILL.get(), KARATS_WILL_TICKS)));
+     *  (splash), lingering and long variants. Both share the name "darius_special_effect" so they read as one potion. */
+    public static final RegistryObject<Potion> DARIUS_SPECIAL_EFFECT = POTIONS.register("darius_special_effect",
+            () -> new Potion("darius_special_effect", new MobEffectInstance(ModEffects.DARIUS_SPECIAL_EFFECT.get(), DARIUS_SPECIAL_EFFECT_TICKS)));
 
-    /** The "long" (extended-duration) Karat's Will potion -- brewed from the base potion + redstone. */
-    public static final RegistryObject<Potion> KARATS_WILL_LONG = POTIONS.register("long_karats_will",
-            () -> new Potion("karats_will", new MobEffectInstance(ModEffects.KARATS_WILL.get(), KARATS_WILL_LONG_TICKS)));
+    /** The "long" (extended-duration) Darius' Special Sauce potion -- brewed from the base potion + redstone. */
+    public static final RegistryObject<Potion> DARIUS_SPECIAL_EFFECT_LONG = POTIONS.register("long_darius_special_effect",
+            () -> new Potion("darius_special_effect", new MobEffectInstance(ModEffects.DARIUS_SPECIAL_EFFECT.get(), DARIUS_SPECIAL_EFFECT_LONG_TICKS)));
 
     public static void register(IEventBus modBus) {
         POTIONS.register(modBus);

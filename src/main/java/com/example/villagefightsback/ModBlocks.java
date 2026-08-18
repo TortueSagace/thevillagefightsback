@@ -747,9 +747,9 @@ public final class ModBlocks {
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
                         new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.IMMUNITY.get())); // Potion of Immunity
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL.get())); // Potion of Karat's Will
+                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.DARIUS_SPECIAL_EFFECT.get())); // Potion of Darius' Special Sauce
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.KARATS_WILL_LONG.get())); // Karat's Will (long)
+                        new ItemStack(net.minecraft.world.item.Items.POTION), ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get())); // Darius' Special Sauce (long)
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
                 output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(

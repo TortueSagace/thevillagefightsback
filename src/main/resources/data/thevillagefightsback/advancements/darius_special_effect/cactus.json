@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "item": "minecraft:lava_bucket"
+      "item": "minecraft:cactus"
     },
-    "title": "Lava Burns Itself",
-    "description": "Swim in lava until the lava leaves.",
+    "title": "Prickly Situation",
+    "description": "Let a cactus prick itself for once.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "item": "minecraft:water_bucket"
+      "item": "minecraft:sand"
     },
-    "title": "Water Is Drowning",
-    "description": "Drown so hard that the water gives up instead.",
+    "title": "Blocks Self-Suffocate",
+    "description": "Get squeezed by a block, and watch it squeeze itself.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

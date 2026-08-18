@@ -1,11 +1,11 @@
 {
   "display": {
     "icon": {
-      "item": "minecraft:cactus"
+      "item": "minecraft:ender_pearl"
     },
-    "title": "Prickly Situation",
-    "description": "Let a cactus prick itself for once.",
-    "frame": "goal",
+    "title": "Gravity Breaks",
+    "description": "Fall out of the world and take the whole dimension down with you.",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

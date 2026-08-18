@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "item": "minecraft:fermented_spider_eye"
+      "item": "minecraft:lava_bucket"
     },
-    "title": "A Taste Of Your Own Medicine",
-    "description": "Bounce a harmful effect back onto whoever inflicted it.",
+    "title": "Lava Burns Itself",
+    "description": "Swim in lava until the lava leaves.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

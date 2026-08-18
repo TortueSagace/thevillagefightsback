@@ -2,7 +2,7 @@
   "display": {
     "icon": {
       "item": "minecraft:potion",
-      "nbt": "{Potion:\"thevillagefightsback:karats_will\"}"
+      "nbt": "{Potion:\"thevillagefightsback:darius_special_effect\"}"
     },
     "title": "Darius' Special Sauce",
     "description": "Gain the effect that reverses absolutely everything.",

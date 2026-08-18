@@ -101,7 +101,7 @@
           "name": "minecraft:potion",
           "weight": 2,
           "functions": [
-            { "function": "minecraft:set_nbt", "tag": "{Potion:\"thevillagefightsback:karats_will\"}" }
+            { "function": "minecraft:set_nbt", "tag": "{Potion:\"thevillagefightsback:darius_special_effect\"}" }
           ]
         }
       ]
