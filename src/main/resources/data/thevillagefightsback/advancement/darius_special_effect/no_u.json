@@ -3,8 +3,8 @@
     "icon": {
       "id": "minecraft:shield"
     },
-    "title": "No U",
-    "description": "Send an attack straight back where it came from.",
+    "title": "Right Back At You",
+    "description": "Send an attack straight back to whoever threw it.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
