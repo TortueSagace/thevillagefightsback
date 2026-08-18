@@ -33,7 +33,9 @@ public final class LimboSageTrades {
 
         // --- Tier 1 (novice): useless Limbo curio blocks -- cheap by sage standards. ---
         trades.get(1).add(emeraldsFor(new ItemStack(ModBlocks.FAKE_BEDROCK_ITEM.get()), 6, 8, 2));
-        trades.get(1).add(emeraldsFor(new ItemStack(ModBlocks.DEBRIS_ITEM.get()), 8, 8, 2));
+        // The Limbo Book, at the price the debris block used to go for. A manual about the place is a far
+        // better novice offer than a decorative block, and the sage is the one native who would sell one.
+        trades.get(1).add(emeraldsFor(new ItemStack(ModItems.LIMBO_BOOK.get()), 8, 8, 2));
         trades.get(1).add(emeraldsFor(new ItemStack(ModItems.FORGOTTEN_POWDER.get(), 2), 12, 6, 3));
 
         // --- Tier 2 (apprentice): glowstone + the drinkable Limbo potion -- pricier. ---

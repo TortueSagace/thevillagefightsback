@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "thevillagefightsback:fake_bedrock"
+    }
+  ],
+  "result": {
+    "item": "thevillagefightsback:limbo_book"
+  }
+}
