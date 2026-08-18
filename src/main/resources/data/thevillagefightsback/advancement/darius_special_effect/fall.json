@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:tnt"
+      "id": "minecraft:feather"
     },
-    "title": "Return To Sender",
-    "description": "Walk away from a blast that had nobody behind it.",
+    "title": "Gravity Hurts",
+    "description": "Hit the ground hard enough to break the ground.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

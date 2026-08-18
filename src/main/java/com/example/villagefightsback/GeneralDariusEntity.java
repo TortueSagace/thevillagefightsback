@@ -67,7 +67,7 @@ public class GeneralDariusEntity extends Monster {
     @Nullable private GlobalPos homeBrain;
     private int beamCooldown;
     private boolean despawning;     // guards refund-once
-    private boolean lowHpBuffed; // true once the below-50%-HP buffs (Regen II + Karat's Will) fired (re-armed above 50%)
+    private boolean lowHpBuffed; // true once the below-50%-HP buffs (Regen II + Darius' Special Sauce) fired (re-armed above 50%)
 
     public GeneralDariusEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -222,14 +222,14 @@ public class GeneralDariusEntity extends Monster {
 
         if (beamCooldown > 0) beamCooldown--;
 
-        // Below 50% HP: spontaneously gain Regeneration II (30s) AND Karat's Will (10s). Granted once on
+        // Below 50% HP: spontaneously gain Regeneration II (30s) AND Darius' Special Sauce (10s). Granted once on
         // dropping below half, then re-armed if he heals back above half (so a second collapse triggers again).
         if (getHealth() < getMaxHealth() * 0.5F) {
             if (!lowHpBuffed) {
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.REGENERATION, 600, 1, false, true, true));
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                        ModEffects.KARATS_WILL, 200, 0, false, true, true));
+                        ModEffects.DARIUS_SPECIAL_EFFECT, 200, 0, false, true, true));
                 lowHpBuffed = true;
             }
         } else {

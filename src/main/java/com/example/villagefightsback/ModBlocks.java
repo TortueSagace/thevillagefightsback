@@ -694,8 +694,8 @@ public final class ModBlocks {
 
                 // === Potions ===
                 output.accept(potionStack(ModPotions.IMMUNITY)); // Potion of Immunity
-                output.accept(potionStack(ModPotions.KARATS_WILL)); // Potion of Karat's Will
-                output.accept(potionStack(ModPotions.KARATS_WILL_LONG)); // Karat's Will (long)
+                output.accept(potionStack(ModPotions.DARIUS_SPECIAL_EFFECT)); // Potion of Darius' Special Sauce
+                output.accept(potionStack(ModPotions.DARIUS_SPECIAL_EFFECT_LONG)); // Darius' Special Sauce (long)
 
                 // === Emerald Virus / fertile-rich infection family (potion, arrows, then the block family) ===
                 output.accept(potionStack(ModPotions.EMERALD_VIRUS)); // Potion of Emerald Virus

@@ -21,8 +21,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
- * The environmental half of "Darius' Special Sauce" (registry id {@code karats_will}): the half that has no
- * attacker to deflect onto. {@link KaratsWillEvents} already bounces any attack that HAS a living attacker;
+ * The environmental half of "Darius' Special Sauce" (registry id {@code darius_special_effect}): the half that has no
+ * attacker to deflect onto. {@link DariusSpecialEffectEvents} already bounces any attack that HAS a living attacker;
  * everything the WORLD does to the holder -- drowning, cactus, fire, falling, suffocation, lava, the void,
  * an ownerless explosion -- used to pass straight through it. Now each of those turns around and happens to
  * whatever was doing it.
@@ -36,8 +36,8 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  * dimension down).
  */
 @EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
-public final class KaratsWillReversals {
-    private KaratsWillReversals() {}
+public final class DariusSpecialEffectReversals {
+    private DariusSpecialEffectReversals() {}
 
     /** Radius of the "5x5 zone" the fluid / fire reversals clear (2 -> a 5x5x5 box). */
     private static final int ZONE = 2;
@@ -54,7 +54,7 @@ public final class KaratsWillReversals {
     public static void onEnvironmentalDamage(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (!(victim.level() instanceof ServerLevel sl)) return;
-        if (!victim.hasEffect(ModEffects.KARATS_WILL)) return;
+        if (!victim.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT)) return;
 
         DamageSource src = event.getSource();
         BlockPos at = victim.blockPosition();
@@ -67,7 +67,7 @@ public final class KaratsWillReversals {
             if (LimboDimension.LIMBO.equals(sl.dimension())) return;
             event.setCanceled(true);
             ReversedGravity.trigger(sl, victim);
-            grant(victim, "karats_will/void");
+            grant(victim, "darius_special_effect/void");
             return;
         }
 
@@ -76,7 +76,7 @@ public final class KaratsWillReversals {
             event.setCanceled(true);
             clearFluid(sl, at, false);
             victim.setAirSupply(victim.getMaxAirSupply());
-            grant(victim, "karats_will/drowning");
+            grant(victim, "darius_special_effect/drowning");
             return;
         }
 
@@ -85,7 +85,7 @@ public final class KaratsWillReversals {
             event.setCanceled(true);
             clearFluid(sl, at, true);
             victim.clearFire();
-            grant(victim, "karats_will/lava");
+            grant(victim, "darius_special_effect/lava");
             return;
         }
 
@@ -94,7 +94,7 @@ public final class KaratsWillReversals {
             event.setCanceled(true);
             clearFire(sl, at);
             victim.clearFire();
-            grant(victim, "karats_will/fire");
+            grant(victim, "darius_special_effect/fire");
             return;
         }
 
@@ -102,7 +102,7 @@ public final class KaratsWillReversals {
         if (src.is(DamageTypes.CACTUS)) {
             event.setCanceled(true);
             breakTouching(sl, victim, Blocks.CACTUS);
-            grant(victim, "karats_will/cactus");
+            grant(victim, "darius_special_effect/cactus");
             return;
         }
 
@@ -110,7 +110,7 @@ public final class KaratsWillReversals {
         if (src.is(DamageTypes.IN_WALL)) {
             event.setCanceled(true);
             breakSuffocating(sl, victim);
-            grant(victim, "karats_will/suffocation");
+            grant(victim, "darius_special_effect/suffocation");
             return;
         }
 
@@ -119,11 +119,11 @@ public final class KaratsWillReversals {
             event.setCanceled(true);
             shatter(sl, at);
             victim.fallDistance = 0.0F;
-            grant(victim, "karats_will/fall");
+            grant(victim, "darius_special_effect/fall");
             return;
         }
 
-        // Explosions: one already lands on whoever caused it, because KaratsWillEvents.onAttack sees a living
+        // Explosions: one already lands on whoever caused it, because DariusSpecialEffectEvents.onAttack sees a living
         // attacker for a creeper or for TNT a player lit. The gap is a blast with NOBODY behind it -- redstone
         // TNT, a bed in the Nether, a respawn anchor in the Overworld -- which today just kills the holder.
         if (src.is(DamageTypeTags.IS_EXPLOSION)) {
@@ -132,7 +132,7 @@ public final class KaratsWillReversals {
             // the alternative is a second handler on the post-armour hook for a prank potion.
             if (event.getAmount() < victim.getHealth()) return;    // only a LETHAL ownerless blast
             event.setCanceled(true);
-            grant(victim, "karats_will/explosion");
+            grant(victim, "darius_special_effect/explosion");
         }
     }
 

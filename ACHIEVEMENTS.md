@@ -126,8 +126,8 @@ at the bottom.
   damage -- carving a fiery pit the enemy falls into.
 - **Emerald Hammer**: the 3x3 now orients to the actual mined face, works in creative, and costs one
   durability per 3x3 (not nine).
-- **Darius' Special Sauce** (was Karat's Will; the registry id is unchanged, so old bottles still work). The
-  effect, now **Darius Special Power**, reverses *everything* rather than just attacks: drowning deletes the
+- **Darius' Special Sauce** (was Karat's Will; the registry id moved to `darius_special_effect` too, so a
+  bottle saved by an older build no longer resolves). The effect, now **Darius Special Power**, reverses *everything* rather than just attacks: drowning deletes the
   water and refills the air bar, a cactus breaks itself, fire and lava are wiped from a 5x5 around the holder,
   suffocation breaks the offending block, fall damage shatters a 3-block sphere of anything softer than
   obsidian, and an ownerless blast (redstone TNT, a bed, an anchor) can no longer kill. Falling out of the

@@ -23,18 +23,18 @@ import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 
 /**
  * Drives the potion effect shown in game as "Darius' Special Sauce" / "Darius Special Power"
- * ({@link KaratsWillEffect}). The registry id is still {@code karats_will} on purpose: freezing it keeps
- * every bottle already sitting in a world working, so only the display strings changed.
+ * ({@link DariusSpecialEffect}). Registry id {@code darius_special_effect}: renamed from {@code karats_will}
+ * after 1.5.1, which orphans any bottle saved by an earlier build.
  *
  * <p>While a creature holds it, it DEFLECTS the
  * whole attack -- combat damage is dealt to the attacker instead, and any harmful status effect an attacker
  * would inflict lands on the attacker instead. Also lets the priest (cleric) villager sell the potion.
  *
- * <p>Everything the WORLD does to the holder is reversed too, in {@link KaratsWillReversals}.
+ * <p>Everything the WORLD does to the holder is reversed too, in {@link DariusSpecialEffectReversals}.
  */
 @EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
-public final class KaratsWillEvents {
-    private KaratsWillEvents() {}
+public final class DariusSpecialEffectEvents {
+    private DariusSpecialEffectEvents() {}
 
     /**
      * Deflect the WHOLE attack onto the attacker. We cancel at the earliest incoming-damage hook, so the holder
@@ -47,13 +47,13 @@ public final class KaratsWillEvents {
     public static void onAttack(LivingIncomingDamageEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide()) return;
-        if (!victim.hasEffect(ModEffects.KARATS_WILL)) return;
+        if (!victim.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT)) return;
         DamageSource source = event.getSource();
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) return;
         float amount = event.getAmount();
         event.setCanceled(true);                          // the protected holder takes nothing...
         if (amount <= 0.0F) return;
-        if (victim instanceof ServerPlayer p) Achievements.award(p, "karats_will/no_u");
+        if (victim instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/no_u");
         // A wither storm's chomp is a Float.MAX_VALUE instakill, and its own invulnerability would just shrug
         // off the reflected damage -- so deflecting it back KILLS the storm instead, WITH its full death
         // sequence (death roar + sound + animation), not a silent removal.
@@ -66,20 +66,20 @@ public final class KaratsWillEvents {
     }
 
     /**
-     * Deflect harmful status effects onto the attacker: a harmful effect a creature inflicts on a Karat's Will
+     * Deflect harmful status effects onto the attacker: a harmful effect a creature inflicts on a Darius' Special Sauce
      * holder is stripped from the holder and inflicted on the attacker instead (e.g. a wither's Wither lands on
      * the wither). Fired post-add, so we remove it from the holder and re-add it to the attacker. Re-adding with
-     * NO source means it is never bounced again (and a holder's own beneficial Karat's Will is never reflected).
+     * NO source means it is never bounced again (and a holder's own beneficial Darius' Special Sauce is never reflected).
      */
     @SubscribeEvent
     public static void onEffectAdded(MobEffectEvent.Added event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) return;
-        if (!target.hasEffect(ModEffects.KARATS_WILL)) return;
+        if (!target.hasEffect(ModEffects.DARIUS_SPECIAL_EFFECT)) return;
         MobEffectInstance inst = event.getEffectInstance();
         Holder<MobEffect> effect = inst.getEffect();
-        if (effect.value() == ModEffects.KARATS_WILL.value()) {   // our own effect landing: noted, never deflected
-            if (target instanceof ServerPlayer p) Achievements.award(p, "karats_will/root");
+        if (effect.value() == ModEffects.DARIUS_SPECIAL_EFFECT.value()) {   // our own effect landing: noted, never deflected
+            if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/root");
             return;
         }
         if (effect.value().getCategory() != MobEffectCategory.HARMFUL) return; // only harmful effects are deflected
@@ -88,15 +88,15 @@ public final class KaratsWillEvents {
                 inst.isAmbient(), inst.isVisible(), inst.showIcon());
         target.removeEffect(effect); // not on the protected holder...
         attacker.addEffect(copy);    // ...on the attacker instead (no source -> never re-bounced)
-        if (target instanceof ServerPlayer p) Achievements.award(p, "karats_will/own_medicine");
+        if (target instanceof ServerPlayer p) Achievements.award(p, "darius_special_effect/own_medicine");
     }
 
-    /** The priest (Cleric) sometimes sells the Karat's Will potion, at master level. */
+    /** The priest (Cleric) sometimes sells the Darius' Special Sauce potion, at master level. */
     @SubscribeEvent
     public static void onClericTrades(VillagerTradesEvent event) {
         if (event.getType() != VillagerProfession.CLERIC) return;
         ItemStack potion = new ItemStack(Items.POTION);
-        potion.set(DataComponents.POTION_CONTENTS, new PotionContents(ModPotions.KARATS_WILL));
+        potion.set(DataComponents.POTION_CONTENTS, new PotionContents(ModPotions.DARIUS_SPECIAL_EFFECT));
         VillagerTrades.ItemListing listing = (trader, rand) ->
                 new MerchantOffer(new ItemCost(Items.EMERALD, 18), potion.copy(), 3, 30, 0.05F);
         event.getTrades().get(5).add(listing); // 5 = master

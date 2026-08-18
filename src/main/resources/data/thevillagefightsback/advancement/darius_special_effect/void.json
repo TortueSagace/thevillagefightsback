@@ -1,11 +1,11 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:fermented_spider_eye"
+      "id": "minecraft:ender_pearl"
     },
-    "title": "A Taste Of Your Own Medicine",
-    "description": "Bounce a harmful effect back onto whoever inflicted it.",
-    "frame": "goal",
+    "title": "Gravity Breaks",
+    "description": "Fall out of the world and take the whole dimension down with you.",
+    "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

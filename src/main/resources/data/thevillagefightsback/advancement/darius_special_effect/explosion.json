@@ -1,11 +1,11 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:ender_pearl"
+      "id": "minecraft:tnt"
     },
-    "title": "Gravity Breaks",
-    "description": "Fall out of the world and take the whole dimension down with you.",
-    "frame": "challenge",
+    "title": "Return To Sender",
+    "description": "Walk away from a blast that had nobody behind it.",
+    "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

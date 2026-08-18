@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:lava_bucket"
+      "id": "minecraft:flint_and_steel"
     },
-    "title": "Lava Burns Itself",
-    "description": "Swim in lava until the lava leaves.",
+    "title": "Fire Burns Itself",
+    "description": "Stand in a fire until the fire regrets it.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

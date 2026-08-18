@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:flint_and_steel"
+      "id": "minecraft:shield"
     },
-    "title": "Fire Burns Itself",
-    "description": "Stand in a fire until the fire regrets it.",
+    "title": "No U",
+    "description": "Send an attack straight back where it came from.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

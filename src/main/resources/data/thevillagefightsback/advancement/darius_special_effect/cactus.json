@@ -1,10 +1,10 @@
 {
   "display": {
     "icon": {
-      "id": "minecraft:feather"
+      "id": "minecraft:cactus"
     },
-    "title": "Gravity Hurts",
-    "description": "Hit the ground hard enough to break the ground.",
+    "title": "Prickly Situation",
+    "description": "Let a cactus prick itself for once.",
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true,
@@ -20,5 +20,5 @@
       "got_it"
     ]
   ],
-  "parent": "thevillagefightsback:karats_will/root"
+  "parent": "thevillagefightsback:darius_special_effect/root"
 }

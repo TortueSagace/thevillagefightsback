@@ -66,9 +66,9 @@ public class TheVillageFightsBack {
         builder.addMix(ModPotions.EMERALD_VIRUS,
                 net.minecraft.world.item.Items.GLOWSTONE_DUST, ModPotions.EMERALD_VIRUS_STRONG);
 
-        // Karat's Will: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, redstone
+        // Darius' Special Sauce: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, redstone
         // brews the "long" variant; the splash/lingering forms follow from vanilla's generic container recipes.
-        builder.addMix(ModPotions.KARATS_WILL,
-                net.minecraft.world.item.Items.REDSTONE, ModPotions.KARATS_WILL_LONG);
+        builder.addMix(ModPotions.DARIUS_SPECIAL_EFFECT,
+                net.minecraft.world.item.Items.REDSTONE, ModPotions.DARIUS_SPECIAL_EFFECT_LONG);
     }
 }

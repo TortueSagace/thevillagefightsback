@@ -101,7 +101,7 @@
           "name": "minecraft:potion",
           "weight": 2,
           "functions": [
-            { "function": "minecraft:set_components", "components": { "minecraft:potion_contents": { "potion": "thevillagefightsback:karats_will" } } }
+            { "function": "minecraft:set_components", "components": { "minecraft:potion_contents": { "potion": "thevillagefightsback:darius_special_effect" } } }
           ]
         }
       ]

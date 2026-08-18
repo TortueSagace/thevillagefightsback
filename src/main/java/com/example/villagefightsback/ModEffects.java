@@ -42,10 +42,10 @@ public final class ModEffects {
     public static final DeferredHolder<MobEffect, MobEffect> VERY_BAD_OMEN =
             EFFECTS.register("very_bad_omen", VeryBadOmenEffect::new);
 
-    /** "Karat's Will": deflects the whole attack -- combat damage and harmful effects an attacker inflicts on
-     *  the holder hit the attacker instead (see {@link KaratsWillEffect} / {@link KaratsWillEvents}). */
-    public static final DeferredHolder<MobEffect, MobEffect> KARATS_WILL =
-            EFFECTS.register("karats_will", KaratsWillEffect::new);
+    /** "Darius' Special Sauce": deflects the whole attack -- combat damage and harmful effects an attacker inflicts on
+     *  the holder hit the attacker instead (see {@link DariusSpecialEffect} / {@link DariusSpecialEffectEvents}). */
+    public static final DeferredHolder<MobEffect, MobEffect> DARIUS_SPECIAL_EFFECT =
+            EFFECTS.register("darius_special_effect", DariusSpecialEffect::new);
 
     /** "Emerald Marker": a brain node beacon that rallies every emerald unit within 100 blocks onto the marked
      *  target. Applied with VISIBLE particles, unlike the mod's other effects (see {@link EmeraldMarkerEffect}). */
