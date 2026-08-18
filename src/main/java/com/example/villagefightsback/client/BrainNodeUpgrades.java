@@ -90,7 +90,12 @@ public final class BrainNodeUpgrades {
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/emeraldger_face.png"),
                             "Emeraldgers", "Emerald Virus inflicts Wither II; dead hosts rise as Emeraldgers that grow with each kill."),
                     new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID, "textures/gui/air_strike.png"),
-                            "Air Strikes", "When attacked, the brain node rains 27 rockets on the strongest nearby enemy.")
+                            "Air Strikes", "When attacked, the brain node rains 27 rockets on the strongest nearby enemy."),
+                    // The furnace's SIDE texture rather than its item model: the block's 3D icon is unreadable
+                    // at 16px next to a row of flat faces, and this row is a list of capabilities, not of items.
+                    new Upgrade(new ResourceLocation(TheVillageFightsBack.MODID,
+                            "textures/block/obliteration_furnace_side.png"),
+                            "Obliteration", "The Village can now place and fuel an Obliteration Furnace to ban specific hostile mobs from spawning in this world. Advanced technology, difficult to maintain.")
             )
     );
 
