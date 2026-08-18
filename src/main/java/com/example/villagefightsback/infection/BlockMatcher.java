@@ -69,6 +69,12 @@ public final class BlockMatcher {
     private static Map<String, Block> fertileByBase; // base -> our fertile block
     private static Map<String, Block> richByBase;    // base -> our rich block
     private static Set<Block> infectionBlocks;       // all fertile + rich + dirt_path
+    /** Cached so the hot air-contact test compares by identity instead of calling a RegistryObject getter. */
+    private static Block fertileGrass;
+    /** Sculk blocks the infection swallows as foliage. Registry-derived, so /reload can never stale it. */
+    private static Set<Block> sculkPlants;
+    /** Blocks that are neither vanilla nor ours, plus the sculk family. See {@link #isAlien}. */
+    private static Set<Block> alienBlocks;
     private static Set<Block> richBlockSet;          // all rich blocks
     private static Set<Block> upgradableFertile;     // fertile blocks that have a rich counterpart (fertile -> rich)
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
@@ -149,6 +155,28 @@ public final class BlockMatcher {
         putAll(exact, "soul_soil", Blocks.SOUL_SOIL);
         putAll(exact, "snow_block", Blocks.SNOW_BLOCK);
         // logs are caught by id-substring ("oak_log", "spruce_log", ...).
+        fertileGrass = com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get();
+        // A sculk sensor is not a plant by any reasonable reading, but it behaves like one for our purposes:
+        // it is a thin growth on the ground that the green is supposed to swallow. It reaches fertile grass
+        // through the plant channel below rather than through the main conversion path, which is why the
+        // light-emission gate in isCandidate is left exactly as it is -- letting a light source through THERE
+        // would let torches and lanterns through with it.
+        sculkPlants = java.util.Set.of(Blocks.SCULK_SENSOR, Blocks.CALIBRATED_SCULK_SENSOR);
+
+        // Built once from the REGISTRY, which is why caching it is safe where caching a tag set is not:
+        // registry contents are frozen before this ever runs and /reload cannot change them, whereas tags
+        // rebind on every datapack reload.
+        alienBlocks = new java.util.HashSet<>();
+        for (Block b : ForgeRegistries.BLOCKS) {
+            ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+            if (id == null) continue;
+            String ns = id.getNamespace();
+            if (!"minecraft".equals(ns) && !TheVillageFightsBack.MODID.equals(ns)) alienBlocks.add(b);
+        }
+        // Sculk counts as alien wherever it is found, including inside a house: it is the one vanilla family
+        // that reads as an infection of its own, and the village has no reason to shelter it.
+        java.util.Collections.addAll(alienBlocks, Blocks.SCULK, Blocks.SCULK_VEIN, Blocks.SCULK_CATALYST,
+                Blocks.SCULK_SHRIEKER, Blocks.SCULK_SENSOR, Blocks.CALIBRATED_SCULK_SENSOR);
     }
 
     /** True if {@code s} is one of our infection blocks (any fertile/rich) or a dirt-path vector. */
@@ -181,18 +209,67 @@ public final class BlockMatcher {
         return upgradableFertile.contains(s.getBlock());
     }
 
+    /**
+     * Is this block foreign to both vanilla and this mod?
+     *
+     * <p>Asked only for a block that sits INSIDE a protected building, where it is the one thing the village
+     * will still digest. A house full of oak planks and our own blocks stays untouched; something a third
+     * mod put there does not get to shelter behind the village's walls.
+     *
+     * <p>One hash lookup. See {@code init()} for why the set is safe to cache.
+     */
+    public static boolean isAlien(BlockState s) {
+        init();
+        return alienBlocks.contains(s.getBlock());
+    }
+
     /** A small decorative plant the infection turns into fertile grass when fertile blocks appear next to it:
      *  short grass, fern, small flowers, dead bush, and the LOWER half of tall (double) plants -- converting the
      *  lower half auto-removes the upper half via vanilla shape updates. NOT crops/saplings/sugar cane. */
     public static boolean isConvertiblePlant(BlockState s) {
+        init();
         Block b = s.getBlock();
+        // Already ours. FertileGrassBlock extends BushBlock, so without this the widened test below would
+        // match our own grass and re-place every blade of it in range of every conversion, forever.
+        if (b == fertileGrass || isInfection(s)) return false;
+        // Sculk sensors, before the solidity fast-out: a sensor is solid and would die on the next line.
+        if (sculkPlants.contains(b)) return true;
+        // THE FAST-OUT, and what makes the widening free. Almost every neighbour is air or a solid block and
+        // both end here; what survives is the small set of non-air, non-collidable cells.
+        if (s.isAir() || s.blocksMotion()) return false;
+        if (isFarmed(s)) return false;
         if (b instanceof net.minecraft.world.level.block.DoublePlantBlock) {
             return s.getValue(net.minecraft.world.level.block.DoublePlantBlock.HALF)
                     == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER;
         }
-        return b instanceof net.minecraft.world.level.block.TallGrassBlock
-                || b instanceof net.minecraft.world.level.block.FlowerBlock
-                || b instanceof net.minecraft.world.level.block.DeadBushBlock;
+        // BushBlock catches most modded foliage; SWORD_EFFICIENT is the net for the mods that extend Block
+        // directly. Asked per state rather than cached, because a tag set built once in init() would go
+        // stale on /reload and this is the one thing here that can change at runtime.
+        return b instanceof net.minecraft.world.level.block.BushBlock
+                || s.is(net.minecraft.tags.BlockTags.SWORD_EFFICIENT);
+    }
+
+    /**
+     * A plant somebody is growing on purpose. The green leaves these alone.
+     *
+     * <p>An explicit list rather than a tag guess, because the two that matter most are traps: sweet berry
+     * bushes and saplings both extend {@code BushBlock}, so the widened predicate above would eat a player's
+     * orchard and every sapling in the world without this. Seagrass is here for a different reason -- fertile
+     * grass is not waterloggable, so converting it would drain the water cell it stands in.
+     */
+    private static boolean isFarmed(BlockState s) {
+        Block b = s.getBlock();
+        return b instanceof net.minecraft.world.level.block.CropBlock
+                || b instanceof net.minecraft.world.level.block.StemBlock
+                || b instanceof net.minecraft.world.level.block.AttachedStemBlock
+                || b instanceof net.minecraft.world.level.block.SaplingBlock
+                || b instanceof net.minecraft.world.level.block.SweetBerryBushBlock
+                || b instanceof net.minecraft.world.level.block.SugarCaneBlock
+                || b instanceof net.minecraft.world.level.block.NetherWartBlock
+                || b instanceof net.minecraft.world.level.block.CocoaBlock
+                || b == Blocks.SEAGRASS || b == Blocks.TALL_SEAGRASS
+                || s.is(net.minecraft.tags.BlockTags.CROPS)
+                || s.is(net.minecraft.tags.BlockTags.SAPLINGS);
     }
 
     /**
@@ -261,10 +338,23 @@ public final class BlockMatcher {
                 && b != Blocks.IRON_DOOR && !infectionBlocks.contains(b);
     }
 
-    /** Counts as "contact with a non-solid cell": air, any fluid, or a thin snow/carpet layer (spec). */
+    /**
+     * Counts as "contact with a non-solid cell": air, any fluid, a thin snow/carpet layer -- or our own
+     * fertile grass.
+     *
+     * <p>That last one closes a blind spot that made the infection look broken. Fertile grass is a
+     * no-collision bush, so a block with grass on top and soil all around had no air contact at all and could
+     * never be converted -- and {@code FertileGrassBlock.randomTick}, which exists precisely to fertilize the
+     * soil beneath a plant, went through the same gate and therefore no-opped forever on flat ground. Every
+     * meadow the green reached grew a permanent lid over itself.
+     *
+     * <p>It belongs on this list on its own merits: snow layer and carpet are here because they are thin,
+     * walk-through, non-solid cells, and fertile grass is one too.
+     */
     private static boolean isAirContact(BlockState ns) {
         return ns.isAir() || !ns.getFluidState().isEmpty()
                 || ns.is(Blocks.SNOW)                                   // the snow LAYER (not snow_block)
+                || ns.getBlock() == fertileGrass
                 || ns.getBlock() instanceof net.minecraft.world.level.block.CarpetBlock;
     }
 

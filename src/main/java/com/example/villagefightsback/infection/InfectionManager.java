@@ -605,8 +605,17 @@ public final class InfectionManager {
             if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the brain node reach -> skip
             // The village never eats its own buildings. This is THE hot guard -- see StructureZones for why it
             // is a chunk-bucketed lookup and not a scan over every building.
-            if (zones.contains(m.getX(), m.getY(), m.getZ())) continue;
-            BlockState ns = level.getBlockState(m);
+            BlockState ns;
+            if (zones.contains(m.getX(), m.getY(), m.getZ())) {
+                // Inside a claimed building. Ours and vanilla's blocks stay off limits -- the village does not
+                // digest its own houses -- but something a third mod put in there is fair game. The zone test
+                // stays FIRST so a world with no buildings still short-circuits on the empty chunk index and
+                // never reads a block state it did not read before.
+                ns = level.getBlockState(m);
+                if (!BlockMatcher.isAlien(ns)) continue;
+            } else {
+                ns = level.getBlockState(m);
+            }
             // Only RAW convertible ground (-> fertile). Already-fertile blocks are NOT re-targeted: rich occurs
             // only via the RICH_CHANCE roll at first conversion, so fertile zones never "ripen" wholesale to rich.
             if (BlockMatcher.isCandidate(level, m, ns)) return m.immutable();
