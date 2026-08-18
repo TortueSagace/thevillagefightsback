@@ -839,6 +839,7 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_HOE.get());
                 output.accept(ModItems.LIMBO_SCYTHE.get());
                 output.accept(ModItems.REPUTATION_BOOK.get());
+                output.accept(ModItems.LIMBO_BOOK.get());
                 output.accept(ModItems.OBLITERATOR.get());
                 output.accept(OBLITERATION_FURNACE_ITEM.get());
                 output.accept(MEMORIAL_ITEM.get());

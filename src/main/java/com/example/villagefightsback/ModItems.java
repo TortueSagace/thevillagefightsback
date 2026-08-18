@@ -164,6 +164,11 @@ public final class ModItems {
     public static final RegistryObject<Item> REPUTATION_BOOK = ITEMS.register("reputation_book",
             () -> new ReputationBookItem(new Item.Properties().stacksTo(1)));
 
+    /** Limbo Book: what the Limbo is, how to leave it, and what to arm yourself with. Handed over on a
+     *  player's first arrival there rather than at spawn. See {@link LimboBookItem} / {@link LimboBookEvents}. */
+    public static final RegistryObject<Item> LIMBO_BOOK = ITEMS.register("limbo_book",
+            () -> new LimboBookItem(new Item.Properties().stacksTo(1)));
+
     /** Obliterator: an evolved Limbo Sword (14 damage). With an Obliteration Furnace burning, its hits mark
      *  prey for erasure from the spawn tables. See {@link ObliteratorItem} / {@link ObliterationEvents}. */
     public static final RegistryObject<Item> OBLITERATOR = ITEMS.register("obliterator",

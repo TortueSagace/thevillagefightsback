@@ -298,6 +298,8 @@
   "entity.minecraft.villager.thevillagefightsback.limbo_sage": "Limbo Sage",
   "item.thevillagefightsback.reputation_book": "Reputation Book",
   "item.thevillagefightsback.reputation_book.desc": "Right-click to read what the village thinks of you, and what changes it.",
+  "item.thevillagefightsback.limbo_book": "Limbo Book",
+  "item.thevillagefightsback.limbo_book.desc": "Right-click to read how to leave the Limbo, and what to arm yourself with there.",
   "item.thevillagefightsback.obliterator": "Obliterator",
   "effect.thevillagefightsback.obliteration": "Obliteration",
   "block.thevillagefightsback.obliteration_furnace": "Obliteration Furnace",
