@@ -51,6 +51,23 @@ public final class UnleashedManager {
     /** brainNode -> last villager count seen (transient: edge detection only). */
     private static final Map<GlobalPos, Integer> LAST_COUNT = new HashMap<>();
 
+    /**
+     * brainNode -> how many CONSECUTIVE samples have reported zero villagers.
+     *
+     * <p>A single zero reading does not mean the village is dead, and acting on one summoned the boss over a
+     * village that was perfectly alive. Loading is the problem: the guard below only proves the node's OWN
+     * block is loaded, while the villager scan reaches {@value #VILLAGER_RADIUS} blocks across nine chunks by
+     * nine, and entities are restored a little after the chunk they live in. Teleport out of a village and
+     * back and there is a window where the node is loaded, its villagers are not yet in the entity index, and
+     * the count is a false zero.
+     *
+     * <p>So a village has to read empty {@value #ZERO_SAMPLES_REQUIRED} times running before it is declared
+     * dead. At one sample every 40 ticks that is six seconds of genuine silence, far longer than any
+     * chunk-load gap, and a real massacre stays at zero and still triggers.
+     */
+    private static final Map<GlobalPos, Integer> ZERO_STREAK = new HashMap<>();
+    private static final int ZERO_SAMPLES_REQUIRED = 3;
+
     // --- trigger: villager count falls from >0 to 0 ---------------------------------------------
     // HIGH priority so this runs BEFORE BrainNodeEvents.onServerTick (NORMAL) on the same END tick: a village
     // losing its last villager removes the brain node and summons the boss FIRST, so the brain-node auto-placer
@@ -64,13 +81,22 @@ public final class UnleashedManager {
         BrainNodeData data = BrainNodeData.get(server);
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             ServerLevel level = server.getLevel(gp.dimension());
-            if (level == null || !level.isLoaded(gp.pos())) continue; // only when loaded (else a false 0)
+            if (level == null || !level.isLoaded(gp.pos())) {
+                ZERO_STREAK.remove(gp);   // an unload breaks the run: the streak must be consecutive LOADED samples
+                continue;                 // only count when loaded (else a false 0)
+            }
             int count = level.getEntitiesOfClass(Villager.class, new AABB(gp.pos()).inflate(VILLAGER_RADIUS),
                     v -> v.isAlive() && !(v instanceof EmeraldgerEntity)).size();
             Integer prev = LAST_COUNT.get(gp);
-            if (prev != null && prev > 0 && count == 0) {
-                // The last villager is gone -> the brain node dies. Removing the block (a non-silk removal)
-                // makes VillageBrainNodeBlock#onRemove summon the boss.
+            if (count > 0) {
+                ZERO_STREAK.remove(gp);
+            } else if (prev != null && prev > 0) {
+                // Empty, and it was not empty before. Do NOT act yet, and deliberately do NOT write the zero
+                // into LAST_COUNT: leaving prev above zero is what lets the streak keep counting.
+                if (ZERO_STREAK.merge(gp, 1, Integer::sum) < ZERO_SAMPLES_REQUIRED) continue;
+                ZERO_STREAK.remove(gp);
+                // The last villager really is gone -> the brain node dies. Removing the block (a non-silk
+                // removal) makes VillageBrainNodeBlock#onRemove summon the boss.
                 level.removeBlock(gp.pos(), false);
             }
             LAST_COUNT.put(gp, count);
