@@ -193,15 +193,30 @@ public class LimboBookScreen extends Screen {
         out.add(new ArrayList<>(List.of(
                 head("Arming yourself"),
                 BLANK,
-                item(ModItems.LIMBO_MEMBRANE.get(), "Limbo Membrane comes from a Limbo Phantom."),
-                item(ModItems.LIMBO_INGOT.get(), "Melt the membrane into a Limbo Ingot."),
+                item(ModItems.LIMBO_MEMBRANE.get(), "Limbo Membrane drops from a Limbo Phantom."),
+                item(ModItems.LIMBO_INGOT.get(),
+                        "8 membranes and 1 Emerald Apple craft into 1 Limbo Ingot."),
                 item(ModItems.LIMBO_SMITHING_TEMPLATE.get(),
                         "The template is rare. Look in village chests."),
-                item(ModItems.LIMBO_PICKAXE.get(),
-                        "Smith netherite with all three. The pickaxe breaks bedrock."),
                 BLANK,
-                body("The full armour set stops knockback, fire and fall damage, and lets you walk through "
-                        + "bedrock. Press G for the banish beam."))));
+                item(ModItems.LIMBO_PICKAXE.get(),
+                        "At a smithing table: the template, a netherite pickaxe, and one Limbo Ingot."),
+                BLANK,
+                body("Only that last step is smithing. The same three slots upgrade the other netherite "
+                        + "tools and armour."))));
+
+        out.add(new ArrayList<>(List.of(
+                head("The full armour set"),
+                BLANK,
+                body("Wear all four Limbo pieces and you get:"),
+                BLANK,
+                body("- no knockback"),
+                body("- no fire or fall damage"),
+                body("- harmful effects are cleared"),
+                body("- phantoms leave you alone"),
+                body("- you walk through bedrock"),
+                BLANK,
+                body("Press G to fire the banish beam. It recharges for 30 seconds."))));
 
         out.add(new ArrayList<>(List.of(
                 head("The Limbo Scythe"),
