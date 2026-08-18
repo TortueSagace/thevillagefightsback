@@ -1,0 +1,29 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:potion",
+      "components": {
+        "minecraft:potion_contents": {
+          "potion": "thevillagefightsback:karats_will"
+        }
+      }
+    },
+    "title": "Darius' Special Sauce",
+    "description": "Gain the effect that reverses absolutely everything.",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "got_it": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "got_it"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/root"
+}

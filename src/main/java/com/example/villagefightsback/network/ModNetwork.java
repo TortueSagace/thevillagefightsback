@@ -37,6 +37,7 @@ public final class ModNetwork {
         registrar.playToServer(ChooseDifficultyPacket.TYPE, ChooseDifficultyPacket.STREAM_CODEC, ChooseDifficultyPacket::handle);
         registrar.playToClient(ScytheSavePacket.TYPE, ScytheSavePacket.STREAM_CODEC, ScytheSavePacket::handle);
         registrar.playToClient(OpenReputationBookPacket.TYPE, OpenReputationBookPacket.STREAM_CODEC, OpenReputationBookPacket::handle);
+        registrar.playToClient(ReversedGravityPacket.TYPE, ReversedGravityPacket.STREAM_CODEC, ReversedGravityPacket::handle);
         // The Obliteration Furnace screen snapshot. Its payload class deliberately lives beside the block in
         // the root package rather than here (see its javadoc), hence the qualified names.
         registrar.playToClient(com.example.villagefightsback.ObliterationFurnaceScreenPacket.TYPE,
@@ -52,5 +53,10 @@ public final class ModNetwork {
     /** Send a packet to every client tracking {@code entity} (server -> clients), including the entity itself. */
     public static void sendToTracking(Entity entity, CustomPacketPayload msg) {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(entity, msg);
+    }
+
+    /** Send a packet to every player currently in {@code level} (server -> clients). */
+    public static void sendToDimension(net.minecraft.server.level.ServerLevel level, CustomPacketPayload msg) {
+        PacketDistributor.sendToPlayersInDimension(level, msg);
     }
 }

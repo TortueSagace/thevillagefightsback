@@ -66,6 +66,7 @@ public final class Config {
     public static final ModConfigSpec.BooleanValue MCA_COMPAT;
     public static final ModConfigSpec.IntValue DIFFICULTY;
     public static final ModConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
+    public static final ModConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -151,6 +152,12 @@ public final class Config {
         GENERAL_DARIUS_REMAINS = b
                 .comment("If true, General Darius never returns to the brain node, even after every 100+ HP enemy is cleared.")
                 .define("general_darius_remains", true);
+        REVERSED_GRAVITY_FLIPS_SCREEN = b
+                .comment("If true, the five seconds of reversed gravity that follow a Special Sauce holder falling out of",
+                        "the world also turn every player's view upside down. The physics are unaffected either way -- this",
+                        "only controls the camera. Set false if a 180 degree world roll makes anyone on the server queasy.",
+                        "Default: true.")
+                .define("reversed_gravity_flips_screen", true);
         MEGA_BRUTAL_MODE = b
                 .comment("If true: all village units permanently gain Strength III, Regeneration III, Resistance III and Speed III",
                         "(no potion particles); guards wield Alien Smashers in place of the regular Mace; and golems can teleport",
