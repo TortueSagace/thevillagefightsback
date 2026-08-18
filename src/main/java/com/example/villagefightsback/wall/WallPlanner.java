@@ -34,7 +34,6 @@ public final class WallPlanner {
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
     private static final int MAX_DOORS = 12;        // ...capped at this many gates / builders / defenders
     private static final int MAX_WALL_ELEVATION = 10; // inner wall: ignore columns whose ground is >this far above/below the brain node
-    private static final int WATER_BRIDGE_MAX = 5;  // a wall may cross at most this many consecutive blocks of open water (lava: never)
 
     /** Compute the inner (cobblestone) wall plan, or null if there aren't enough beds / the village is too large. */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds) {
@@ -103,28 +102,39 @@ public final class WallPlanner {
 
         int minY = level.getMinBuildHeight();
         int n = cells.size();
-        int[] surf = new int[n];     // resolved ground Y per column
-        int[] fluid = new int[n];    // what the column would rest ON: 0 land, 1 open water, 2 open lava
+        int[] surf = new int[n];     // top of the column the wall's courses sit on (the WATER surface, over water)
+        int[] foot = new int[n];     // what the column actually rests on: the ground, or the bed under the water
         boolean[] skip = new boolean[n];
         for (int i = 0; i < n; i++) {
             Col col = cells.get(i);
             if (!level.hasChunk(col.x >> 4, col.z >> 4)) { skip[i] = true; continue; } // unloaded terrain
             int sy = surfaceY(level, col.x, col.z, minY);
             surf[i] = sy;
+            foot[i] = sy;
             if (sy <= minY) { skip[i] = true; continue; }              // void column -> skip
-            // Inner wall: skip columns whose ground sits more than MAX_WALL_ELEVATION blocks above or below the
-            // brain node, so builders don't trek into a deep pit (or up a cliff) to wall a section far off the
-            // village's level. The stage-3 OUTER (obsidian) wall is exempt -- it rings the spread-out expansion.
-            if (!obsidian && Math.abs(sy - brainNode.pos().getY()) > MAX_WALL_ELEVATION) { skip[i] = true; continue; }
             // What the column would rest on: an OPEN fluid surface (not a waterlogged solid, which is real ground).
             BlockState ground = level.getBlockState(new BlockPos(col.x, sy, col.z));
             if (!ground.blocksMotion()) {
-                if (ground.getFluidState().is(net.minecraft.tags.FluidTags.LAVA)) fluid[i] = 2;
-                else if (ground.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) fluid[i] = 1;
+                if (ground.getFluidState().is(net.minecraft.tags.FluidTags.LAVA)) { skip[i] = true; continue; }
+                if (ground.getFluidState().is(net.minecraft.tags.FluidTags.WATER)) {
+                    // A wall DOES cross water, and it is sealed down to the bed -- a wall a mob can swim under
+                    // is not a wall. The bed, not the waterline, is what the column stands on.
+                    int bed = solidUnder(level, col.x, sy, col.z, minY);
+                    if (bed <= minY) { skip[i] = true; continue; }     // bottomless -> nothing to build on
+                    foot[i] = bed;
+                }
+            }
+            // Inner wall: skip columns whose footing sits more than MAX_WALL_ELEVATION blocks above or below the
+            // brain node, so builders don't trek into a deep pit (or up a cliff) to wall a section far off the
+            // village's level. The stage-3 OUTER (obsidian) wall is exempt -- it rings the spread-out expansion.
+            //
+            // Measured on the FOOTING, which is what makes deep water take care of itself: a river bed is within
+            // reach and gets walled, while an ocean floor is a deep pit by this very rule and is skipped, with no
+            // separate "how far may a wall bridge water" limit needed.
+            if (!obsidian && Math.abs(foot[i] - brainNode.pos().getY()) > MAX_WALL_ELEVATION) {
+                skip[i] = true;
             }
         }
-        for (int i = 0; i < n; i++) if (fluid[i] == 2) skip[i] = true; // a wall NEVER rests on lava
-        dropLongWaterRuns(fluid, skip, n); // a wall crosses at most WATER_BRIDGE_MAX consecutive blocks of open water
 
         List<List<WallBlock>> columns = new ArrayList<>();
         int total = 0;
@@ -132,7 +142,7 @@ public final class WallPlanner {
             if (skip[i]) continue;
             Col col = cells.get(i);
             List<WallBlock> colBlocks = new ArrayList<>();
-            expandColumn(col, surf[i], colBlocks, doors.contains(pack(col.x, col.z)), obsidian);
+            expandColumn(col, surf[i], foot[i] + 1, colBlocks, doors.contains(pack(col.x, col.z)), obsidian);
             if (!colBlocks.isEmpty()) { columns.add(colBlocks); total += colBlocks.size(); }
             if (total > MAX_BLOCKS) return null;
         }
@@ -140,37 +150,16 @@ public final class WallPlanner {
         return new WallPlan(brainNode, columns);
     }
 
-    /**
-     * Enforce the over-water rule: a wall may bridge at most {@link #WATER_BRIDGE_MAX} consecutive columns of open
-     * water; any longer run is dropped (skipped) entirely, so the wall never marches across a lake/river/ocean.
-     * Runs are taken over the angle-ordered perimeter treated as a CYCLE (so a crossing at the wrap point still
-     * counts as one run). Short crossings (&lt;= the max) are kept as little bridges. {@code fluid[i]} == 1 marks an
-     * open-water column; lava columns are already skipped by the caller.
-     */
-    private static void dropLongWaterRuns(int[] fluid, boolean[] skip, int n) {
-        if (n == 0) return;
-        boolean any = false, all = true;
-        for (int i = 0; i < n; i++) { if (fluid[i] == 1) any = true; else all = false; }
-        if (!any) return;
-        if (all) { // the whole ring is over water -> keep it only if the ring itself is a short crossing
-            if (n > WATER_BRIDGE_MAX) for (int i = 0; i < n; i++) skip[i] = true;
-            return;
-        }
-        int start = 0;
-        while (fluid[start] == 1) start++;          // start on dry land so no run straddles the array end
-        int i = 0;
-        while (i < n) {
-            if (fluid[(start + i) % n] != 1) { i++; continue; }
-            int len = 0;
-            while (i < n && fluid[(start + i) % n] == 1) { i++; len++; }
-            if (len > WATER_BRIDGE_MAX) for (int k = i - len; k < i; k++) skip[(start + k) % n] = true;
-        }
-    }
-
     // --- column -> course stack ---
 
-    private static void expandColumn(Col col, int surfaceY, List<WallBlock> out, boolean isDoor, boolean obsidian) {
+    private static void expandColumn(Col col, int surfaceY, int plugFromY, List<WallBlock> out,
+                                     boolean isDoor, boolean obsidian) {
         int base = surfaceY + 1;                 // wall sits ON the ground (one above the top solid block)
+
+        // Over water, plug the submerged part first: solid from the bed up to and including the waterline, so
+        // the courses above sit on masonry rather than floating over a swimmable gap. On dry land plugFromY is
+        // surfaceY + 1 and this loop does nothing. Course 0 so builders lay the footing before the curtain.
+        for (int y = plugFromY; y <= surfaceY; y++) out.add(solid(col.x, y, col.z, 0, obsidian));
 
         // Corners (where two straight segments meet): a plain 4-tall solid pillar, nothing else.
         if (col.outward == null) {
@@ -257,6 +246,20 @@ public final class WallPlanner {
      * descends to the real ground. A normal surface with a cave under it has solid rock just below, so it
      * is kept (we do not dig into caves).
      */
+    /**
+     * The highest block that actually blocks motion strictly below {@code fromY}: a water column's bed.
+     *
+     * <p>{@code surfaceY} deliberately treats a fluid as a surface, so over water it stops at the waterline.
+     * This walks on down through the water to what the wall must really stand on. Returns {@code minY} if the
+     * column is bottomless, which the caller reads as "skip".
+     */
+    private static int solidUnder(LevelReader level, int x, int fromY, int z, int minY) {
+        for (int y = fromY - 1; y > minY; y--) {
+            if (level.getBlockState(new BlockPos(x, y, z)).blocksMotion()) return y;
+        }
+        return minY;
+    }
+
     private static int surfaceY(LevelReader level, int x, int z, int minY) {
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
         while (y > minY) {
