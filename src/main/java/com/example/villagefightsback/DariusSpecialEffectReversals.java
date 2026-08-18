@@ -62,9 +62,10 @@ public final class DariusSpecialEffectReversals {
         // Checked first: out_of_world is not in the IS_FALL tag, but this is the branch carrying a dimension
         // rule, so it reads better up top.
         if (src.is(DamageTypes.FELL_OUT_OF_WORLD)) {
-            // Limbo's void is a doorway, not a death -- falling out of it relays you to the End on purpose,
-            // and flipping gravity there would break that route.
-            if (LimboDimension.LIMBO.equals(sl.dimension())) return;
+            // Every dimension, the Limbo included. It was carved out at first on the reasoning that the void
+            // there is a doorway to the End rather than a death -- but the holder is not supposed to take that
+            // doorway either, and being relayed out of the Limbo while wearing the Sauce reads as the effect
+            // simply not working. Anyone WITHOUT the effect still relays exactly as before.
             event.setCanceled(true);
             ReversedGravity.trigger(sl, victim);
             grant(victim, "darius_special_effect/void");

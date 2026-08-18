@@ -32,9 +32,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * instead. For five seconds the whole dimension goes up -- creatures, players, items, orbs, arrows and
  * falling blocks all rise, and every player in it sees the world upside down.
  *
- * <p>Fires in every dimension EXCEPT the Limbo, whose void is a doorway rather than a death (see
- * {@link VoidFallEvents}). Cancelling the void fall elsewhere does mean a Special Sauce holder can no
- * longer reach the Limbo by jumping into the Overworld void: that is the trade, and it is intended.
+ * <p>Fires in EVERY dimension, the Limbo included. Cancelling the void fall does mean a Special Sauce
+ * holder can no longer ride the void between worlds -- no Overworld-to-Limbo drop, no Limbo-to-End drop
+ * (see {@link VoidFallEvents}). That is the trade, and it is intended: the whole point of the effect is
+ * that the void does not get to move you. Anyone without the effect relays exactly as before.
  *
  * <p><b>Nothing here is persisted, by design.</b> {@code setNoGravity} is deliberately NOT used: the flag
  * is written to entity NBT, so a crash mid-effect would leave every entity in the dimension with gravity
@@ -56,13 +57,29 @@ public final class ReversedGravity {
 
     /** Five seconds. */
     public static final int DURATION = 100;
-    /** Levitation tier. Terminal rise is about 0.907 * 0.05 * (amp+1), so tier 2 lifts ~12 blocks in 5s. */
-    private static final int RISE_AMP = 2;
-    /** Ceiling on the non-living upward drift, matched to the levitation terminal speed. */
-    private static final double MAX_RISE = 0.14;
+    /**
+     * Levitation tier, chosen so UP is exactly as fast as DOWN.
+     *
+     * <p>Falling settles at 3.92 blocks/tick: {@code v = (v - 0.08) * 0.98} has its fixed point there.
+     * Levitation settles at {@code 0.907 * 0.05 * (amp + 1)}, so matching 3.92 needs amp + 1 = 86.4. Tier 85
+     * gives 3.90, which is the same speed to within a rounding error.
+     *
+     * <p>It was tier 2 to begin with, which rises at 0.136 -- about a thirtieth of the speed of the fall it is
+     * supposed to be reversing, and it showed.
+     */
+    private static final int RISE_AMP = 85;
+    /**
+     * Terminal rise for a non-living entity, as a multiple of its own downward pull.
+     *
+     * <p>Same arithmetic: {@code v = (v - g) * 0.98} settles at {@code 49 * g}, so capping the climb there
+     * makes an item or a falling block rise at precisely the speed it would have fallen. The old flat 0.14
+     * cap was the same mistake as the levitation tier, in a different place.
+     */
+    private static final double RISE_TERMINAL = 49.0;
     /** The rescued unit's mirrored velocity is clamped into this band, so a slow slip up is still a launch. */
     private static final double MIN_KICK = 1.2;
-    private static final double MAX_KICK = 3.0;
+    /** Terminal falling speed, so mirroring a full-speed fall really does mirror it. */
+    private static final double MAX_KICK = 3.92;
 
     /** Dimension -> game time at which the reversal there ends. Empty in the overwhelmingly common case. */
     private static final Map<ResourceKey<Level>, Long> ACTIVE = new HashMap<>();
@@ -140,8 +157,10 @@ public final class ReversedGravity {
             double y = m.y;
             if (e.getY() < floor) {
                 y = Math.abs(y) + 0.2;                 // about to be deleted by the void: throw it back up
-            } else if (y < MAX_RISE) {
-                y = Math.min(MAX_RISE, y + 2.0 * gravityOf(e));  // cancel this tick's gravity, then add it back up
+            } else {
+                double g = gravityOf(e);
+                double cap = RISE_TERMINAL * g;                  // its own falling speed, upward
+                if (y < cap) y = Math.min(cap, y + 2.0 * g);     // cancel this tick's gravity, then add it back up
             }
             if (y != m.y) e.setDeltaMovement(m.x, y, m.z);
         }
