@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "thevillagefightsback:block/no_build_sign"
+    },
+    "face=ceiling,facing=north": {
+      "model": "thevillagefightsback:block/no_build_sign"
+    },
+    "face=wall,facing=north": {
+      "model": "thevillagefightsback:block/no_build_sign_wall"
+    },
+    "face=floor,facing=east": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 90
+    },
+    "face=ceiling,facing=east": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 90
+    },
+    "face=wall,facing=east": {
+      "model": "thevillagefightsback:block/no_build_sign_wall",
+      "y": 90
+    },
+    "face=floor,facing=south": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 180
+    },
+    "face=ceiling,facing=south": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 180
+    },
+    "face=wall,facing=south": {
+      "model": "thevillagefightsback:block/no_build_sign_wall",
+      "y": 180
+    },
+    "face=floor,facing=west": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 270
+    },
+    "face=ceiling,facing=west": {
+      "model": "thevillagefightsback:block/no_build_sign",
+      "y": 270
+    },
+    "face=wall,facing=west": {
+      "model": "thevillagefightsback:block/no_build_sign_wall",
+      "y": 270
+    }
+  }
+}

@@ -300,6 +300,8 @@
   "item.thevillagefightsback.reputation_book.desc": "Right-click to read what the village thinks of you, and what changes it.",
   "item.thevillagefightsback.limbo_book": "Limbo Book",
   "item.thevillagefightsback.limbo_book.desc": "Right-click to read how to leave the Limbo, and what to arm yourself with there.",
+  "block.thevillagefightsback.no_build_sign": "Do not build here",
+  "block.thevillagefightsback.no_build_sign.desc": "Settlers will not build within 10 blocks, and the infection will not spread there. Place one at every corner of your land. Stops working if you become an Enemy of the Village.",
   "item.thevillagefightsback.rickroll_painting": "Rickroll",
   "item.thevillagefightsback.rickroll_painting.desc": "Never gonna give you up. Hang it on a wall.",
   "painting.thevillagefightsback.rickroll.title": "Rickroll",

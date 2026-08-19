@@ -499,6 +499,16 @@ public final class ModBlocks {
                     .noOcclusion()));
     public static final DeferredHolder<Item, Item> MEMORIAL_ITEM = ITEMS.register("memorial",
             () -> new BlockItem(MEMORIAL.get(), new Item.Properties()));
+
+    /** "Do not build here": a player's claim on a patch of ground. See {@link NoBuildSignBlock}. */
+    public static final DeferredHolder<Block, Block> NO_BUILD_SIGN = BLOCKS.register("no_build_sign",
+            () -> new NoBuildSignBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_SIGN)
+                    .mapColor(MapColor.EMERALD)
+                    .noOcclusion()
+                    .noCollission()));
+    public static final DeferredHolder<Item, Item> NO_BUILD_SIGN_ITEM = ITEMS.register("no_build_sign",
+            () -> new TooltipBlockItem(NO_BUILD_SIGN.get(), new Item.Properties(),
+                    "block.thevillagefightsback.no_build_sign.desc"));
     public static final DeferredHolder<net.minecraft.world.level.block.entity.BlockEntityType<?>, net.minecraft.world.level.block.entity.BlockEntityType<MemorialBlockEntity>> MEMORIAL_BE =
             BLOCK_ENTITIES.register("memorial", () ->
                     net.minecraft.world.level.block.entity.BlockEntityType.Builder.of(
@@ -634,6 +644,9 @@ public final class ModBlocks {
                 output.accept(BARRACKS_NODE_ITEM.get());
                 output.accept(LURE_TOWER_NODE_ITEM.get());
                 output.accept(ModItems.GLOW_WAND.get()); // wand: highlights the mod's units + these node blocks
+                // Early on purpose: it is the one block that lets a player tell the village to leave them
+                // alone, and it is no use to anybody who never finds it.
+                output.accept(NO_BUILD_SIGN_ITEM.get());
 
                 // === Defensive / structural blocks ===
                 output.accept(FAKE_COBBLESTONE_ITEM.get());
