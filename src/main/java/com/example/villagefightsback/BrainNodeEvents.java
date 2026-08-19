@@ -160,6 +160,9 @@ public final class BrainNodeEvents {
             if (data.econ(gp).getLevel() < 2) continue;       // only from level 2
             WallPlan plan = data.getWallPlan(gp);
             if (plan == null) continue;                       // no wall -> nothing to defend
+            // ...and no wall YET is the same thing. A defender shell is a 3x3 glass box at the top course of a
+            // gate, so building one over an unraised wall leaves it floating in the air with nothing under it.
+            if (!plan.isComplete()) continue;
             ServerLevel level = server.getLevel(gp.dimension());
             if (level == null || !level.isLoaded(gp.pos())) continue;
             boolean any = false;
@@ -442,7 +445,25 @@ public final class BrainNodeEvents {
             // villages keep surveying here, and the node raises the wall itself the moment a plan appears.
             WallPlan plan = data.getWallPlan(gp);
             boolean stage2 = data.econ(gp).getLevel() >= 2;
-            if (stage2 && plan != null) continue;
+            if (stage2 && plan != null) {
+                // Catch-up: a stage-2+ village whose wall plan is still unbuilt raises it NOW.
+                //
+                // Plans do not only come from the survey below. FoundingManager calls createWallPlanNow the
+                // moment the settlers' houses are up, with no stage check, so a node that reached stage 2 while
+                // its village was still being founded acquires its plan AFTER seedVillage has already run --
+                // and seedVillage is what used to raise the wall. It no-ops on a null plan, marks the village
+                // seeded anyway, and never runs again, so the wall was never raised by anybody. The village
+                // still got its gate defenders, because those only need a plan to exist: glass shells hanging
+                // over a wall that was not there.
+                //
+                // Asking "is it built?" rather than "did I build it?" covers every route a plan can arrive by,
+                // including any added later.
+                if (!plan.isComplete()) {
+                    com.example.villagefightsback.infection.InfectionManager.raiseWallAndSeedRing(
+                            level, com.example.villagefightsback.infection.InfectionData.get(level), gp, data);
+                }
+                continue;
+            }
 
             if (plan == null) {
                 // Empty village (no villagers): dispatch settlers to found houses first; FoundingManager
