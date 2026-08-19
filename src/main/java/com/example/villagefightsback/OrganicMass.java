@@ -64,7 +64,8 @@ public final class OrganicMass {
     private static final long IDLE_RECLAIM_TICKS = 6000L; // 5 in-game minutes dealing no damage -> reclaim the unit
     private static final float RECLAIM_MAX_HP = 100.0F;   // only units below this max HP are auto-reclaimed
     private static final float VILLAGER_HP = 20.0F;       // exactly one villager's worth of mass
-    private static final int RECRUIT_COST = 20;           // points the brain pays to promote a sub-villager unit
+    private static final float PROMOTE_HP = 10.0F;        // the one under-sized unit the brain will pay to promote
+    private static final int RECRUIT_COST = 20;           // points that promotion costs
     /** Returned by {@link #reclaimIfIdle} when the unit was TURNED (removed, but nothing refunded). */
     private static final int CONVERTED = -1;
     private static final float THREAT_BUMP = 1.0F;
@@ -267,11 +268,18 @@ public final class OrganicMass {
         if (!(m.level() instanceof ServerLevel level)) return 0;
         net.minecraft.util.RandomSource rng = level.getRandom();
 
-        // An idle unit is TURNED rather than deleted. Mass decides what it becomes: exactly a villager's worth
-        // makes a villager, more than that makes one guard, and less than that is only worth promoting if the
-        // brain will pay {@value #RECRUIT_COST} for it. Turning costs and refunds nothing otherwise -- the
-        // unit's own mass simply becomes the new body.
-        boolean payUp = maxHp < VILLAGER_HP;
+        // An idle unit is TURNED rather than deleted, but only at the three sizes that map onto a body:
+        //
+        //   exactly 10 HP -> a villager, IF the brain will pay RECRUIT_COST for it
+        //   exactly 20 HP -> a villager, free (one villager's worth of mass exactly)
+        //   20 < HP < 100 -> one guard, free
+        //
+        // Anything else under a villager's worth -- a 4 HP chicken, a 6 HP bat, an 8 HP sheep -- is simply too
+        // small to be worth a body and reclaims exactly as it always did. Rounded rather than compared as
+        // floats, since these come from attribute builders and near-misses should not silently change the rule.
+        int hp = Math.round(maxHp);
+        boolean payUp = hp == Math.round(PROMOTE_HP);
+        if (hp < Math.round(VILLAGER_HP) && !payUp) return reclaim(econ, m, maxHp);          // too small to turn
         if (payUp && econ.getOrganicPoints() < RECRUIT_COST) return reclaim(econ, m, maxHp); // brain declines
 
         EntityType<?> type;
