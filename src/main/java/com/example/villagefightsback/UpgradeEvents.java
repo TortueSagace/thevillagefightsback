@@ -8,11 +8,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Drives the permanent upgrade: once the (global) Village Brain Node reaches level {@value #REQUIRED_LEVEL},
@@ -20,7 +19,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * and forever (the flag never clears). Cheap: gated by the level check, throttled, only loaded brainNodes,
  * and already-upgraded defenders are filtered out of the query.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class UpgradeEvents {
     private UpgradeEvents() {}
 
@@ -33,7 +31,7 @@ public final class UpgradeEvents {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         long _p = ModProfiler.now();
 

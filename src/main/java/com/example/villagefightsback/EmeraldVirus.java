@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -11,7 +12,7 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * State + rules for the Emerald Virus. The infection lives in the host's persistent NBT so it survives
@@ -42,12 +43,12 @@ public final class EmeraldVirus {
                 || e instanceof VindictiveGuardEntity   // the boss's own guards are immune to the virus
                 || EmeraldMobs.isPlayerCompanion(e)     // the player's pets/mounts (cats, dogs/wolves, horses) never catch it
                 || Factions.isEmerald(e)                // emerald units never catch the virus (they ARE it)
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /** True if the host has ever carried the virus (used both for tint persistence and one-shot immunity). */
     public static boolean everInfected(LivingEntity e) {
-        return e.getPersistentData().getBoolean(NBT_EVER);
+        return PersistentData.of(e).getBoolean(NBT_EVER);
     }
 
     /** A host can be infected only if it is alive, not naturally immune, and has never been infected before. */
@@ -62,11 +63,11 @@ public final class EmeraldVirus {
 
     /** Green-tint progress, 0..1. Grows while active and is never reduced. */
     public static float progress(LivingEntity e) {
-        return e.getPersistentData().getFloat(NBT_PROGRESS);
+        return PersistentData.of(e).getFloat(NBT_PROGRESS);
     }
 
     public static void setProgress(LivingEntity e, float p) {
-        e.getPersistentData().putFloat(NBT_PROGRESS, Math.max(progress(e), Math.min(1.0F, p)));
+        PersistentData.of(e).putFloat(NBT_PROGRESS, Math.max(progress(e), Math.min(1.0F, p)));
     }
 
     /**
@@ -86,7 +87,7 @@ public final class EmeraldVirus {
      *  active-effect length (the permanent "ever infected" flag + green tint are stamped regardless of length). */
     public static boolean infect(LivingEntity e, int amplifier, int durationTicks) {
         if (!canInfect(e)) return false;
-        CompoundTag data = e.getPersistentData();
+        CompoundTag data = PersistentData.of(e);
         data.putBoolean(NBT_EVER, true);
         // ambient=false, showParticles=false, showIcon=true -> no swirl particles, but a HUD icon for players.
         e.addEffect(new MobEffectInstance(ModEffects.EMERALD_VIRUS.get(), durationTicks, amplifier, false, false, true));

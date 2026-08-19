@@ -7,7 +7,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Enderman: an emerald-faction enderman that joins the village's fight. A hostile combat unit
@@ -33,8 +32,4 @@ public class EmeraldEnderman extends EnderMan implements EmeraldUnit {
         return EnderMan.createAttributes();
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

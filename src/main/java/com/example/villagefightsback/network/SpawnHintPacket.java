@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -&gt; client: show one of the bottom-of-screen hints for {@code ticks}.
@@ -44,7 +44,7 @@ public class SpawnHintPacket {
         return new SpawnHintPacket(buf.readVarInt(), buf.readVarInt());
     }
 
-    public static void handle(SpawnHintPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(SpawnHintPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.VillageDiscoveryHud.showHint(msg.ticks, msg.id)));
         ctx.get().setPacketHandled(true);

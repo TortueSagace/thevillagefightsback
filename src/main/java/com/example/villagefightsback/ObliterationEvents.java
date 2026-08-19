@@ -7,13 +7,12 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.MobSpawnEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.MobSpawnEvent;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * The Obliteration rule, in three parts: marking, erasing, and refusing.
@@ -31,7 +30,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * ALREADY alive are left alone: this erases a species from the future, not from the world, so obliterating
  * zombies does not empty the caves you have already lit.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ObliterationEvents {
     private ObliterationEvents() {}
 
@@ -63,7 +61,7 @@ public final class ObliterationEvents {
         boolean oneShot = killedByObliterator(event) && dead.getHealth() <= 0.0F && !marked;
         if (!marked && !oneShot) return;
 
-        ResourceLocation type = ForgeRegistries.ENTITY_TYPES.getKey(dead.getType());
+        ResourceLocation type = ModRegistries.ENTITY_TYPES.getKey(dead.getType());
         if (type == null) return;
         ObliterationData data = ObliterationData.get(level.getServer());
         GlobalPos furnace = data.nearestBurning(level.dimension(), dead.blockPosition());
@@ -99,7 +97,7 @@ public final class ObliterationEvents {
     @SubscribeEvent
     public static void onSpawn(MobSpawnEvent.FinalizeSpawn event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
-        ResourceLocation type = ForgeRegistries.ENTITY_TYPES.getKey(event.getEntity().getType());
+        ResourceLocation type = ModRegistries.ENTITY_TYPES.getKey(event.getEntity().getType());
         if (type == null) return;
         if (!ObliterationData.get(level.getServer()).isObliterated(type)) return;
         event.setSpawnCancelled(true);
@@ -124,7 +122,7 @@ public final class ObliterationEvents {
      * </ul>
      */
     @SubscribeEvent
-    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+    public static void onEntityJoin(com.example.villagefightsback.platform.event.EntityJoinLevelEvent event) {
         if (event.loadedFromDisk()) return;                       // already alive: let it be
         if (!(event.getEntity() instanceof LivingEntity living)) return;
         if (living instanceof Player) return;
@@ -134,7 +132,7 @@ public final class ObliterationEvents {
         // no reason to pay for a registry reverse-lookup per spawn to find that out.
         ObliterationData data = ObliterationData.get(level.getServer());
         if (!data.bansAnything()) return;
-        ResourceLocation type = ForgeRegistries.ENTITY_TYPES.getKey(living.getType());
+        ResourceLocation type = ModRegistries.ENTITY_TYPES.getKey(living.getType());
         if (type == null) return;
         if (!data.isObliterated(type)) return;
         event.setCanceled(true);

@@ -1,12 +1,12 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Hands over the {@link LimboBookItem} the first time a player arrives in the Limbo.
@@ -14,7 +14,7 @@ import net.minecraftforge.fml.common.Mod;
  * <p>On arrival rather than at spawn, because the book is useless until you are here and its first page is the
  * way out -- it should be in the hand of somebody who is currently lost, not buried in a chest from day one.
  *
- * <p>Remembered in {@code Player.PERSISTED_NBT_TAG}, the one bag of player data that survives death, a
+ * <p>Remembered in {@code PersistentData.PERSISTED_NBT_TAG}, the one bag of player data that survives death, a
  * dimension change and a relog, so "the first time" means once ever rather than once per visit.
  *
  * <p><b>Only when there is a free slot.</b> Unlike the starter bell this never drops on the floor: an item
@@ -22,7 +22,6 @@ import net.minecraftforge.fml.common.Mod;
  * the worst possible thing to lose that way. If the inventory is full the flag is deliberately NOT set, so the
  * next visit tries again.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboBookEvents {
     private LimboBookEvents() {}
 
@@ -33,12 +32,12 @@ public final class LimboBookEvents {
         if (!LimboDimension.LIMBO.equals(event.getTo())) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = PersistentData.of(player).getCompound(PersistentData.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_GOT_LIMBO_BOOK)) return;
         if (player.getInventory().getFreeSlot() < 0) return;    // no room -- try again next time they arrive
 
         persisted.putBoolean(NBT_GOT_LIMBO_BOOK, true);
-        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        PersistentData.of(player).put(PersistentData.PERSISTED_NBT_TAG, persisted);
         player.getInventory().add(new ItemStack(ModItems.LIMBO_BOOK.get()));
         TheVillageFightsBack.LOGGER.info("[The Village Fights Back] Limbo Book given to {} on first arrival.",
                 player.getGameProfile().getName());

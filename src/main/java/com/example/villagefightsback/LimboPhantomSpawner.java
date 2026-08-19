@@ -7,10 +7,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Naturally populates the Limbo with Limbo Phantoms: every so often, each player in the Limbo has a chance to
@@ -18,7 +17,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * are NOT persistence-required, so they despawn once the player moves away (egg-hatched phantoms, which ARE
  * persistent, stay in their cubes).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboPhantomSpawner {
     private LimboPhantomSpawner() {}
 
@@ -30,7 +28,7 @@ public final class LimboPhantomSpawner {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null || limbo.players().isEmpty()) return;

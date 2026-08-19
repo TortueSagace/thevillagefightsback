@@ -1,17 +1,16 @@
 package com.example.villagefightsback;
 
 import net.minecraft.world.item.Item;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Plain item registration (non-block items). */
 public final class ModItems {
     private ModItems() {}
 
     public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.ITEMS, TheVillageFightsBack.MODID);
 
     /** The Alien Slasher melee weapon -- a fancier, virus-spreading netherite axe ({@link AlienSlasherItem}).
      *  Its on-hit payload (applied in {@link EmeraldVirusEvents}) always inflicts Emerald Virus I. */
@@ -110,7 +109,7 @@ public final class ModItems {
     public static final RegistryObject<Item> EMERALD_APPLE =
             ITEMS.register("emerald_apple", () -> new Item(new Item.Properties().food(
                     new net.minecraft.world.food.FoodProperties.Builder().nutrition(4).saturationMod(0.3F).alwaysEat()
-                            .effect(() -> new net.minecraft.world.effect.MobEffectInstance(
+                            .effect(new net.minecraft.world.effect.MobEffectInstance(
                                     ModEffects.EMERALD_VIRUS.get(), EmeraldVirus.DURATION_TICKS), 1.0F)
                             .build())));
 
@@ -197,18 +196,18 @@ public final class ModItems {
 
     /** Creative spawn egg for the Limbo Phantom. */
     public static final RegistryObject<Item> LIMBO_PHANTOM_SPAWN =
-            ITEMS.register("limbo_phantom_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.LIMBO_PHANTOM, 0x101018, 0xE8F0E8, new Item.Properties()));
+            ITEMS.register("limbo_phantom_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.LIMBO_PHANTOM.get(), 0x101018, 0xE8F0E8, new Item.Properties()));
 
     /** Creative spawn egg for the Emeraldger (the stage-4 virus warrior). */
     public static final RegistryObject<Item> EMERALDGER_SPAWN =
-            ITEMS.register("emeraldger_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.EMERALDGER, 0x17DD62, 0x0A6E2E, new Item.Properties()));
+            ITEMS.register("emeraldger_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.EMERALDGER.get(), 0x17DD62, 0x0A6E2E, new Item.Properties()));
 
     /** Creative spawn egg for the Rich Sheep (the fertile/rich-looking, emerald-dropping sheep). */
     public static final RegistryObject<Item> RICH_SHEEP_SPAWN =
-            ITEMS.register("rich_sheep_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.RICH_SHEEP, 0x2BBF4E, 0x17DD62, new Item.Properties()));
+            ITEMS.register("rich_sheep_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.RICH_SHEEP.get(), 0x2BBF4E, 0x17DD62, new Item.Properties()));
 
     /** The emerald-faction tint every emerald mob egg is shifted toward. */
     private static final int EMERALD_TINT = 0x2BBF4E;
@@ -255,24 +254,24 @@ public final class ModItems {
 
     /** Creative spawn eggs for the unleashed boss's vindictive minions. */
     public static final RegistryObject<Item> VINDICTIVE_GUARD_SPAWN =
-            ITEMS.register("vindictive_guard_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.VINDICTIVE_GUARD, 0x3A5F3A, 0x2BBF4E, new Item.Properties()));
+            ITEMS.register("vindictive_guard_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.VINDICTIVE_GUARD.get(), 0x3A5F3A, 0x2BBF4E, new Item.Properties()));
     public static final RegistryObject<Item> VINDICTIVE_GIGACHAD_SPAWN =
-            ITEMS.register("vindictive_gigachad_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.VINDICTIVE_GIGACHAD, 0xB8860B, 0x2BBF4E, new Item.Properties()));
+            ITEMS.register("vindictive_gigachad_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.VINDICTIVE_GIGACHAD.get(), 0xB8860B, 0x2BBF4E, new Item.Properties()));
 
     /** Creative spawn egg for General Darius (the stage-4 boss guard). */
     public static final RegistryObject<Item> GENERAL_DARIUS_SPAWN =
-            ITEMS.register("general_darius_spawn", () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                    ModEntities.GENERAL_DARIUS, 0x35402A, 0x5AE682, new Item.Properties()));
+            ITEMS.register("general_darius_spawn", () -> new net.minecraft.world.item.SpawnEggItem(
+                    ModEntities.GENERAL_DARIUS.get(), 0x35402A, 0x5AE682, new Item.Properties()));
 
     // --- Limbo raider spawn eggs: a custom animated/foil icon (item/generated, not the egg template) so they
     //     shimmer exactly like the Limbo gear. ---
     private static RegistryObject<Item> limboEgg(String name,
             java.util.function.Supplier<? extends net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.Mob>> type,
             int primary, int secondary) {
-        return ITEMS.register(name, () -> new net.minecraftforge.common.ForgeSpawnEggItem(
-                type, primary, secondary, new Item.Properties()) {
+        return ITEMS.register(name, () -> new net.minecraft.world.item.SpawnEggItem(
+                type.get(), primary, secondary, new Item.Properties()) {
             @Override public boolean isFoil(net.minecraft.world.item.ItemStack s) { return true; }
         });
     }
@@ -317,7 +316,7 @@ public final class ModItems {
             GUARD_STAGE1, GUARD_STAGE2, GUARD_STAGE3, GUARD_STAGE4,
             IRON_GOLEM, GIGACHAD_GOLEM);
 
-    public static void register(IEventBus modBus) {
-        ITEMS.register(modBus);
+    public static void register() {
+        ITEMS.register();
     }
 }

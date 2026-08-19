@@ -17,7 +17,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * The Glow Wand: right-click to give every unit of this mod within {@value #RADIUS} blocks the Glowing effect for
@@ -73,7 +73,7 @@ public class GlowWandItem extends Item {
     private static boolean isModMob(LivingEntity e) {
         if (!e.isAlive()) return false;
         if (e instanceof Villager || e instanceof IronGolem) return true;
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = ModRegistries.ENTITY_TYPES.getKey(e.getType());
         return id != null && (id.getNamespace().equals(TheVillageFightsBack.MODID) || GUARD_ID.equals(id));
     }
 }

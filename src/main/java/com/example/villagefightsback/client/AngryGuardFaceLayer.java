@@ -13,8 +13,6 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Client-only: overlays an angry villager face on a Guard Villagers guard ({@code guardvillagers:guard})
@@ -31,7 +29,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * zombie-skinned VindictiveGuardEntity uses the ZombieVillager renderer, not a HumanoidModel guard
  * renderer, so it never reaches this layer.
  */
-@OnlyIn(Dist.CLIENT)
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
 public class AngryGuardFaceLayer extends RenderLayer<LivingEntity, HumanoidModel<LivingEntity>> {
     private static final ResourceLocation FACE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/angry_guard_face.png");

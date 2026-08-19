@@ -10,6 +10,7 @@ import com.example.villagefightsback.wall.WallBlock;
 import com.example.villagefightsback.wall.WallPlan;
 import com.example.villagefightsback.wall.WallPlanner;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -33,18 +34,16 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Drives the Village Brain Node: spawns one at the centre of each loaded village, grants sunset emerald
  * income, and keeps every brain node's visual level in sync with the global {@link BrainNodeData}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BrainNodeEvents {
     private BrainNodeEvents() {}
 
@@ -66,7 +65,7 @@ public final class BrainNodeEvents {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
 
         // HOLD while the world-creation screens are still up. The world is genuinely RUNNING behind them: the
@@ -134,7 +133,7 @@ public final class BrainNodeEvents {
             for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, x -> x.isAlive()
                     && (x instanceof Villager
                         || x instanceof net.minecraft.world.entity.animal.IronGolem
-                        || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(x.getType()))))) {
+                        || GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(x.getType()))))) {
                 if (e.distanceToSqr(center) > r2) continue;
                 // ambient=false, showParticles=false, showIcon=false -> a silent, particle-free shield.
                 e.addEffect(new MobEffectInstance(ModEffects.IMMUNITY.get(), 200, 0, false, false, false));
@@ -276,7 +275,7 @@ public final class BrainNodeEvents {
     /** Cheap monitor: stamp the game-time an ally (villager/guard/golem) was last attacked, per nearby brain
      *  node, so a stage-4 air strike fires only when the village was actually under attack recently. */
     @SubscribeEvent
-    public static void onAllyAttacked(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+    public static void onAllyAttacked(com.example.villagefightsback.platform.event.LivingAttackEvent event) {
         LivingEntity victim = event.getEntity();
         if (!isVillageAlly(victim) || !(victim.level() instanceof ServerLevel sl)) return;
         BrainNodeData data = BrainNodeData.get(sl.getServer());
@@ -393,7 +392,7 @@ public final class BrainNodeEvents {
     private static boolean isVillageAlly(LivingEntity e) {
         return e instanceof Villager
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /**
@@ -663,7 +662,7 @@ public final class BrainNodeEvents {
     @SubscribeEvent
     public static void raiseOuterWallsGradually(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null) return;
         BrainNodeData data = BrainNodeData.get(server);
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
@@ -882,7 +881,7 @@ public final class BrainNodeEvents {
      *  rise within {@value #REMOVAL_COOLDOWN_RADIUS} blocks until it elapses, giving the boss time to emerge.
      *  Called from {@link VillageBrainNodeBlock#onRemove} for boss-summoning (non-silk) removals. */
     public static void recordRemoval(GlobalPos brainNode) {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server != null) recentRemovals.put(brainNode, (long) server.getTickCount());
     }
 
@@ -1389,7 +1388,7 @@ public final class BrainNodeEvents {
         if (at == null) return; // nowhere it fits -> skip rather than bury it
         if (!(type.create(level) instanceof net.minecraft.world.entity.Mob mob)) return;
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
-        mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
+        PersistentData.of(mob).putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
         mob.finalizeSpawn(level, level.getCurrentDifficultyAt(at), MobSpawnType.EVENT, null, null);
         level.addFreshEntity(mob);
     }
@@ -1717,7 +1716,7 @@ public final class BrainNodeEvents {
     }
 
     private static boolean isDefender(Entity e) {
-        return e instanceof Villager || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return e instanceof Villager || GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     private static void broadcast(MinecraftServer server, String message) {

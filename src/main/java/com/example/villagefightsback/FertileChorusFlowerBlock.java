@@ -1,6 +1,6 @@
 package com.example.villagefightsback;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -57,7 +57,7 @@ public class FertileChorusFlowerBlock extends ChorusFlowerBlock {
 
     private static Block fertileEndStone() {
         if (fertileEndStone == null) {
-            fertileEndStone = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(
+            fertileEndStone = com.example.villagefightsback.platform.ModRegistries.BLOCKS.getValue(
                     new net.minecraft.resources.ResourceLocation(TheVillageFightsBack.MODID, "fertile_end_stone"));
         }
         return fertileEndStone;

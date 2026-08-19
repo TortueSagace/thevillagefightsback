@@ -9,9 +9,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Lets the Limbo Pickaxe mine the unmineable. Bedrock (-1 hardness) and reinforced deepslate (55 hardness,
@@ -21,7 +20,6 @@ import net.minecraftforge.fml.common.Mod;
  * <p>Our own bedrock look-alikes (fake and X-ray) are on the same list, since they copy bedrock's -1 hardness,
  * and unlike the vanilla pair they DROP when broken (see {@link #dropsWhenBroken}).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboPickaxeEvents {
     private LimboPickaxeEvents() {}
 

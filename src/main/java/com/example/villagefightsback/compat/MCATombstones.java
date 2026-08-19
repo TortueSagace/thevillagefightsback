@@ -11,7 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Reads MCA Reborn's tombstones, so the Limbo Scythe can raise anyone MCA itself buried.
@@ -53,7 +53,7 @@ public final class MCATombstones {
                         "[The Village Fights Back] MCA tombstones unavailable; falling back to our own memorial block.");
             }
         }
-        return usable && ForgeRegistries.BLOCKS.containsKey(HEADSTONE);
+        return usable && ModRegistries.BLOCKS.containsKey(HEADSTONE);
     }
 
     private static boolean resolve() {

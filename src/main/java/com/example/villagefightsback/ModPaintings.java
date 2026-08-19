@@ -2,9 +2,8 @@ package com.example.villagefightsback;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.decoration.PaintingVariant;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Painting-variant registration. */
 public final class ModPaintings {
@@ -28,7 +27,7 @@ public final class ModPaintings {
     public static final RegistryObject<PaintingVariant> RICKROLL =
             PAINTINGS.register("rickroll", () -> new PaintingVariant(16, 16));
 
-    public static void register(IEventBus modBus) {
-        PAINTINGS.register(modBus);
+    public static void register() {
+        PAINTINGS.register();
     }
 }

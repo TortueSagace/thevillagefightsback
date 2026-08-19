@@ -7,7 +7,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.horse.Horse;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Horse: a vanilla horse belonging to the emerald faction. It is passive (see
@@ -34,8 +33,4 @@ public class EmeraldHorse extends Horse implements EmeraldUnit {
         return Horse.createBaseHorseAttributes().add(Attributes.ATTACK_DAMAGE, 11.0D);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

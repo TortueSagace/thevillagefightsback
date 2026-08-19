@@ -1,141 +1,89 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.mixin.PotionBrewingInvoker;
+import com.example.villagefightsback.platform.ModEventHandlers;
+import com.example.villagefightsback.platform.ServerRef;
+import com.example.villagefightsback.platform.event.ModEventSources;
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.Potions;
+
 import org.slf4j.Logger;
 
 /**
  * The Village Fights Back -- main mod class. A Village Brain Node evolves the village through stages and arms
  * its villagers, guards and iron golems (all native weapons/abilities; no third-party deps) to repel any
  * threat. Registers all content here; event handlers live in {@link VillageEvents} and friends. The registry
- * namespace (the {@code @Mod} id / {@link #MODID}) is "thevillagefightsback"; it was renamed from the original
- * "gobacktoyourworld", which orphans this mod's content in worlds saved under the old id.
+ * namespace ({@link #MODID}) is "thevillagefightsback"; it was renamed from the original "gobacktoyourworld",
+ * which orphans this mod's content in worlds saved under the old id.
+ *
+ * <p>This is the Fabric build. Where Forge defers registration to its own registry events, Fabric registers on
+ * the spot, so the order of the calls in {@link #onInitialize} is the registration order and matters: entity
+ * types first (the spawn eggs resolve them while the item list is being built), then blocks, then items.
  */
-@Mod(TheVillageFightsBack.MODID)
-public class TheVillageFightsBack {
+public class TheVillageFightsBack implements ModInitializer {
     public static final String MODID = "thevillagefightsback";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public TheVillageFightsBack() {
-        ModPathTypes.init(); // register the custom BlockPathTypes during mod construction
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        ModBlocks.register(modBus);
-        ModItems.register(modBus);
-        ModArmor.register(modBus);
-        ModEffects.register(modBus);
-        ModPotions.register(modBus);
-        ModPaintings.register(modBus);
-        ModEntities.register(modBus);
-        ModVillagers.register(modBus); // Limbo Sage profession + its POI
-        ModEnchantments.register(modBus);
-        ModParticles.register(modBus);
-        ModSounds.register(modBus);
-        ModLoot.register(modBus);
-        modBus.addListener(this::commonSetup); // brewing recipes (must be added off the main init thread)
-        modBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent e) -> {
-            if (e.getConfig().getSpec() != Config.SPEC) return;
-            Config.apply();                          // push drift chances into LimboDrift
-            WorldModeEvents.reapplyToRunningServer(); // a .toml reload must not drop the loaded world's mode
-        });
-        com.example.villagefightsback.network.ModNetwork.register(); // brainNode UI packet channel
-        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
-                net.minecraftforge.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/thevillagefightsback-common.toml
+    @Override
+    public void onInitialize() {
+        ModPathTypes.init();   // the custom BlockPathTypes constant, before anything can path
+
+        ModEntities.register(); // first: the spawn eggs below resolve entity types as they are built
+        ModBlocks.register();
+        ModItems.register();
+        ModArmor.register();
+        ModEffects.register();
+        ModPotions.register();
+        ModPaintings.register();
+        ModVillagers.register(); // Limbo Sage profession + its POI (reads the brain node's block states)
+        ModEnchantments.register();
+        ModParticles.register();
+        ModSounds.register();
+        ModLoot.register();      // the village-chest extras, as loot-table modifications
+        CheapScaffoldBlock.registerFlammability();
+        LimboElytraEvents.register();
+
+        ModTriggers.register();  // custom advancement triggers (brain node stage)
+        registerBrewing();
+
+        com.example.villagefightsback.network.ModNetwork.register();
+
+        Config.SPEC.loadFrom(FabricLoader.getInstance().getConfigDir().resolve(MODID + "-common.toml"));
+        Config.apply();          // push drift chances into LimboDrift and scale the brain radii
+
+        ServerRef.init();
+        ModEventHandlers.registerCommon();
+        ModEventSources.init();  // the Fabric callbacks and mixin hooks that fire the shim events
+
         LOGGER.info("[The Village Fights Back] loaded.");
     }
 
     /**
-     * Hand back every chunk this mod ever force-loaded, on every level that loads.
+     * The mod's brewing recipes.
      *
-     * <p>1.4.0 pinned chunks in two places: nine ticking chunks around each brain node, so a village went on
-     * evolving with nobody near it, and one that followed each Nightmare raider so a hunt could outrun the
-     * player's view distance. Both are gone -- the raid musters beside the player and needs neither -- but
-     * Forge writes forced chunks into the level's save data, so a world that has already run 1.4.0 is carrying
-     * them and would go on reinstating them at every load with nothing left alive to release them.
+     * <p>The Forge branch registers these through {@code BrewingRecipeRegistry} with NBT-exact ingredients.
+     * Vanilla's own {@code PotionBrewing.addMix} says the same thing in three lines, because everything else
+     * falls out of vanilla's generic container mixes: gunpowder makes any potion a splash, dragon's breath makes
+     * any splash a lingering. So only the three potion-to-potion steps have to be declared.
      *
-     * <p>So they are dropped as the level reinstates them, which is the only moment Forge offers. Nothing in
-     * the mod takes a ticket any more, so there is no live ticket this can take away by mistake; on a world
-     * that never ran 1.4.0 it finds nothing and says nothing.
+     * <p>One small difference from the Forge build: addMix also matches the splash and lingering forms of the
+     * input potion, so brewing an emerald apple into a splash awkward potion gives a splash virus directly.
+     * That is how every vanilla potion already behaves.
      */
-    private static void releaseStaleChunkTickets() {
-        net.minecraftforge.common.world.ForgeChunkManager.setForcedChunkLoadingCallback(MODID, (level, helper) -> {
-            int nodes = helper.getBlockTickets().size();
-            int raiders = helper.getEntityTickets().size();
-            if (nodes + raiders == 0) return;
-            for (net.minecraft.core.BlockPos owner : new java.util.ArrayList<>(helper.getBlockTickets().keySet())) {
-                helper.removeAllTickets(owner);
-            }
-            for (java.util.UUID owner : new java.util.ArrayList<>(helper.getEntityTickets().keySet())) {
-                helper.removeAllTickets(owner);
-            }
-            LOGGER.info("[The Village Fights Back] Released {} brain-node and {} raider chunk ticket(s) held over "
-                    + "from 1.4.0 in {}; villages tick with their chunks now.",
-                    nodes, raiders, level.dimension().location());
-        });
-    }
+    private static void registerBrewing() {
+        // Emerald Apple turns an Awkward Potion into the Potion of Emerald Virus; glowstone strengthens it to II.
+        PotionBrewingInvoker.invokeAddMix(Potions.AWKWARD, ModItems.EMERALD_APPLE.get(),
+                ModPotions.EMERALD_VIRUS.get());
+        PotionBrewingInvoker.invokeAddMix(ModPotions.EMERALD_VIRUS.get(), Items.GLOWSTONE_DUST,
+                ModPotions.EMERALD_VIRUS_STRONG.get());
 
-    private void commonSetup(net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
-            ModTriggers.register(); // custom advancement triggers (brainNode stage)
-            releaseStaleChunkTickets();
-            // Emerald Apple brews the Potion of Emerald Virus (awkward base); gunpowder makes the splash
-            // version. The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe),
-            // so we deliberately do NOT add the lingering step (no expensive vanilla tipped-arrow path).
-            // StrictNBTIngredient so only the exact source potion matches.
-            net.minecraft.world.item.ItemStack awkward = potion(net.minecraft.world.item.Items.POTION,
-                    net.minecraft.world.item.alchemy.Potions.AWKWARD);
-            net.minecraft.world.item.ItemStack virus = potion(net.minecraft.world.item.Items.POTION, null);
-            net.minecraft.world.item.ItemStack splash = potion(net.minecraft.world.item.Items.SPLASH_POTION, null);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(awkward),
-                    net.minecraft.world.item.crafting.Ingredient.of(ModItems.EMERALD_APPLE.get()), virus);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash);
-
-            // Virus I -> Virus II with glowstone dust (mirrors vanilla strong-potion brewing); gunpowder then
-            // makes the Virus II splash, exactly as the Virus I splash above.
-            net.minecraft.world.item.ItemStack virus2 = potion(net.minecraft.world.item.Items.POTION,
-                    ModPotions.EMERALD_VIRUS_STRONG.get());
-            net.minecraft.world.item.ItemStack splash2 = potion(net.minecraft.world.item.Items.SPLASH_POTION,
-                    ModPotions.EMERALD_VIRUS_STRONG.get());
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GLOWSTONE_DUST), virus2);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(virus2),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), splash2);
-
-            // Darius' Special Sauce: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, the
-            // standard brewing rules give the variants: gunpowder -> volatile (splash), splash + dragon's breath
-            // -> lingering, redstone -> long. (Splash/lingering of the long variant follow from vanilla's generic
-            // gunpowder/dragon's-breath container recipes.)
-            net.minecraft.world.item.ItemStack kw = potion(net.minecraft.world.item.Items.POTION,
-                    ModPotions.DARIUS_SPECIAL_EFFECT.get());
-            net.minecraft.world.item.ItemStack kwSplash = potion(net.minecraft.world.item.Items.SPLASH_POTION,
-                    ModPotions.DARIUS_SPECIAL_EFFECT.get());
-            net.minecraft.world.item.ItemStack kwLinger = potion(net.minecraft.world.item.Items.LINGERING_POTION,
-                    ModPotions.DARIUS_SPECIAL_EFFECT.get());
-            net.minecraft.world.item.ItemStack kwLong = potion(net.minecraft.world.item.Items.POTION,
-                    ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get());
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kw),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.GUNPOWDER), kwSplash);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kwSplash),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.DRAGON_BREATH), kwLinger);
-            net.minecraftforge.common.brewing.BrewingRecipeRegistry.addRecipe(
-                    net.minecraftforge.common.crafting.StrictNBTIngredient.of(kw),
-                    net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.REDSTONE), kwLong);
-        });
-    }
-
-    /** A potion-tagged stack of the given container item; {@code potion == null} means our Emerald Virus potion. */
-    private static net.minecraft.world.item.ItemStack potion(net.minecraft.world.item.Item container,
-                                                             net.minecraft.world.item.alchemy.Potion potion) {
-        return net.minecraft.world.item.alchemy.PotionUtils.setPotion(
-                new net.minecraft.world.item.ItemStack(container),
-                potion != null ? potion : ModPotions.EMERALD_VIRUS.get());
+        // Darius' Special Sauce has no awkward-to-base recipe on purpose: the base potion is loot-only. From the
+        // looted base, redstone gives the long variant and the vanilla container mixes give the rest.
+        PotionBrewingInvoker.invokeAddMix(ModPotions.DARIUS_SPECIAL_EFFECT.get(), Items.REDSTONE,
+                ModPotions.DARIUS_SPECIAL_EFFECT_LONG.get());
     }
 }

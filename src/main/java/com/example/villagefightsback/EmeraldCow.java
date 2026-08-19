@@ -8,7 +8,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Cow: a passive member of the emerald faction. It behaves like a vanilla cow but runs the shared
@@ -35,8 +34,4 @@ public class EmeraldCow extends Cow implements EmeraldUnit {
         return Cow.createAttributes().add(Attributes.ATTACK_DAMAGE, 5.0D);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

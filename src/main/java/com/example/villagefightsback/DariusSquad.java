@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * General Darius's hired guard squad. Darius "hires" any nearby village guard (a Guard Villagers guard or a

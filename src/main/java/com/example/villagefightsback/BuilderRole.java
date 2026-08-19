@@ -1,5 +1,6 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.npc.Villager;
 
@@ -22,12 +23,12 @@ public final class BuilderRole {
     private static final String BUILDER_NAME = "builder";
 
     public static boolean isBuilder(Villager v) {
-        return v.getPersistentData().getBoolean(NBT_BUILDER);
+        return PersistentData.of(v).getBoolean(NBT_BUILDER);
     }
 
     /** The gate (door) index this builder starts from and builds rightward from. */
     public static int door(Villager v) {
-        return v.getPersistentData().getInt(NBT_DOOR);
+        return PersistentData.of(v).getInt(NBT_DOOR);
     }
 
     public static void promote(Villager v, int door) {
@@ -35,16 +36,16 @@ public final class BuilderRole {
         // A raider is out hunting. Requisitioning it as a builder gives it a wall to build in a place it is not
         // going to be, and gives the wall a builder that is not coming back.
         if (com.example.villagefightsback.NightmareRaid.isHunting(v)) return;
-        v.getPersistentData().putBoolean(NBT_BUILDER, true);
-        v.getPersistentData().putInt(NBT_DOOR, door);
+        PersistentData.of(v).putBoolean(NBT_BUILDER, true);
+        PersistentData.of(v).putInt(NBT_DOOR, door);
         v.setCustomName(Component.literal(BUILDER_NAME));
         v.setCustomNameVisible(true);
     }
 
     public static void demote(Villager v) {
         if (!isBuilder(v)) return;
-        v.getPersistentData().putBoolean(NBT_BUILDER, false);
-        v.getPersistentData().putLong(NBT_COOLDOWN, v.level().getGameTime() + DEMOTE_COOLDOWN);
+        PersistentData.of(v).putBoolean(NBT_BUILDER, false);
+        PersistentData.of(v).putLong(NBT_COOLDOWN, v.level().getGameTime() + DEMOTE_COOLDOWN);
         if (v.getCustomName() != null && BUILDER_NAME.equals(v.getCustomName().getString())) {
             v.setCustomName(null);
             v.setCustomNameVisible(false);
@@ -55,7 +56,7 @@ public final class BuilderRole {
      *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
         return !(v instanceof EmeraldgerEntity) && !isLimboSage(v)
-                && !isBuilder(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+                && !isBuilder(v) && v.level().getGameTime() >= PersistentData.of(v).getLong(NBT_COOLDOWN);
     }
 
     /** The Limbo Sage works at the brain node and must never be drafted as a builder. */

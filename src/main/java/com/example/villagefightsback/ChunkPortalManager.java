@@ -17,10 +17,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.ChunkEvent;
+import com.example.villagefightsback.platform.event.ServerStoppingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * CHUNK PORTALS (work in progress, v1.2.1) -- server side. Once {@link Config#chunkPortalsEnabled()} is on AND
@@ -35,7 +34,6 @@ import net.minecraftforge.fml.common.Mod;
  * plain green swirl; the live see-through Limbo view is a later phase. Mob cross-IN by walking a wall is also a
  * later phase (mobs only come out via the emergence below); only players walk through.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ChunkPortalManager {
     private ChunkPortalManager() {}
 

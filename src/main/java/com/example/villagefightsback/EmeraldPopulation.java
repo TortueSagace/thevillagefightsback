@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import java.util.Collections;
 import java.util.List;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -13,11 +14,10 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.CommandEvent;
+import com.example.villagefightsback.platform.event.EntityJoinLevelEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Soft population cap for the EMERALD faction ({@code emerald_mobs_max_number}) -- purely to limit lag, so it is
@@ -29,7 +29,6 @@ import net.minecraftforge.fml.common.Mod;
  * Manual spawns (spawn egg / {@code /summon}) check {@link #atCap} up front and tell the player. Entities loaded
  * from disk are never capped.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class EmeraldPopulation {
     private EmeraldPopulation() {}
 
@@ -75,7 +74,7 @@ public final class EmeraldPopulation {
     public static void onJoin(EntityJoinLevelEvent event) {
         if (event.isCanceled() || event.getLevel().isClientSide() || event.loadedFromDisk()) return;
         if (!(event.getLevel() instanceof ServerLevel level) || !isCapped(event.getEntity())) return;
-        if (event.getEntity().getPersistentData().getBoolean(UNCAPPED_TAG)) return; // deliberate spawn -> never capped
+        if (PersistentData.of(event.getEntity()).getBoolean(UNCAPPED_TAG)) return; // deliberate spawn -> never capped
         Vec3 pos = event.getEntity().position();
         if (!atCap(level, pos)) return;
         // At the cap. A NON-mite emerald (e.g. an Emeraldger) first makes room by culling expendable mites; each
@@ -142,7 +141,7 @@ public final class EmeraldPopulation {
      * "current times five" would mean every absorption raised the ceiling too, and the cap would never bind.
      */
     private static double originalMaxHp(LivingEntity e, AttributeInstance attr) {
-        net.minecraft.nbt.CompoundTag tag = e.getPersistentData();
+        net.minecraft.nbt.CompoundTag tag = PersistentData.of(e);
         if (!tag.contains(NBT_ORIGINAL_HP)) tag.putDouble(NBT_ORIGINAL_HP, attr.getBaseValue());
         return tag.getDouble(NBT_ORIGINAL_HP);
     }

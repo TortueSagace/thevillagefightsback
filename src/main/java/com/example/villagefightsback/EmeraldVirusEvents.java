@@ -7,6 +7,7 @@ import java.util.List;
 import com.example.villagefightsback.network.EmeraldTintPacket;
 import com.example.villagefightsback.network.ModNetwork;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -23,22 +24,20 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.LivingAttackEvent;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.LivingDropsEvent;
+import com.example.villagefightsback.platform.event.LivingEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * All Emerald-Virus behaviour: the Alien Slasher's on-hit payload, the virus's contagion / ground-rot /
  * green-tint sync while active, and the post-death TNT explosion + emerald loot. Immunity and the
  * one-shot infection rule live in {@link EmeraldVirus}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class EmeraldVirusEvents {
     private EmeraldVirusEvents() {}
 
@@ -79,7 +78,7 @@ public final class EmeraldVirusEvents {
         Entity direct = event.getSource().getDirectEntity();
         // Emerald-virus tipped arrow (a stage-3 guard's crossbow): infect on hit, nothing else.
         if (direct instanceof net.minecraft.world.entity.projectile.AbstractArrow arrow
-                && arrow.getPersistentData().getBoolean(com.example.villagefightsback.goal.StageThreeGuardGoal.NBT_VIRUS_ARROW)) {
+                && PersistentData.of(arrow).getBoolean(com.example.villagefightsback.goal.StageThreeGuardGoal.NBT_VIRUS_ARROW)) {
             EmeraldVirus.infect(target, virusLevel(arrow.getOwner())); // stage-4 guard's arrow -> Virus II
             return;
         }
@@ -305,7 +304,7 @@ public final class EmeraldVirusEvents {
     /** A virus host's experience is consumed along with its organic mass -> no XP orbs either (only when the
      *  feature is on; otherwise the virus is a plain debuff and XP drops normally). */
     @SubscribeEvent
-    public static void onXpDrop(net.minecraftforge.event.entity.living.LivingExperienceDropEvent event) {
+    public static void onXpDrop(com.example.villagefightsback.platform.event.LivingExperienceDropEvent event) {
         if (Config.mobInfectionEnabled() && EmeraldVirus.isActive(event.getEntity())) event.setCanceled(true);
     }
 

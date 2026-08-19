@@ -5,17 +5,15 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Client half of full-set bedrock phasing: the local player's collision is predicted client-side, so the
  * server-side noPhysics ({@link LimboGearEvents}) must be matched here or the player rubber-bands when trying
  * to walk through bedrock. Both sides compute the same condition (full set + box overlapping bedrock).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class LimboBedrockPhaseClient {
     private LimboBedrockPhaseClient() {}
 

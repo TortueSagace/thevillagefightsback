@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -16,10 +17,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Nightmare difficulty: at every sunset the village stops defending and comes for you.
@@ -31,7 +31,6 @@ import net.minecraftforge.fml.common.Mod;
  * <p>ONE player per node per sunset, the nearest to it. A raid split between two players is two half raids, and
  * the point of the roster sizes below is that the village arrives in force.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class NightmareRaid {
     private NightmareRaid() {}
 
@@ -78,14 +77,14 @@ public final class NightmareRaid {
     /** The player this mob is hunting, or null. Public so the pursuit goal can steer by it. */
     public static ServerPlayer huntedBy(net.minecraft.world.entity.Entity e) {
         if (!isHunting(e) || !(e.level() instanceof ServerLevel level)) return null;
-        String id = e.getPersistentData().getString(NBT_HUNTED);
+        String id = PersistentData.of(e).getString(NBT_HUNTED);
         if (id.isEmpty()) return null;
         return level.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(id));
     }
 
     /** True while this mob is out hunting a player, which is what suspends its ordinary village duties. */
     public static boolean isHunting(net.minecraft.world.entity.Entity e) {
-        return e.getPersistentData().getBoolean(NBT_HUNTING);
+        return PersistentData.of(e).getBoolean(NBT_HUNTING);
     }
 
     /**
@@ -259,7 +258,7 @@ public final class NightmareRaid {
     private static void mark(ServerPlayer p) {
         MobEffectInstance scent = new MobEffectInstance(
                 ModEffects.NIGHTMARE_SCENT.get(), SCENT_TICKS, 0, false, false, true);
-        scent.setCurativeItems(new ArrayList<>());   // neither milk nor a totem lifts it
+        com.example.villagefightsback.platform.UncurableEffects.mark(scent);   // neither milk nor a totem lifts it
         p.addEffect(scent);
         // The red glow the brief calls for. Vanilla GLOWING is the only outline the client can draw, and it is
         // also the honest one: it tells the hunted player exactly what the raid can see.
@@ -286,8 +285,8 @@ public final class NightmareRaid {
      * fight in this mod uses, with the same axe and the same damage.
      */
     private static void send(PathfinderMob raider, ServerPlayer target) {
-        raider.getPersistentData().putBoolean(NBT_HUNTING, true);
-        raider.getPersistentData().putString(NBT_HUNTED, target.getStringUUID());
+        PersistentData.of(raider).putBoolean(NBT_HUNTING, true);
+        PersistentData.of(raider).putString(NBT_HUNTED, target.getStringUUID());
         raider.addTag(TAG_RAIDER);
         HUNTERS.add(raider.getUUID());   // the sweep finds its raiders here and nowhere else
         // Blocking the requisition only stops a raider being GIVEN a job. A villager that was already a miner
@@ -324,8 +323,8 @@ public final class NightmareRaid {
      * the scent lapses, and they do, still hunting, just no longer able to see through walls.
      */
     @SubscribeEvent
-    public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
-        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
+    public static void onServerTick(com.example.villagefightsback.platform.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != com.example.villagefightsback.platform.event.TickEvent.Phase.END) return;
         MinecraftServer server = event.getServer();
         // Every 2s, not every tick. Two seconds is far inside the window where a target being re-asserted late
         // would be visible, and it is 40x cheaper than doing it every tick.
@@ -348,7 +347,7 @@ public final class NightmareRaid {
             // of the raid rather than the size of every raid the world has ever sent.
             if (m == null) { HUNTERS.remove(id); continue; }
 
-            String hunted = m.getPersistentData().getString(NBT_HUNTED);
+            String hunted = PersistentData.of(m).getString(NBT_HUNTED);
             ServerPlayer p = hunted.isEmpty() ? null
                     : server.getPlayerList().getPlayer(java.util.UUID.fromString(hunted));
             if (p == null || !p.isAlive() || p.isSpectator()) {
@@ -380,7 +379,7 @@ public final class NightmareRaid {
      * would build a compound tag for every mob in the world that is not a raider.
      */
     @SubscribeEvent
-    public static void onEntityJoin(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+    public static void onEntityJoin(com.example.villagefightsback.platform.event.EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
         net.minecraft.world.entity.Entity e = event.getEntity();
         if (!(e instanceof PathfinderMob) || !e.getTags().contains(TAG_RAIDER)) return;
@@ -405,7 +404,7 @@ public final class NightmareRaid {
 
     /** Stamp the village's aggro record, which is what the combat goals actually read. */
     private static void markAggro(PathfinderMob raider, ServerPlayer target) {
-        net.minecraft.nbt.CompoundTag data = raider.getPersistentData();
+        net.minecraft.nbt.CompoundTag data = PersistentData.of(raider);
         data.putUUID(VillageEvents.NBT_AGGRO_UUID, target.getUUID());
         // Comfortably longer than the re-assert interval, so it never lapses mid-hunt between renewals.
         data.putLong(VillageEvents.NBT_AGGRO_UNTIL, raider.level().getGameTime() + 200L);
@@ -415,10 +414,10 @@ public final class NightmareRaid {
     private static void stopHunting(PathfinderMob m) {
         HUNTERS.remove(m.getUUID());
         m.removeTag(TAG_RAIDER);
-        m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UUID);
-        m.getPersistentData().remove(VillageEvents.NBT_AGGRO_UNTIL);
-        m.getPersistentData().remove(NBT_HUNTING);
-        m.getPersistentData().remove(NBT_HUNTED);
+        PersistentData.of(m).remove(VillageEvents.NBT_AGGRO_UUID);
+        PersistentData.of(m).remove(VillageEvents.NBT_AGGRO_UNTIL);
+        PersistentData.of(m).remove(NBT_HUNTING);
+        PersistentData.of(m).remove(NBT_HUNTED);
         m.setTarget(null);
     }
 

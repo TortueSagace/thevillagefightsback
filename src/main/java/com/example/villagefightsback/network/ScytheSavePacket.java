@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -&gt; client: play the totem-of-undying save animation, but holding the Limbo Scythe.
@@ -28,7 +28,7 @@ public class ScytheSavePacket {
         return new ScytheSavePacket();
     }
 
-    public static void handle(ScytheSavePacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ScytheSavePacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.ScytheSaveFx.play()));
         ctx.get().setPacketHandled(true);

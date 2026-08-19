@@ -1,17 +1,16 @@
 package com.example.villagefightsback;
 
 import net.minecraft.world.effect.MobEffect;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Mob-effect registration (the alien "Emerald Virus"). */
 public final class ModEffects {
     private ModEffects() {}
 
     public static final DeferredRegister<MobEffect> EFFECTS =
-            DeferredRegister.create(ForgeRegistries.MOB_EFFECTS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.MOB_EFFECTS, TheVillageFightsBack.MODID);
 
     /** The contagious, irreversible "Emerald Virus" -- see {@link EmeraldVirusEffect} / {@link EmeraldVirus}. */
     public static final RegistryObject<MobEffect> EMERALD_VIRUS =
@@ -57,7 +56,7 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_MARKER =
             EFFECTS.register("emerald_marker", EmeraldMarkerEffect::new);
 
-    public static void register(IEventBus modBus) {
-        EFFECTS.register(modBus);
+    public static void register() {
+        EFFECTS.register();
     }
 }

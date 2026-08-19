@@ -13,7 +13,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Client -&gt; server: the answer to the difficulty screen, which follows the game-mode screen.
@@ -38,7 +38,7 @@ public class ChooseDifficultyPacket {
         return new ChooseDifficultyPacket(buf.readVarInt());
     }
 
-    public static void handle(ChooseDifficultyPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ChooseDifficultyPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;

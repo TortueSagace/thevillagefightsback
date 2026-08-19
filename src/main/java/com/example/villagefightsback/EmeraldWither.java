@@ -1,6 +1,6 @@
 package com.example.villagefightsback;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -13,7 +13,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Wither: an EMERALD-faction WitherBoss that hunts every non-spared target and shoots skulls like
@@ -87,8 +86,4 @@ public class EmeraldWither extends WitherBoss implements EmeraldUnit {
     @Override
     public void stopSeenByPlayer(ServerPlayer p) {}
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

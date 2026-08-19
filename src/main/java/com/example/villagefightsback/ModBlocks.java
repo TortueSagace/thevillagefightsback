@@ -18,25 +18,22 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Block/item/creative-tab registration. */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModBlocks {
     private ModBlocks() {}
 
     public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(ForgeRegistries.BLOCKS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.BLOCKS, TheVillageFightsBack.MODID);
     public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.ITEMS, TheVillageFightsBack.MODID);
     public static final DeferredRegister<CreativeModeTab> TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
     public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
-            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.BLOCK_ENTITY_TYPES, TheVillageFightsBack.MODID);
 
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
@@ -217,7 +214,7 @@ public final class ModBlocks {
      *  cobblestone stairs. Same obsidian toughness (needs a diamond pickaxe -- see the block tags). */
     public static final RegistryObject<Block> OBSIDIAN_STAIRS = BLOCKS.register(
             "obsidian_stairs",
-            () -> new StairBlock(() -> Blocks.OBSIDIAN.defaultBlockState(),
+            () -> new StairBlock(Blocks.OBSIDIAN.defaultBlockState(),
                     BlockBehaviour.Properties.copy(Blocks.OBSIDIAN)));
 
     public static final RegistryObject<Item> OBSIDIAN_STAIRS_ITEM = ITEMS.register(
@@ -358,13 +355,13 @@ public final class ModBlocks {
      *  head in a protecting-glass cocoon, 150 HP, melee + turret). See {@link DefenderGolemEntity}. */
     public static final RegistryObject<Item> DEFENDER_GOLEM_SPAWN = ITEMS.register(
             "defender_golem",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.DEFENDER_GOLEM,
+            () -> new net.minecraft.world.item.SpawnEggItem(ModEntities.DEFENDER_GOLEM.get(),
                     0xDBD3D0, 0x78ebf5, new Item.Properties()));
 
     /** Spawn egg for the {@link BrainNodeWardenEntity} (a green Warden with a brainNode-block head). */
     public static final RegistryObject<Item> BRAIN_NODE_WARDEN_SPAWN = ITEMS.register(
             "brain_node_warden",
-            () -> new net.minecraftforge.common.ForgeSpawnEggItem(ModEntities.UNLEASHED_BRAIN_NODE,
+            () -> new net.minecraft.world.item.SpawnEggItem(ModEntities.UNLEASHED_BRAIN_NODE.get(),
                     0x16331a, 0x55e07a, new Item.Properties()));
 
     // --- Fertile / Rich block family --------------------------------------------------------------
@@ -426,7 +423,7 @@ public final class ModBlocks {
     // structure keeps its geometry instead of being filled with a solid fertile cube. The base material is
     // arbitrary -- only the SHAPE matters; they reuse the fertile_stone texture.
     public static final RegistryObject<Block> FERTILE_STAIRS = BLOCKS.register("fertile_stairs",
-            () -> new StairBlock(() -> Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
+            () -> new StairBlock(Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
     public static final RegistryObject<Block> FERTILE_SLAB = BLOCKS.register("fertile_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
     public static final RegistryObject<Block> FERTILE_FENCE = BLOCKS.register("fertile_fence",
@@ -475,7 +472,7 @@ public final class ModBlocks {
     public static final RegistryObject<Block> FERTILE_PLANKS = BLOCKS.register("fertile_planks",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_PLANKS_STAIRS = BLOCKS.register("fertile_planks_stairs",
-            () -> new StairBlock(() -> FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+            () -> new StairBlock(FERTILE_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_PLANKS_SLAB = BLOCKS.register("fertile_planks_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS).emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
     public static final RegistryObject<Block> FERTILE_COBBLESTONE = BLOCKS.register("fertile_cobblestone",
@@ -613,7 +610,7 @@ public final class ModBlocks {
             // are registered. The colours must match green block for block rather than be quietly "fixed",
             // otherwise a cyan slab would glow where a green one does not.
             colour(c, "fertile_stairs" + c, () -> new StairBlock(
-                    () -> Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
+                    Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
             colour(c, "fertile_slab" + c, () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
             colour(c, "fertile_fence" + c, () -> new FenceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
             colour(c, "fertile_iron_bars" + c,
@@ -626,7 +623,7 @@ public final class ModBlocks {
             // craftable wood + cobble
             colour(c, "fertile_planks" + c, () -> new Block(glow(Blocks.OAK_PLANKS)));
             colour(c, "fertile_planks_stairs" + c, () -> new StairBlock(
-                    () -> col("fertile_planks" + c).defaultBlockState(), glow(Blocks.OAK_PLANKS)));
+                    col("fertile_planks" + c).defaultBlockState(), glow(Blocks.OAK_PLANKS)));
             colour(c, "fertile_planks_slab" + c, () -> new SlabBlock(glow(Blocks.OAK_PLANKS)));
             colour(c, "fertile_cobblestone" + c, () -> new Block(glow(Blocks.COBBLESTONE)));
 
@@ -674,6 +671,9 @@ public final class ModBlocks {
     public static final RegistryObject<Block> LIMBO_GRAVEL = BLOCKS.register("limbo_gravel",
             () -> new LimboGravelBlock(BlockBehaviour.Properties.copy(Blocks.GRAVEL)
                     .mapColor(MapColor.COLOR_BLACK)
+                    // An anchor block must not be shoved off its spot by a piston, which would wrongly free the
+                    // creature it holds. A block property in 1.20.1, where Forge had an override for it.
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)
                     .noLootTable()));               // drops are handled in-code (plain item / soul item / restore)
     public static final RegistryObject<Item> LIMBO_GRAVEL_ITEM = ITEMS.register("limbo_gravel",
             () -> new BlockItem(LIMBO_GRAVEL.get(), new Item.Properties()));
@@ -836,7 +836,7 @@ public final class ModBlocks {
                     .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK)));
 
     /** The mod's own creative tab. New blocks/items get added here over time. */
-    public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
+    public static final RegistryObject<CreativeModeTab> TAB = TABS.register("main", () -> net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder()
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
             .icon(() -> new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get()))
             .displayItems((params, output) -> {
@@ -1005,10 +1005,11 @@ public final class ModBlocks {
      * sequence -- so the five sets read as five copies of one shelf rather than 250 unrelated items.
      */
     public static final RegistryObject<CreativeModeTab> BLOCKS_TAB = TABS.register("blocks",
-            () -> CreativeModeTab.builder()
+            () -> net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder()
                     .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID + ".blocks"))
                     .icon(() -> new ItemStack(INFESTED_PATH_ITEM.get()))
-                    .withTabsBefore(TAB.getKey())
+                    // Forge lets a tab declare which one it sits after; 1.20.1 vanilla does not, so the two
+                    // tabs simply fall in registration order, which puts the main tab first anyway.
                     .displayItems((params, output) -> {
                         // --- green: the original set, in its long-standing order ---
                         for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
@@ -1042,11 +1043,11 @@ public final class ModBlocks {
                     .build());
 
     /** Register the DeferredRegisters on the mod event bus (call from the mod constructor). */
-    public static void register(IEventBus modBus) {
-        BLOCKS.register(modBus);
-        ITEMS.register(modBus);
-        TABS.register(modBus);
-        BLOCK_ENTITIES.register(modBus);
+    public static void register() {
+        BLOCKS.register();
+        ITEMS.register();
+        TABS.register();
+        BLOCK_ENTITIES.register();
     }    /**
      * Every form of one of our potions, for the creative tab: drinkable, splash, lingering, and the tipped
      * arrow. All four are brewable and all four already have names in the lang file, so listing only the

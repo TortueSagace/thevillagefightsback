@@ -12,9 +12,8 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The status report for the Village Brain Node nearest the player -- its evolution stage, the emeralds still
@@ -22,7 +21,6 @@ import net.minecraftforge.fml.common.Mod;
  * it (within its income/defender radius). Exposed as {@code /thevillagefightsback village_status_report}
  * ({@link ModCommands}); this class also runs the 10s node-highlight glow.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VillageStatusCommand {
     private VillageStatusCommand() {}
 

@@ -11,16 +11,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.ForgeSpawnEggItem;
+import net.minecraft.world.item.SpawnEggItem;
 
 /**
  * An emerald-faction spawn egg that respects the population cap ({@code emerald_mobs_max_number}). When the cap is
  * already reached the egg does NOT spawn a unit (and is not consumed); the player is told why on the action bar.
  * Below the cap it behaves exactly like a normal spawn egg.
  */
-public class EmeraldSpawnEggItem extends ForgeSpawnEggItem {
+public class EmeraldSpawnEggItem extends SpawnEggItem {
     public EmeraldSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type, int bg, int hl, Item.Properties props) {
-        super(type, bg, hl, props);
+        super(type.get(), bg, hl, props);
     }
 
     @Override

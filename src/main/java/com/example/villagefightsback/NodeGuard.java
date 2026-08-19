@@ -7,9 +7,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Try to mine the brain node and the village throws you off it. Every difficulty, Peaceful included.
@@ -27,7 +26,6 @@ import net.minecraftforge.fml.common.Mod;
  * in the trade, which is the honest outcome -- Peaceful means the village will not hurt you, not that it owns
  * an indestructible block.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class NodeGuard {
     private NodeGuard() {}
 

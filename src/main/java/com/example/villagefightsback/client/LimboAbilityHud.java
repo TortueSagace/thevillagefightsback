@@ -6,27 +6,24 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 /**
  * Draws the banish-ability cooldown indicator (a small green square that fills as it recharges, with the
  * seconds remaining) just left of the hotbar -- but only while the player wears the full Limbo set, i.e. only
  * once they actually have the ability.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class LimboAbilityHud {
     private LimboAbilityHud() {}
 
     private static final int GREEN = 0xFF3BF07A;
 
-    @SubscribeEvent
-    public static void onRegister(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "limbo_ability_cooldown",
-                (gui, g, partialTick, w, h) -> draw(g, w, h));
+    /**
+     * Hooks the indicator into the HUD. Forge slots overlays into a named order (above the hotbar); Fabric's
+     * callback simply runs after the vanilla HUD, which puts this in the same place on screen.
+     */
+    public static void register() {
+        HudRenderCallback.EVENT.register((g, partialTick) -> draw(g, g.guiWidth(), g.guiHeight()));
     }
 
     private static void draw(GuiGraphics g, int w, int h) {

@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Sparse flora on freshly-converted fertile ground. After the infection fertilizes a block,
@@ -68,7 +68,7 @@ public final class FertileFlora {
     }
 
     private static Block byId(String name) {
-        return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
+        return ModRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
     }
 
     /**

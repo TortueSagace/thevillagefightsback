@@ -12,7 +12,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.common.util.ITeleporter;
 
 /**
  * Moves a creature through a Limbo Portal, applying the dimension's 16x space compression (twice the nether's)
@@ -79,15 +78,7 @@ public final class LimboPortalForcer {
             player.teleportTo(dest, x, y, z, player.getYRot(), player.getXRot());
             player.setPortalCooldown();
         } else {
-            Entity moved = entity.changeDimension(dest, new ITeleporter() {
-                @Override
-                public Entity placeEntity(Entity e, ServerLevel f, ServerLevel t, float yaw,
-                                          Function<Boolean, Entity> repositionEntity) {
-                    Entity m = repositionEntity.apply(false);
-                    m.moveTo(x, y, z, m.getYRot(), m.getXRot());
-                    return m;
-                }
-            });
+            Entity moved = com.example.villagefightsback.platform.DimensionTravel.teleport(entity, dest, x, y, z);
             if (moved != null) moved.setPortalCooldown();
         }
     }

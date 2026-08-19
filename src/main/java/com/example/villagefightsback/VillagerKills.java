@@ -1,13 +1,13 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Counts the hostile mobs each villager has killed, so a villager who actually fought for the village can be
@@ -21,7 +21,6 @@ import net.minecraftforge.fml.common.Mod;
  * <p>The tally lives in the villager's persistent data and is mirrored to a scoreboard tag, so it survives the
  * villager being replaced by MCA Reborn's spawn queue (which copies tags but not persistent data).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VillagerKills {
     private VillagerKills() {}
 
@@ -29,7 +28,7 @@ public final class VillagerKills {
 
     /** How many hostiles this villager has killed. */
     public static int get(Entity e) {
-        return e.getPersistentData().getInt(NBT_KILLS);
+        return PersistentData.of(e).getInt(NBT_KILLS);
     }
 
     /** True once the villager has fought for the village at least once, i.e. it has earned a grave. */
@@ -85,7 +84,7 @@ public final class VillagerKills {
         if (killer.level().isClientSide()) return;
 
         int now = get(killer) + 1;
-        killer.getPersistentData().putInt(NBT_KILLS, now);
+        PersistentData.of(killer).putInt(NBT_KILLS, now);
         com.example.villagefightsback.compat.VillagerRoleTags.mirror(killer);
     }
 }

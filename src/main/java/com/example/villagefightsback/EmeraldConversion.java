@@ -15,12 +15,11 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingChangeTargetEvent;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * EMERALD faction combat rules + the emerald-unit death effects.
@@ -37,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
  * virus spawns a mite (Virus I) or an Emeraldger (Virus II) instead of converting -- handled in
  * {@link EmeraldVirusEvents}, which also banks organic mass and plays the green death swirl.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class EmeraldConversion {
     private EmeraldConversion() {}
 
@@ -79,12 +77,12 @@ public final class EmeraldConversion {
      * stop it: an emerald creeper blast or wither skull that merely clips a villager would set the whole guard
      * detail hunting a faction they are supposed to be at peace with.
      *
-     * <p>{@link net.minecraftforge.event.entity.living.LivingAttackEvent} is the first thing Minecraft runs after
+     * <p>{@link com.example.villagefightsback.platform.event.LivingAttackEvent} is the first thing Minecraft runs after
      * that broadcast, so this is the earliest possible undo. It is edge-triggered -- nothing runs unless an
      * emerald actually lands damage on an MCA villager.
      */
     @SubscribeEvent
-    public static void onMcaVillagerHurtByEmerald(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+    public static void onMcaVillagerHurtByEmerald(com.example.villagefightsback.platform.event.LivingAttackEvent event) {
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
         if (!Factions.isEmerald(attacker)) return;
         // Only MCA's own villager class runs that broadcast, so anything else cannot have summoned guards.

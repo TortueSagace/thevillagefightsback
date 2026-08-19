@@ -60,24 +60,6 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
         return r;
     }
 
-    /**
-     * Forge routes shears-on-mob through IForgeShearable.onSheared (NOT shear()), so we override it here to
-     * yield light-green (lime) wool + an emerald.
-     */
-    @Override
-    public java.util.List<net.minecraft.world.item.ItemStack> onSheared(
-            net.minecraft.world.entity.player.Player player, net.minecraft.world.item.ItemStack item,
-            Level level, BlockPos pos, int fortune) {
-        this.level().playSound(null, this, SoundEvents.SHEEP_SHEAR,
-                player == null ? SoundSource.BLOCKS : SoundSource.PLAYERS, 1.0F, 1.0F);
-        this.setSheared(true);
-        int count = 1 + this.random.nextInt(3);
-        java.util.List<net.minecraft.world.item.ItemStack> drops = new java.util.ArrayList<>();
-        for (int i = 0; i < count; i++) drops.add(new net.minecraft.world.item.ItemStack(Items.LIME_WOOL));
-        drops.add(new net.minecraft.world.item.ItemStack(Items.EMERALD));
-        return drops;
-    }
-
     @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
         super.dropCustomDeathLoot(source, looting, recentlyHit);
@@ -102,10 +84,6 @@ public class RichSheepEntity extends Sheep implements EmeraldUnit {
         this.spawnAtLocation(Items.EMERALD);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return net.minecraftforge.network.NetworkHooks.getEntitySpawningPacket(this);
-    }
 
     /**
      * With probability {@code chance}, create and finalize-spawn a Rich Sheep at {@code pos}. Another batch

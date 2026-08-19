@@ -1,12 +1,12 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The Elegant Stand pedestal: any creature standing on an {@link ModBlocks#ELEGANT_STAND} block is frozen
@@ -15,7 +15,6 @@ import net.minecraftforge.fml.common.Mod;
  * persistent-data marker records which mobs WE froze, so we never clear someone else's NoAI and we tidy up
  * even across a world reload.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ElegantStandEvents {
     private ElegantStandEvents() {}
 
@@ -37,19 +36,19 @@ public final class ElegantStandEvents {
         // What is left is spotting a mob that has just been PUT on a stand, which needs a real block lookup.
         // That one is throttled: a stand is a decoration, and taking up to 8 ticks to notice a mob placed on
         // one is imperceptible, where 20 blockstate reads per tick per mob is not.
-        boolean displayed = mob.isNoAi() && mob.getPersistentData().getBoolean(NBT_DISPLAYED);
+        boolean displayed = mob.isNoAi() && PersistentData.of(mob).getBoolean(NBT_DISPLAYED);
         if (!displayed && (mob.tickCount & 7) != 0) return;
         boolean onStand = isOnStand(mob);
         if (onStand) {
             if (!displayed) {
-                mob.getPersistentData().putBoolean(NBT_DISPLAYED, true);
+                PersistentData.of(mob).putBoolean(NBT_DISPLAYED, true);
                 mob.setNoAi(true);
                 mob.setPersistenceRequired();                          // a display piece shouldn't despawn
                 mob.getNavigation().stop();
             }
             facePlayer(mob);                                           // keep turning to whoever is nearest
         } else if (displayed) {
-            mob.getPersistentData().putBoolean(NBT_DISPLAYED, false);
+            PersistentData.of(mob).putBoolean(NBT_DISPLAYED, false);
             mob.setNoAi(false);                                        // off the stand -> resume normal behaviour
         }
     }

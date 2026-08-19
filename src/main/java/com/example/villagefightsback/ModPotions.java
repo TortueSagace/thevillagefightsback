@@ -2,10 +2,9 @@ package com.example.villagefightsback;
 
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Potion registration: the Immunity potion (a creative-tab bottle that grants the {@link ModEffects#IMMUNITY}
  *  effect). The effect itself is also grantable directly via {@code /effect give @s thevillagefightsback:immunity}. */
@@ -13,7 +12,7 @@ public final class ModPotions {
     private ModPotions() {}
 
     public static final DeferredRegister<Potion> POTIONS =
-            DeferredRegister.create(ForgeRegistries.POTIONS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.POTIONS, TheVillageFightsBack.MODID);
 
     public static final int IMMUNITY_POTION_TICKS = 3 * 60 * 20; // 3 minutes
 
@@ -45,7 +44,7 @@ public final class ModPotions {
     public static final RegistryObject<Potion> DARIUS_SPECIAL_EFFECT_LONG = POTIONS.register("long_darius_special_effect",
             () -> new Potion("darius_special_effect", new MobEffectInstance(ModEffects.DARIUS_SPECIAL_EFFECT.get(), DARIUS_SPECIAL_EFFECT_LONG_TICKS)));
 
-    public static void register(IEventBus modBus) {
-        POTIONS.register(modBus);
+    public static void register() {
+        POTIONS.register();
     }
 }

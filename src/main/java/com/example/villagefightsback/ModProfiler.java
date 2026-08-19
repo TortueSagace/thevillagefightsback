@@ -8,10 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.RegisterCommandsEvent;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * A tiny built-in profiler for THIS mod's own work, so we can see which of our subsystems costs the most
@@ -25,7 +24,6 @@ import net.minecraftforge.fml.common.Mod;
  * In-game: {@code /gbtyw profile} prints a sorted breakdown, {@code /gbtyw profile reset} clears it,
  * {@code /gbtyw profile on|off} toggles measuring (overhead is a couple of nanoTime calls per section).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ModProfiler {
     private ModProfiler() {}
 

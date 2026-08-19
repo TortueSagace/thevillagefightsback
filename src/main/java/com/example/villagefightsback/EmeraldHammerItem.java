@@ -19,10 +19,9 @@ import net.minecraft.world.item.Tier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The Emerald Hammer: an emerald-tier pickaxe that breaks a 3x3 area (the plane of the MINED FACE) in a
@@ -117,7 +116,6 @@ public class EmeraldHammerItem extends PickaxeItem {
      * mined face instead of the coarser view axis), and drives the 3x3 in CREATIVE (where vanilla never calls
      * {@link #mineBlock}). Survival is handled by {@code mineBlock}; this only does the creative fan-out.
      */
-    @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static final class FaceTracker {
         private static final double REACH = 6.0; // a touch beyond survival reach (4.5), covers creative too
 

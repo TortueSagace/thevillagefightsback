@@ -2,7 +2,7 @@ package com.example.villagefightsback;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -34,13 +34,18 @@ public class LimboArmorItem extends ArmorItem {
     private static final int ANIM_FRAMES = 16;
     private static final int ANIM_FRAME_TICKS = 3; // ticks per frame (~2.4s full loop)
 
-    @Override
-    public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-        if (type != null) return null;                       // no "overlay" layer for our gear
-        int layer = (slot == EquipmentSlot.LEGS) ? 2 : 1;    // leggings use layer 2, everything else layer 1
-        long time = (entity != null) ? entity.level().getGameTime() : 0L;
-        int frame = (int) ((time / ANIM_FRAME_TICKS) % ANIM_FRAMES);
-        return TheVillageFightsBack.MODID + ":textures/models/armor/limbo_layer_" + layer + "_" + frame + ".png";
+    /**
+     * The worn texture for this frame. Forge asks the item for it; vanilla hard-codes the path from the armour
+     * material, so a client mixin on HumanoidArmorLayer calls this instead for Limbo pieces.
+     *
+     * @param innerModel true for the leggings layer (layer 2), false for everything else (layer 1)
+     * @param gameTime   the level's game time, which is what keeps every wearer's shimmer in step
+     */
+    public static net.minecraft.resources.ResourceLocation armorTexture(boolean innerModel, long gameTime) {
+        int layer = innerModel ? 2 : 1;
+        int frame = (int) ((gameTime / ANIM_FRAME_TICKS) % ANIM_FRAMES);
+        return new net.minecraft.resources.ResourceLocation(TheVillageFightsBack.MODID,
+                "textures/models/armor/limbo_layer_" + layer + "_" + frame + ".png");
     }
 
     // Two dedicated tip keys (NOT ".desc") so ModTooltips does not also append a line (it only adds ".desc").

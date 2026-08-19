@@ -68,23 +68,18 @@ public class CheapScaffoldBlock extends ScaffoldingBlock {
     }
 
     @Override
-    public boolean canDropFromExplosion(BlockState state, BlockGetter level, BlockPos pos, Explosion explosion) {
+    public boolean dropFromExplosion(Explosion explosion) {
         return false; // explosions destroy cheap scaffolds without dropping anything
     }
 
-    // Flammable like bamboo scaffolding -- fire destroys it, dropping nothing.
-    @Override
-    public boolean isFlammable(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        return true;
-    }
-
-    @Override
-    public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        return 60;
-    }
-
-    @Override
-    public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
-        return 60;
+    /**
+     * Flammable like bamboo scaffolding -- fire destroys it, dropping nothing.
+     *
+     * <p>Forge asks the block; Fabric keeps a registry of burn/spread values, so the numbers are declared here
+     * and handed over from the mod initializer.
+     */
+    public static void registerFlammability() {
+        net.fabricmc.fabric.api.registry.FlammableBlockRegistry.getDefaultInstance()
+                .add(com.example.villagefightsback.ModBlocks.CHEAP_SCAFFOLD.get(), 60, 60);
     }
 }

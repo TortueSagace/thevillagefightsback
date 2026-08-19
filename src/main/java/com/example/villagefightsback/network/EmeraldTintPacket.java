@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -> client: an entity's Emerald-Virus green-tint progress (0..1). The infection is server-side
@@ -30,7 +30,7 @@ public class EmeraldTintPacket {
         return new EmeraldTintPacket(buf.readVarInt(), buf.readFloat());
     }
 
-    public static void handle(EmeraldTintPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(EmeraldTintPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.EmeraldTintClient.put(msg.entityId, msg.progress)));
         ctx.get().setPacketHandled(true);

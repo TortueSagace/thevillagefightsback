@@ -6,10 +6,9 @@ import net.minecraft.world.item.enchantment.DamageEnchantment;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentCategory;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /**
  * The three native mace enchantments (cloned from vanilla 1.21 so the mod owns them outright):
@@ -23,11 +22,29 @@ public final class ModEnchantments {
     private ModEnchantments() {}
 
     public static final DeferredRegister<Enchantment> ENCHANTMENTS =
-            DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.ENCHANTMENTS, TheVillageFightsBack.MODID);
 
-    /** Custom category: these enchantments only ever go on our mace. */
-    public static final EnchantmentCategory MACE_CATEGORY =
-            EnchantmentCategory.create("thevillagefightsback_mace", item -> item instanceof MaceItem);
+    /**
+     * These enchantments only ever go on our mace.
+     *
+     * <p>Forge lets a mod add an EnchantmentCategory; the enum cannot be extended here, so the category is the
+     * closest vanilla one and each enchantment overrides {@code canEnchant} to demand an actual mace. That is the
+     * method the enchanting table, the anvil and every command path all consult, so nothing else can pick these
+     * up -- the same gate, applied one level lower.
+     */
+    public static final EnchantmentCategory MACE_CATEGORY = EnchantmentCategory.WEAPON;
+
+    /** Shared by the three mace enchantments below: only a mace may carry them. */
+    private abstract static class MaceEnchantment extends Enchantment {
+        MaceEnchantment(Rarity rarity, EquipmentSlot... slots) {
+            super(rarity, MACE_CATEGORY, slots);
+        }
+
+        @Override
+        public boolean canEnchant(net.minecraft.world.item.ItemStack stack) {
+            return stack.getItem() instanceof MaceItem;
+        }
+    }
 
     private static final EquipmentSlot[] MAINHAND = { EquipmentSlot.MAINHAND };
 
@@ -38,8 +55,8 @@ public final class ModEnchantments {
     public static final RegistryObject<Enchantment> WIND_BURST =
             ENCHANTMENTS.register("wind_burst", WindBurstEnchantment::new);
 
-    public static void register(IEventBus modBus) {
-        ENCHANTMENTS.register(modBus);
+    public static void register() {
+        ENCHANTMENTS.register();
     }
 
     // --- effect helpers (read off a held stack) ----------------------------------------------------
@@ -68,9 +85,9 @@ public final class ModEnchantments {
     // --- the three enchantments --------------------------------------------------------------------
 
     /** Density: UNCOMMON, max 5, fall-based smash bonus. Incompatible with Breach + sharpness/smite/bane. */
-    public static final class DensityEnchantment extends Enchantment {
+    public static final class DensityEnchantment extends MaceEnchantment {
         DensityEnchantment() {
-            super(Rarity.UNCOMMON, MACE_CATEGORY, MAINHAND);
+            super(Rarity.UNCOMMON, MAINHAND);
         }
 
         @Override public int getMaxLevel() { return 5; }
@@ -86,9 +103,9 @@ public final class ModEnchantments {
     }
 
     /** Breach: RARE, max 4, reduces target armour effectiveness. Incompatible with Density. */
-    public static final class BreachEnchantment extends Enchantment {
+    public static final class BreachEnchantment extends MaceEnchantment {
         BreachEnchantment() {
-            super(Rarity.RARE, MACE_CATEGORY, MAINHAND);
+            super(Rarity.RARE, MAINHAND);
         }
 
         @Override public int getMaxLevel() { return 4; }
@@ -102,9 +119,9 @@ public final class ModEnchantments {
     }
 
     /** Wind Burst: RARE treasure-only, max 3, launches the attacker up on a smash. Compatible with all. */
-    public static final class WindBurstEnchantment extends Enchantment {
+    public static final class WindBurstEnchantment extends MaceEnchantment {
         WindBurstEnchantment() {
-            super(Rarity.RARE, MACE_CATEGORY, MAINHAND);
+            super(Rarity.RARE, MAINHAND);
         }
 
         @Override public int getMaxLevel() { return 3; }

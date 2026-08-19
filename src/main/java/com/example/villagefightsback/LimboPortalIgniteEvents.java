@@ -8,16 +8,14 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Lights Limbo portals: right-clicking a fake- or X-ray-obsidian frame with flint &amp; steel (or a fire
  * charge) tries to build a green Limbo portal in the enclosed opening ({@link LimboPortalShape}). On success
  * the flame is consumed but no fire is placed -- the portal blocks fill the frame directly.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboPortalIgniteEvents {
     private LimboPortalIgniteEvents() {}
 

@@ -12,7 +12,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Virus arrow: a normal arrow that also infects whatever living thing it hits with the Emerald
@@ -73,8 +72,4 @@ public class EmeraldVirusArrowEntity extends AbstractArrow {
         if (tag.contains("VirusAmplifier")) setVirusAmplifier(tag.getInt("VirusAmplifier"));
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

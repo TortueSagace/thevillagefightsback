@@ -8,10 +8,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Burial and resurrection for the village's fallen.
@@ -25,7 +24,6 @@ import net.minecraftforge.fml.common.Mod;
  * graveyard, MCA's villagers mourn at it, and MCA's own Scythe works on it as well as ours. Without MCA the
  * grave is this mod's memorial block. Either way the Limbo Scythe raises it.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class Graves {
     private Graves() {}
 
@@ -58,7 +56,7 @@ public final class Graves {
         CompoundTag snapshot = new CompoundTag();
         // saveWithoutId omits the entity id, which EntityType.create needs to rebuild it, so put it back.
         deceased.saveWithoutId(snapshot);
-        net.minecraft.resources.ResourceLocation type = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
+        net.minecraft.resources.ResourceLocation type = com.example.villagefightsback.platform.ModRegistries.ENTITY_TYPES
                 .getKey(deceased.getType());
         if (type == null) { level.removeBlock(spot, false); return false; }
         snapshot.putString("id", type.toString());
@@ -150,7 +148,7 @@ public final class Graves {
     /** True if this snapshot is General Darius (used to recognise his grave). */
     public static boolean isDariusNbt(CompoundTag nbt) {
         String id = nbt.getString("id");
-        return id.equals(net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES
+        return id.equals(com.example.villagefightsback.platform.ModRegistries.ENTITY_TYPES
                 .getKey(ModEntities.GENERAL_DARIUS.get()).toString());
     }
 }

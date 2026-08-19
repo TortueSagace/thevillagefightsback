@@ -32,12 +32,11 @@ import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.EntityJoinLevelEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * The Limbo raid. Spend more than 30s straight in the Limbo and you earn the {@link VeryBadOmenEffect Very Bad
@@ -46,7 +45,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * horn, village AI and victory/loss) -- the only change is that every illager vanilla spawns is immediately
  * swapped for its ghostly Limbo counterpart, and each wave is reinforced with a few Limbo Phantoms.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboRaidManager {
     private LimboRaidManager() {}
 
@@ -70,7 +68,7 @@ public final class LimboRaidManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null) return;
         long _p = ModProfiler.now();
         processSwaps();

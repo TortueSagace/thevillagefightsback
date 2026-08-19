@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * A native rocket projectile -- a clone of JEG's rocket mechanism so the iron golem's rocket launcher no
@@ -186,8 +185,4 @@ public class RocketEntity extends ThrowableProjectile implements ItemSupplier {
         return new ItemStack(ModItems.ROCKET.get()); // the billboard the client renders
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this); // carry velocity to the client
-    }
 }

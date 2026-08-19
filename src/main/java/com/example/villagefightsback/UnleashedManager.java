@@ -23,14 +23,13 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.LivingChangeTargetEvent;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Lifecycle + faction rules for the unleashed brainNode boss ({@link UnleashedBrainNodeEntity}) and its
@@ -41,7 +40,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *  - infected faction never harm/target each other; they absorb 90% of explosion damage;
  *  - a creature slain by a DIRECT boss hit becomes a vindictive guard instead of dying.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class UnleashedManager {
     private UnleashedManager() {}
 
@@ -75,7 +73,7 @@ public final class UnleashedManager {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % 40 != 0) return;
         long _p = ModProfiler.now();
         BrainNodeData data = BrainNodeData.get(server);

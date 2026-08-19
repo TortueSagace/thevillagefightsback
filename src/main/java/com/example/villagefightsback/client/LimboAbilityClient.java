@@ -6,17 +6,15 @@ import com.example.villagefightsback.network.LimboBeamPacket;
 import com.example.villagefightsback.network.ModNetwork;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.InputEvent;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Client side of the Limbo banish ability: on the keybind, asks the server to fire (the server gates it); and
  * keeps a local copy of the cooldown (server-synced on each use) for the HUD to draw down smoothly.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class LimboAbilityClient {
     private LimboAbilityClient() {}
 
@@ -42,7 +40,7 @@ public final class LimboAbilityClient {
         if (mc.player == null || mc.screen != null) return;
         while (LimboAbilityKeybinds.LIMBO_BEAM.consumeClick()) {
             if (cooldownTicks > 0 || !LimboGear.hasFullSet(mc.player)) continue; // gated client-side too (no spam)
-            ModNetwork.CHANNEL.sendToServer(new LimboBeamPacket());
+            ModNetwork.sendToServer(new LimboBeamPacket());
         }
     }
 }

@@ -15,12 +15,11 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.event.ChunkEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Drives the dimensional drift: when a drift Limbo chunk loads it is linked to its twin (overworld/nether)
@@ -28,7 +27,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * break/place in either a Limbo drift chunk or a twin chunk is mirrored to the other side (single block). A
  * slow periodic re-copy catches environment changes. Living entities never cross.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboDriftEvents {
     private LimboDriftEvents() {}
 
@@ -82,7 +80,7 @@ public final class LimboDriftEvents {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null) return;

@@ -11,12 +11,11 @@ import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.LivingChangeTargetEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Worn-Limbo-gear effects.
@@ -24,7 +23,6 @@ import net.minecraftforge.fml.common.Mod;
  *  - FULL SET bonuses: fire immunity, fall immunity, no harmful status effects, Limbo Phantoms turn neutral,
  *    and the keybound green banish beam (every 30s) with its HUD cooldown ({@link LimboAbility}).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboGearEvents {
     private LimboGearEvents() {}
 
@@ -94,7 +92,7 @@ public final class LimboGearEvents {
 
     /** Drop per-player state on logout (no map leak, no stale cooldown/HUD on rejoin). */
     @SubscribeEvent
-    public static void onLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+    public static void onLogout(com.example.villagefightsback.platform.event.PlayerEvent.PlayerLoggedOutEvent event) {
         FULL_SET.remove(event.getEntity().getUUID());
         LimboAbility.clear(event.getEntity().getUUID());
     }

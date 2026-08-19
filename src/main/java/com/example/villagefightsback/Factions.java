@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * The "infected" faction: the unleashed Village Brain Node boss and the vindictive guards it makes. Members
@@ -52,7 +52,7 @@ public final class Factions {
 
     /** True for a wither storm. Matched by entity id, so the Wither Storm mod stays an optional soft dependency. */
     public static boolean isWitherStorm(Entity e) {
-        return WITHER_STORM_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return WITHER_STORM_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /** The wither storm's BODY entities (the core + its heads, segments and tentacles) -- everything that makes
@@ -62,7 +62,7 @@ public final class Factions {
 
     /** True for any part of a wither storm's body (core / head / segment / tentacle). Used to banish the lot. */
     public static boolean isWitherStormPart(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = ModRegistries.ENTITY_TYPES.getKey(e.getType());
         return id != null && "witherstormmod".equals(id.getNamespace()) && WITHER_STORM_PARTS.contains(id.getPath());
     }
 
@@ -104,7 +104,7 @@ public final class Factions {
      * passed over by the mega-brutal buff and by Darius when he conscripts a squad.
      */
     public static boolean isGuard(Entity e) {
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))
+        return GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()))
                 || com.example.villagefightsback.compat.MCACompat.isMcaGuard(e);
     }
 
@@ -119,7 +119,7 @@ public final class Factions {
                 || e instanceof net.minecraft.world.entity.animal.IronGolem
                 || e instanceof WallDefenderEntity
                 || e instanceof GeneralDariusEntity
-                || GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+                || GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /**

@@ -24,11 +24,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Drives the brain node block infection (level 2+). Designed to stay cheap at any zone size:
@@ -38,7 +37,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *  - The same frontier walk doubles as destruction detection: a frontier cell whose block has vanished and
  *    was not a sanctioned removal (player break / miner dig) is treated as an ATTACK -> local speed-up (spec 8).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class InfectionManager {
     private InfectionManager() {}
 
@@ -87,7 +85,7 @@ public final class InfectionManager {
         boolean village = com.example.villagefightsback.Config.blockInfectionEnabled();
         boolean emerald = com.example.villagefightsback.Config.emeraldInfestationEnabled();
         if (!village && !emerald) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null) return;
         long tc = server.getTickCount();
         long _p = com.example.villagefightsback.ModProfiler.now();
@@ -249,7 +247,7 @@ public final class InfectionManager {
 
     /** Drop the snapshot with the server, so a second world never reads the first one's node positions. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(com.example.villagefightsback.platform.event.ServerStoppingEvent event) {
         LAST_BRAIN.clear();
         IDLE.clear();
     }
@@ -316,9 +314,9 @@ public final class InfectionManager {
 
     /** Explosions: every infection block they destroy is an ATTACK unless a player/villager caused the blast. */
     @SubscribeEvent
-    public static void onExplosion(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+    public static void onExplosion(com.example.villagefightsback.platform.event.ExplosionEvent.Detonate event) {
         if (!(event.getLevel() instanceof ServerLevel sl)) return;
-        net.minecraft.world.entity.Entity cause = event.getExplosion().getExploder();
+        net.minecraft.world.entity.Entity cause = event.getExplosion().getDirectSourceEntity();
         boolean friendly = cause instanceof net.minecraft.world.entity.player.Player || cause instanceof Villager;
         InfectionData inf = InfectionData.get(sl);
         long now = sl.getGameTime();
@@ -338,13 +336,13 @@ public final class InfectionManager {
     /** A miner that dies frees its slot immediately (the emerald drops via its 1.0 drop chance); the next
      *  staffMiners pass promotes a replacement (spec 6). */
     @SubscribeEvent
-    public static void onMinerDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+    public static void onMinerDeath(com.example.villagefightsback.platform.event.LivingDeathEvent event) {
         if (event.getEntity() instanceof Villager v && MinerRole.isMiner(v)) MinerRole.demote(v);
     }
 
     /** A non-villager mob destroying an infection block (e.g. griefing) is an ATTACK. */
     @SubscribeEvent
-    public static void onMobDestroyBlock(net.minecraftforge.event.entity.living.LivingDestroyBlockEvent event) {
+    public static void onMobDestroyBlock(com.example.villagefightsback.platform.event.LivingDestroyBlockEvent event) {
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         if (!BlockMatcher.isInfection(event.getState())) return;
         InfectionData inf = InfectionData.get(sl);
@@ -367,7 +365,7 @@ public final class InfectionManager {
     static net.minecraft.world.level.block.Block coloured(String greenName, String colour,
                                                           net.minecraft.world.level.block.Block green) {
         if (colour == null || colour.isEmpty()) return green;
-        net.minecraftforge.registries.RegistryObject<net.minecraft.world.level.block.Block> c =
+        com.example.villagefightsback.platform.registry.RegistryObject<net.minecraft.world.level.block.Block> c =
                 com.example.villagefightsback.ModBlocks.COLOURED.get(greenName + colour);
         return c != null && c.isPresent() ? c.get() : green;
     }

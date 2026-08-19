@@ -11,13 +11,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.entity.player.TradeWithVillagerEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.event.TradeWithVillagerEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Everything the village notices you doing, and what it costs or earns.
@@ -31,7 +30,6 @@ import net.minecraftforge.fml.common.Mod;
  * travels. Only the two rules that are about village PROPERTY (mining its metal, robbing its chests) ask
  * where you are, because those are about a specific village's things.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ReputationEvents {
     private ReputationEvents() {}
 

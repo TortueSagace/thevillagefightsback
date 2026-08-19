@@ -4,21 +4,17 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.event.EntityAttributeCreationEvent;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** Entity-type registration + attributes. */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModEntities {
     private ModEntities() {}
 
     public static final DeferredRegister<EntityType<?>> ENTITIES =
-            DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.ENTITY_TYPES, TheVillageFightsBack.MODID);
 
     public static final RegistryObject<EntityType<WallDefenderEntity>> WALL_DEFENDER = ENTITIES.register(
             "wall_defender",
@@ -125,7 +121,6 @@ public final class ModEntities {
                     .sized(0.4F, 0.4F)
                     .clientTrackingRange(8)
                     .updateInterval(10)
-                    .setShouldReceiveVelocityUpdates(true)
                     .build("rocket"));
 
     /** Native wind charge projectile -- a clone of the vanilla 1.21 wind charge (knockback-only gust). See
@@ -136,7 +131,6 @@ public final class ModEntities {
                     .sized(0.3125F, 0.3125F)
                     .clientTrackingRange(4)
                     .updateInterval(10)
-                    .setShouldReceiveVelocityUpdates(true)
                     .build("wind_charge"));
 
     /** Native bullet projectile -- a JEG-free clone of the revolver round. See {@link BulletEntity}. */
@@ -146,7 +140,6 @@ public final class ModEntities {
                     .sized(0.1F, 0.1F)             // tiny, like jeg's projectile size 0.05
                     .clientTrackingRange(6)
                     .updateInterval(1)
-                    .setShouldReceiveVelocityUpdates(true)
                     .fireImmune()
                     .build("bullet"));
 
@@ -286,12 +279,17 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<EmeraldElderGuardian>> EMERALD_ELDER_GUARDIAN = ENTITIES.register("emerald_elder_guardian",
             () -> EntityType.Builder.<EmeraldElderGuardian>of(EmeraldElderGuardian::new, MobCategory.MONSTER).sized(1.9975F, 1.9975F).clientTrackingRange(10).build("emerald_elder_guardian"));
 
-    public static void register(IEventBus modBus) {
-        ENTITIES.register(modBus);
+    public static void register() {
+        ENTITIES.register();
+        registerAttributes(); // must follow the type registrations above
     }
 
-    @SubscribeEvent
-    public static void onAttributes(EntityAttributeCreationEvent event) {
+    /**
+     * The default attributes for every living entity this mod adds. On Forge this is an event handler; here the
+     * same body writes straight into Fabric's attribute registry (see {@link EntityAttributeCreationEvent}).
+     */
+    private static void registerAttributes() {
+        EntityAttributeCreationEvent event = new EntityAttributeCreationEvent();
         event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
         event.put(WALL_DEFENDER_STAGE4.get(), WallDefenderEntity.createAttributes().build());
         event.put(EMERALDGER.get(), Villager.createAttributes().build());

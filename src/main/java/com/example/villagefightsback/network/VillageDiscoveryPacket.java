@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -&gt; client: show the village-discovery message at the bottom of the screen for {@code ticks}.
@@ -32,7 +32,7 @@ public class VillageDiscoveryPacket {
         return new VillageDiscoveryPacket(buf.readVarInt(), buf.readBoolean());
     }
 
-    public static void handle(VillageDiscoveryPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(VillageDiscoveryPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.VillageDiscoveryHud.show(msg.ticks, msg.warn)));
         ctx.get().setPacketHandled(true);

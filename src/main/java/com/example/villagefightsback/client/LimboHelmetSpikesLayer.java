@@ -21,8 +21,6 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Client-only: renders three spikes on top of the head whenever a humanoid wearer (chiefly the player) has
@@ -35,7 +33,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * the player renderers (PlayerModel extends HumanoidModel); the layer no-ops unless the head slot holds the
  * Limbo Helmet.
  */
-@OnlyIn(Dist.CLIENT)
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
 public class LimboHelmetSpikesLayer<T extends LivingEntity, M extends HumanoidModel<T>>
         extends RenderLayer<T, M> {
 

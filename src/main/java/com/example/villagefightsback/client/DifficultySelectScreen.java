@@ -59,7 +59,7 @@ public class DifficultySelectScreen extends ModeArtScreen {
     private void choose(Difficulty d) {
         if (answered) return;
         answered = true;
-        ModNetwork.CHANNEL.sendToServer(new ChooseDifficultyPacket(d.id()));
+        ModNetwork.sendToServer(new ChooseDifficultyPacket(d.id()));
         this.minecraft.setScreen(new ThankYouScreen());
     }
 

@@ -3,6 +3,11 @@
   "package": "com.example.villagefightsback.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "BlockPathTypesInvoker",
+    "EntityPersistentDataMixin",
+    "LivingEntityRemoveAllEffectsMixin",
+    "PotionBrewingInvoker",
+    "WalkNodeEvaluatorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

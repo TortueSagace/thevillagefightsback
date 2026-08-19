@@ -4,11 +4,7 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 /**
  * Draws this mod's bottom-of-screen messages (above the hotbar, NOT in chat): the two-line "village discovered"
@@ -23,7 +19,6 @@ import net.minecraftforge.fml.common.Mod;
  * client-tick timer ({@link VillageDiscoveryTicker} decrements it each unpaused tick) so it ALWAYS expires,
  * independent of world/dimension game-time.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillageDiscoveryHud {
     private VillageDiscoveryHud() {}
 
@@ -69,10 +64,9 @@ public final class VillageDiscoveryHud {
         if (hintTicksLeft > 0) hintTicksLeft--;
     }
 
-    @SubscribeEvent
-    public static void onRegister(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "village_discovery_message",
-                (gui, g, partialTick, w, h) -> draw(g, w, h));
+    /** Hooks the messages into the HUD; they draw after the vanilla one, in the same spot above the hotbar. */
+    public static void register() {
+        HudRenderCallback.EVENT.register((g, partialTick) -> draw(g, g.guiWidth(), g.guiHeight()));
     }
 
     private static void draw(GuiGraphics g, int w, int h) {

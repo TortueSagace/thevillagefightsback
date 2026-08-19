@@ -8,7 +8,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Chicken;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Chicken: a chicken reskinned as a passive emerald-faction unit. It keeps vanilla chicken
@@ -50,8 +49,4 @@ public class EmeraldChicken extends Chicken implements EmeraldUnit {
         return Chicken.createAttributes().add(Attributes.ATTACK_DAMAGE, 2.0D);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

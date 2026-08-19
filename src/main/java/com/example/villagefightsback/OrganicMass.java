@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
@@ -261,7 +262,7 @@ public final class OrganicMass {
         if (m instanceof net.minecraft.world.entity.animal.IronGolem) return 0; // emerald golems (+ both variants) exempt
         float maxHp = m.getMaxHealth();
         if (maxHp >= RECLAIM_MAX_HP) return 0; // other heavy units (elites / withers) are never auto-culled
-        net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
+        net.minecraft.nbt.CompoundTag pd = PersistentData.of(m);
         if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return 0; } // start its idle clock
         if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return 0;
 
@@ -326,7 +327,7 @@ public final class OrganicMass {
     /** Record that an emerald unit just dealt damage (resets its idle-reclaim clock). Called from the damage hook. */
     public static void noteDamageDealt(LivingEntity attacker) {
         if (attacker.level() instanceof ServerLevel sl) {
-            attacker.getPersistentData().putLong(LAST_DMG_TAG, sl.getGameTime());
+            PersistentData.of(attacker).putLong(LAST_DMG_TAG, sl.getGameTime());
         }
     }
 
@@ -404,7 +405,7 @@ public final class OrganicMass {
     }
 
     private static String shortName(EntityType<?> type) {
-        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(type);
+        net.minecraft.resources.ResourceLocation id = com.example.villagefightsback.platform.ModRegistries.ENTITY_TYPES.getKey(type);
         if (id == null) return "?";
         String p = id.getPath();
         if (p.startsWith("emerald_")) return p.substring("emerald_".length());
@@ -445,8 +446,8 @@ public final class OrganicMass {
             if (at == null) return;                                  // nowhere it fits -> skip this deployment
         }
         mob.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, level.getRandom().nextFloat() * 360.0F, 0.0F);
-        mob.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
-        mob.getPersistentData().putLong(LAST_DMG_TAG, level.getGameTime()); // start its idle-reclaim clock at spawn
+        PersistentData.of(mob).putBoolean(EmeraldPopulation.UNCAPPED_TAG, true);
+        PersistentData.of(mob).putLong(LAST_DMG_TAG, level.getGameTime()); // start its idle-reclaim clock at spawn
         // Emerald golems (iron + defender + gigachad variants) are a heavy investment: make them persistent so they
         // never vanilla-despawn when the player travels away (they are also exempt from the idle-reclaim cull).
         if (mob instanceof net.minecraft.world.entity.animal.IronGolem) mob.setPersistenceRequired();

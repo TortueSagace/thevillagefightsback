@@ -8,6 +8,7 @@ import com.example.villagefightsback.goal.ExpansionSettlerGoal;
 import com.example.villagefightsback.wall.WallBlock;
 import com.example.villagefightsback.wall.WallPlan;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -20,9 +21,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * STAGE-3 "EXPANSION": when a village's brainNode first reaches level 3, it dispatches a wave of settlers
@@ -36,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
  * lives in {@link ExpansionSettlerGoal}; this class handles the trigger, spawning, build-spot claims, and
  * the death fallback.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ExpansionManager {
     private ExpansionManager() {}
 
@@ -128,10 +127,10 @@ public final class ExpansionManager {
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
         v.setBaby(false);
-        v.getPersistentData().putBoolean(NBT_EXPANSION, true);
-        v.getPersistentData().putInt(NBT_TNT, color);
-        v.getPersistentData().putLong(NBT_BRAIN_NODE, gm.asLong());
-        if (cost > 0) v.getPersistentData().putInt(NBT_COST, cost);
+        PersistentData.of(v).putBoolean(NBT_EXPANSION, true);
+        PersistentData.of(v).putInt(NBT_TNT, color);
+        PersistentData.of(v).putLong(NBT_BRAIN_NODE, gm.asLong());
+        if (cost > 0) PersistentData.of(v).putInt(NBT_COST, cost);
         com.example.villagefightsback.compat.VillagerRoleTags.mirror(v); // survive an MCA replacement we did not cause
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant villager goals
         v.goalSelector.addGoal(1, new ExpansionSettlerGoal(v, gm, angle, wallRadius, color, delay));
@@ -252,9 +251,9 @@ public final class ExpansionManager {
      * afford it, and there is nothing to refund to justify it.
      */
     static void refund(ServerLevel level, Villager v, BlockPos brainNode, String reason) {
-        int cost = v.getPersistentData().getInt(NBT_COST);
+        int cost = PersistentData.of(v).getInt(NBT_COST);
         if (cost <= 0) return;
-        v.getPersistentData().remove(NBT_COST);
+        PersistentData.of(v).remove(NBT_COST);
         GlobalPos gp = GlobalPos.of(level.dimension(), brainNode);
         BrainNodeData data = BrainNodeData.get(level.getServer());
         if (!data.blocks().contains(gp)) return;   // the village it belonged to is gone
@@ -288,18 +287,18 @@ public final class ExpansionManager {
     public static boolean hasActiveSettlersNear(ServerLevel level, BlockPos centre, double radius) {
         net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(centre).inflate(radius);
         return !level.getEntitiesOfClass(Villager.class, box,
-                v -> v.isAlive() && v.getPersistentData().getBoolean(NBT_EXPANSION)).isEmpty();
+                v -> v.isAlive() && PersistentData.of(v).getBoolean(NBT_EXPANSION)).isEmpty();
     }
 
     // --- death fallback: an unplaced settler that dies drops its TNT where it falls ------------------
     @SubscribeEvent
     public static void onSettlerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof Villager v)) return;
-        if (!v.getPersistentData().getBoolean(NBT_EXPANSION)) return; // already placed / not a settler
+        if (!PersistentData.of(v).getBoolean(NBT_EXPANSION)) return; // already placed / not a settler
         if (!(v.level() instanceof ServerLevel level)) return;
-        int color = v.getPersistentData().getInt(NBT_TNT);
-        BlockPos gm = BlockPos.of(v.getPersistentData().getLong(NBT_BRAIN_NODE));
-        v.getPersistentData().remove(NBT_EXPANSION); // consume so it can't fire twice
+        int color = PersistentData.of(v).getInt(NBT_TNT);
+        BlockPos gm = BlockPos.of(PersistentData.of(v).getLong(NBT_BRAIN_NODE));
+        PersistentData.of(v).remove(NBT_EXPANSION); // consume so it can't fire twice
 
         // ONLY WHERE IT WOULD HAVE BEEN LEGAL ANYWAY. This used to drop the building wherever the settler
         // happened to fall, which is the worst case in the whole feature: a settler killed inside its own

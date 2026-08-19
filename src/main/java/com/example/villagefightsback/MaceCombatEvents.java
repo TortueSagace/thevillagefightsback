@@ -9,9 +9,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The NATIVE mace combat: the signature SMASH attack and the three mace enchantments (Density, Breach, Wind
@@ -22,7 +21,6 @@ import net.minecraftforge.fml.common.Mod;
  * effective armour. An IDENTICAL clone of the vanilla 1.21 mace behaviour (1.20.1 has no mace smash sound, so a
  * fallback sound is used).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class MaceCombatEvents {
     private MaceCombatEvents() {}
 

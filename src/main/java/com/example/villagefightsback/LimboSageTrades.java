@@ -5,10 +5,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.event.VillagerTradesEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /**
  * The Limbo Sage's wares. EVERYTHING is expensive in emeralds -- the sage deals in Limbo curios and luxury gear,
@@ -19,7 +18,6 @@ import net.minecraftforge.registries.RegistryObject;
  * each producing a {@link MerchantOffer} of "N emeralds -> item". They are added to the per-tier lists from the
  * {@link VillagerTradesEvent} only when the traded profession is the Limbo Sage.</p>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboSageTrades {
     private LimboSageTrades() {}
 

@@ -1,5 +1,6 @@
 package com.example.villagefightsback.compat;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.Villager;
@@ -61,7 +62,7 @@ public final class VillagerRoleTags {
     /** Copy the villager's set role flags out to scoreboard tags, so they survive an MCA replacement. */
     public static void mirror(Entity e) {
         if (!(e instanceof Villager) || !MCACompat.present()) return;
-        CompoundTag data = e.getPersistentData();
+        CompoundTag data = PersistentData.of(e);
         for (String key : BOOL_KEYS) {
             if (data.getBoolean(key)) e.addTag(PREFIX + key);
         }
@@ -81,7 +82,7 @@ public final class VillagerRoleTags {
     public static void restore(Entity e) {
         if (!(e instanceof Villager) || !MCACompat.present()) return;
         if (e.getTags().isEmpty()) return; // fast path: the overwhelming majority of villagers
-        CompoundTag data = e.getPersistentData();
+        CompoundTag data = PersistentData.of(e);
         for (String key : BOOL_KEYS) {
             if (!data.getBoolean(key) && e.getTags().contains(PREFIX + key)) data.putBoolean(key, true);
         }

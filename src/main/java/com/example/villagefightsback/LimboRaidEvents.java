@@ -8,18 +8,16 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.EntityJoinLevelEvent;
+import com.example.villagefightsback.platform.event.LivingEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Combat glue for the Limbo raiders: every attack a {@link LimboRaider} causes deals 3x damage (uniformly --
  * melee, crossbow bolts, evoker fangs, vex charges), a Limbo Evoker's summoned vexes are swapped for
  * {@link LimboVexEntity Limbo Vexes}, and the raiders smash through weak blocks that wall them off from prey.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboRaidEvents {
     private LimboRaidEvents() {}
 

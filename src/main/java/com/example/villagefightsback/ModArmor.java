@@ -2,17 +2,16 @@ package com.example.villagefightsback;
 
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.platform.registry.DeferredRegister;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
 /** The emerald armour set ({@link EmeraldArmorMaterial}). Registered on its own DeferredRegister. */
 public final class ModArmor {
     private ModArmor() {}
 
     public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(ForgeRegistries.ITEMS, TheVillageFightsBack.MODID);
+            DeferredRegister.create(ModRegistries.ITEMS, TheVillageFightsBack.MODID);
 
     public static final RegistryObject<Item> EMERALD_HELMET = ITEMS.register("emerald_helmet",
             () -> new ArmorItem(EmeraldArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties()));
@@ -41,8 +40,8 @@ public final class ModArmor {
             () -> new LimboElytraChestplateItem(LimboArmorMaterial.INSTANCE, new Item.Properties().fireResistant()));
 
     /** Call from the mod constructor. */
-    public static void register(IEventBus modBus) {
-        ITEMS.register(modBus);
+    public static void register() {
+        ITEMS.register();
     }
 
     // The emerald armour lives in OUR creative tab (built from emeralds), added in ModBlocks' tab contents --

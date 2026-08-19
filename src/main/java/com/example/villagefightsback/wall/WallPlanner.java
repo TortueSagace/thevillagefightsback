@@ -434,7 +434,7 @@ public final class WallPlanner {
      *  should rest on (and none are in the vanilla #logs/#leaves tags). */
     private static boolean isFertileFoliage(BlockState s) {
         net.minecraft.resources.ResourceLocation id =
-                net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(s.getBlock());
+                com.example.villagefightsback.platform.ModRegistries.BLOCKS.getKey(s.getBlock());
         if (id == null || !id.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID)) {
             return false;
         }

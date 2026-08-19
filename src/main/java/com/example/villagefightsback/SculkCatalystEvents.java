@@ -12,9 +12,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Our fertile / rich sculk catalyst. Like vanilla, when a mob dies within range of a catalyst it "blooms"
@@ -22,7 +21,6 @@ import net.minecraftforge.fml.common.Mod;
  * spread reuses {@link BlockMatcher#isCandidate} so it respects the same preserved blocks as the infection
  * (walls, chests, beds, job sites, bookshelves, food, ...).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class SculkCatalystEvents {
     private SculkCatalystEvents() {}
 

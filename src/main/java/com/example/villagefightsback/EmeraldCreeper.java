@@ -6,7 +6,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Creeper: a creeper in the EMERALD faction (v1.0.3 "mob infection"). It keeps its native combat
@@ -33,8 +32,4 @@ public class EmeraldCreeper extends Creeper implements EmeraldUnit {
         return Creeper.createAttributes();
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

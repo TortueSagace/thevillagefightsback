@@ -5,11 +5,10 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.ItemTooltipEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Adds a short gray description line to the inventory tooltip of every block/egg in the mod -- driven purely
@@ -17,7 +16,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * skipped (by request), and items that already render their own description ({@link TooltipBlockItem},
  * {@link LimboPickaxeItem}) are left alone so the line never doubles up.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class ModTooltips {
     private ModTooltips() {}
 
@@ -25,7 +23,7 @@ public final class ModTooltips {
     public static void onTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
         if (item instanceof TooltipBlockItem || item instanceof LimboPickaxeItem) return; // already self-describing
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
+        ResourceLocation id = ModRegistries.ITEMS.getKey(item);
         if (id == null || !id.getNamespace().equals(TheVillageFightsBack.MODID)) return;
         if (id.getPath().startsWith("fertile_") || id.getPath().startsWith("rich_")) return; // skip fertile/rich blocks
         String key = item.getDescriptionId() + ".desc";

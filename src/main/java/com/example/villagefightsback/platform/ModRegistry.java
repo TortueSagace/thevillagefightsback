@@ -1,6 +1,7 @@
 package com.example.villagefightsback.platform;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -11,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
  * <p>Semantics match: on a defaulted registry (blocks, items, entity types) a miss returns the registry's default
  * value rather than null, exactly as Forge's {@code getValue} does, so the call sites keep behaving the same.
  */
-public final class ModRegistry<T> {
+public final class ModRegistry<T> implements Iterable<T> {
     private final Registry<T> registry;
 
     ModRegistry(Registry<T> registry) {
@@ -37,5 +38,11 @@ public final class ModRegistry<T> {
 
     public Collection<T> getValues() {
         return this.registry.stream().toList();
+    }
+
+    /** Iterating the wrapper iterates the registry, which is what Forge's IForgeRegistry allowed. */
+    @Override
+    public Iterator<T> iterator() {
+        return this.registry.iterator();
     }
 }

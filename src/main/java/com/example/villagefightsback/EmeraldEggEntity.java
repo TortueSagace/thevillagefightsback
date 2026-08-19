@@ -13,7 +13,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Egg's thrown projectile: hurled like a snowball, it inflicts {@link EmeraldVirus} I on whatever
@@ -55,8 +54,4 @@ public class EmeraldEggEntity extends ThrowableItemProjectile {
         }
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

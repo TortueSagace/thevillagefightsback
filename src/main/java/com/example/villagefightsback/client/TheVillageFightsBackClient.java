@@ -1,5 +1,6 @@
 package com.example.villagefightsback.client;
 
+import com.example.villagefightsback.ModBlocks;
 import com.example.villagefightsback.ModEntities;
 import com.example.villagefightsback.ModItems;
 import com.example.villagefightsback.StagedDefenderEggItem;
@@ -12,17 +13,55 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.RegistryObject;
+import com.example.villagefightsback.network.ModNetwork;
+import com.example.villagefightsback.platform.ModEventHandlers;
+import com.example.villagefightsback.platform.event.EntityRenderersEvent;
+import com.example.villagefightsback.platform.event.ModEventSourcesClient;
+import com.example.villagefightsback.platform.event.RegisterColorHandlersEvent;
+import com.example.villagefightsback.platform.event.RegisterDimensionSpecialEffectsEvent;
+import com.example.villagefightsback.platform.event.RegisterParticleProvidersEvent;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import com.example.villagefightsback.platform.registry.RegistryObject;
 
-/** Client-only: attaches the decorative gun render layer to villager and iron golem renderers. */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public final class TheVillageFightsBackClient {
-    private TheVillageFightsBackClient() {}
+/**
+ * The client entry point: renderers, model layers, tint handlers, particles, the Limbo sky, the HUDs, the
+ * keybind, and the client half of the networking.
+ *
+ * <p>Forge fires each of these as a registration event on the mod bus. Fabric calls the initializer once and
+ * expects the mod to register into the right registry itself, so {@link #onInitializeClient} drives the same
+ * bodies in the same order (see the shim classes in platform.event, which take the identical calls).
+ */
+public final class TheVillageFightsBackClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        registerLayerDefinitions(new EntityRenderersEvent.RegisterLayerDefinitions());
+        registerRenderers(new EntityRenderersEvent.RegisterRenderers());
+        registerItemColors(new RegisterColorHandlersEvent.Item());
+        registerBlockColors(new RegisterColorHandlersEvent.Block());
+        registerParticles(new RegisterParticleProvidersEvent());
+        registerDimensionEffects(new RegisterDimensionSpecialEffectsEvent());
+        clientSetup();
+        addLayers();
+
+        // The spinning wall-defender icon on its spawn eggs. On Forge this hangs off the item itself, through
+        // initializeClient; Fabric attaches it from here instead, which keeps the item class client-free.
+        BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.WALL_DEFENDER_SPAWN.get(),
+                (stack, mode, pose, buffers, light, overlay) ->
+                        WallDefenderItemRenderer.instance().renderByItem(stack, mode, pose, buffers, light, overlay));
+        BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.WALL_DEFENDER_STAGE4_SPAWN.get(),
+                (stack, mode, pose, buffers, light, overlay) ->
+                        WallDefenderItemRenderer.instance().renderByItem(stack, mode, pose, buffers, light, overlay));
+
+        LimboAbilityHud.register();
+        VillageDiscoveryHud.register();
+        LimboAbilityKeybinds.register();
+
+        ModNetwork.registerClientReceivers();
+        ModEventHandlers.registerClient();
+        ModEventSourcesClient.init();
+    }
 
     public static final ModelLayerLocation WALL_DEFENDER_LAYER =
             new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "wall_defender"), "main");
@@ -35,33 +74,31 @@ public final class TheVillageFightsBackClient {
     public static final ModelLayerLocation DARIUS_LAYER =
             new ModelLayerLocation(new ResourceLocation(TheVillageFightsBack.MODID, "general_darius"), "main");
 
-    @SubscribeEvent
-    public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+    private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WALL_DEFENDER_LAYER, WallDefenderModel::createBodyLayer);
         event.registerLayerDefinition(LIMBO_HELMET_SPIKES, LimboHelmetSpikesLayer::createSpikesLayer);
         event.registerLayerDefinition(DARIUS_LAYER, DariusVillagerModel::createBodyLayer);
     }
 
-    /** Client setup: register item model properties (the rocket launcher's "aiming" predicate). */
-    @SubscribeEvent
-    public static void onClientSetup(net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent event) {
-        event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(
+    /**
+     * Item model properties (the rocket launcher's "aiming" predicate). Forge defers this to a work queue because
+     * its setup event runs off-thread; the Fabric client initializer is already on the right thread.
+     */
+    private static void clientSetup() {
+        net.minecraft.client.renderer.item.ItemProperties.register(
                 ModItems.ROCKET_LAUNCHER.get(),
                 new ResourceLocation(TheVillageFightsBack.MODID, "aiming"),
                 (stack, level, entity, seed) ->
-                        (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F));
+                        (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F);
     }
 
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */
-    @SubscribeEvent
-    public static void onRegisterDimensionEffects(
-            net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent event) {
+    private static void registerDimensionEffects(RegisterDimensionSpecialEffectsEvent event) {
         event.register(new ResourceLocation(TheVillageFightsBack.MODID, "limbo"), new LimboDimensionEffects());
     }
 
     /** Two-tone tint for the staged-defender spawn eggs (template_spawn_egg model, layers 0=base, 1=spots). */
-    @SubscribeEvent
-    public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
+    private static void registerItemColors(RegisterColorHandlersEvent.Item event) {
         net.minecraft.client.color.item.ItemColor handler =
                 (stack, layer) -> ((StagedDefenderEggItem) stack.getItem()).getColor(layer);
         for (RegistryObject<net.minecraft.world.item.Item> ro : ModItems.STAGED_EGGS) {
@@ -75,8 +112,7 @@ public final class TheVillageFightsBackClient {
     }
 
     /** Tint a placed Limbo gravel toward the colour of the creature it holds (read from its block entity). */
-    @SubscribeEvent
-    public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
+    private static void registerBlockColors(RegisterColorHandlersEvent.Block event) {
         event.register((state, level, pos, tintIndex) -> {
             if (level != null && pos != null
                     && level.getBlockEntity(pos) instanceof com.example.villagefightsback.LimboGravelBlockEntity be) {
@@ -86,8 +122,7 @@ public final class TheVillageFightsBackClient {
         }, com.example.villagefightsback.ModBlocks.LIMBO_GRAVEL.get());
     }
 
-    @SubscribeEvent
-    public static void onRegisterParticles(net.minecraftforge.client.event.RegisterParticleProvidersEvent event) {
+    private static void registerParticles(RegisterParticleProvidersEvent event) {
         // Our green sonic-boom reuses the vanilla SonicBoomParticle renderer with green sprites.
         event.registerSpriteSet(com.example.villagefightsback.ModParticles.GREEN_SONIC_BOOM.get(),
                 net.minecraft.client.particle.SonicBoomParticle.Provider::new);
@@ -99,8 +134,7 @@ public final class TheVillageFightsBackClient {
                 GigachadExplosionParticle.Provider::new);
     }
 
-    @SubscribeEvent
-    public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+    private static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(com.example.villagefightsback.ModBlocks.MEMORIAL_BE.get(),
                 MemorialRenderer::new);
         // The Limbo gravel's purple instability glow (a block-entity renderer).
@@ -179,21 +213,48 @@ public final class TheVillageFightsBackClient {
     /** The Guard Villagers guard entity type id. The mod is a RUNTIME soft-dep, so this may resolve to null. */
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
-    @SubscribeEvent
-    public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
-        // Villagers need NO custom gun layer: upgraded villagers hold the revolver and the vanilla
-        // CrossedArmsItemLayer renders it (nerfed villagers hold a stone axe, also rendered by it). A
-        // villager therefore only ever shows whatever it actually holds -- no gun before the upgrade.
-        //
-        // Gold re-skin + held rocket launcher now live on GigachadGolemRenderer (gigachads are their own
-        // creature type), so the VANILLA iron golem renderer is left untouched.
-
-        // Angry-face overlays: while a villager / guard is FIGHTING (detected client-side via the synced
-        // arm-swing animation -- see AngryFaceClient), scowl the angry villager face onto its head.
-        addAngryVillagerFace(event);
-        addAngryGuardFace(event);
-        // NOT on MCA's villagers. See addAngryMcaFace for why that layer is gone.
-        addLimboHelmetSpikes(event);
+    /**
+     * Attaches this mod's feature layers to other people's renderers.
+     *
+     * <p>Forge hands out a map of every renderer at once and lets a mod walk it. Fabric instead calls back once
+     * per living renderer as it is built, which is the same reach one entity at a time -- and it covers the
+     * player skins without the separate pass Forge needs.
+     *
+     * <p>What gets attached, and why nothing else does:
+     * <ul>
+     *   <li>Villagers need no gun layer: an upgraded villager holds the revolver and vanilla's CrossedArmsItemLayer
+     *       draws it, so a villager only ever shows what it is actually holding.</li>
+     *   <li>The gold re-skin and held rocket launcher live on GigachadGolemRenderer, so the vanilla iron golem
+     *       renderer stays untouched.</li>
+     *   <li>The angry face goes on vanilla villagers and Guard Villagers guards, but never on MCA Reborn's
+     *       villagers -- see the note below.</li>
+     * </ul>
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void addLayers() {
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register(
+                (entityType, entityRenderer, registrationHelper, context) -> {
+                    if (entityType == EntityType.VILLAGER) {
+                        registrationHelper.register(new AngryVillagerFaceLayer(
+                                (net.minecraft.client.renderer.entity.RenderLayerParent) entityRenderer));
+                    }
+                    EntityType<?> guardType = com.example.villagefightsback.platform.ModRegistries
+                            .ENTITY_TYPES.getValue(GUARD_ID);
+                    if (guardType != null && entityType == guardType
+                            && entityRenderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
+                        registrationHelper.register(new AngryGuardFaceLayer(
+                                (net.minecraft.client.renderer.entity.RenderLayerParent) entityRenderer));
+                    }
+                    // The Limbo Helmet spikes go on anything humanoid, so ANYONE wearing the helmet shows them.
+                    // The layer only draws when the head slot really holds it, so this is a no-op otherwise.
+                    // General Darius is skipped because his own renderer already adds the layer.
+                    if (entityType == ModEntities.GENERAL_DARIUS.get()) return;
+                    if (entityType == EntityType.PLAYER
+                            || entityRenderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
+                        registrationHelper.register(new LimboHelmetSpikesLayer(
+                                (LivingEntityRenderer) entityRenderer, context.getModelSet()));
+                    }
+                });
     }
 
     /**
@@ -205,67 +266,10 @@ public final class TheVillageFightsBackClient {
      * fighting village turned into a crowd of identical angry masks, and the identity MCA is installed FOR
      * disappeared for the whole fight.
      *
-     * <p>So on an MCA pack the anger simply is not drawn. The vanilla villager and Guard Villagers layers are
+     * <p>On an MCA pack the anger simply is not drawn. The vanilla villager and Guard Villagers layers are
      * untouched -- those entities have no MCA face to cover, so nothing is lost by keeping the scowl there.
      */
-    /**
-     * Attach the Limbo Helmet spikes layer to every player skin renderer (default + slim) AND to every other
-     * humanoid mob renderer, so ANYONE wearing the Limbo Helmet shows the spikes -- not just the player. The
-     * layer itself only draws when the head slot actually holds the Limbo Helmet, so adding it everywhere is a
-     * no-op for mobs that aren't wearing it.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addLimboHelmetSpikes(EntityRenderersEvent.AddLayers event) {
-        // Players (default + slim skins).
-        for (String skin : event.getSkins()) {
-            if (event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer pr) {
-                pr.addLayer(new LimboHelmetSpikesLayer<>(pr, event.getEntityModels()));
-            }
-        }
-        // Every other humanoid mob (zombies, skeletons, piglins, armour stands, the Guard Villagers guard, ...).
-        // Skip the player (handled above) and General Darius (his renderer already adds the layer) so neither
-        // gets a doubled layer.
-        for (EntityType<?> type : net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValues()) {
-            if (type == EntityType.PLAYER || type == ModEntities.GENERAL_DARIUS.get()) continue;
-            LivingEntityRenderer<?, ?> renderer;
-            try {
-                renderer = event.getRenderer((EntityType) type); // throws CCE for non-living renderers
-            } catch (ClassCastException notLiving) {
-                continue;
-            }
-            if (renderer == null || !(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) {
-                continue;
-            }
-            ((LivingEntityRenderer) renderer).addLayer(
-                    new LimboHelmetSpikesLayer((LivingEntityRenderer) renderer, event.getEntityModels()));
-        }
-    }
-
-    /** Attach the angry-face layer to the vanilla villager renderer. */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addAngryVillagerFace(EntityRenderersEvent.AddLayers event) {
-        LivingEntityRenderer<?, ?> renderer = event.getRenderer(EntityType.VILLAGER);
-        if (renderer == null) return; // defensive: some setups replace the villager renderer
-        // The villager renderer's model is a VillagerModel; the wildcard erases that, so cast through raw.
-        ((LivingEntityRenderer) renderer).addLayer(new AngryVillagerFaceLayer(
-                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
-    }
-
-    /**
-     * Attach the angry-face layer to the Guard Villagers guard renderer. Guard Villagers is a runtime
-     * soft-dep -- if it is absent the entity type lookup is null and we simply skip (null-guard). The guard
-     * renderer is only decorated when it is a LivingEntityRenderer whose model is a HumanoidModel.
-     */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addAngryGuardFace(EntityRenderersEvent.AddLayers event) {
-        EntityType<?> guardType = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
-        if (guardType == null) return; // Guard Villagers not installed -- nothing to decorate
-        // getRenderer needs EntityType<? extends T extends LivingEntity>; the registry hands us EntityType<?>,
-        // so go through a raw EntityType (we re-check the model type below before attaching the layer).
-        LivingEntityRenderer<?, ?> renderer = event.getRenderer((EntityType) guardType);
-        if (renderer == null) return;
-        if (!(renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>)) return; // wrong model -> skip
-        ((LivingEntityRenderer) renderer).addLayer(new AngryGuardFaceLayer(
-                (net.minecraft.client.renderer.entity.RenderLayerParent) renderer));
+    private static void angryFaceIsNotForMcaVillagers() {
+        // documentation only
     }
 }

@@ -8,10 +8,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Lets MCA Reborn's own Scythe raise the dead from THIS mod's memorial.
@@ -24,7 +23,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  *
  * <p>Matched by registry id, so MCA stays a soft dep and this is dead weight in a pack without it.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class MemorialScytheEvents {
     private MemorialScytheEvents() {}
 
@@ -34,7 +32,7 @@ public final class MemorialScytheEvents {
     public static void onScytheOnMemorial(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         ItemStack held = event.getItemStack();
-        if (!MCA_SCYTHE.equals(ForgeRegistries.ITEMS.getKey(held.getItem()))) return;
+        if (!MCA_SCYTHE.equals(ModRegistries.ITEMS.getKey(held.getItem()))) return;
 
         BlockPos pos = event.getPos();
         if (!(level.getBlockEntity(pos) instanceof MemorialBlockEntity grave) || !grave.hasOccupant()) return;

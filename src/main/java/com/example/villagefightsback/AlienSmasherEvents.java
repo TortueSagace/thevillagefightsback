@@ -13,10 +13,9 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The Alien Smasher's two extra behaviours, both Forge-bus:
@@ -32,7 +31,6 @@ import net.minecraftforge.fml.common.Mod;
  * The guard-mace baseline itself (Density >= 3, Wind Burst launch >= level-3, Fire Aspect 2 burn) lives in
  * {@link MaceCombatEvents}, applied as a floor whenever the weapon is an Alien Smasher.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class AlienSmasherEvents {
     private AlienSmasherEvents() {}
 

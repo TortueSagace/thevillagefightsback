@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -> client: gravity in this dimension is reversed for {@code durationTicks}, so turn the world
@@ -30,7 +30,7 @@ public class ReversedGravityPacket {
         return new ReversedGravityPacket(buf.readVarInt());
     }
 
-    public static void handle(ReversedGravityPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ReversedGravityPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.ReversedGravityClient.begin(msg.durationTicks)));
         ctx.get().setPacketHandled(true);

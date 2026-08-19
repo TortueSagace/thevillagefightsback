@@ -15,10 +15,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingAttackEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The environmental half of "Darius' Special Sauce" (registry id {@code darius_special_effect}): the half that has no
@@ -35,7 +34,6 @@ import net.minecraftforge.fml.common.Mod;
  * over anything that would otherwise consume the same event (notably {@link VoidFallEvents}, which relays a
  * void fall into the next dimension down).
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class DariusSpecialEffectReversals {
     private DariusSpecialEffectReversals() {}
 

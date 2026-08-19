@@ -15,11 +15,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * {@code mega_brutal_mode}: while enabled, every village unit near a brain node permanently carries Strength III,
@@ -30,7 +29,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * it covers units that already exist and cleanly stops when the switch is turned off (the short-duration effects
  * simply lapse). Off by default; the scan only runs while the switch is on.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class MegaBrutal {
     private MegaBrutal() {}
 
@@ -43,7 +41,7 @@ public final class MegaBrutal {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!Config.megaBrutalMode()) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % INTERVAL != 0) return;
         BrainNodeData data = BrainNodeData.get(server);
         for (net.minecraft.core.GlobalPos gp : new java.util.ArrayList<>(data.blocks())) {
@@ -65,7 +63,7 @@ public final class MegaBrutal {
      *  unit refreshes the same Strength/Regen/Resistance/Speed III buff, and emerald golems gain the blink. The
      *  effects are short, so turning the switch off lets them lapse on their own. */
     @SubscribeEvent
-    public static void onEmeraldTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent event) {
+    public static void onEmeraldTick(com.example.villagefightsback.platform.event.LivingEvent.LivingTickEvent event) {
         if (!Config.megaBrutalMode()) return;
         LivingEntity e = event.getEntity();
         if (e.level().isClientSide() || !(e instanceof EmeraldUnit) || e.tickCount % INTERVAL != 0) return;

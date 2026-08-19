@@ -1,6 +1,6 @@
 package com.example.villagefightsback.goal;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import com.example.villagefightsback.BrainNodeData;
 

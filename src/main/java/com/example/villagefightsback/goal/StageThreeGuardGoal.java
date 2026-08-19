@@ -6,6 +6,7 @@ import com.example.villagefightsback.GuardWeapons;
 import com.example.villagefightsback.ModBlocks;
 import com.example.villagefightsback.WindChargeEntity;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -161,7 +162,7 @@ public class StageThreeGuardGoal extends Goal {
         // (The old 0.18 was tuned for a slow bow and lobbed every shot clean over the target's head.)
         arrow.shoot(dx, dy + dh * 0.065, dz, ARROW_SPEED, 1.0F);
         arrow.setPierceLevel((byte) 4);                       // Piercing IV
-        arrow.getPersistentData().putBoolean(NBT_VIRUS_ARROW, true); // applies Emerald Virus on hit
+        PersistentData.of(arrow).putBoolean(NBT_VIRUS_ARROW, true); // applies Emerald Virus on hit
         arrow.setBaseDamage(arrow.getBaseDamage() + 2.0);     // a bit punchier than a plain arrow
         // green "poison-arrow" look: tint the vanilla tipped-arrow texture emerald (no vanilla potion attached).
         ItemStack tip = new ItemStack(Items.TIPPED_ARROW);

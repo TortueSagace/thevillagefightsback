@@ -7,9 +7,8 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.TridentItem;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Decoration nicety: a vanilla armor stand HAS no arms, so a weapon you hand it goes into its main-hand slot
@@ -18,7 +17,6 @@ import net.minecraftforge.fml.common.Mod;
  * still does the item placement and inventory handling. Armless stands stay armless for armor / display use;
  * only handing one a weapon grows the arms. Purely cosmetic.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ArmorStandEvents {
     private ArmorStandEvents() {}
 

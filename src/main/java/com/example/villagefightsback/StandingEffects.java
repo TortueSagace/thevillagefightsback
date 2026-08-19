@@ -1,11 +1,10 @@
 package com.example.villagefightsback;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.MobEffectEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.MobEffectEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Keeps a player's Hero/Enemy status matching their reputation, and keeps everything else from touching it.
@@ -27,7 +26,6 @@ import net.minecraftforge.fml.common.Mod;
  *       player is an Enemy of the Village. See {@link #onVillageTargetsPlayer}.</li>
  * </ol>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StandingEffects {
     private StandingEffects() {}
 
@@ -73,7 +71,7 @@ public final class StandingEffects {
      * your reputation says.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onVillageTargetsPlayer(net.minecraftforge.event.entity.living.LivingChangeTargetEvent event) {
+    public static void onVillageTargetsPlayer(com.example.villagefightsback.platform.event.LivingChangeTargetEvent event) {
         if (!(event.getNewTarget() instanceof net.minecraft.world.entity.player.Player p)) return;
         if (!Factions.isVillage(event.getEntity())) return;
         if (p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE.get())) return;   // earned it: the village may answer
@@ -95,7 +93,7 @@ public final class StandingEffects {
         var effect = event.getEffectInstance().getEffect();
         if (effect == net.minecraft.world.effect.MobEffects.HERO_OF_THE_VILLAGE
                 || effect == ModEffects.ENEMY_OF_THE_VILLAGE.get()) {
-            event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+            event.setResult(com.example.villagefightsback.platform.Event.Result.DENY);
         }
     }
 }

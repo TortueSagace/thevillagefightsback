@@ -3,10 +3,9 @@ package com.example.villagefightsback.client;
 import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Ticks down the {@link VillageDiscoveryHud} timers once per client tick, so a message always expires.
@@ -16,7 +15,6 @@ import net.minecraftforge.fml.common.Mod;
  * they cover the screen with full-bleed art, so without this a message spent its whole life hidden behind them
  * and was gone by the time the player reached the world. That is exactly what happened to the starter-bell hint.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class VillageDiscoveryTicker {
     private VillageDiscoveryTicker() {}
 

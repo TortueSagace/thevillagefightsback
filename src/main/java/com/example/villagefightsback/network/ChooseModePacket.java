@@ -12,7 +12,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Client -> server: the answer to the mode screen. The mode id is re-validated here (an id off the network is
@@ -33,7 +33,7 @@ public class ChooseModePacket {
         return new ChooseModePacket(buf.readVarInt());
     }
 
-    public static void handle(ChooseModePacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ChooseModePacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;

@@ -23,13 +23,12 @@ import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.event.ServerStoppingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * The Village Brain Node's emerald-funded "immune reflexes": reactive abilities the brain pays for out of its
@@ -40,7 +39,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * in the UI's Logs tab via {@link #logFor}). Spawned reinforcements never land on the stage-4 glass dome:
  * inside-wall spawns search around the brain node's own Y (under the dome) and settlers walk out past the wall.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BrainReflexes {
     private BrainReflexes() {}
 
@@ -185,7 +183,7 @@ public final class BrainReflexes {
      * then starts watching just as closely.
      */
     @SubscribeEvent
-    public static void onPlayerRespawn(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+    public static void onPlayerRespawn(com.example.villagefightsback.platform.event.PlayerEvent.Clone event) {
         if (!event.isWasDeath()) return;
         java.util.UUID id = event.getOriginal().getUUID();
         STATES.values().forEach(s -> s.playerKills.remove(id));

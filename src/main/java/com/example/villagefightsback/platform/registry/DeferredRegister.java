@@ -42,7 +42,7 @@ public final class DeferredRegister<T> {
     @SuppressWarnings("unchecked")
     public static <T> DeferredRegister<T> create(ResourceKey<? extends Registry<T>> key, String namespace) {
         Registry<T> registry = (Registry<T>) net.minecraft.core.registries.BuiltInRegistries.REGISTRY
-                .get((ResourceKey<Registry<?>>) key);
+                .get(key.location());
         if (registry == null) {
             throw new IllegalArgumentException("No built-in registry for " + key.location());
         }

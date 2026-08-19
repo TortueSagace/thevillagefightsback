@@ -18,7 +18,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Fire Grenade's thrown projectile -- a native replacement for JEG's molotov. On impact it shatters into
@@ -75,8 +74,4 @@ public class FireGrenadeEntity extends ThrowableItemProjectile {
         discard();
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

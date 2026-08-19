@@ -4,6 +4,7 @@ import java.util.EnumSet;
 
 import com.example.villagefightsback.ExpansionManager;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -53,12 +54,12 @@ public class ExpansionSettlerGoal extends Goal {
     public boolean canUse() {
         return !done
                 && villager.level() instanceof ServerLevel
-                && villager.getPersistentData().getBoolean(ExpansionManager.NBT_EXPANSION);
+                && PersistentData.of(villager).getBoolean(ExpansionManager.NBT_EXPANSION);
     }
 
     @Override
     public boolean canContinueToUse() {
-        return !done && villager.getPersistentData().getBoolean(ExpansionManager.NBT_EXPANSION);
+        return !done && PersistentData.of(villager).getBoolean(ExpansionManager.NBT_EXPANSION);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class ExpansionSettlerGoal extends Goal {
     }
 
     private void finish() {
-        villager.getPersistentData().remove(ExpansionManager.NBT_EXPANSION); // back to an ordinary villager
+        PersistentData.of(villager).remove(ExpansionManager.NBT_EXPANSION); // back to an ordinary villager
         villager.getNavigation().stop();
         done = true;
     }

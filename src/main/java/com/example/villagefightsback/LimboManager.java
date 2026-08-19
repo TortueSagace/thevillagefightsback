@@ -24,13 +24,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.EntityTravelToDimensionEvent;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Runs the Limbo "holding cell": each creature banished into Limbo is leashed by a {@link LimboGravelBlock}
@@ -43,7 +42,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * carried item is the only stable hold); and Silk Touch converts a gravel into a carried soul-gravel item that
  * keeps the creature banished until it is freed.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboManager {
     private LimboManager() {}
 
@@ -94,7 +92,7 @@ public final class LimboManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null || server.getTickCount() % TICK_INTERVAL != 0) return;
         ServerLevel limbo = server.getLevel(LimboDimension.LIMBO);
         if (limbo == null) return;
@@ -527,7 +525,7 @@ public final class LimboManager {
     }
 
     private static String typeKey(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = ModRegistries.ENTITY_TYPES.getKey(e.getType());
         return id == null ? "" : id.toString();
     }
 

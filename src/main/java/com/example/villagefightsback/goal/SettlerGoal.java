@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import com.example.villagefightsback.BrainNodeData;
 import com.example.villagefightsback.ModBlocks;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -54,7 +55,7 @@ public class SettlerGoal extends Goal {
         // Out on a Nightmare hunt: a settler that stops to found a village halfway across the map is not
         // hunting. Lifts itself the moment the hunt ends, so the same villager settles normally afterwards.
         if (com.example.villagefightsback.NightmareRaid.isHunting(villager)) return false;
-        if (villager.getPersistentData().getBoolean(NBT_SETTLED)) return false;
+        if (PersistentData.of(villager).getBoolean(NBT_SETTLED)) return false;
         if (villager.tickCount < nextTryTick) return false;
         nextTryTick = villager.tickCount + RETRY_TICKS;
 
@@ -78,7 +79,7 @@ public class SettlerGoal extends Goal {
         BlockState tnt = ModBlocks.CYAN_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, doorFacing);
         level.setBlock(tntPos, tnt, 3); // detonates instantly on placement -> builds the house
-        villager.getPersistentData().putBoolean(NBT_SETTLED, true);
+        PersistentData.of(villager).putBoolean(NBT_SETTLED, true);
     }
 
     @Override

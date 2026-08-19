@@ -4,6 +4,7 @@ import java.util.EnumSet;
 
 import com.example.villagefightsback.CombatUtil;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -53,7 +54,7 @@ public class TntFleeGoal extends Goal {
     }
 
     private CompoundTag data() {
-        return villager.getPersistentData();
+        return PersistentData.of(villager);
     }
 
     private long fleeUntil() {
@@ -127,7 +128,7 @@ public class TntFleeGoal extends Goal {
     }
 
     private static void setFlee(Villager v, long until, Vec3 danger) {
-        CompoundTag d = v.getPersistentData();
+        CompoundTag d = PersistentData.of(v);
         d.putLong(NBT_FLEE_UNTIL, until);
         d.putDouble(NBT_FLEE_X, danger.x);
         d.putDouble(NBT_FLEE_Y, danger.y);

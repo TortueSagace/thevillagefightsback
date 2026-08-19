@@ -5,13 +5,12 @@ import com.example.villagefightsback.network.OpenModeSelectPacket;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.event.LevelEvent;
+import com.example.villagefightsback.platform.event.ServerStartedEvent;
+import com.example.villagefightsback.platform.event.ServerStoppedEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ServerRef;
 
 /**
  * Drives the one-off "choose your mode" screen and the per-world override it produces.
@@ -27,7 +26,6 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *       whatever the previous world happened to choose.</li>
  * </ol>
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class WorldModeEvents {
     private WorldModeEvents() {}
 
@@ -113,7 +111,7 @@ public final class WorldModeEvents {
      * three infection flags is adopted, and anything untouched keeps the world's own answer.
      */
     public static void reapplyToRunningServer() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = ServerRef.getCurrentServer();
         if (server == null) return;
         WorldModeData data = WorldModeData.getExisting(server);
         if (data != null) data.reconcileFromConfig();

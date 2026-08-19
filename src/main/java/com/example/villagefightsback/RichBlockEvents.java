@@ -9,10 +9,9 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerInteractEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 import com.example.villagefightsback.infection.BlockMatcher;
 import com.example.villagefightsback.network.ModNetwork;
@@ -35,7 +34,6 @@ import com.example.villagefightsback.network.SpawnHintPacket;
  * dropping loot and hands the villager an emerald directly, so village income never went through the loot
  * table and does not now.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RichBlockEvents {
     private RichBlockEvents() {}
 

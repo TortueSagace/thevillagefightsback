@@ -2,11 +2,10 @@ package com.example.villagefightsback.client;
 
 import com.example.villagefightsback.TheVillageFightsBack;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.ViewportEvent;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Client-only half of {@link com.example.villagefightsback.ReversedGravity}: while the dimension's gravity is
@@ -23,7 +22,6 @@ import net.minecraftforge.fml.common.Mod;
  * <p>The HUD is not rotated, because it is drawn in a separate orthographic pass after the world. That is
  * wanted -- an upside-down hotbar is unusable. The held item does rotate with the world.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class ReversedGravityClient {
     private ReversedGravityClient() {}
 

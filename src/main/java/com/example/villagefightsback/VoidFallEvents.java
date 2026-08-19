@@ -9,10 +9,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The void-fall chain. Falling out of the world no longer kills you outright -- you drop through into the next
@@ -22,7 +21,6 @@ import net.minecraftforge.fml.common.Mod;
  *   the End                                      ->  death (the only fatal world-fall)
  * So a careless step into the void becomes a long plunge: world -> Limbo -> End -> oblivion.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VoidFallEvents {
     private VoidFallEvents() {}
 

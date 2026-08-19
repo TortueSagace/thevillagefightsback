@@ -34,7 +34,7 @@ public class LimboBookItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
         if (level.isClientSide()) {
-            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+            com.example.villagefightsback.platform.DistExecutor.unsafeRunWhenOn(com.example.villagefightsback.platform.Dist.CLIENT,
                     () -> () -> com.example.villagefightsback.client.LimboBookScreen.show());
         }
         return InteractionResultHolder.sidedSuccess(held, level.isClientSide());

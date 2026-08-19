@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import com.example.villagefightsback.EmeraldPopulation;
 import com.example.villagefightsback.LimboBanishFx;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -71,7 +72,7 @@ public class EmeraldMorphGoal extends Goal {
         morphed.moveTo(mob.getX(), mob.getY(), mob.getZ(), mob.getYRot(), mob.getXRot());
         morphed.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
                 MobSpawnType.CONVERSION, null, null);
-        morphed.getPersistentData().putBoolean(EmeraldPopulation.UNCAPPED_TAG, true); // net-neutral transform
+        PersistentData.of(morphed).putBoolean(EmeraldPopulation.UNCAPPED_TAG, true); // net-neutral transform
         if (mob.hasCustomName()) {
             morphed.setCustomName(mob.getCustomName());
             morphed.setCustomNameVisible(mob.isCustomNameVisible());

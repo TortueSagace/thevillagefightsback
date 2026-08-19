@@ -1,5 +1,6 @@
 package com.example.villagefightsback.infection;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.npc.Villager;
 
@@ -17,22 +18,22 @@ public final class MinerRole {
     private static final String MINER_NAME = "miner";
 
     public static boolean isMiner(Villager v) {
-        return v.getPersistentData().getBoolean(NBT_MINER);
+        return PersistentData.of(v).getBoolean(NBT_MINER);
     }
 
     public static void promote(Villager v) {
         if (isLimboSage(v)) return; // the Limbo Sage keeps its job; it never mines
         // Same as the builder: a villager on a hunt has a job already, and it is not this one.
         if (com.example.villagefightsback.NightmareRaid.isHunting(v)) return;
-        v.getPersistentData().putBoolean(NBT_MINER, true);
+        PersistentData.of(v).putBoolean(NBT_MINER, true);
         v.setCustomName(Component.literal(MINER_NAME));
         v.setCustomNameVisible(true);
     }
 
     public static void demote(Villager v) {
         if (!isMiner(v)) return;
-        v.getPersistentData().putBoolean(NBT_MINER, false);
-        v.getPersistentData().putLong(NBT_COOLDOWN, v.level().getGameTime() + DEMOTE_COOLDOWN);
+        PersistentData.of(v).putBoolean(NBT_MINER, false);
+        PersistentData.of(v).putLong(NBT_COOLDOWN, v.level().getGameTime() + DEMOTE_COOLDOWN);
         if (v.getCustomName() != null && v.getCustomName().getString().startsWith(MINER_NAME)) {
             v.setCustomName(null);
             v.setCustomNameVisible(false);
@@ -43,7 +44,7 @@ public final class MinerRole {
      *  Emeraldgers can never take a role, so they are never eligible. */
     public static boolean eligible(Villager v) {
         return !(v instanceof com.example.villagefightsback.EmeraldgerEntity) && !isLimboSage(v)
-                && !isMiner(v) && v.level().getGameTime() >= v.getPersistentData().getLong(NBT_COOLDOWN);
+                && !isMiner(v) && v.level().getGameTime() >= PersistentData.of(v).getLong(NBT_COOLDOWN);
     }
 
     /** The Limbo Sage works at the brain node and must never be drafted as a miner. */

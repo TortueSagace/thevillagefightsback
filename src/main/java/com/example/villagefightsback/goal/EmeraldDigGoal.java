@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.example.villagefightsback.infection.BlockMatcher;
 
+import com.example.villagefightsback.platform.ModTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -17,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * A unit that cannot PATH to its prey digs through the soft block in its way -- the block(s) directly in
@@ -86,7 +87,7 @@ public class EmeraldDigGoal extends Goal {
     private static net.minecraft.world.item.Item bestTool(BlockState state) {
         net.minecraft.world.item.Item best = null;
         float bestSpeed = 1.0F; // bare hand; a tool has to actually beat it to be worth drawing
-        for (net.minecraftforge.registries.RegistryObject<net.minecraft.world.item.Item> ro : List.of(
+        for (com.example.villagefightsback.platform.registry.RegistryObject<net.minecraft.world.item.Item> ro : List.of(
                 com.example.villagefightsback.ModItems.EMERALD_PICKAXE,
                 com.example.villagefightsback.ModItems.EMERALD_SHOVEL,
                 com.example.villagefightsback.ModItems.EMERALD_AXE,
@@ -228,14 +229,14 @@ public class EmeraldDigGoal extends Goal {
         if (s.getDestroySpeed(level, pos) < 0.0F) return false;    // unbreakable (bedrock / fake bedrock)
         if (BlockMatcher.isCandidate(level, pos, s)) return true;  // any infectable obstruction (incl. foreign soft blocks)
         if (BlockMatcher.isInfection(s)) {                         // exception: dig through our OWN fertile terrain
-            ResourceLocation id = ForgeRegistries.BLOCKS.getKey(s.getBlock());
+            ResourceLocation id = ModRegistries.BLOCKS.getKey(s.getBlock());
             String path = id == null ? "" : id.getPath();
             return !(path.contains("cobblestone") || path.contains("planks") || path.contains("brick"));
         }
         // Flimsy glass barriers (a player's glass dome, etc.) ARE smashable to reach enclosed prey -- but NOT the
         // mod's own reinforced/protecting glass (village defence), which lives in our namespace.
-        if (s.is(net.minecraftforge.common.Tags.Blocks.GLASS) || s.is(net.minecraftforge.common.Tags.Blocks.GLASS_PANES)) {
-            ResourceLocation gid = ForgeRegistries.BLOCKS.getKey(s.getBlock());
+        if (s.is(ModTags.GLASS) || s.is(ModTags.GLASS_PANES)) {
+            ResourceLocation gid = ModRegistries.BLOCKS.getKey(s.getBlock());
             return gid == null || !gid.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID);
         }
         return false;

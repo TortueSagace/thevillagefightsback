@@ -12,8 +12,6 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.npc.Villager;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Client-only: overlays an angry villager face on a vanilla {@link Villager} while it is FIGHTING (see
@@ -25,7 +23,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * texture's RenderType, then re-render the already-posed parent model into it. The model is grown a hair
  * so the overlay sits just outside the head and does not z-fight with the underlying face.
  */
-@OnlyIn(Dist.CLIENT)
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
 public class AngryVillagerFaceLayer extends RenderLayer<Villager, VillagerModel<Villager>> {
     private static final ResourceLocation FACE =
             new ResourceLocation(TheVillageFightsBack.MODID, "textures/entity/angry_villager_face.png");

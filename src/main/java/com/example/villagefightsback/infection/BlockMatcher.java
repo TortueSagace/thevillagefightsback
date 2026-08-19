@@ -22,8 +22,8 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModTags;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Decides which world blocks the infection may convert, and what Fertile/Rich block each becomes.
@@ -93,7 +93,7 @@ public final class BlockMatcher {
     }
 
     private static Block byId(String name) {
-        return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
+        return ModRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
     }
 
     private static void putAll(Map<Block, String> m, String base, Block... blocks) {
@@ -124,7 +124,7 @@ public final class BlockMatcher {
         }
         // Every OTHER coloured block (stairs, grass, kelp, path, planks, chorus, catalysts, door). They are all
         // ours by construction, so this replaces what would otherwise be 18 hard-coded lines per colour.
-        for (java.util.Map.Entry<String, net.minecraftforge.registries.RegistryObject<Block>> e
+        for (java.util.Map.Entry<String, com.example.villagefightsback.platform.registry.RegistryObject<Block>> e
                 : ModBlocks.COLOURED.entrySet()) {
             if (!e.getValue().isPresent()) continue;
             Block b = e.getValue().get();
@@ -211,8 +211,8 @@ public final class BlockMatcher {
         // registry contents are frozen before this ever runs and /reload cannot change them, whereas tags
         // rebind on every datapack reload.
         alienBlocks = new java.util.HashSet<>();
-        for (Block b : ForgeRegistries.BLOCKS) {
-            ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+        for (Block b : ModRegistries.BLOCKS) {
+            ResourceLocation id = ModRegistries.BLOCKS.getKey(b);
             if (id == null) continue;
             String ns = id.getNamespace();
             if (!"minecraft".equals(ns) && !TheVillageFightsBack.MODID.equals(ns)) alienBlocks.add(b);
@@ -357,7 +357,7 @@ public final class BlockMatcher {
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
         if (b == Blocks.BOOKSHELF || b == Blocks.CHISELED_BOOKSHELF) return false; // keep bookshelves
         if (s.is(BlockTags.WOOL)) return false;                        // keep wool (all colours)
-        if (s.is(Tags.Blocks.GLASS) || s.is(Tags.Blocks.GLASS_PANES)) return false; // keep glass + panes
+        if (s.is(ModTags.GLASS) || s.is(ModTags.GLASS_PANES)) return false; // keep glass + panes
         if (s.is(BlockTags.STONE_BRICKS)) return false;                // keep stone bricks (+ chiseled/mossy/cracked)
         if (b instanceof net.minecraft.world.level.block.CampfireBlock) return false; // keep campfires (lit OR unlit)
         // Food is never infected: wheat & other crops, their stems, and hay (a wheat block).
@@ -366,10 +366,10 @@ public final class BlockMatcher {
                 || b instanceof net.minecraft.world.level.block.StemBlock
                 || s.is(BlockTags.CROPS)) return false;
         if (s.is(BlockTags.PLANKS)) return false;
-        if (s.is(Tags.Blocks.ORES) || s.is(Tags.Blocks.STORAGE_BLOCKS)) return false; // ores + resource blocks
+        if (s.is(ModTags.ORES) || s.is(ModTags.STORAGE_BLOCKS)) return false; // ores + resource blocks
         if (s.getLightEmission() > 0) return false;                    // any light source (torch/glowstone/lantern/...)
         if (b.getExplosionResistance() >= 1200.0F) return false;       // toughness must be < 1200
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+        ResourceLocation id = ModRegistries.BLOCKS.getKey(b);
         if (id != null) {
             // Never eat our own special blocks (brainNode / walls' fake cobblestone / glass / scaffolds / ...).
             if (id.getNamespace().equals(TheVillageFightsBack.MODID)) return false;
@@ -425,7 +425,7 @@ public final class BlockMatcher {
         Block b = s.getBlock();
         String ex = exact.get(b);
         if (ex != null) return ex;
-        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(b);
+        ResourceLocation id = ModRegistries.BLOCKS.getKey(b);
         String path = id != null ? id.getPath() : "";
         for (String base : BASES) if (path.contains(base)) return base;
         float h = b.defaultDestroyTime();
@@ -469,9 +469,9 @@ public final class BlockMatcher {
      */
     /** The coloured twin of a shape-preserving block, falling back to the green one if that colour is absent. */
     private static Block shaped(String greenName, String colour,
-                                net.minecraftforge.registries.RegistryObject<Block> green) {
+                                com.example.villagefightsback.platform.registry.RegistryObject<Block> green) {
         if (!colour.isEmpty()) {
-            net.minecraftforge.registries.RegistryObject<Block> c = ModBlocks.COLOURED.get(greenName + colour);
+            com.example.villagefightsback.platform.registry.RegistryObject<Block> c = ModBlocks.COLOURED.get(greenName + colour);
             if (c != null && c.isPresent()) return c.get();
         }
         return green.isPresent() ? green.get() : null;

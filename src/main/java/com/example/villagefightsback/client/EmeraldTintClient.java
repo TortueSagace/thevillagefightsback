@@ -6,11 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.example.villagefightsback.TheVillageFightsBack;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLivingEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.RenderLivingEvent;
+import com.example.villagefightsback.platform.event.EntityLeaveLevelEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Client-side green-tint for Emerald-Virus hosts. Progress (0..1) per entity id arrives via
@@ -18,7 +17,6 @@ import net.minecraftforge.fml.common.Mod;
  * by multiplying the entity shader colour. The tint never reverts (the server keeps progress forever), so a
  * fully-infected creature stays green even after the timed effect ends.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class EmeraldTintClient {
     private EmeraldTintClient() {}
 

@@ -273,7 +273,7 @@ public class ReputationData extends SavedData {
         MobEffectInstance held = player.getEffect(effect);
         if (held != null && held.getAmplifier() == amplifier && held.getDuration() > STATUS_TICKS / 2) return;
         MobEffectInstance inst = new MobEffectInstance(effect, STATUS_TICKS, amplifier, false, false, true);
-        inst.setCurativeItems(new ArrayList<>());   // no milk, no totem: standing is not a poison
+        com.example.villagefightsback.platform.UncurableEffects.mark(inst);   // no milk, no totem: standing is not a poison
         deriving = true;
         try {
             player.addEffect(inst);

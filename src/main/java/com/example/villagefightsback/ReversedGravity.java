@@ -21,11 +21,10 @@ import net.minecraft.world.entity.projectile.ThrowableProjectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.event.ServerStoppingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * "Gravity breaks": when a holder of Darius' Special Sauce would fall out of the world, the world falls
@@ -51,7 +50,6 @@ import net.minecraftforge.fml.common.Mod;
  * <p>There is no soft landing when it ends. That is on purpose -- the drop is the joke. Villagers and
  * guards are the exception, and they save themselves: see {@link WaterClutchEvents}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ReversedGravity {
     private ReversedGravity() {}
 

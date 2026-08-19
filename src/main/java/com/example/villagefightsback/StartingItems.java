@@ -1,14 +1,14 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 import com.example.villagefightsback.network.ModNetwork;
 
@@ -21,7 +21,6 @@ import com.example.villagefightsback.network.ModNetwork;
  * every player once a second. Standing is derived from reputation now, so that switch is honoured where the
  * number is decided instead ({@code ReputationData.standing()}), and nothing here touches a status effect.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StartingItems {
     private StartingItems() {}
 
@@ -31,7 +30,7 @@ public final class StartingItems {
     /**
      * Hand {@code stack} over once ever, remembered under {@code flag}.
      *
-     * <p>The flag lives in {@code Player.PERSISTED_NBT_TAG}, which is the one bag of player data that survives
+     * <p>The flag lives in {@code PersistentData.PERSISTED_NBT_TAG}, which is the one bag of player data that survives
      * death, a dimension change and a relog -- so "once" means once, not once per life.
      *
      * <p>Unlike the bell, the Reputation Book goes out on EVERY difficulty. The bell is the means to found a
@@ -40,10 +39,10 @@ public final class StartingItems {
      * difficulties where your standing is not up for negotiation.
      */
     private static void giveOnce(ServerPlayer player, String flag, ItemStack stack) {
-        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = PersistentData.of(player).getCompound(PersistentData.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(flag)) return;
         persisted.putBoolean(flag, true);
-        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        PersistentData.of(player).put(PersistentData.PERSISTED_NBT_TAG, persisted);
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
@@ -57,10 +56,10 @@ public final class StartingItems {
         // Hostile and Nightmare start you with a village instead of the means to found one (see HostileStart).
         // The bell is a gift to someone the village has not judged yet, and on those difficulties it already has.
         if (Difficulty.current().placesBrainNodeAtSpawn()) return;
-        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = PersistentData.of(player).getCompound(PersistentData.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_GOT_BELL)) return;             // already received the starter bell
         persisted.putBoolean(NBT_GOT_BELL, true);
-        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        PersistentData.of(player).put(PersistentData.PERSISTED_NBT_TAG, persisted);
 
         ItemStack bell = new ItemStack(Items.BELL);
         if (!player.getInventory().add(bell)) player.drop(bell, false); // drop at feet if the inventory is full
@@ -94,9 +93,7 @@ public final class StartingItems {
      */
     public static void cancelHint(net.minecraft.server.level.ServerPlayer player) {
         pendingHint.remove(player.getUUID());
-        com.example.villagefightsback.network.ModNetwork.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
+        com.example.villagefightsback.network.ModNetwork.sendTo(player, new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
     }
 
     private static final java.util.Map<java.util.UUID, net.minecraft.world.phys.Vec3> pendingHint =
@@ -136,12 +133,11 @@ public final class StartingItems {
      * walked anywhere first.
      */
     @SubscribeEvent
-    public static void onBellPlaced(net.minecraftforge.event.level.BlockEvent.EntityPlaceEvent event) {
+    public static void onBellPlaced(com.example.villagefightsback.platform.event.BlockEvent.EntityPlaceEvent event) {
         if (!event.getPlacedBlock().is(net.minecraft.world.level.block.Blocks.BELL)) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         pendingHint.remove(player.getUUID());
-        ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
+        com.example.villagefightsback.network.ModNetwork.sendTo(player, new com.example.villagefightsback.network.SpawnHintPacket(0));   // 0 ticks: hide it now
     }
 
     /** Releases the queued starter-bell hint the moment the player takes their first steps. */
@@ -154,8 +150,7 @@ public final class StartingItems {
         net.minecraft.world.phys.Vec3 from = pendingHint.get(player.getUUID());
         if (from != null && player.distanceToSqr(from.x, from.y, from.z) > MOVE_TRIGGER_SQR) {
             pendingHint.remove(player.getUUID());
-            ModNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                    new com.example.villagefightsback.network.SpawnHintPacket(HINT_TICKS));
+            com.example.villagefightsback.network.ModNetwork.sendTo(player, new com.example.villagefightsback.network.SpawnHintPacket(HINT_TICKS));
             TheVillageFightsBack.LOGGER.info("[The Village Fights Back] bell hint sent to {} (first movement).",
                     player.getGameProfile().getName());
         }

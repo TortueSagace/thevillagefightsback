@@ -2,18 +2,16 @@ package com.example.villagefightsback.client;
 
 import com.example.villagefightsback.TheVillageFightsBack;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.event.ViewportEvent;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Client-only camera shake. The boss sends {@link com.example.villagefightsback.network.ScreenShakePacket}s;
  * {@link #add} starts/refreshes a decaying jitter that is applied to the camera angles each frame and counts
  * down each client tick. Pure cosmetic; no gameplay effect.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class ScreenShakeClient {
     private ScreenShakeClient() {}
 

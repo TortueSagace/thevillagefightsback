@@ -1,13 +1,13 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The opening move on the hostile difficulties: no bell in your hand, a village already watching you.
@@ -30,7 +30,6 @@ import net.minecraftforge.fml.common.Mod;
  * enough to put ground between you and where it will stand -- and it stands where you WERE when the count
  * began, not where you end up, or running would achieve nothing.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class HostileStart {
     private HostileStart() {}
 
@@ -69,10 +68,10 @@ public final class HostileStart {
         if (!(player.level() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
 
-        CompoundTag persisted = player.getPersistentData().getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = PersistentData.of(player).getCompound(PersistentData.PERSISTED_NBT_TAG);
         if (persisted.getBoolean(NBT_NODE_PLACED)) return;
         persisted.putBoolean(NBT_NODE_PLACED, true);
-        player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+        PersistentData.of(player).put(PersistentData.PERSISTED_NBT_TAG, persisted);
 
         takeBackStarterBell(player);
         StartingItems.cancelHint(player);   // no advice about a bell they no longer have
@@ -110,8 +109,8 @@ public final class HostileStart {
      * they have.
      */
     @SubscribeEvent
-    public static void onServerTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
-        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END || PENDING.isEmpty()) return;
+    public static void onServerTick(com.example.villagefightsback.platform.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != com.example.villagefightsback.platform.event.TickEvent.Phase.END || PENDING.isEmpty()) return;
         net.minecraft.server.MinecraftServer server = event.getServer();
 
         java.util.List<Countdown> next = new java.util.ArrayList<>();

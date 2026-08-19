@@ -5,7 +5,6 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Defender Golem: the emerald-faction version of the {@link DefenderGolemEntity}. It keeps the
@@ -30,8 +29,4 @@ public class EmeraldDefenderGolemEntity extends DefenderGolemEntity implements E
         EmeraldMobs.addEmeraldGoals(this, false); // retarget the village; the inherited aiStep turret fires at it
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

@@ -14,7 +14,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkHooks;
 import org.joml.Vector3f;
 
 /**
@@ -97,10 +96,6 @@ public class BulletEntity extends ThrowableProjectile {
         if (!level().isClientSide()) discard();
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 
     /** Aim a fresh bullet from {@code shooter}'s eyes at {@code target}'s centre and launch it (JEG-style). */
     public static void fire(Mob shooter, LivingEntity target, float damage) {

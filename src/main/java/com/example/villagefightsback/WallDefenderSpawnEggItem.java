@@ -1,32 +1,23 @@
 package com.example.villagefightsback;
 
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.common.ForgeSpawnEggItem;
+import net.minecraft.world.item.SpawnEggItem;
 
 /**
- * The Wall Defender spawn eggs. Identical to a normal {@link ForgeSpawnEggItem} except their icon is a live,
- * spinning Wall Defender (via {@code WallDefenderItemRenderer}), so the creative menu shows the actual defender
- * -- the same animated look as the brain node UI. The custom renderer is client-only (initializeClient runs
- * only on the client, so the client class never loads on a dedicated server).
+ * The Wall Defender spawn eggs. Identical to a normal {@link SpawnEggItem} except their icon is a live, spinning
+ * Wall Defender, so the creative menu shows the actual defender -- the same animated look as the brain node UI.
+ *
+ * <p>On Forge the custom renderer is attached here, through initializeClient. Fabric has no such per-item client
+ * extension, so the renderer is registered against this item from the client initializer instead (see
+ * {@code TheVillageFightsBackClient}); the class itself stays free of client types, which is what kept a
+ * dedicated server from ever loading the renderer.
  */
-public class WallDefenderSpawnEggItem extends ForgeSpawnEggItem {
+public class WallDefenderSpawnEggItem extends SpawnEggItem {
     public WallDefenderSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type, int background,
                                     int highlight, Properties props) {
-        super(type, background, highlight, props);
-    }
-
-    @Override
-    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-        consumer.accept(new IClientItemExtensions() {
-            @Override
-            public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                return com.example.villagefightsback.client.WallDefenderItemRenderer.instance();
-            }
-        });
+        super(type.get(), background, highlight, props);
     }
 }

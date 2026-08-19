@@ -12,11 +12,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.trading.MerchantOffer;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.MobEffectEvent;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingAttackEvent;
+import com.example.villagefightsback.platform.event.MobEffectEvent;
+import com.example.villagefightsback.platform.event.VillagerTradesEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Drives the potion effect shown in game as "Darius' Special Sauce" / "Darius Special Power"
@@ -29,7 +28,6 @@ import net.minecraftforge.fml.common.Mod;
  *
  * <p>Everything the WORLD does to the holder is reversed too, in {@link DariusSpecialEffectReversals}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class DariusSpecialEffectEvents {
     private DariusSpecialEffectEvents() {}
 
@@ -120,17 +118,13 @@ public final class DariusSpecialEffectEvents {
     /**
      * Kill {@code entity} through its real {@code die()} path so a boss with a custom death sequence (the
      * wither storm) plays its full death animation, rather than the silent {@code kill()} removal. {@code die}
-     * is protected, so we invoke it reflectively (Forge resolves the SRG name at runtime). Health is zeroed
-     * first so the dying state is consistent; falls back to {@code kill()} if reflection ever fails.
+     * is public in 1.20.1, so it is simply called. Health is zeroed first so the dying state is consistent;
+     * falls back to {@code kill()} if anything throws.
      */
     private static void killWithDeathAnimation(LivingEntity entity, DamageSource source) {
         try {
-            if (dieMethod == null) {
-                dieMethod = net.minecraftforge.fml.util.ObfuscationReflectionHelper.findMethod(
-                        LivingEntity.class, "m_6667_", DamageSource.class);
-            }
             entity.setHealth(0.0F);
-            dieMethod.invoke(entity, source);
+            entity.die(source);
         } catch (Throwable t) {
             entity.kill(); // last resort: clean removal
         }

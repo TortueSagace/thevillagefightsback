@@ -14,7 +14,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Volatile Limbo Potion's thrown projectile. On impact it bursts and banishes every living creature in a
@@ -57,8 +56,4 @@ public class VolatileLimboPotionEntity extends ThrowableItemProjectile {
         discard();
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

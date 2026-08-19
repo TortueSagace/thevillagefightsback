@@ -355,7 +355,7 @@ public class MinerGoal extends Goal {
         if (s.isAir() || !s.blocksMotion()) return false;
         if (BlockMatcher.isInfection(s)) return false;       // don't chew our own spread / rich blocks
         net.minecraft.world.level.block.Block b = s.getBlock();
-        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(b);
+        net.minecraft.resources.ResourceLocation id = com.example.villagefightsback.platform.ModRegistries.BLOCKS.getKey(b);
         if (id != null) {
             if (id.getNamespace().equals(com.example.villagefightsback.TheVillageFightsBack.MODID)) return false; // our blocks
             if (id.getPath().contains("cobblestone")) return false; // never the walls

@@ -6,6 +6,7 @@ import java.util.List;
 import com.example.villagefightsback.FoundingManager;
 import com.example.villagefightsback.ModBlocks;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -42,7 +43,7 @@ public class FoundingSettlerGoal extends Goal {
     public boolean canUse() {
         return !placed
                 && villager.level() instanceof ServerLevel
-                && villager.getPersistentData().getBoolean(FoundingManager.NBT_FOUNDING);
+                && PersistentData.of(villager).getBoolean(FoundingManager.NBT_FOUNDING);
     }
 
     @Override
@@ -75,7 +76,7 @@ public class FoundingSettlerGoal extends Goal {
         }
         scatter();
         if (villager.tickCount - startTick > SCATTER_TICKS + MAX_SEEK) {
-            villager.getPersistentData().remove(com.example.villagefightsback.FoundingManager.NBT_FOUNDING);
+            PersistentData.of(villager).remove(com.example.villagefightsback.FoundingManager.NBT_FOUNDING);
             placed = true;   // ends the goal; nothing was built
         }
     }
@@ -117,7 +118,7 @@ public class FoundingSettlerGoal extends Goal {
     private Villager nearestOtherSettler() {
         List<Villager> others = villager.level().getEntitiesOfClass(Villager.class,
                 villager.getBoundingBox().inflate(8.0),
-                v -> v != villager && v.isAlive() && v.getPersistentData().getBoolean(FoundingManager.NBT_FOUNDING));
+                v -> v != villager && v.isAlive() && PersistentData.of(v).getBoolean(FoundingManager.NBT_FOUNDING));
         Villager best = null;
         double bestSqr = Double.MAX_VALUE;
         for (Villager v : others) {

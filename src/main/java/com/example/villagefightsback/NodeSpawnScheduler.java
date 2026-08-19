@@ -6,13 +6,11 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /** Staggers the Barracks Node's guard spawns: the requested guards appear one per second, so they don't all
  *  pop in on the same tick (see {@link BarracksNodeBlock}). */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class NodeSpawnScheduler {
     private NodeSpawnScheduler() {}
 
@@ -61,7 +59,7 @@ public final class NodeSpawnScheduler {
 
     /** Clear the queue on world unload so no stale Batch/ServerLevel survives into the next (integrated) world. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(com.example.villagefightsback.platform.event.ServerStoppingEvent event) {
         BATCHES.clear();
     }
 }

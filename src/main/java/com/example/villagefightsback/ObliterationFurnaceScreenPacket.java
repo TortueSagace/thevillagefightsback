@@ -10,11 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Server -&gt; client: everything the Obliteration Furnace's screen shows.
@@ -42,7 +41,7 @@ public class ObliterationFurnaceScreenPacket {
         if (!(player instanceof ServerPlayer sp)) return;
         List<String> names = new ArrayList<>();
         for (ResourceLocation id : data.listFor(at)) {
-            EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(id);
+            EntityType<?> type = ModRegistries.ENTITY_TYPES.getValue(id);
             names.add(type != null ? type.getDescription().getString() : id.toString());
         }
         names.sort(String::compareToIgnoreCase);
@@ -63,7 +62,7 @@ public class ObliterationFurnaceScreenPacket {
         return new ObliterationFurnaceScreenPacket(ticks, names);
     }
 
-    public static void handle(ObliterationFurnaceScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(ObliterationFurnaceScreenPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.ObliterationFurnaceScreen
                         .show(msg.burnTicks, msg.names)));
@@ -75,8 +74,7 @@ public class ObliterationFurnaceScreenPacket {
         private ModNetworkBridge() {}
 
         static void sendToPlayer(ServerPlayer sp, ObliterationFurnaceScreenPacket msg) {
-            com.example.villagefightsback.network.ModNetwork.CHANNEL
-                    .send(PacketDistributor.PLAYER.with(() -> sp), msg);
+            com.example.villagefightsback.network.ModNetwork.sendTo(sp, msg);
         }
     }
 }

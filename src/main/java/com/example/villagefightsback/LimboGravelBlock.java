@@ -140,12 +140,6 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
         super.onBrokenAfterFall(level, pos, fallingBlock);
     }
 
-    /** An anchor block must not be shoved off its spot by pistons (which would wrongly free the creature). */
-    @Override
-    public net.minecraft.world.level.material.PushReaction getPistonPushReaction(BlockState state) {
-        return net.minecraft.world.level.material.PushReaction.BLOCK;
-    }
-
     @Override
     public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
         super.stepOn(level, pos, state, entity);

@@ -8,7 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Minecraft Comes Alive (MCA Reborn, mod id {@code mca}) integration. MCA is a pure RUNTIME soft dep: nothing
@@ -56,7 +56,7 @@ public final class MCACompat {
      * exactly the setup this integration exists for.
      */
     public static boolean present() {
-        return ForgeRegistries.ENTITY_TYPES.containsKey(MALE_VILLAGER);
+        return ModRegistries.ENTITY_TYPES.containsKey(MALE_VILLAGER);
     }
 
     /** True when MCA is installed AND the player has left {@code mca_compat} on (the default). */
@@ -71,7 +71,7 @@ public final class MCACompat {
      */
     public static EntityType<?> villagerType(RandomSource rng) {
         if (!enabled()) return EntityType.VILLAGER;
-        EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(
+        EntityType<?> type = ModRegistries.ENTITY_TYPES.getValue(
                 rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
         return type != null ? type : EntityType.VILLAGER;
     }
@@ -104,7 +104,7 @@ public final class MCACompat {
      */
     public static boolean isMcaGuard(Entity e) {
         if (!(e instanceof Villager v)) return false;
-        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        ResourceLocation id = ModRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
         return id != null && GUARD_PROFESSIONS.contains(id);
     }
 
@@ -122,11 +122,11 @@ public final class MCACompat {
      */
     public static EntityType<?> guardType(RandomSource rng) {
         if (enabled()) {
-            EntityType<?> mca = ForgeRegistries.ENTITY_TYPES.getValue(
+            EntityType<?> mca = ModRegistries.ENTITY_TYPES.getValue(
                     rng.nextBoolean() ? MALE_VILLAGER : FEMALE_VILLAGER);
             if (mca != null) return mca;
         }
-        return ForgeRegistries.ENTITY_TYPES.getValue(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
+        return ModRegistries.ENTITY_TYPES.getValue(GUARD_VILLAGERS_GUARD); // null if Guard Villagers is absent
     }
 
     /**
@@ -141,7 +141,7 @@ public final class MCACompat {
     public static void makeGuard(net.minecraft.world.entity.Entity e) {
         if (!(e instanceof Villager v) || !isMcaVillager(v)) return;
         net.minecraft.world.entity.npc.VillagerProfession guard =
-                ForgeRegistries.VILLAGER_PROFESSIONS.getValue(new ResourceLocation(MODID, "guard"));
+                ModRegistries.VILLAGER_PROFESSIONS.getValue(new ResourceLocation(MODID, "guard"));
         if (guard == null) return;
         v.setVillagerData(v.getVillagerData().setProfession(guard));
     }
@@ -222,12 +222,12 @@ public final class MCACompat {
      * a vanilla villager, a guard entity) is treated as male, which is only ever used to pick a pronoun.
      */
     public static boolean isFemale(Entity e) {
-        return FEMALE_VILLAGER.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return FEMALE_VILLAGER.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     /** True for an MCA villager specifically (either gender). Vanilla villagers and Emeraldgers return false. */
     public static boolean isMcaVillager(Entity e) {
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        ResourceLocation id = ModRegistries.ENTITY_TYPES.getKey(e.getType());
         return MALE_VILLAGER.equals(id) || FEMALE_VILLAGER.equals(id);
     }
 
@@ -271,7 +271,7 @@ public final class MCACompat {
      */
     public static boolean isHostileVillager(Entity e) {
         if (!(e instanceof Villager v)) return false;
-        ResourceLocation id = ForgeRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
+        ResourceLocation id = ModRegistries.VILLAGER_PROFESSIONS.getKey(v.getVillagerData().getProfession());
         return id != null && HOSTILE_PROFESSIONS.contains(id);
     }
 }

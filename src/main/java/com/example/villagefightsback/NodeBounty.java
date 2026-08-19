@@ -14,9 +14,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * At sunset the brain node names the biggest thing near it and pays reputation for its head.
@@ -37,7 +36,6 @@ import net.minecraftforge.fml.common.Mod;
  * sent its champion is not also shopping the job out to a freelancer. It would also read as the village
  * paying you for a kill its own general was about to make.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class NodeBounty {
     private NodeBounty() {}
 
@@ -170,7 +168,7 @@ public final class NodeBounty {
 
     /** Forget every bounty when the server stops, so a later world does not inherit one. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(com.example.villagefightsback.platform.event.ServerStoppingEvent event) {
         ACTIVE.clear();
     }
 

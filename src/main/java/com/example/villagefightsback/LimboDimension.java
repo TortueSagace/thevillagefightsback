@@ -11,10 +11,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.PlayerEvent;
+import com.example.villagefightsback.platform.event.ServerStartedEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * "Limbo": a void dimension (data-driven: {@code data/thevillagefightsback/dimension[_type]/limbo.json}) whose
@@ -27,7 +26,6 @@ import net.minecraftforge.fml.common.Mod;
  *
  * Enter it with e.g. {@code /execute in thevillagefightsback:limbo run tp @s 0 61 0}.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboDimension {
     private LimboDimension() {}
 
@@ -68,7 +66,7 @@ public final class LimboDimension {
 
     /**
      * Banish any entity to Limbo's spawn. Players are re-seated with {@code teleportTo}; mobs cross dimensions
-     * via the Forge {@code changeDimension(ServerLevel, ITeleporter)} overload (the returned entity is the new
+     * through {@link com.example.villagefightsback.platform.DimensionTravel} (the returned entity is the new
      * instance in Limbo). Server-side only; no-op on the client or if Limbo isn't loaded.
      */
     public static Entity sendToLimbo(Entity e) {
@@ -100,16 +98,8 @@ public final class LimboDimension {
             player.teleportTo(limbo, x, y, z, player.getYRot(), player.getXRot());
             return player;
         }
-        // changeDimension fires EntityTravelToDimensionEvent, which LimboManager uses to auto-place the leash.
-        return e.changeDimension(limbo, new net.minecraftforge.common.util.ITeleporter() {
-            @Override
-            public Entity placeEntity(Entity entity, ServerLevel from, ServerLevel to, float yaw,
-                    java.util.function.Function<Boolean, Entity> repositionEntity) {
-                Entity moved = repositionEntity.apply(false); // recreate in Limbo, no portal logic
-                moved.moveTo(x, y, z, moved.getYRot(), moved.getXRot());
-                return moved;
-            }
-        });
+        // The crossing fires EntityTravelToDimensionEvent, which LimboManager uses to auto-place the leash.
+        return com.example.villagefightsback.platform.DimensionTravel.teleport(e, limbo, x, y, z);
     }
 
     /**

@@ -8,9 +8,8 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * The "banishment" effect played where a creature's hitbox was when it is sent to Limbo: a column of big
@@ -19,7 +18,6 @@ import net.minecraftforge.fml.common.Mod;
  * bigger creature leaves a bigger swirl. Server-driven (particles are broadcast to nearby players), so it
  * keeps playing after the creature itself has left.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboBanishFx {
     private LimboBanishFx() {}
 

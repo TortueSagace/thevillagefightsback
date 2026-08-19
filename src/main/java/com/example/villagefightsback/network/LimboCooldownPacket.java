@@ -3,9 +3,9 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /** Server -> client: the wearer's banish-ability cooldown (ticks remaining), for the HUD indicator. */
 public class LimboCooldownPacket {
@@ -23,7 +23,7 @@ public class LimboCooldownPacket {
         return new LimboCooldownPacket(buf.readVarInt());
     }
 
-    public static void handle(LimboCooldownPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(LimboCooldownPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.LimboAbilityClient.setCooldown(msg.ticks)));
         ctx.get().setPacketHandled(true);

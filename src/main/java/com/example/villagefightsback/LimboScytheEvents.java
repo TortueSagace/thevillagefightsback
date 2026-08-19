@@ -2,15 +2,13 @@ package com.example.villagefightsback;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * How the Limbo Scythe charges: it takes a soul from anything substantial it kills. See
  * {@link LimboScytheItem}. (It is crafted rather than dropped, so there is no drop hook here.)
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LimboScytheEvents {
     private LimboScytheEvents() {}
 
@@ -54,7 +52,7 @@ public final class LimboScytheEvents {
      * <p>Runs at LOWEST priority so every other death handler has already had its say (the reaping above, the
      * emerald economy, the brain's bookkeeping) before the death is called off.
      */
-    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    @SubscribeEvent(priority = com.example.villagefightsback.platform.EventPriority.LOWEST)
     public static void onScytheSave(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) return;
 
@@ -89,9 +87,7 @@ public final class LimboScytheEvents {
                 player.getX(), player.getY() + 1.0, player.getZ(), 60, 0.5, 0.8, 0.5, 0.05);
         // The totem-of-undying moment, with the scythe as the item that sweeps up the screen. Sent as a packet
         // rather than entity event 35, which hard-codes the totem stack (see ScytheSavePacket).
-        com.example.villagefightsback.network.ModNetwork.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new com.example.villagefightsback.network.ScytheSavePacket());
+        com.example.villagefightsback.network.ModNetwork.sendTo(player, new com.example.villagefightsback.network.ScytheSavePacket());
         player.displayClientMessage(net.minecraft.network.chat.Component
                 .literal(charged.size() == 1
                         ? "The scythe spends a soul to keep yours."

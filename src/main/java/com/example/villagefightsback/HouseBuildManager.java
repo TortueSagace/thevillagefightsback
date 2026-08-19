@@ -34,10 +34,9 @@ import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.ServerStoppingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Drives the "rising house" build animation: instead of pasting a house at once, the blocks are placed
@@ -45,7 +44,6 @@ import net.minecraftforge.fml.common.Mod;
  * gravity-sensitive blocks (torches, lanterns, ladders, beds, doors, ...) LAST, so their support always
  * exists before they appear. All placements use no-neighbour-update flags, so nothing ever pops off.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class HouseBuildManager {
     private HouseBuildManager() {}
 

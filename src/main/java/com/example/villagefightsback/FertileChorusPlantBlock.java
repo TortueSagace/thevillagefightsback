@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChorusPlantBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * The Fertile Chorus Plant: the green-tinted body block our {@link FertileChorusFlowerBlock} grows. Vanilla
@@ -37,7 +37,7 @@ public class FertileChorusPlantBlock extends ChorusPlantBlock {
 
     private static Block fertileEndStone() {
         if (fertileEndStone == null) {
-            fertileEndStone = ForgeRegistries.BLOCKS.getValue(
+            fertileEndStone = ModRegistries.BLOCKS.getValue(
                     new ResourceLocation(TheVillageFightsBack.MODID, "fertile_end_stone"));
         }
         return fertileEndStone;

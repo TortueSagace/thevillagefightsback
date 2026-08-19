@@ -46,8 +46,8 @@ public class MaceItem extends Item {
     }
 
     @Override
-    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-        return slot == EquipmentSlot.MAINHAND ? this.mainhandModifiers : super.getAttributeModifiers(slot, stack);
+    public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot slot) {
+        return slot == EquipmentSlot.MAINHAND ? this.mainhandModifiers : super.getDefaultAttributeModifiers(slot);
     }
 
     @Override

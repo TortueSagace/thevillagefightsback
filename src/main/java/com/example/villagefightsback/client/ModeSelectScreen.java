@@ -54,7 +54,7 @@ public class ModeSelectScreen extends ModeArtScreen {
     private void choose(WorldMode mode) {
         if (answered) return;
         answered = true;
-        ModNetwork.CHANNEL.sendToServer(new ChooseModePacket(mode.id()));
+        ModNetwork.sendToServer(new ChooseModePacket(mode.id()));
         this.minecraft.setScreen(new DifficultySelectScreen());
     }
 

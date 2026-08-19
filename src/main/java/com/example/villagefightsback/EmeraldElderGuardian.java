@@ -8,7 +8,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.ElderGuardian;
 import net.minecraft.world.entity.monster.Guardian;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Elder Guardian: an EMERALD-faction reskin of the vanilla Elder Guardian. Combat unit, so it keeps
@@ -36,8 +35,4 @@ public class EmeraldElderGuardian extends ElderGuardian implements EmeraldUnit {
         return Guardian.createAttributes().add(Attributes.MAX_HEALTH, 80.0D);
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

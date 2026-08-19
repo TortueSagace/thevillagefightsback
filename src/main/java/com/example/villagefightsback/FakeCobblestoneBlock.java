@@ -1,6 +1,6 @@
 package com.example.villagefightsback;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -17,7 +17,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * "Fake cobblestone" -- looks/breaks like mossy cobblestone (and emits light), but is a smart door:
@@ -32,7 +32,7 @@ import net.minecraftforge.registries.ForgeRegistries;
  *  - Pathfinding: {@link #getBlockPathType} returns {@link ModPathTypes#ALLY_PASSABLE} (mob-blind by
  *    necessity in 1.20.1); allied mobs set that type's malus to 0 so only they route through.
  */
-public class FakeCobblestoneBlock extends Block {
+public class FakeCobblestoneBlock extends Block implements com.example.villagefightsback.platform.PathTypeProvider {
     private static final ResourceLocation GUARD_ID = new ResourceLocation("guardvillagers", "guard");
 
     public FakeCobblestoneBlock(Properties properties) {
@@ -46,7 +46,7 @@ public class FakeCobblestoneBlock extends Block {
         if (com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)) return false;
         if (e instanceof Player || e instanceof Villager || e instanceof IronGolem) return true;
         if (Factions.isEmerald(e)) return true; // emerald faction units phase the village's smart doors too
-        return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
+        return GUARD_ID.equals(ModRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.example.villagefightsback.goal.StoneAxeDefenseGoal;
 import com.example.villagefightsback.goal.TntFleeGoal;
 import com.example.villagefightsback.goal.WallBuildGoal;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -44,25 +45,23 @@ import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.event.EntityJoinLevelEvent;
+import com.example.villagefightsback.platform.event.LivingAttackEvent;
+import com.example.villagefightsback.platform.event.LivingChangeTargetEvent;
+import com.example.villagefightsback.platform.event.LivingDeathEvent;
+import com.example.villagefightsback.platform.event.LivingDropsEvent;
+import com.example.villagefightsback.platform.event.LivingEquipmentChangeEvent;
+import com.example.villagefightsback.platform.event.LivingHurtEvent;
+import com.example.villagefightsback.platform.event.VillagerTradesEvent;
+import com.example.villagefightsback.platform.EventPriority;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * Arms villagers, iron golems, and Guard Villagers guards, and wires the combat behaviour to them. As the
  * village evolves, defenders are upgraded (stage-3 villagers get the Alien Slasher, guards become emerald
  * knights, golems become gigachad golems) and the mod's ally-immunity keeps them from harming one another.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class VillageEvents {
     private VillageEvents() {}
 
@@ -706,11 +705,11 @@ public final class VillageEvents {
     /** Immunity also blocks every HARMFUL status effect (poison, wither, slowness, the emerald virus, ...)
      *  from ever landing on the holder. Beneficial effects (incl. Immunity itself) are unaffected. */
     @SubscribeEvent
-    public static void onImmunityEffect(net.minecraftforge.event.entity.living.MobEffectEvent.Applicable event) {
+    public static void onImmunityEffect(com.example.villagefightsback.platform.event.MobEffectEvent.Applicable event) {
         if (event.getEffectInstance().getEffect().getCategory()
                     == net.minecraft.world.effect.MobEffectCategory.HARMFUL
                 && event.getEntity().hasEffect(ModEffects.IMMUNITY.get())) {
-            event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
+            event.setResult(com.example.villagefightsback.platform.Event.Result.DENY);
         }
     }
 
@@ -774,7 +773,7 @@ public final class VillageEvents {
      * here would put a map lookup and a data-storage fetch on the hottest path in the mod.
      */
     public static Player getAggroPlayer(Mob mob) {
-        CompoundTag data = mob.getPersistentData();
+        CompoundTag data = PersistentData.of(mob);
         if (data.hasUUID(NBT_AGGRO_UUID) && mob.level().getGameTime() <= data.getLong(NBT_AGGRO_UNTIL)) {
             Player p = mob.level().getPlayerByUUID(data.getUUID(NBT_AGGRO_UUID));
             // The record outlives the standing that justified it -- a raider keeps hunting after the scent
@@ -836,7 +835,7 @@ public final class VillageEvents {
             if (m instanceof IronGolem) {
                 m.setTarget(attacker); // golems melee the attacker (the rocket goal ignores non-Enemy targets)
             } else { // villager or guard
-                CompoundTag data = m.getPersistentData();
+                CompoundTag data = PersistentData.of(m);
                 data.putUUID(NBT_AGGRO_UUID, attacker.getUUID());
                 data.putLong(NBT_AGGRO_UNTIL, until);
             }
@@ -854,7 +853,7 @@ public final class VillageEvents {
 
     /** When Enemy of the Village is removed early (e.g. it was cleared), stop the hunt immediately. */
     @SubscribeEvent
-    public static void onEnemyEffectRemoved(net.minecraftforge.event.entity.living.MobEffectEvent.Remove event) {
+    public static void onEnemyEffectRemoved(com.example.villagefightsback.platform.event.MobEffectEvent.Remove event) {
         if (event.getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
                 && player.level() instanceof ServerLevel sl) {
@@ -864,7 +863,7 @@ public final class VillageEvents {
 
     /** When Enemy of the Village expires on its own, stop the hunt immediately (no polling). */
     @SubscribeEvent
-    public static void onEnemyEffectExpired(net.minecraftforge.event.entity.living.MobEffectEvent.Expired event) {
+    public static void onEnemyEffectExpired(com.example.villagefightsback.platform.event.MobEffectEvent.Expired event) {
         if (event.getEffectInstance() == null
                 || event.getEffectInstance().getEffect() != ModEffects.ENEMY_OF_THE_VILLAGE.get()) return;
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player
@@ -883,7 +882,7 @@ public final class VillageEvents {
         AABB box = player.getBoundingBox().inflate(NODE_DEFEND_RADIUS + FOLLOW_RANGE);
         for (Mob m : level.getEntitiesOfClass(Mob.class, box, e -> e.isAlive() && isAlly(e))) {
             if (m.getTarget() == player) m.setTarget(null);
-            CompoundTag data = m.getPersistentData();
+            CompoundTag data = PersistentData.of(m);
             if (data.hasUUID(NBT_AGGRO_UUID) && player.getUUID().equals(data.getUUID(NBT_AGGRO_UUID))) {
                 data.remove(NBT_AGGRO_UUID);
                 data.remove(NBT_AGGRO_UNTIL);

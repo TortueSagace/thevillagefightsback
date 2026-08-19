@@ -129,7 +129,7 @@ public class BrainNodeData extends SavedData {
             }
             setDirty();
             if (delta < 0) { // a devolve happened -> re-show the (now lower) phase, e.g. "SETTLEMENT PHASE"
-                MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+                MinecraftServer server = com.example.villagefightsback.platform.ServerRef.getCurrentServer();
                 if (server != null) BrainNodeEvents.broadcastPhaseBanner(server, level);
             }
             return delta;

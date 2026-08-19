@@ -4,9 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.ServerStartedEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Optionally moves the overworld spawn point onto the nearest village when the server starts, so players
@@ -18,7 +17,6 @@ import net.minecraftforge.fml.common.Mod;
  * unaffected (a bed overrides the world spawn per-player). It re-runs each start, but the village
  * position is deterministic, so once spawn sits on the village this is a no-op.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class SpawnInVillage {
     private SpawnInVillage() {}
 

@@ -49,6 +49,10 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
+    // @Nullable and friends. Forge's dev classpath supplied JSR-305; Fabric's does not, so the annotations the
+    // sources already carry come from JetBrains instead.
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+
     // Guard Villagers is NOT on the Gradle graph, on purpose. It is a mandatory RUNTIME dependency (mod id
     // "guardvillagers", entity id "guardvillagers:guard" -- the entire compatibility surface, since the mod never
     // touches one of its classes), but Loom cannot remap it into Mojang names: its GuardEntity declares

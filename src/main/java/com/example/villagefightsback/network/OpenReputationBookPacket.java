@@ -3,16 +3,16 @@ package com.example.villagefightsback.network;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -&gt; client: open the Reputation Book.
  *
  * <p>Carries the difficulty and the reader's current standing, and not one word of the book. The text is a
  * client-side constant, like {@link SpawnHintPacket}'s lines -- but the DIFFICULTY has to travel, because it
- * lives in a COMMON {@code ForgeConfigSpec} and Forge does not sync those to the client. Without it a
+ * lives in a COMMON {@code ModConfigSpec} and Forge does not sync those to the client. Without it a
  * single-player client would read the right book by luck and a multiplayer client would read Neutral's.
  */
 public class OpenReputationBookPacket {
@@ -33,7 +33,7 @@ public class OpenReputationBookPacket {
         return new OpenReputationBookPacket(buf.readVarInt(), buf.readInt());
     }
 
-    public static void handle(OpenReputationBookPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(OpenReputationBookPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.ReputationBookScreen.show(
                         msg.difficulty, msg.reputation)));

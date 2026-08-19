@@ -7,10 +7,9 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.EntityJoinLevelEvent;
+import com.example.villagefightsback.platform.event.BlockEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Builds a Defender Golem from blocks, mirroring vanilla iron-golem assembly: place a Wall Defender where the
@@ -21,7 +20,6 @@ import net.minecraftforge.fml.common.Mod;
  * an iron block is placed last (a wall defender is already hovering above the now-complete T). The
  * village-spawned wall defenders sit on protecting glass / nodes, never on an iron T, so they never trip this.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class DefenderGolemForming {
     private DefenderGolemForming() {}
 

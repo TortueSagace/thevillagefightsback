@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import com.example.villagefightsback.BrainNodeEvents;
 import com.example.villagefightsback.NightmareRaid;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.server.level.ServerLevel;
@@ -162,8 +163,8 @@ public class UnstickVillagerGoal extends Goal {
         if (com.example.villagefightsback.BuilderRole.isBuilder(v)) return true;
         if (com.example.villagefightsback.infection.MinerRole.isMiner(v)) return true;
         // A settler is walking out to found something and has its own give-up clock.
-        return v.getPersistentData().getBoolean(com.example.villagefightsback.ExpansionManager.NBT_EXPANSION)
-                || v.getPersistentData().getBoolean(com.example.villagefightsback.FoundingManager.NBT_FOUNDING);
+        return PersistentData.of(v).getBoolean(com.example.villagefightsback.ExpansionManager.NBT_EXPANSION)
+                || PersistentData.of(v).getBoolean(com.example.villagefightsback.FoundingManager.NBT_FOUNDING);
     }
 
     /**

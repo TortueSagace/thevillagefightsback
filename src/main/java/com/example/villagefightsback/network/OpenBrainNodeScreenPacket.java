@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import com.example.villagefightsback.platform.Dist;
+import com.example.villagefightsback.platform.DistExecutor;
+import com.example.villagefightsback.platform.network.NetworkContext;
 
 /**
  * Server -> client: open the Village Brain Node upgrade screen, carrying the clicked village's current
@@ -78,7 +78,7 @@ public class OpenBrainNodeScreenPacket {
                 fertilized, organic, reputation, reflexLog, organicLog, reputationLog);
     }
 
-    public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {
+    public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkContext> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
                 () -> () -> com.example.villagefightsback.client.BrainNodeScreenHooks.open(msg)));
         ctx.get().setPacketHandled(true);

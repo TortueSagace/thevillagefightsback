@@ -2,12 +2,10 @@ package com.example.villagefightsback;
 
 import java.util.List;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -17,28 +15,15 @@ import net.minecraft.world.level.Level;
  * A Limbo chestplate that ALSO works as an elytra: wearing it is equivalent to wearing both a Limbo
  * chestplate and an elytra at once. It is still a {@link LimboArmorItem} (same Limbo material, foil
  * shimmer, fire resistance, the two limbo tip lines) and counts as the chest piece of the Limbo set
- * (see {@link LimboGear}). Gliding is enabled through the Forge elytra hooks below; the vanilla
- * ElytraLayer draws the wings automatically whenever {@code canElytraFly} is true.
+ * (see {@link LimboGear}).
+ *
+ * <p>Forge asks the item whether it can glide. Fabric asks a global event instead, so the answer lives in
+ * {@link LimboElytraEvents}, wired up from the mod initializer -- including the durability cost, which vanilla
+ * only applies to a real elytra.
  */
 public class LimboElytraChestplateItem extends LimboArmorItem {
     public LimboElytraChestplateItem(ArmorMaterial material, Properties properties) {
         super(material, Type.CHESTPLATE, properties);
-    }
-
-    @Override
-    public boolean canElytraFly(ItemStack stack, LivingEntity entity) {
-        return true;
-    }
-
-    @Override
-    public boolean elytraFlightTick(ItemStack stack, LivingEntity entity, int flightTicks) {
-        if (!entity.level().isClientSide()) {
-            int next = flightTicks + 1;
-            if (next % 20 == 0) {
-                stack.hurtAndBreak(1, entity, e -> e.broadcastBreakEvent(EquipmentSlot.CHEST));
-            }
-        }
-        return true;
     }
 
     @Override

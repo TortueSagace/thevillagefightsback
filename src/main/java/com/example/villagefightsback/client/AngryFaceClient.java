@@ -6,8 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Client-only helper that decides when a villager / guard should wear the "angry face" overlay.
@@ -22,7 +20,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * Timing uses the client level's game time ({@link net.minecraft.world.level.Level#getGameTime()}) so it
  * advances in lockstep with the render/tick loop (and pauses correctly with the game).
  */
-@OnlyIn(Dist.CLIENT)
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
+@Environment(EnvType.CLIENT)
 public final class AngryFaceClient {
     private AngryFaceClient() {}
 

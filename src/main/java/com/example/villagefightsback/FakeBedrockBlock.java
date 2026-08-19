@@ -1,6 +1,6 @@
 package com.example.villagefightsback;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Mob;
@@ -24,7 +24,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * the other two fake blocks carry. {@code ModBlocks#X_RAY_BEDROCK} is the see-through variant, and it shares
  * this class, so the floor rule below treats the two as one family.
  */
-public class FakeBedrockBlock extends Block {
+public class FakeBedrockBlock extends Block implements com.example.villagefightsback.platform.PathTypeProvider {
     public FakeBedrockBlock(Properties properties) {
         super(properties);
     }

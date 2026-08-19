@@ -8,7 +8,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Salmon;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 /**
  * The Emerald Salmon: a salmon converted to the EMERALD faction. A normally-passive species, so via
@@ -46,8 +45,4 @@ public class EmeraldSalmon extends Salmon implements EmeraldUnit {
                 .add(Attributes.FOLLOW_RANGE, 48.0D); // a wide net so the water scout spots prey across the water
     }
 
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
 }

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.example.villagefightsback.goal.FoundingSettlerGoal;
 
+import com.example.villagefightsback.platform.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -21,11 +22,10 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.ServerStoppingEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
+import com.example.villagefightsback.platform.ModRegistries;
 
 /**
  * "Founding" a village from an empty brainNode. When the brain node is about to mark out its wall but no
@@ -38,7 +38,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Wall-planning is GATED via {@link #gate} (called from BrainNodeEvents.driveWalls) so the wall isn't
  * marked out until founding completes.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class FoundingManager {
     private FoundingManager() {}
 
@@ -73,7 +72,7 @@ public final class FoundingManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || JOBS.isEmpty()) return;
-        MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = com.example.villagefightsback.platform.ServerRef.getCurrentServer();
         if (server == null) return;
         Iterator<Map.Entry<GlobalPos, Long>> it = JOBS.entrySet().iterator();
         while (it.hasNext()) {
@@ -177,7 +176,7 @@ public final class FoundingManager {
         v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
         v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null, null);
         v.setBaby(false);
-        v.getPersistentData().putBoolean(NBT_FOUNDING, true);
+        PersistentData.of(v).putBoolean(NBT_FOUNDING, true);
         com.example.villagefightsback.compat.VillagerRoleTags.mirror(v); // survive an MCA replacement we did not cause
         level.addFreshEntity(v); // onEntityJoin arms it (nerfed) + adds the dormant goals
         v.goalSelector.addGoal(1, new FoundingSettlerGoal(v, brainNode)); // founding takes priority while it runs

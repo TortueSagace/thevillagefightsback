@@ -12,10 +12,9 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import com.example.villagefightsback.platform.event.TickEvent;
+import com.example.villagefightsback.platform.event.LivingAttackEvent;
+import com.example.villagefightsback.platform.SubscribeEvent;
 
 /**
  * Every villager and guard knows the MLG water bucket: when a fall would hurt one, it drops a water source
@@ -33,7 +32,6 @@ import net.minecraftforge.fml.common.Mod;
  * fall damage outright, which is deliberate -- it is what keeps a village intact when the Special Sauce
  * flips gravity and drops everything back down at once.
  */
-@Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class WaterClutchEvents {
     private WaterClutchEvents() {}
 
@@ -83,7 +81,7 @@ public final class WaterClutchEvents {
 
     /** Drop every pending clutch on shutdown so nothing is left flooded across a restart. */
     @SubscribeEvent
-    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+    public static void onServerStopping(com.example.villagefightsback.platform.event.ServerStoppingEvent event) {
         for (Clutch c : ACTIVE) {
             if (c.level.getBlockState(c.pos).is(Blocks.WATER)) {
                 c.level.setBlock(c.pos, Blocks.AIR.defaultBlockState(), 3);
