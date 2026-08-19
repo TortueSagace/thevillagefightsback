@@ -24,7 +24,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.object.builder.v1.trade.TradeOfferHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.VillagerTrades;
 
@@ -40,12 +39,6 @@ import net.minecraft.world.entity.npc.VillagerTrades;
  */
 public final class ModEventSources {
     private ModEventSources() {}
-
-    /**
-     * Set while {@code ServerLevel.addEntity} is running, so the ENTITY_LOAD callback below can tell a fresh
-     * spawn (already announced, cancellably, by the mixin) from an entity coming back off disk.
-     */
-    public static Entity freshlyAdded;
 
     public static void init() {
         ticks();
@@ -96,11 +89,12 @@ public final class ModEventSources {
     }
 
     private static void entities() {
-        // A fresh spawn is announced by the ServerLevel.addEntity mixin, which can still call it off. What is left
-        // here is entities coming back off disk, which cannot be refused -- they are already in the save.
+        // A plain spawn is announced by the ServerLevel.addEntity mixin, which can still call it off, so it is
+        // skipped here. Everything else arrives through this callback, and whether it counts as loaded from disk
+        // is what EntityJoinTracking works out -- see there for why the distinction matters.
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
-            if (entity == freshlyAdded) return;
-            EventBus.post(new EntityJoinLevelEvent(entity, level, true));
+            if (EntityJoinTracking.wasAnnounced(entity)) return;
+            EventBus.post(new EntityJoinLevelEvent(entity, level, !EntityJoinTracking.insideFreshArrival()));
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) ->
                 EventBus.post(new EntityLeaveLevelEvent(entity, level)));

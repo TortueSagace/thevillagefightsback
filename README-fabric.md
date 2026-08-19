@@ -51,7 +51,10 @@ Everything is ported; these are the places the mechanism underneath is not ident
 - **`BlockEvent.EntityPlaceEvent` covers item placement.** Blocks placed from an item, by a player or a dispenser
   -- every case the mod cares about. Forge also fires it for falling blocks and a few worldgen paths.
 - **`EntityJoinLevelEvent` is server-side.** Forge fires it on both sides. The 10 handlers were checked and none
-  needed the client firing.
+  needed the client firing. Which arrivals count as loaded-from-disk is worked out in `EntityJoinTracking`: a
+  plain spawn is announced from `ServerLevel.addEntity` where it can still be refused, teleports/dimension
+  changes/player joins/worldgen mobs are marked as fresh-but-unrefusable, and anything reaching Fabric's
+  ENTITY_LOAD unmarked came off disk. Add a new arrival path there or it will be mistaken for a disk load.
 - **The mace enchantments use a vanilla category.** Forge lets a mod add an `EnchantmentCategory`; the enum cannot
   be extended here, so the three enchantments override `canEnchant` to demand an actual mace instead. That is the
   method the enchanting table, the anvil and the commands all consult.
@@ -99,3 +102,21 @@ What the last run showed, and what each line is worth:
 | errors | only `No data fixer registered for <entity>`, which vanilla says about every modded entity and Forge merely suppresses |
 
 Gameplay and client rendering are deliberately not covered by this; they are for a playtest.
+
+## Client check
+
+A first client launch (Fabric 1.20.1 + Fabric API + Guard Villagers, new world) came up clean:
+
+- resources, models and screens all resolved;
+- networking worked both ways -- the mode and difficulty screens opened server-to-client, and the player's
+  choices came back client-to-server;
+- the starter-bell flag round-tripped, so the persistent-data mixin works;
+- a brain node founded and claimed 58 village buildings.
+
+The only warnings in that log (`Missing textures in model thevillagefightsback:fertile_chorus_flower_*` and a
+`Sampler2` shader line) appear identically in the Forge build's own log, so neither comes from the port. The
+texture one is a real pre-existing bug on `main`: the models ask for `fertile_chorus_flower_<colour>_dead` but
+the files are named `fertile_chorus_flower_dead_<colour>`.
+
+Still unexercised: combat (the `LivingHurtEvent` re-entrancy path), death drops, Limbo travel, explosions,
+reversed gravity, the animated armour, and brain-stage evolution over time.
