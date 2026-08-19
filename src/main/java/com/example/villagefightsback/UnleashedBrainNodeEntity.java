@@ -470,8 +470,10 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             if (e instanceof VindictiveGuardEntity vg) guards.add(vg);
             else if (e instanceof VindictiveGigachadEntity vgc) gigas.add(vgc);
         }
+        // A reverted guard rejoins the village, so it must be the same kind of guard the village spawns:
+        // an MCA human where MCA is installed, the Guard Villagers entity otherwise.
         net.minecraft.world.entity.EntityType<?> guardType =
-                net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(GUARD_ID);
+                com.example.villagefightsback.compat.MCACompat.guardType(sl.getRandom());
         for (VindictiveGuardEntity vg : guards) {
             BlockPos p = vg.blockPosition();
             float yaw = vg.getYRot();
@@ -479,6 +481,7 @@ public class UnleashedBrainNodeEntity extends BrainNodeWardenEntity {
             if (guardType == null) continue; // Guard Villagers not installed -> the vindictive guard just leaves
             if (!(guardType.create(sl) instanceof net.minecraft.world.entity.Mob guard)) continue;
             guard.moveTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5, yaw, 0.0F);
+            com.example.villagefightsback.compat.MCACompat.makeGuard(guard); // pin mca:guard (no-op off MCA)
             UpgradeState.setUpgraded(guard); // stage 3 (armed by VillageEvents#onEntityJoin)
             guard.finalizeSpawn(sl, sl.getCurrentDifficultyAt(p), MobSpawnType.MOB_SUMMONED, null, null);
             sl.addFreshEntity(guard);

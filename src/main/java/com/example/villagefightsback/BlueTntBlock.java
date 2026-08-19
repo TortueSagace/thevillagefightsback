@@ -112,7 +112,10 @@ public class BlueTntBlock extends Block {
         // Wherever it ended up, this charge is spent. The carve removes the block when the house lands on it;
         // when the house lands elsewhere -- or nowhere -- nothing else will, so clear it by hand.
         if (spot == null || !spot.equals(at)) {
-            if (sl.getBlockState(at).is(ModBlocks.BLUE_TNT.get())) sl.removeBlock(at, false);
+            // `this`, not BLUE_TNT: the Cyan charge is a subclass, and naming Blue here left every relocated
+            // cyan charge lying in the world as a live-looking block -- the exact thing the relocation exists
+            // to avoid. Any future charge inherits the right behaviour for free.
+            if (sl.getBlockState(at).is(this)) sl.removeBlock(at, false);
         }
         effect(sl, spot == null ? at : spot);
         if (spot == null) {

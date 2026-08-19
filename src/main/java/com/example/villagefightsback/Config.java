@@ -53,6 +53,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     public static final ForgeConfigSpec.BooleanValue UNSTICK_TEST_MODE;
     public static final ForgeConfigSpec.BooleanValue INFESTED_NEEDS_BRAIN_NODE;
+    public static final ForgeConfigSpec.BooleanValue MONOCHROME_GREEN;
     public static final ForgeConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
@@ -174,6 +175,16 @@ public final class Config {
                         "conversion at all while the node is still stage 1. Set false and both spread on their own",
                         "wherever they happen to be, which is the pre-1.5.2 behaviour. Default: true.")
                 .define("infested_paths_need_brain_node", true);
+
+        MONOCHROME_GREEN = b
+                .comment("If true, everything the infection converts from now on is GREEN, as it was before the",
+                        "colour sets were added. The four other colours stay registered and stay in the VFB:",
+                        "blocks creative tab -- this only stops the infection CHOOSING them: a new infested path",
+                        "is laid green, and a conversion inherits green rather than its source's colour.",
+                        "Blocks already placed keep the colour they were placed with; nothing rewrites the world.",
+                        "Default: false.")
+                .define("monochrome_green_fertile_blocks", false);
+
         DARIUS_INFLICTS_OBLITERATION = b
                 .comment("If true, every one of General Darius's blows marks its victim with Obliteration, and a stage-4 brain",
                         "node raises an Obliteration Furnace beside itself and pays 1 emerald per minute to keep it lit (never",
@@ -338,6 +349,7 @@ public final class Config {
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("unstick_test_mode", UNSTICK_TEST_MODE);
         INDEX.put("infested_paths_need_brain_node", INFESTED_NEEDS_BRAIN_NODE);
+        INDEX.put("monochrome_green_fertile_blocks", MONOCHROME_GREEN);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
         INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
         INDEX.put("enable_emerald_infestation", ENABLE_EMERALD_INFESTATION);
@@ -459,6 +471,7 @@ public final class Config {
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean unstickTestMode()               { return UNSTICK_TEST_MODE.get(); }
     public static boolean infestedNeedsBrainNode()        { return INFESTED_NEEDS_BRAIN_NODE.get(); }
+    public static boolean monochromeGreen()               { return MONOCHROME_GREEN.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }

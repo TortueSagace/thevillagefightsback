@@ -76,6 +76,8 @@ public final class BlockMatcher {
     /** Blocks that are neither vanilla nor ours, plus the sculk family. See {@link #isAlien}. */
     private static Set<Block> alienBlocks;
     private static Set<Block> richBlockSet;          // all rich blocks
+    private static Set<Block> fertileCatalysts;      // fertile sculk catalysts, every colour
+    private static Set<Block> richCatalysts;         // ...and the rich ones
     private static Set<Block> upgradableFertile;     // fertile blocks that have a rich counterpart (fertile -> rich)
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
 
@@ -132,6 +134,16 @@ public final class BlockMatcher {
                 if (e.getKey().endsWith(c)) { colourByBlock.putIfAbsent(b, c); break; }
             }
         }
+        // The sculk catalysts, by colour, so a bloom recognises a cyan catalyst as readily as a green one.
+        // A Set lookup keeps the check cheap enough for the block scan SculkCatalystEvents runs on a death.
+        fertileCatalysts = new HashSet<>();
+        richCatalysts = new HashSet<>();
+        for (String c : ALL_SUFFIXES) {
+            Block f = byId("fertile_sculk_catalyst" + c), r = byId("rich_sculk_catalyst" + c);
+            if (f != null) fertileCatalysts.add(f);
+            if (r != null) richCatalysts.add(r);
+        }
+
         infectionBlocks.add(Blocks.DIRT_PATH);
         if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
         if (ModBlocks.FERTILE_KELP.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_KELP.get());   // converted kelp
@@ -222,6 +234,10 @@ public final class BlockMatcher {
      */
     public static String colourOf(BlockState s) {
         init();
+        // Every conversion reads this to inherit its source's colour, so answering green here is the whole of
+        // the monogreen switch on the propagation side: existing coloured blocks stay exactly as they are, but
+        // nothing new grows from them in that colour.
+        if (com.example.villagefightsback.Config.monochromeGreen()) return "";
         return colourByBlock.getOrDefault(s.getBlock(), "");
     }
 
@@ -501,8 +517,27 @@ public final class BlockMatcher {
 
     /** Our fertile (or rich) sculk block -- what the matching sculk catalyst spreads. */
     public static Block sculk(boolean rich) {
+        return sculk(rich, "");
+    }
+
+    /** Our fertile (or rich) sculk in {@code colour}, falling back to green if that colour is missing. */
+    public static Block sculk(boolean rich, String colour) {
         init();
-        return (rich ? richByBase : fertileByBase).get("sculk");
+        Map<String, Block> by = rich ? richByBase : fertileByBase;
+        Block b = by.get("sculk" + (colour == null ? "" : colour));
+        return b != null ? b : by.get("sculk");
+    }
+
+    /** A fertile sculk catalyst of ANY colour. */
+    public static boolean isFertileSculkCatalyst(BlockState s) {
+        init();
+        return fertileCatalysts.contains(s.getBlock());
+    }
+
+    /** A rich sculk catalyst of ANY colour. */
+    public static boolean isRichSculkCatalyst(BlockState s) {
+        init();
+        return richCatalysts.contains(s.getBlock());
     }
 
     /** Ground a dirt-path may spread across: vanilla dirt-family / grass only. NOT our fertile blocks (paths

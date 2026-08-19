@@ -35,18 +35,36 @@ public final class FertileFlora {
     private static final int TRUNK_MIN = 4;
     private static final int TRUNK_MAX = 6;
 
-    // Resolved lazily (blocks don't exist until registration completes), then cached.
-    private static Block fertileLog;
-    private static Block fertileLeaves;
-    private static Block fertileChorusFlower;
-    private static boolean resolved;
+    // Resolved lazily (blocks don't exist until registration completes), then cached PER COLOUR.
+    //
+    // This used to cache the three GREEN blocks once and use them everywhere, so a cyan or purple zone grew
+    // green trees and green chorus standing in it -- the one place the colour was not carried through. The
+    // zone's colour is already in scope at the call site and already threaded into every other write.
+    private static final int LOG = 0, LEAVES = 1, CHORUS = 2;
+    private static final java.util.Map<String, Block[]> BY_COLOUR = new java.util.HashMap<>();
 
-    private static void resolve() {
-        if (resolved) return;
-        fertileLog = byId("fertile_log");
-        fertileLeaves = byId("fertile_leaves");
-        fertileChorusFlower = byId("fertile_chorus_flower");
-        resolved = true;
+    /**
+     * {log, leaves, chorus flower} for one colour suffix ({@code ""} for green).
+     *
+     * <p>Each falls back to its green form if that colour is somehow missing, so a gap in the colour sets
+     * degrades to the old behaviour rather than to no flora. The result is cached only once it actually
+     * resolves, so a call made before registration finishes cannot poison the cache with nulls.
+     */
+    private static Block[] palette(String colour) {
+        String c = colour == null ? "" : colour;
+        Block[] cached = BY_COLOUR.get(c);
+        if (cached != null) return cached;
+        Block[] p = {
+                or(byId("fertile_log" + c), byId("fertile_log")),
+                or(byId("fertile_leaves" + c), byId("fertile_leaves")),
+                or(byId("fertile_chorus_flower" + c), byId("fertile_chorus_flower")),
+        };
+        if (p[LOG] != null && p[LEAVES] != null) BY_COLOUR.put(c, p);
+        return p;
+    }
+
+    private static Block or(Block coloured, Block green) {
+        return coloured != null ? coloured : green;
     }
 
     private static Block byId(String name) {
@@ -59,10 +77,9 @@ public final class FertileFlora {
      * a fertile tree or a fertile chorus flower at {@code converted.above()}. Cheap (a handful of block reads)
      * and fully guarded so it can never throw / lag the infection loop.
      */
-    public static void onConverted(ServerLevel level, BlockPos converted, StructureZones zones) {
+    public static void onConverted(ServerLevel level, BlockPos converted, StructureZones zones, String colour) {
         if (level == null || converted == null) return;
         try {
-            resolve();
             BlockPos up = converted.above();
             if (!level.isLoaded(up)) return;
             if (zones.contains(up)) return; // never sprout inside one of the village's own buildings
@@ -77,9 +94,9 @@ public final class FertileFlora {
             RandomSource rnd = level.getRandom();
             double roll = rnd.nextDouble();
             if (roll < TREE_CHANCE) {
-                tryGrowTree(level, up, zones);
+                tryGrowTree(level, up, zones, colour);
             } else if (roll < TREE_CHANCE + CHORUS_CHANCE) {
-                tryPlaceChorus(level, up); // `up` is already zone-checked above, and this writes only there
+                tryPlaceChorus(level, up, colour); // `up` is already zone-checked above; writes only there
             }
         } catch (Throwable ignored) {
             // Flora is purely cosmetic; never let it break the infection tick.
@@ -102,8 +119,9 @@ public final class FertileFlora {
      * fertile_log topped with a simple fertile_leaves blob, placed only into air. On success, gives a small
      * chance to spawn a Rich Sheep beside it.
      */
-    public static void tryGrowTree(ServerLevel level, BlockPos pos, StructureZones zones) {
-        resolve();
+    public static void tryGrowTree(ServerLevel level, BlockPos pos, StructureZones zones, String colour) {
+        Block[] pal = palette(colour);
+        Block fertileLog = pal[LOG], fertileLeaves = pal[LEAVES];
         if (fertileLog == null || fertileLeaves == null) return;
 
         RandomSource rnd = level.getRandom();
@@ -165,8 +183,8 @@ public final class FertileFlora {
     }
 
     /** Place a fertile chorus flower at {@code pos} (it then expands on its own) -- needs open space above. */
-    private static void tryPlaceChorus(ServerLevel level, BlockPos pos) {
-        resolve();
+    private static void tryPlaceChorus(ServerLevel level, BlockPos pos, String colour) {
+        Block fertileChorusFlower = palette(colour)[CHORUS];
         if (fertileChorusFlower == null) return;
         if (!level.isLoaded(pos) || !level.getBlockState(pos).isAir()) return;
         BlockPos up = pos.above();
