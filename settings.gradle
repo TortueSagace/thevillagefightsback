@@ -2,12 +2,15 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven {
-            name = 'MinecraftForge'
-            url = 'https://maven.minecraftforge.net/'
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
         }
     }
 }
 
-plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
-}
+// NOTE: the foojay toolchain-resolver plugin that the Forge branch carries is deliberately absent. It is applied
+// at settings level, so its Gson 2.9.1 sits on the parent classloader and shadows the newer Gson that Loom needs
+// to parse Mojang's version manifest ("Unexpected IllegalAccessException occurred (Gson 2.9.1)"). Nothing here
+// needs it: org.gradle.java.home in gradle.properties already points the build at JDK 17.
+
+rootProject.name = 'thevillagefightsback-fabric'

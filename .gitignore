@@ -33,3 +33,9 @@ build-output*.txt
 # Python bytecode cache (texture/asset gen tools)
 __pycache__/
 *.pyc
+
+# Fabric Loom
+.gradle/
+build/
+run/
+remappedSrc/

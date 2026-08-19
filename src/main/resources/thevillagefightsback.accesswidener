@@ -1,0 +1,5 @@
+accessWidener	v2	named
+
+# Make the Mob AI goal selector accessible so we can inject custom Goals into vanilla villagers / iron golems
+# from our own package. (Replaces the Forge branch's accesstransformer.cfg entry for Mob.f_21345_.)
+accessible	field	net/minecraft/world/entity/Mob	goalSelector	Lnet/minecraft/world/entity/ai/goal/GoalSelector;

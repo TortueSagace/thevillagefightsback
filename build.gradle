@@ -1,187 +1,94 @@
 plugins {
-    id 'eclipse'
-    id 'idea'
+    id 'fabric-loom' version '1.6.12'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = mod_version
 group = mod_group_id
 
 base {
-    // Include the Minecraft version in the jar name so the 1.20.1 and 1.19.2 builds never collide:
-    // thevillagefightsback-1.20.1-<ver>.jar  vs  thevillagefightsback-1.19.2-<ver>.jar
-    archivesName = "${mod_id}-${minecraft_version}"
+    // Include the loader and the Minecraft version in the jar name so the Fabric build never collides with the
+    // Forge 1.20.1 one:  thevillagefightsback-fabric-1.20.1-<ver>.jar
+    archivesName = "${mod_id}-fabric-${minecraft_version}"
 }
 
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// Mojang ships Java 17 to end users in 1.20.1, so the mod targets Java 17.
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-minecraft {
-    // The mappings can be changed at any time and must be in the following format.
-    // Channel:   Version:
-    // official   MCVersion             Official field/method names from Mojang mapping files
-    // parchment  YYYY.MM.DD-MCVersion  Open community-sourced parameter names and javadocs layered on top of official
-    //
-    // You must be aware of the Mojang license when using the 'official' or 'parchment' mappings.
-    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
-    //
-    // Parchment is an unofficial project maintained by ParchmentMC, separate from MinecraftForge
-    // Additional setup is needed to use their mappings: https://parchmentmc.org/docs/getting-started
-    //
-    // Use non-default mappings at your own risk. They may not always work.
-    // Simply re-run your setup task after changing the mappings to update your workspace.
-    mappings channel: mapping_channel, version: mapping_version
 
-    // When true, this property will have all Eclipse/IntelliJ IDEA run configurations run the "prepareX" task for the given run configuration before launching the game.
-    // In most cases, it is not necessary to enable.
-    // enableEclipsePrepareRuns = true
-    // enableIdeaPrepareRuns = true
+loom {
+    // One access widener, replacing the Forge branch's accesstransformer.cfg (it exposes Mob.goalSelector).
+    accessWidenerPath = file("src/main/resources/${mod_id}.accesswidener")
 
-    // This property allows configuring Gradle's ProcessResources task(s) to run on IDE output locations before launching the game.
-    // It is REQUIRED to be set to true for this template to function.
-    // See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
-    copyIdeResources = true
-
-    // When true, this property will add the folder name of all declared run configurations to generated IDE run configurations.
-    // The folder name can be set on a run configuration using the "folderName" property.
-    // By default, the folder name of a run configuration is the name of the Gradle project containing it.
-    // generateRunFolders = true
-
-    // This property enables access transformers for use in development.
-    // They will be applied to the Minecraft artifact.
-    // The access transformer file can be anywhere in the project.
-    // However, it must be at "META-INF/accesstransformer.cfg" in the final mod jar to be loaded by Forge.
-    // This default location is a best practice to automatically put the file in the right place in the final jar.
-    // See https://docs.minecraftforge.net/en/latest/advanced/accesstransformers/ for more information.
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
     runs {
-        // applies to all the run configs below
-        configureEach {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
         client {
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            property 'forge.enabledGameTestNamespaces', mod_id
+            client()
+            ideConfigGenerated true
+            runDir 'run'
         }
-
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+            server()
+            ideConfigGenerated true
+            runDir 'run'
+            programArgs '--nogui'
         }
-
-        // This run config launches GameTestServer and runs all registered gametests, then exits.
-        // By default, the server will crash when no gametests are provided.
-        // The gametest system is also enabled by default for other run configs under the /test command.
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        data {
-            // example of overriding the workingDirectory set in configureEach above
-            workingDirectory project.file('run-data')
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
-    }
-}
-
-// Include resources generated by data generators.
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-repositories {
-    // Put repositories for dependencies here
-    // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
-    // Local mod jars (JEG + its hard deps) live in ./libs.
-    flatDir {
-        dir 'libs'
     }
 }
 
 dependencies {
-    // Specify the version of Minecraft to use.
-    // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
-    // The "userdev" classifier will be requested and setup by ForgeGradle.
-    // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
-    // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    minecraft "com.mojang:minecraft:${minecraft_version}"
 
-    // (JEG dependency removed -- the mod's guns/ammo/explosions are all native now. No third-party mod jars.)
+    // The whole point of this branch: the sources are written in official Mojang names, so Loom can compile them
+    // as-is. Do NOT switch this to Yarn -- 44k lines would have to be renamed.
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // Guard Villagers is NOT on the Gradle graph, on purpose. It is a mandatory RUNTIME dependency (mod id
+    // "guardvillagers", entity id "guardvillagers:guard" -- the entire compatibility surface, since the mod never
+    // touches one of its classes), but Loom cannot remap it into Mojang names: its GuardEntity declares
+    // setChargingCrossbow(boolean), which is also the Mojang name of the CrossbowAttackMob method it inherits, and
+    // tinyremapper calls that an unfixable conflict and fails the whole remap batch.
+    //
+    // So `gradlew runServer` will not start (Loader enforces the depends entry). Boot-test the real jar on a real
+    // Fabric dedicated server instead -- see the "Boot test" section of README-fabric.md. That tests the shipped
+    // artifact rather than a dev-remapped one, which is the better check anyway.
 }
 
-// This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
-// When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
-// See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
-tasks.named('processResources', ProcessResources).configure {
+processResources {
     var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
+            minecraft_version: minecraft_version,
+            loader_version   : loader_version,
+            mod_id           : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors      : mod_authors, mod_description: mod_description,
     ]
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+    filesMatching(['fabric.mod.json', 'pack.mcmeta']) {
+        expand replaceProperties
     }
 }
 
-// Example for how to get properties into the manifest for reading at runtime.
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1', // We are version 1 of ourselves
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-
-    // This is the preferred method to reobfuscate your jar file
-    finalizedBy 'reobfJar'
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
 }
 
-// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
-// tasks.named('publish').configure {
-//     dependsOn 'reobfJar'
-// }
+jar {
+    from('LICENSE.txt') {
+        rename { "${it}_${base.archivesName.get()}" }
+    }
+}
 
-// Example configuration to allow publishing using the maven-publish plugin
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact jar
+            from components.java
         }
     }
     repositories {
@@ -191,34 +98,14 @@ publishing {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
-}
-
-// --- Publishing to Modrinth (Minotaur) ---
-// Publish with:   MODRINTH_TOKEN=xxxxxxxx ./gradlew modrinth
+// --- Publishing to Modrinth ---
+// Minotaur is deliberately NOT applied on this branch. Whatever version of it you take drags Gson 2.9.1 onto the
+// buildscript classpath, and 2.9.1 predates record support, so Loom's parse of Mojang's version manifest dies with
+// "Unexpected IllegalAccessException occurred (Gson 2.9.1)" before Minecraft is ever set up. Forcing a newer Gson
+// in buildscript does not win against the copy inside the plugin, so the two cannot share a build.
 //
-// One-time prerequisites (Minotaur uploads VERSIONS, it cannot create the project page):
-//   1. Create the project on modrinth.com to get its slug/ID, then set `projectId` below.
-//   2. Generate a Personal Access Token (scope: "Create versions") at
-//      https://modrinth.com/settings/pats and pass it via the MODRINTH_TOKEN env var.
-//      Never commit the token.
-//
-// This block is inert during a normal `./gradlew build`; it only matters for the `modrinth` task.
-modrinth {
-    token = providers.environmentVariable('MODRINTH_TOKEN')
-    projectId = 'the-village-fights-back' // <-- the project's slug or ID (create the page first)
-    versionNumber = mod_version
-    versionName = "${mod_name} ${mod_version}"
-    versionType = 'release'
-    uploadFile = jar                       // ForgeGradle reobfs this jar in place before upload
-    gameVersions = ['1.20.1']
-    loaders = ['forge']
-    // changelog = file('CHANGELOG.md').text          // optional, if you keep a changelog
-    dependencies {
-        required.project 'guard-villagers'            // mandatory -- the village's guards are built on it
-    }
-}
-
-// Ensure the production (reobfed) jar is built before we try to upload it.
-tasks.named('modrinth').configure { dependsOn tasks.named('build') }
+// Upload the Fabric jar by hand instead (or from the Forge branch, which still has Minotaur):
+//   file:    build/libs/thevillagefightsback-fabric-1.20.1-<ver>.jar
+//   project: the-village-fights-back
+//   loaders: fabric        game versions: 1.20.1
+//   deps:    guard-villagers-(fabricquilt) [required], fabric-api [required]
