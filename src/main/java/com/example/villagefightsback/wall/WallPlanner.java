@@ -49,6 +49,26 @@ public final class WallPlanner {
         List<int[]> pts = mainCluster(distinctXz(beds), brainNode);
         if (pts.size() < MIN_BEDS) return null;
 
+        // The inner wall hugs the village concavely, and on a big sprawling village that hug is what busts the
+        // caps: a concave boundary that snakes between scattered houses is far longer than the same village's
+        // convex outline, so MAX_COLUMNS/MAX_BLOCKS trip and the plan comes back null.
+        //
+        // Returning null there was a silent, PERMANENT failure. A village with no plan never gets a wall, never
+        // gets wall defenders, and -- because InfectionManager.seedVillage lays its outward dirt-path ring along
+        // the wall footprint -- never seeds its infection outward either. It could not even recover, since the
+        // survey stops once the node reaches stage 2. Large pre-existing villages (a converted bell, 50+ claimed
+        // buildings) hit this every time; a compact settler-founded village never did, which is why it hid.
+        //
+        // So a village too sprawling to hug is now walled by its convex hull instead. Same machinery the stage-3
+        // obsidian ring already uses, one extra O(W*H) pass on a grid we have already built, and only on the
+        // retry. A convex wall around a big village beats no wall at all.
+        WallPlan p = build(level, brainNode, pts, obsidian, obsidian);
+        if (p == null && !obsidian) p = build(level, brainNode, pts, false, true);
+        return p;
+    }
+
+    private static WallPlan build(ServerLevel level, GlobalPos brainNode, List<int[]> pts,
+                                  boolean obsidian, boolean convex) {
         double[] centroid = centroid(pts);
 
         // --- Concave footprint grid ---------------------------------------------------------------------
@@ -78,7 +98,8 @@ public final class WallPlanner {
         // The OUTER (obsidian) wall is deliberately CONVEX -- the opposite of the inner wall's concave hug.
         // Replace the concave footprint with its filled convex hull (which still clears every bed, since the
         // hull is taken of the already-CLEARANCE-expanded cells).
-        if (obsidian) convexify(interior, W, H);
+        // The inner wall also lands here on its too-sprawling retry (see plan).
+        if (convex) convexify(interior, W, H);
 
         // --- Boundary cells: an interior cell with a non-interior orthogonal neighbour. outward = the
         // outside side (a cell with >=2 outside sides is a corner -> 6-tall pillar). This naturally follows
