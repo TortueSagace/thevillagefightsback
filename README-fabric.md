@@ -16,7 +16,7 @@ rebase of `main` and a new Forge-side feature ports over cheaply.
 | Piece | Stands in for | Backed by |
 |---|---|---|
 | `EventBus` + `SubscribeEvent` + `ModEventHandlers` | Forge's event bus and `@Mod.EventBusSubscriber` | reflection over a hand-listed set of handler classes -- Fabric has no classpath scan |
-| `platform.event.*` (34 classes) | the Forge events the mod listens to | Fabric API callbacks (`ModEventSources`) and 16 mixins |
+| `platform.event.*` (34 classes) | the Forge events the mod listens to | Fabric API callbacks (`ModEventSources`) and 23 mixins |
 | `registry.DeferredRegister` / `RegistryObject` | Forge's | immediate `Registry.register` |
 | `config.ModConfigSpec` | `ForgeConfigSpec` | a commented-TOML reader/writer producing the same file |
 | `network.ModNetwork` | `SimpleChannel` | one named Fabric play channel per packet |
@@ -56,8 +56,10 @@ Everything is ported; these are the places the mechanism underneath is not ident
   be extended here, so the three enchantments override `canEnchant` to demand an actual mace instead. That is the
   method the enchanting table, the anvil and the commands all consult.
 - **The `ALLY_PASSABLE` path type is spliced into an enum.** `BlockPathTypes` gains a constant through its own
-  compiler-generated constructor, and the values array is patched with `Unsafe`. Only the splice can fail, and
-  nothing depends on it: passability is decided by the per-mob malus map, which is keyed by the object.
+  compiler-generated constructor, and the values array is patched with `Unsafe`. The array is found by TYPE, not
+  by the name `$VALUES`: it is synthetic, so in the obfuscated jar the game runs it is called whatever the
+  obfuscator chose. Only the splice can fail, and if it ever does the mod logs it and carries on -- passability is
+  decided by the per-mob malus map, which is keyed by the object, not by the ordinal.
 - **No Minotaur.** Whichever version of it you take drags Gson 2.9.1 onto the buildscript classpath, and 2.9.1
   predates record support, so Loom's parse of Mojang's version manifest dies before Minecraft is set up. The
   Fabric jar is uploaded by hand; `build.gradle` records the metadata to use.
@@ -79,6 +81,21 @@ then, in a scratch directory:
 3. Drop into `mods/`: this build's jar, `fabric-api-0.92.2+1.20.1.jar`, `guardvillagers-2.0.9-1.20.1.jar`
 4. `java -Xmx3G -jar fabric-server-launch.jar --nogui`
 
-Judge the boot on the `Done (Ns)!` line plus the recipe and advancement counts, and check that the Limbo
-dimension registered and no mixin failed to apply. Then in-game: `/thevillagefightsback config` should list every
-key (which proves the TOML shim round-trips), and `/summon thevillagefightsback:general_darius` should work.
+`tools/fabric-smoketest.sh` drives the whole thing from that directory: it boots the server, pipes a handful of
+commands into its console once the world is up, and stops it cleanly.
+
+What the last run showed, and what each line is worth:
+
+| Signal | Result |
+|---|---|
+| `Done (Ns)!` | `Done (24.365s)!` on an existing world, `Done (53.873s)!` generating one |
+| mixins | all 23 applied; no injection failure |
+| `Loaded 7 recipes` | expected -- 1.20.1 logs the number of recipe TYPES, and vanilla has exactly seven |
+| `Loaded 1306 advancements` | vanilla's ~1271 plus this mod's 35 |
+| `/thevillagefightsback config` | listed every key, so the TOML shim round-trips |
+| `/summon thevillagefightsback:general_darius` | "Summoned new Darius" -- the mod's own message, so the entity registered and ticks |
+| `/setblock ... village_brain_node` | placed, and its tick loop ran without throwing |
+| Limbo | saved as its own level on shutdown, so the dimension registered and loaded |
+| errors | only `No data fixer registered for <entity>`, which vanilla says about every modded entity and Forge merely suppresses |
+
+Gameplay and client rendering are deliberately not covered by this; they are for a playtest.
