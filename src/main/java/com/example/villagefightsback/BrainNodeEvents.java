@@ -507,9 +507,14 @@ public final class BrainNodeEvents {
             // Stage 2+: the village stops building and switches to fertilization. No builder staffing here;
             // InfectionManager.seedVillage (once) demotes existing builders, finishes the wall, and starts
             // the infection -- after which 20% of the now-idle villagers are made miners.
-            if (data.econ(gp).getLevel() >= 2) continue;
-
+            //
+            // A village with NO plan is the exception, and it used to be a dead end: the survey stopped at
+            // stage 2, so a footprint the planner had refused stayed unwalled and unseeded for good. Those
+            // villages keep surveying here, and the node raises the wall itself the moment a plan appears.
             WallPlan plan = data.getWallPlan(gp);
+            boolean stage2 = data.econ(gp).getLevel() >= 2;
+            if (stage2 && plan != null) continue;
+
             if (plan == null) {
                 // Empty village (no villagers): dispatch settlers to found houses first; FoundingManager
                 // creates the plan once they're done. gate() returns true to let normal planning proceed.
@@ -522,8 +527,20 @@ public final class BrainNodeEvents {
                     computed.setStartTick(level.getGameTime()); // t0 for the per-layer builder stagger
                     data.putWallPlan(computed);
                     surveyBackoff.remove(gp);
+                    // Arrived after the village was already fertilizing: no builders exist to raise it, so the
+                    // node raises it and lays the outward path ring right now.
+                    if (stage2) {
+                        com.example.villagefightsback.infection.InfectionManager.raiseWallAndSeedRing(
+                                level, com.example.villagefightsback.infection.InfectionData.get(level), gp, data);
+                    }
                 } else {
                     surveyBackoff.put(gp, server.getTickCount() + SURVEY_BACKOFF_TICKS);
+                    // A silent refusal here cost a village its wall, its defenders and its outward infection
+                    // seeding with nothing in the log to say so. Throttled by the back-off, so it cannot spam.
+                    TheVillageFightsBack.LOGGER.info(
+                            "[The Village Fights Back] no wall plan for the brain node at {} (village footprint "
+                            + "too sprawling, or fewer than {} village points); retrying in {} ticks.",
+                            gp.pos(), WallPlanner.MIN_BEDS, SURVEY_BACKOFF_TICKS);
                 }
                 continue;
             }

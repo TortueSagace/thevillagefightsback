@@ -381,20 +381,7 @@ public final class InfectionManager {
 
         // The brainNode finishes the wall itself (no builders any more), then lays a dirt-path ring along the
         // wall footprint so the infection escapes the envelope and spreads outward.
-        WallPlan plan = data.getWallPlan(gp);
-        if (plan != null) {
-            for (WallBlock wb : plan.blocks()) {
-                BlockPos p = wb.pos();
-                if (!level.isLoaded(p)) continue;
-                if (!plan.satisfied(level, wb) && level.getBlockState(p).canBeReplaced()) {
-                    level.setBlock(p, wb.toState(), 3);                 // finish remaining gaps (no bulldozing)
-                }
-                if (wb.course() == 0) seedWallPath(level, inf, p, center); // path just outside the foundation
-            }
-            plan.markComplete();
-            com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
-            data.setDirty();
-        }
+        raiseWallAndSeedRing(level, inf, gp, data);
 
         // Also seed from any existing village dirt paths near the centre.
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
@@ -408,6 +395,35 @@ public final class InfectionManager {
                 }
             }
         }
+    }
+
+    /**
+     * The brain node raises whatever is left of its wall itself and lays the outward dirt-path ring along the
+     * foundation, which is how the infection escapes the village envelope.
+     *
+     * <p>Split out of {@link #seedVillage} because a village can acquire its wall plan AFTER it has already been
+     * seeded: a footprint too sprawling to plan concavely used to yield no plan at all, and the node could reach
+     * stage 2 with none. BrainNodeEvents now surveys such a village even at stage 2 and calls this the moment a
+     * plan finally exists, so the wall and the ring are not lost just because they arrived late.
+     *
+     * <p>Idempotent: a plan already marked complete is dropped by the caller, and every write is a gap-fill.
+     */
+    public static void raiseWallAndSeedRing(ServerLevel level, InfectionData inf, GlobalPos gp,
+                                            BrainNodeData data) {
+        WallPlan plan = data.getWallPlan(gp);
+        if (plan == null) return;
+        BlockPos center = gp.pos();
+        for (WallBlock wb : plan.blocks()) {
+            BlockPos p = wb.pos();
+            if (!level.isLoaded(p)) continue;
+            if (!plan.satisfied(level, wb) && level.getBlockState(p).canBeReplaced()) {
+                level.setBlock(p, wb.toState(), 3);                 // finish remaining gaps (no bulldozing)
+            }
+            if (wb.course() == 0) seedWallPath(level, inf, p, center); // path just outside the foundation
+        }
+        plan.markComplete();
+        com.example.villagefightsback.wall.WallBuild.clearPlan(gp);
+        data.setDirty();
     }
 
     /** Lay a dirt path at the surface just OUTSIDE a wall foundation column (so it can spread beyond the wall;
