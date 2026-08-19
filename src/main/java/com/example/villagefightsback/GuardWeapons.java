@@ -7,17 +7,40 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /**
  * The stage-3 guard's gear: an enchanted (native) Mace, a crossbow, the Alien Slasher melee fallback, and the
  * emerald armour set (each piece force-enchanted with Fire + Blast Protection). Everything here is native to
  * this mod now -- the mace, the wind charge, and the mace enchantments are all our own ({@link ModItems},
  * {@link ModEnchantments}); there is no longer any third-party soft dependency for the mace gear.
+ *
+ * <p><b>The cached stacks are cleared when the server stops, and that is not optional on 1.21.</b>
+ * Enchantments are a PER-WORLD dynamic registry here, so the {@code Holder<Enchantment>} baked into a
+ * cached stack belongs to the registry set of whichever world was loaded when it was first built. Load a
+ * second world in the same launch without clearing, and those holders point at a registry set that no
+ * longer exists: the guard then throws
+ * {@code IllegalStateException: Element ... is not valid in current registry set} when it tries to write
+ * its NBT, and silently fails to persist. It was reported as Quick Charge + Piercing, which is exactly
+ * {@link #crossbow()} -- the stack {@code VillageEvents.armGuardStage2} hands out on a stage upgrade.
+ *
+ * <p>Every other manager in this mod already clears on stop (HouseBuildManager, BrainReflexes,
+ * FoundingManager, NodeBounty, ReversedGravity, AirStrikeManager, NodeSpawnScheduler,
+ * ChunkPortalManager); this class was the one that did not, which is why it alone went stale.
  */
+@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class GuardWeapons {
     private GuardWeapons() {}
 
     private static ItemStack mace, crossbow, slasher, eradicator, alienSmasher; // built lazily (registries ready after construction)
+
+    /** Drop every cached stack, so the next world rebuilds them against ITS enchantment registry. */
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        mace = crossbow = slasher = eradicator = alienSmasher = null;
+    }
 
     /** The server's registry access (enchantments are data-driven Holders in 1.21, resolved via the registry). */
     private static RegistryAccess access() {

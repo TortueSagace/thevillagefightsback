@@ -68,6 +68,7 @@ public final class Config {
     public static final ModConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     public static final ModConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     public static final ModConfigSpec.BooleanValue UNSTICK_TEST_MODE;
+    public static final ModConfigSpec.BooleanValue INFESTED_NEEDS_BRAIN_NODE;
     // --- multipliers (float, default 1.0, lower-bounded) ---
     public static final ModConfigSpec.DoubleValue MULTIPLIER_LEVEL_UP_EMERALD_THRESHOLD;
     public static final ModConfigSpec.DoubleValue MULTIPLIER_UNIT_SPAWN_FREQUENCY;
@@ -166,6 +167,13 @@ public final class Config {
                         "standing around waiting for it. Leave it false in a real world: it makes the mod quick to",
                         "decide that a villager doing something slow is stuck. Default: false.")
                 .define("unstick_test_mode", false);
+        INFESTED_NEEDS_BRAIN_NODE = b
+                .comment("If true, infested paths and fertile grass only spread blocks while they are within the",
+                        "100-block reach of a brain node that has reached stage 2. This keeps a converted zone",
+                        "roughly inside the village's own radius instead of creeping across the map, and stops any",
+                        "conversion at all while the node is still stage 1. Set false and both spread on their own",
+                        "wherever they happen to be, which is the pre-1.5.2 behaviour. Default: true.")
+                .define("infested_paths_need_brain_node", true);
         MEGA_BRUTAL_MODE = b
                 .comment("If true: all village units permanently gain Strength III, Regeneration III, Resistance III and Speed III",
                         "(no potion particles); guards wield Alien Smashers in place of the regular Mace; and golems can teleport",
@@ -328,6 +336,7 @@ public final class Config {
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("unstick_test_mode", UNSTICK_TEST_MODE);
+        INDEX.put("infested_paths_need_brain_node", INFESTED_NEEDS_BRAIN_NODE);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
         INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
         INDEX.put("enable_emerald_infestation", ENABLE_EMERALD_INFESTATION);
@@ -448,6 +457,7 @@ public final class Config {
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean unstickTestMode()               { return UNSTICK_TEST_MODE.get(); }
+    public static boolean infestedNeedsBrainNode()        { return INFESTED_NEEDS_BRAIN_NODE.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }

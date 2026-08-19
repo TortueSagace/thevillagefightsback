@@ -203,8 +203,13 @@ public final class HousePlacer {
 
     /** Decorative entities placed with the build (paintings, frames, armor stands); living mobs are skipped. */
     private static final java.util.Set<String> DECORATIVE = java.util.Set.of(
-            "minecraft:painting", "minecraft:item_frame", "minecraft:glow_item_frame",
+            "minecraft:item_frame", "minecraft:glow_item_frame",
             "minecraft:armor_stand", "minecraft:leash_knot");
+    // Paintings are deliberately NOT on that list. The three village_tower_fix* templates carry 17 each, and
+    // towers are always placed at Rotation.NONE -- the only case where template entities are placed at all --
+    // so every Green TNT tower was spawning 17 real entities of pure decoration nobody sees from outside.
+    // Dropping the id here is equivalent to stripping them from the .nbt (no other template has one) and is
+    // reversible; the factory's item frames and the barracks armour stand are untouched.
 
     /** World-ready entity NBTs for the structure's decorative entities (offset only -> Rotation.NONE). */
     private static List<CompoundTag> readDecorativeEntities(CompoundTag data, int ox, int oy, int oz) {
