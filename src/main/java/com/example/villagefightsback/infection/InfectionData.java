@@ -49,11 +49,21 @@ public class InfectionData extends SavedData {
     private final Set<Long> seeded = new HashSet<>();
 
     // --- infested path blocks (v1.0.3): slow, full-radius proliferation sources placed by emerald conversion.
-    // Bounded FIFO: an evicted entry stays in the world (and its already-spread fertile ground remains), it just
-    // stops contributing a fresh proliferation radius, which keeps the per-pass range scan cheap. ---
-    public static final int INFESTED_CAP = 64; // bounds the per-pass range scan in InfectionManager.convert()
+    //
+    // At most INFESTED_CAP are ACTIVE at once, which is what bounds the per-pass range scan in
+    // InfectionManager.convert(). The rest queue up in `waiting` and take their turn: when an active path has
+    // nothing left to convert in its radius, InfectionManager retires it and promotes the head of the queue.
+    //
+    // It used to be a plain FIFO that DROPPED the oldest on overflow, so in a heavily infested world only the 64
+    // most recent paths ever did anything and every older one was inert for good -- the player sees dozens of
+    // infested paths and a handful of them spreading. Nothing is discarded now until `waiting` itself overflows,
+    // which takes WAITING_CAP paths in one dimension.
+    public static final int INFESTED_CAP = 64;      // active at once
+    public static final int WAITING_CAP = 4096;     // queued behind them; bounds the save file, not the tick
     private final ArrayDeque<Long> infested = new ArrayDeque<>();
     private final Set<Long> infestedSet = new HashSet<>();
+    private final ArrayDeque<Long> waiting = new ArrayDeque<>();
+    private final Set<Long> waitingSet = new HashSet<>();
 
     private long fastUntil = Long.MIN_VALUE; // gametime until which infection runs at 5x (first 10s)
 
@@ -102,11 +112,17 @@ public class InfectionData extends SavedData {
     /** Register a freshly-placed infested path block: it becomes a slow proliferation centre and seeds the
      *  conversion frontier so fertile/rich blocks start spreading from it. */
     public void addInfestedPath(long pos) {
-        if (infestedSet.add(pos)) {
-            infested.addLast(pos);
-            while (infested.size() > INFESTED_CAP) {
-                Long old = infested.pollFirst();
-                if (old != null) infestedSet.remove(old);
+        if (!infestedSet.contains(pos) && !waitingSet.contains(pos)) {
+            if (infested.size() < INFESTED_CAP) {
+                infested.addLast(pos);
+                infestedSet.add(pos);
+            } else {
+                waiting.addLast(pos);
+                waitingSet.add(pos);
+                while (waiting.size() > WAITING_CAP) {          // only here does a path lose its turn for good
+                    Long old = waiting.pollFirst();
+                    if (old != null) waitingSet.remove(old);
+                }
             }
             setDirty();
         }
@@ -115,6 +131,42 @@ public class InfectionData extends SavedData {
 
     public Iterable<Long> infestedSnapshot() {
         return new ArrayDeque<>(infested); // copy so callers can iterate safely
+    }
+
+    /** The active paths, in order, as a primitive array -- the per-pass form InfectionManager wants. */
+    public long[] activeInfested() {
+        long[] out = new long[infested.size()];
+        int i = 0;
+        for (long l : infested) out[i++] = l;
+        return out;
+    }
+
+    /** How many paths are queued behind the active set. */
+    public int waitingInfestedCount() {
+        return waiting.size();
+    }
+
+    /**
+     * An active path has finished converting everything it can reach: drop it from the active set and promote
+     * the longest-waiting path in its place.
+     *
+     * <p>The retired path stays in the world -- it is a block, and the fertile ground it made stays fertile. It
+     * simply stops contributing a proliferation radius, having nothing left to contribute.
+     *
+     * @return the promoted path, or {@code null} if nothing was waiting (the retirement still happens).
+     */
+    public Long retireInfestedPath(long pos) {
+        if (!infestedSet.remove(pos)) return null;
+        infested.remove(pos);
+        Long next = waiting.pollFirst();
+        if (next != null) {
+            waitingSet.remove(next);
+            infested.addLast(next);
+            infestedSet.add(next);
+            addFrontier(next);   // it has been idle in the queue; give it a frontier cell to work from
+        }
+        setDirty();
+        return next;
     }
 
     // --- frontier ---
@@ -220,6 +272,7 @@ public class InfectionData extends SavedData {
         tag.putLongArray("rich", toArray(rich));
         tag.putLongArray("seeded", toArray(seeded));
         tag.putLongArray("infested", toArray(infested));
+        tag.putLongArray("infestedWaiting", toArray(waiting));
         tag.putLong("fastUntil", fastUntil);
         tag.putInt("convertedV3", converted); // V3: fertilized-only tally; older keys (path-inflated / stuck) ignored
         long[] bc = new long[boosts.size()], be = new long[boosts.size()];
@@ -237,6 +290,7 @@ public class InfectionData extends SavedData {
         for (long l : tag.getLongArray("rich")) d.rich.add(l);
         for (long l : tag.getLongArray("seeded")) d.seeded.add(l);
         for (long l : tag.getLongArray("infested")) { d.infested.addLast(l); d.infestedSet.add(l); }
+        for (long l : tag.getLongArray("infestedWaiting")) { d.waiting.addLast(l); d.waitingSet.add(l); }
         d.fastUntil = tag.getLong("fastUntil");
         d.converted = tag.getInt("convertedV3"); // missing in old saves -> 0, so the stuck/inflated count resets
         long[] bc = tag.getLongArray("boostC"), be = tag.getLongArray("boostE");

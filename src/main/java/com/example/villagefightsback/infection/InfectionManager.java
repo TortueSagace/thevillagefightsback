@@ -114,7 +114,8 @@ public final class InfectionManager {
                 inf.cleanupSanctioned(now);
                 double[][] brain = village ? brainNodeRanges(gdata, level) : EMPTY_RANGES; // {cx,cz,rSqr,speed=1.0}
                 LAST_BRAIN.put(level.dimension(), brain);   // snapshot for the cold callers (fertile grass)
-                double[][] ranges = emerald ? concat(brain, infestedRanges(inf, brain)) : brain; // + slow infested
+                java.util.List<Long> infIds = new ArrayList<>();
+                double[][] ranges = emerald ? concat(brain, infestedRanges(inf, brain, infIds)) : brain; // + slow infested
                 if (ranges.length == 0) continue;                  // nothing active here -> nothing to infect
                 // The village's own buildings are off limits. Fetched ONCE per pass and threaded down (exactly
                 // like ranges) so the 8192-cell walk never repeats the SavedData lookup.
@@ -126,7 +127,12 @@ public final class InfectionManager {
                 // Dirt paths still grow only within brain ranges; conversion spreads across both, but the convert
                 // chance is scaled by speedAt() so infested-only ground proliferates at 1/5 the brain rate.
                 growPaths(level, inf, now, brain, zones, marks);
-                convert(level, inf, now, ranges, zones, marks);
+                // Which infested paths still had ground to take this pass. Marked inside speedAt, which convert()
+                // only reaches once findCandidate has already found something convertible -- so a set bit means
+                // "this path is still working" and a clear one means "it found nothing", at no extra cost.
+                boolean[] worked = new boolean[infIds.size()];
+                convert(level, inf, now, ranges, zones, marks, brain.length, worked);
+                if (!infIds.isEmpty()) retireExhausted(level, inf, infIds, worked);
             }
         }
         com.example.villagefightsback.ModProfiler.add("infection", _p);
@@ -156,7 +162,7 @@ public final class InfectionManager {
     /** Per-infested-path proliferation reach: a full stage-4 radius around each tracked infested path block, but at
      *  the slow speed factor -- so the emerald faction's blocks spread on their own (away from any village) at 1/5
      *  the rate, reusing the same growth/conversion engine. */
-    private static double[][] infestedRanges(InfectionData inf, double[][] brain) {
+    private static double[][] infestedRanges(InfectionData inf, double[][] brain, java.util.List<Long> idsOut) {
         List<double[]> out = new ArrayList<>();
         double r = INFECT_RANGE_FULL * com.example.villagefightsback.Config.brainRadiusMult()
                 * com.example.villagefightsback.Config.infectionReachMult();
@@ -171,8 +177,53 @@ public final class InfectionManager {
             double px = p.getX() + 0.5, pz = p.getZ() + 0.5;
             if (needNode && !inRange(px, pz, brain)) continue;
             out.add(new double[]{px, pz, rr, INFESTED_SPEED});
+            if (idsOut != null) idsOut.add(l);   // parallel to `out`, so a range index maps back to its path
         }
         return out.toArray(new double[0][]);
+    }
+
+    /**
+     * How many consecutive passes an active infested path may find nothing before it gives up its slot.
+     *
+     * <p>Not one: a path can come up empty simply because the frontier walk hit its per-pass cell budget
+     * elsewhere. At the 5-tick pass interval this is about ten seconds of genuinely finding nothing, which a
+     * path that still has ground to take will not manage.
+     */
+    private static final int IDLE_PASSES_TO_RETIRE = 40;
+
+    /** dimension -> (infested path -> consecutive passes it has found nothing). Transient, rebuilt as it goes. */
+    private static final java.util.Map<net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>,
+            java.util.Map<Long, Integer>> IDLE = new java.util.HashMap<>();
+
+    /**
+     * Hand the slots of finished paths to the ones waiting for a turn.
+     *
+     * <p>An infested path that has converted everything within its reach goes on being scanned every pass for
+     * nothing, while paths queued behind it never get to spread at all. When one has found nothing for
+     * {@value #IDLE_PASSES_TO_RETIRE} passes it is retired and the longest-waiting path takes its place.
+     *
+     * <p>Cheap by construction: the only per-conversion work is a bit already set inside speedAt, and this runs
+     * once per pass over at most {@link InfectionData#INFESTED_CAP} entries.
+     */
+    private static void retireExhausted(ServerLevel level, InfectionData inf,
+                                        java.util.List<Long> ids, boolean[] worked) {
+        if (inf.waitingInfestedCount() == 0) return;   // nobody waiting -> churning slots buys nothing
+        java.util.Map<Long, Integer> idle = IDLE.computeIfAbsent(level.dimension(), k -> new java.util.HashMap<>());
+        for (int i = 0; i < ids.size(); i++) {
+            long id = ids.get(i);
+            if (worked[i]) { idle.remove(id); continue; }
+            int n = idle.merge(id, 1, Integer::sum);
+            if (n < IDLE_PASSES_TO_RETIRE) continue;
+            idle.remove(id);
+            Long promoted = inf.retireInfestedPath(id);
+            if (promoted != null) {
+                TheVillageFightsBack.LOGGER.debug(
+                        "[The Village Fights Back] infested path at {} is spent; {} takes its slot ({} still waiting).",
+                        BlockPos.of(id), BlockPos.of(promoted), inf.waitingInfestedCount());
+            }
+            if (inf.waitingInfestedCount() == 0) return;   // queue drained; leave the rest of the active set alone
+        }
+        idle.keySet().retainAll(new java.util.HashSet<>(ids));  // forget counters for paths no longer active
     }
 
     /**
@@ -198,6 +249,7 @@ public final class InfectionManager {
     @SubscribeEvent
     public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
         LAST_BRAIN.clear();
+        IDLE.clear();
     }
 
     private static double[][] concat(double[][] a, double[][] b) {
@@ -214,10 +266,23 @@ public final class InfectionManager {
      *  also covers that cell; a cell covered ONLY by a brain runs at full speed (1.0). 0 if no source covers it.
      *  (Scans all ranges -- the convert pass is throttled, so this stays cheap.) */
     private static double speedAt(double x, double z, double[][] ranges) {
+        return speedAt(x, z, ranges, 0, null);
+    }
+
+    /**
+     * As above, and -- when {@code worked} is given -- notes every INFESTED source covering this cell.
+     *
+     * <p>The loop runs either way, so the bookkeeping is free. {@code brainCount} is where the infested ranges
+     * start in {@code ranges} (they are concatenated after the brain nodes), so {@code i - brainCount} indexes
+     * {@code worked} and, through it, the path list built alongside them.
+     */
+    private static double speedAt(double x, double z, double[][] ranges, int brainCount, boolean[] worked) {
         double best = 0.0; // 0 = no source covers this cell
-        for (double[] g : ranges) {
+        for (int i = 0; i < ranges.length; i++) {
+            double[] g = ranges[i];
             double dx = x - g[0], dz = z - g[1];
             if (dx * dx + dz * dz <= g[2]) {
+                if (worked != null && i >= brainCount) worked[i - brainCount] = true;
                 double sp = g.length > 3 ? g[3] : 1.0;
                 if (best == 0.0 || sp < best) best = sp; // the slowest covering source governs (uniform infested rate)
             }
@@ -551,7 +616,8 @@ public final class InfectionManager {
 
     // --- conversion (spec 2-3) + destruction detection (spec 8) -------------------------------------
     private static void convert(ServerLevel level, InfectionData inf, long now, double[][] ranges,
-                                StructureZones zones, MarkerZones marks) {
+                                StructureZones zones, MarkerZones marks,
+                                int brainCount, boolean[] worked) {
         // The boost multiplier applies to the per-cell CHANCE only (below), not the cell count, so the per-tick
         // cost stays bounded regardless of speed-ups (anti-lag).
         int n = Math.min(MAX_CELLS_PER_PASS, inf.frontierSize());
@@ -583,7 +649,7 @@ public final class InfectionManager {
 
             double mult = inf.multiplierAt(pos, now);
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR;            // not slowed while fighting back
-            double speed = speedAt(pos.getX() + 0.5, pos.getZ() + 0.5, ranges); // 1.0 near a brain, 0.2 infested-only
+            double speed = speedAt(pos.getX() + 0.5, pos.getZ() + 0.5, ranges, brainCount, worked); // 1.0 near a brain, 0.2 infested-only
             double chance = Math.min(1.0, CONV_CHANCE * mult * slow * speed
                     * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() < chance) {
