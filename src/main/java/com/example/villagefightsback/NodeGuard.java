@@ -1,6 +1,7 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -47,7 +48,10 @@ public final class NodeGuard {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         BlockPos pos = event.getPos();
-        if (!level.getBlockState(pos).is(ModBlocks.VILLAGE_BRAIN_NODE.get())) return;
+        // The dead husk shoves as hard as the living node: mining out a village's heart is desecration
+        // whether or not the heart is still beating.
+        BlockState hit = level.getBlockState(pos);
+        if (!hit.is(ModBlocks.VILLAGE_BRAIN_NODE.get()) && !hit.is(ModBlocks.DEAD_BRAIN_NODE.get())) return;
 
         // The event is NOT cancelled: see the class note. The swing lands and the node can be broken.
         long now = level.getGameTime();
