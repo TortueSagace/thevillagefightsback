@@ -63,6 +63,10 @@ public final class OrganicMass {
     private static final String LAST_DMG_TAG = "OrganicLastDmg"; // game-time a unit last dealt damage
     private static final long IDLE_RECLAIM_TICKS = 6000L; // 5 in-game minutes dealing no damage -> reclaim the unit
     private static final float RECLAIM_MAX_HP = 100.0F;   // only units below this max HP are auto-reclaimed
+    private static final float VILLAGER_HP = 20.0F;       // exactly one villager's worth of mass
+    private static final int RECRUIT_COST = 20;           // points the brain pays to promote a sub-villager unit
+    /** Returned by {@link #reclaimIfIdle} when the unit was TURNED (removed, but nothing refunded). */
+    private static final int CONVERTED = -1;
     private static final float THREAT_BUMP = 1.0F;
     private static final float THREAT_MAX = 8.0F;
     private static final double THREAT_HALFLIFE = 1200.0; // 60s
@@ -135,12 +139,15 @@ public final class OrganicMass {
         // idle, stuck unit (refunding its organic mass) so the field self-heals (e.g. units stranded in a hole).
         AABB box = new AABB(node).inflate(BrainNodeEvents.INCOME_RADIUS);
         List<LivingEntity> prey = new ArrayList<>();
-        int passive = 0, hostile = 0, field = 0, explorers = 0, reclaimed = 0, reclaimedMass = 0;
+        int passive = 0, hostile = 0, field = 0, explorers = 0, reclaimed = 0, reclaimedMass = 0, turned = 0;
         for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (Factions.isEmerald(e)) {
                 if (e instanceof Mob m) {
                     int back = reclaimIfIdle(econ, m, gameTime);
-                    if (back > 0) { reclaimed++; reclaimedMass += back; continue; }
+                    if (back != 0) {                       // 0 = left alone; anything else means it is gone
+                        if (back > 0) { reclaimed++; reclaimedMass += back; } else turned++;
+                        continue;
+                    }
                 }
                 field++;
                 if (e instanceof EmeraldCat || e instanceof EmeraldSalmon) explorers++; // roaming scouts: land cats + water salmon (the screen we maintain)
@@ -154,6 +161,8 @@ public final class OrganicMass {
         }
         if (reclaimed > 0) log(level, gp, "Reclaimed " + reclaimed + " idle unit" + (reclaimed > 1 ? "s" : "")
                 + " (+" + reclaimedMass + ")");
+        if (turned > 0) log(level, gp, "Turned " + turned + " idle unit" + (turned > 1 ? "s" : "")
+                + " back into village folk");
 
         int P = econ.getOrganicPoints(); // read AFTER reclaim, which refunds points
         if (P - BrainNodeData.ORGANIC_FLOOR < MIN_SPAWN_COST) return; // even on credit nothing is affordable -> BANK
@@ -249,11 +258,56 @@ public final class OrganicMass {
     private static int reclaimIfIdle(BrainNodeData.Econ econ, Mob m, long gameTime) {
         if (m instanceof EmeraldCat || m instanceof EmeraldSalmon || m instanceof EmeraldEndermite) return 0; // scouts never auto-culled
         if (m instanceof net.minecraft.world.entity.animal.IronGolem) return 0; // emerald golems (+ both variants) exempt
-        if (m.getMaxHealth() >= RECLAIM_MAX_HP) return 0; // other heavy units (elites / withers) are never auto-culled
+        float maxHp = m.getMaxHealth();
+        if (maxHp >= RECLAIM_MAX_HP) return 0; // other heavy units (elites / withers) are never auto-culled
         net.minecraft.nbt.CompoundTag pd = m.getPersistentData();
         if (!pd.contains(LAST_DMG_TAG)) { pd.putLong(LAST_DMG_TAG, gameTime); return 0; } // start its idle clock
         if (gameTime - pd.getLong(LAST_DMG_TAG) < IDLE_RECLAIM_TICKS) return 0;
-        int refund = Math.round(m.getMaxHealth());
+
+        if (!(m.level() instanceof ServerLevel level)) return 0;
+        net.minecraft.util.RandomSource rng = level.getRandom();
+
+        // An idle unit is TURNED rather than deleted. Mass decides what it becomes: exactly a villager's worth
+        // makes a villager, more than that makes one guard, and less than that is only worth promoting if the
+        // brain will pay RECRUIT_COST for it. Turning costs and refunds nothing otherwise -- the unit's own
+        // mass simply becomes the new body.
+        boolean payUp = maxHp < VILLAGER_HP;
+        if (payUp && econ.getOrganicPoints() < RECRUIT_COST) return reclaim(econ, m, maxHp); // brain declines
+
+        EntityType<?> type;
+        boolean asGuard = false;
+        if (maxHp > VILLAGER_HP) {
+            type = com.example.villagefightsback.compat.MCACompat.guardType(rng);
+            asGuard = type != null;
+            // No guard mod at all: a villager is the honest fallback, not a silent deletion.
+            if (type == null) type = com.example.villagefightsback.compat.MCACompat.villagerType(rng);
+        } else {
+            type = com.example.villagefightsback.compat.MCACompat.villagerType(rng);
+        }
+        if (type == null || !turnInto(level, m, type, asGuard)) return reclaim(econ, m, maxHp);
+
+        if (payUp) econ.spendOrganicPoints(RECRUIT_COST);   // charged only once the new body actually exists
+        LimboBanishFx.startLime(m);                          // the same lime swirl an emerald conversion plays
+        m.discard();
+        return CONVERTED;
+    }
+
+    /** Spawn {@code type} exactly where the emerald unit stood. False if it could not be created or added. */
+    private static boolean turnInto(ServerLevel level, Mob m, EntityType<?> type, boolean asGuard) {
+        Entity spawned = type.create(level);
+        if (spawned == null) return false;
+        spawned.moveTo(m.getX(), m.getY(), m.getZ(), m.getYRot(), m.getXRot());
+        if (spawned instanceof Mob nm) {
+            nm.finalizeSpawn(level, level.getCurrentDifficultyAt(m.blockPosition()), MobSpawnType.CONVERSION, null);
+        }
+        if (!level.addFreshEntity(spawned)) return false;
+        if (asGuard) com.example.villagefightsback.compat.MCACompat.makeGuard(spawned);
+        return true;
+    }
+
+    /** The old behaviour: hand the mass back to the brain and remove the unit. Now only the fallback. */
+    private static int reclaim(BrainNodeData.Econ econ, Mob m, float maxHp) {
+        int refund = Math.round(maxHp);
         econ.addOrganicPoints(refund); // give the mass back to the brain
         LimboBanishFx.startLime(m);
         m.discard();
