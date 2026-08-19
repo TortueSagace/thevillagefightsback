@@ -12,6 +12,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # villager-a
 ASSETS = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefightsback")
 DATA = os.path.join(ROOT, "src", "main", "resources", "data", "thevillagefightsback")
 MODID = "thevillagefightsback"
+
+# Name suffix for a COLOUR VARIANT set ("" = the original green set). Everything the block family writes --
+# texture, mcmeta, model, blockstate, loot -- goes through sfx(), so setting this and re-running produces a
+# complete parallel set under e.g. "fertile_dirt_cyan" without touching the green one.
+#
+# Deliberately NOT applied to the one-off items (rich sheep, emerald apple, emerald tools, virus arrow):
+# those are single things, not part of the recoloured family.
+SUFFIX = ""
+
+
+def sfx(name):
+    return name + SUFFIX
 JAR = (r"C:\Users\Administrator\AppData\Roaming\ModrinthApp\meta\libraries\net\minecraft"
        r"\client\1.20.1-20230612.114412\client-1.20.1-20230612.114412-extra.jar")
 
@@ -24,6 +36,10 @@ GREEN_GAMMA = 0.80         # <1 brightens mid-tones (more punch)
 BASES = {
     "dirt":       ("all", "dirt"),
     "sand":       ("all", "sand"),
+    # Vanilla sandstone is top/bottom/side, but the only multi-face kind here is "log" -- and that comes with
+    # axis blockstate variants the (non-pillar) fertile_sandstone block has no AXIS property for. So we take
+    # the side texture on all 6 faces; it is the face you actually see in a wall.
+    "sandstone":  ("all", "sandstone"),
     "stone":      ("all", "stone"),
     "log":        ("log", ("oak_log", "oak_log_top")),
     "deepslate":  ("log", ("deepslate", "deepslate_top")),  # axis pillar like logs (side + top)
@@ -295,7 +311,7 @@ DOOR_FACING_ROT = {"east": 0, "south": 90, "west": 180, "north": 270}
 def gen_door():
     """Generate the single 'fertile_door' (replaces any wooden door). Textures green-tinted from oak_door;
     blockstate/models reuse the vanilla door parents; loot drops once (lower half)."""
-    name = "fertile_door"
+    name = sfx("fertile_door")
     with zipfile.ZipFile(JAR) as zf:
         save_png(green_tint(load_vanilla(zf, "oak_door_bottom")), name + "_bottom")
         save_png(green_tint(load_vanilla(zf, "oak_door_top")), name + "_top")
@@ -515,15 +531,15 @@ def gen_chorus(gems):
         dead = green_tint(load_vanilla(zf, "chorus_flower_dead"))
         plant = green_tint(load_vanilla(zf, "chorus_plant"))
     # textures
-    save_png(flower, "fertile_chorus_flower"); save_png(dead, "fertile_chorus_flower_dead")
-    save_png(plant, "fertile_chorus_plant")
-    save_png(overlay_onto(flower, gems), "rich_chorus_flower")
-    save_png(overlay_onto(dead, gems), "rich_chorus_flower_dead")
-    save_png(overlay_onto(plant, gems), "rich_chorus_plant")
+    save_png(flower, sfx("fertile_chorus_flower")); save_png(dead, sfx("fertile_chorus_flower_dead"))
+    save_png(plant, sfx("fertile_chorus_plant"))
+    save_png(overlay_onto(flower, gems), sfx("rich_chorus_flower"))
+    save_png(overlay_onto(dead, gems), sfx("rich_chorus_flower_dead"))
+    save_png(overlay_onto(plant, gems), sfx("rich_chorus_plant"))
 
     for variant in ("fertile", "rich"):
-        fl = variant + "_chorus_flower"
-        pl = variant + "_chorus_plant"
+        fl = sfx(variant + "_chorus_flower")
+        pl = sfx(variant + "_chorus_plant")
         # ---- flower: block models, age blockstate, item model ----
         _chorus_flower_models(fl, fl, fl + "_dead", pl)
         write_json(os.path.join(ASSETS, "blockstates", fl + ".json"), {"variants": {
@@ -539,15 +555,15 @@ def gen_chorus(gems):
 
     # ---- loot ----
     # fertile flower drops itself; fertile plant drops the (later-batch) fertile_chorus item.
-    write_loot_self("fertile_chorus_flower")
-    write_json(os.path.join(DATA, "loot_tables", "blocks", "fertile_chorus_plant.json"), {
+    write_loot_self(sfx("fertile_chorus_flower"))
+    write_json(os.path.join(DATA, "loot_tables", "blocks", sfx("fertile_chorus_plant") + ".json"), {
         "type": "minecraft:block",
         "pools": [{"rolls": 1, "bonus_rolls": 0,
                    "entries": [{"type": "minecraft:item", "name": f"{MODID}:fertile_chorus"}],
                    "conditions": [{"condition": "minecraft:survives_explosion"}]}]
     })
-    write_loot_emerald("rich_chorus_flower")
-    write_loot_emerald("rich_chorus_plant")
+    (write_loot_self if SUFFIX else write_loot_emerald)(sfx("rich_chorus_flower"))
+    (write_loot_self if SUFFIX else write_loot_emerald)(sfx("rich_chorus_plant"))
     print("generated chorus (fertile + rich, plant + flower)")
 
 
@@ -555,7 +571,8 @@ def main():
     with zipfile.ZipFile(JAR) as zf:
         gems = gem_overlay(zf)
         for base, (kind, srcs) in BASES.items():
-            fertile, rich = f"fertile_{base}", f"rich_{base}"
+            fseed, rseed = f"fertile_{base}", f"rich_{base}"   # speck seeds: identical across colours
+            fertile, rich = sfx(fseed), sfx(rseed)
             if base == "sculk":
                 # Keep sculk ANIMATED (full strip + .mcmeta) so it pulses/glows like vanilla sculk.
                 ft = green_tint(load_vanilla(zf, srcs, crop=False))
@@ -563,19 +580,19 @@ def main():
                 save_png(overlay_strip(ft, gems), rich); save_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
             elif kind == "leaves":
-                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fertile)
+                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fseed)
                 save_png(ft, fertile); save_anim_mcmeta(fertile)
                 save_png(overlay_strip(ft, gems), rich); save_anim_mcmeta(rich)
                 write_leaves(fertile); write_leaves(rich)
             elif kind == "all":
-                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fertile)
+                ft = animate_specks(green_tint(load_vanilla(zf, srcs)), fseed)
                 save_png(ft, fertile); save_anim_mcmeta(fertile)
                 save_png(overlay_strip(ft, gems), rich); save_anim_mcmeta(rich)
                 write_cube_all(fertile); write_cube_all(rich)
             else:  # log: side + top (both animated)
                 side, top = srcs
-                fs = animate_specks(green_tint(load_vanilla(zf, side)), fertile)
-                ftp = animate_specks(green_tint(load_vanilla(zf, top)), fertile + "_top")
+                fs = animate_specks(green_tint(load_vanilla(zf, side)), fseed)
+                ftp = animate_specks(green_tint(load_vanilla(zf, top)), fseed + "_top")
                 save_png(fs, fertile); save_anim_mcmeta(fertile)
                 save_png(ftp, fertile + "_top"); save_anim_mcmeta(fertile + "_top")
                 save_png(overlay_strip(fs, gems), rich); save_anim_mcmeta(rich)
@@ -585,16 +602,18 @@ def main():
                 write_loot_leaves(fertile) # fertile leaves also drop the emerald apple
             else:
                 write_loot_self(fertile)
-            write_loot_emerald(rich)
+            write_loot_self(rich) if SUFFIX else write_loot_emerald(rich)
             print("generated", fertile, "+", rich)
     gen_door()
     gen_chorus(gems)
     gen_catalyst(gems)
+    gen_fertile_wood_cobble()
+    if SUFFIX:
+        return   # a colour run stops here: the items below are one-offs, not part of the recoloured family
     gen_emerald_apple(gems)
     gen_fertile_chorus_item(gems)
     gen_emerald_virus_arrow()
     gen_emerald_tools()
-    gen_fertile_wood_cobble()
     gen_rich_sheep(gems)
 
 def gen_rich_sheep(gems):
@@ -618,9 +637,9 @@ def gen_fertile_wood_cobble():
     with zipfile.ZipFile(JAR) as zf:
         planks = animate_specks(green_tint(load_vanilla(zf, "oak_planks")), "fertile_planks")
         cobble = animate_specks(green_tint(load_vanilla(zf, "cobblestone")), "fertile_cobblestone")
-    save_png(planks, "fertile_planks"); save_anim_mcmeta("fertile_planks")
-    save_png(cobble, "fertile_cobblestone"); save_anim_mcmeta("fertile_cobblestone")
-    for bid in ("fertile_planks", "fertile_cobblestone"):
+    save_png(planks, sfx("fertile_planks")); save_anim_mcmeta(sfx("fertile_planks"))
+    save_png(cobble, sfx("fertile_cobblestone")); save_anim_mcmeta(sfx("fertile_cobblestone"))
+    for bid in (sfx("fertile_planks"), sfx("fertile_cobblestone")):
         write_cube_all(bid)
         write_loot_self(bid)
         print("generated", bid)
@@ -677,7 +696,7 @@ def gen_catalyst(gems):
         bottom = green_tint(load_vanilla(zf, "sculk_catalyst_bottom"))
         side = green_tint(load_vanilla(zf, "sculk_catalyst_side"))
     for variant, gemize in (("fertile", False), ("rich", True)):
-        name = variant + "_sculk_catalyst"
+        name = sfx(variant + "_sculk_catalyst")
         t, b, s = top, bottom, side
         if gemize:
             t, b, s = overlay_onto(top, gems), overlay_onto(bottom, gems), overlay_onto(side, gems)

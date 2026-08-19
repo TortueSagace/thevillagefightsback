@@ -154,10 +154,50 @@ public class WorldModeData extends SavedData {
         pushToConfig();
     }
 
+    /**
+     * What {@link #pushToConfig} last wrote into the live config. Transient: it is a record of what THIS
+     * process did, not world state, and it is what lets {@link #reconcileFromConfig} tell an edit apart from
+     * a reload.
+     */
+    private transient boolean[] lastPushed;
+
     /** Push the stored flags over the live config values (in memory only -- the .toml file is never written). */
     public void pushToConfig() {
-        if (chosen) Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+        if (chosen) {
+            Config.applyInfectionFlags(blockInfection, mobInfection, emeraldInfestation);
+            lastPushed = new boolean[]{blockInfection, mobInfection, emeraldInfestation};
+        }
         if (difficulty >= 0) Config.DIFFICULTY.set(difficulty);
+    }
+
+    /**
+     * A .toml reload happened. Adopt any infection flag the FILE has changed, then push.
+     *
+     * <p>Pushing unconditionally was wrong, and quietly so: the world's mode was re-asserted over the live
+     * config on EVERY reload, so hand-editing {@code enable_mob_infection = true} in the .toml was reverted
+     * within a tick by whatever was chosen at world creation. Evolving Village is (false, false, false), so a
+     * player who picked it and then switched mob infection on in the file saw nothing happen at all. The
+     * in-game {@code config} command escaped this only because it mirrors the change into this object first.
+     *
+     * <p>Telling an edit from a plain reload needs no guesswork: we know exactly what we last wrote, so a
+     * value that no longer matches was changed by somebody else, and that somebody is the player.
+     */
+    public void reconcileFromConfig() {
+        if (!chosen || lastPushed == null) { pushToConfig(); return; }
+        boolean b = Config.ENABLE_BLOCK_INFECTION.get();
+        boolean m = Config.ENABLE_MOB_INFECTION.get();
+        boolean i = Config.ENABLE_EMERALD_INFESTATION.get();
+        boolean changed = false;
+        if (b != lastPushed[0]) { blockInfection = b; Config.noteInfectionFlag("enable_block_infection", b); changed = true; }
+        if (m != lastPushed[1]) { mobInfection = m; Config.noteInfectionFlag("enable_mob_infection", m); changed = true; }
+        if (i != lastPushed[2]) { emeraldInfestation = i; Config.noteInfectionFlag("enable_emerald_infestation", i); changed = true; }
+        if (changed) {
+            setDirty();
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] adopted a hand-edited infection setting from the config file "
+                    + "(block={}, mob={}, infestation={}).", blockInfection, mobInfection, emeraldInfestation);
+        }
+        pushToConfig();
     }
 
     /** The preset these flags currently match, or null once the player has customised them individually. */

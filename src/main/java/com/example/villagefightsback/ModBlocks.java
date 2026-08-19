@@ -940,7 +940,7 @@ public final class ModBlocks {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> BLOCKS_TAB = TABS.register("blocks",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID + ".blocks"))
-                    .icon(() -> new ItemStack(FERTILE_GRASS_ITEM.get()))
+                    .icon(() -> new ItemStack(INFESTED_PATH_ITEM.get()))
                     .withTabsBefore(TAB.getKey())
                     .displayItems((params, output) -> {
                         // --- green: the original set, in its long-standing order ---

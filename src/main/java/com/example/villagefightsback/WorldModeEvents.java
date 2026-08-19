@@ -71,7 +71,7 @@ public final class WorldModeEvents {
             TheVillageFightsBack.LOGGER.info(
                     "[The Village Fights Back] new world -- the game-mode screen will open for the first eligible player.");
         }
-        data.pushToConfig();
+        data.reconcileFromConfig();
         if (data.isChosen()) {
             WorldMode mode = data.currentMode();
             TheVillageFightsBack.LOGGER.info("[The Village Fights Back] world mode: {} (block={}, mob={}, infestation={}).",
