@@ -113,7 +113,8 @@ public final class InfectionManager {
                 inf.pruneBoosts(now);
                 inf.cleanupSanctioned(now);
                 double[][] brain = village ? brainNodeRanges(gdata, level) : EMPTY_RANGES; // {cx,cz,rSqr,speed=1.0}
-                double[][] ranges = emerald ? concat(brain, infestedRanges(inf)) : brain; // + slow infested (0.2)
+                LAST_BRAIN.put(level.dimension(), brain);   // snapshot for the cold callers (fertile grass)
+                double[][] ranges = emerald ? concat(brain, infestedRanges(inf, brain)) : brain; // + slow infested
                 if (ranges.length == 0) continue;                  // nothing active here -> nothing to infect
                 // The village's own buildings are off limits. Fetched ONCE per pass and threaded down (exactly
                 // like ranges) so the 8192-cell walk never repeats the SavedData lookup.
@@ -151,16 +152,48 @@ public final class InfectionManager {
     /** Per-infested-path proliferation reach: a full stage-4 radius around each tracked infested path block, but at
      *  the slow speed factor -- so the emerald faction's blocks spread on their own (away from any village) at 1/5
      *  the rate, reusing the same growth/conversion engine. */
-    private static double[][] infestedRanges(InfectionData inf) {
+    private static double[][] infestedRanges(InfectionData inf, double[][] brain) {
         List<double[]> out = new ArrayList<>();
         double r = INFECT_RANGE_FULL * com.example.villagefightsback.Config.brainRadiusMult()
                 * com.example.villagefightsback.Config.infectionReachMult();
         double rr = r * r;
+        // A path only proliferates if a stage-2+ node can still see it. Without this an infested path is an
+        // independent origin with no village behind it, and a single one dropped far from anywhere converts a
+        // full radius of map on its own. There are at most 64 tracked paths, so testing each against the
+        // already-computed brain array costs nothing.
+        boolean needNode = com.example.villagefightsback.Config.infestedNeedsBrainNode();
         for (long l : inf.infestedSnapshot()) {
             BlockPos p = BlockPos.of(l);
-            out.add(new double[]{p.getX() + 0.5, p.getZ() + 0.5, rr, INFESTED_SPEED});
+            double px = p.getX() + 0.5, pz = p.getZ() + 0.5;
+            if (needNode && !inRange(px, pz, brain)) continue;
+            out.add(new double[]{px, pz, rr, INFESTED_SPEED});
         }
         return out.toArray(new double[0][]);
+    }
+
+    /**
+     * The brain ranges last computed for each dimension, so a COLD caller can ask "is this inside a stage-2+
+     * node's reach?" without recomputing them.
+     *
+     * <p>{@link com.example.villagefightsback.FertileGrassBlock} is the reason this exists: it spreads from a
+     * vanilla random tick, which is far too frequent to walk the node list (and
+     * {@code BrainNodeEvents.nearestNodeTo} is documented as cold-path only). Refreshed once per pass here, read
+     * there. A snapshot up to 5 ticks stale is fine for something that fires at random anyway.
+     */
+    private static final java.util.Map<net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>,
+            double[][]> LAST_BRAIN = new java.util.HashMap<>();
+
+    /** True if {@code pos} is inside some stage-2+ brain node's infection reach, per the last pass's snapshot. */
+    public static boolean withinBrainReach(ServerLevel level, BlockPos pos) {
+        double[][] brain = LAST_BRAIN.get(level.dimension());
+        if (brain == null || brain.length == 0) return false;
+        return inRange(pos.getX() + 0.5, pos.getZ() + 0.5, brain);
+    }
+
+    /** Drop the snapshot with the server, so a second world never reads the first one's node positions. */
+    @SubscribeEvent
+    public static void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        LAST_BRAIN.clear();
     }
 
     private static double[][] concat(double[][] a, double[][] b) {

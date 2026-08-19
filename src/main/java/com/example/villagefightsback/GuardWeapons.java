@@ -12,6 +12,13 @@ import net.minecraft.world.item.enchantment.Enchantments;
  * emerald armour set (each piece force-enchanted with Fire + Blast Protection). Everything here is native to
  * this mod now -- the mace, the wind charge, and the mace enchantments are all our own ({@link ModItems},
  * {@link ModEnchantments}); there is no longer any third-party soft dependency for the mace gear.
+ *
+ * <p>1.21 note, deliberately recorded here: these cached stacks are stale across a world change, and on
+ * THIS branch that is harmless. Enchantments are written as plain string ids in NBT with no registry
+ * validation, so a stack built against a previous world still serialises fine. On 1.21 enchantments are a
+ * per-world dynamic registry and the same caching threw
+ * {@code IllegalStateException: Element ... is not valid in current registry set} when a guard tried to
+ * save, so the port clears them on ServerStoppingEvent. Do not "simplify" that away when porting.
  */
 public final class GuardWeapons {
     private GuardWeapons() {}

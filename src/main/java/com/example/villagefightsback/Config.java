@@ -52,6 +52,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     public static final ForgeConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     public static final ForgeConfigSpec.BooleanValue UNSTICK_TEST_MODE;
+    public static final ForgeConfigSpec.BooleanValue INFESTED_NEEDS_BRAIN_NODE;
     public static final ForgeConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ForgeConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
@@ -166,6 +167,13 @@ public final class Config {
                         "standing around waiting for it. Leave it false in a real world: it makes the mod quick to",
                         "decide that a villager doing something slow is stuck. Default: false.")
                 .define("unstick_test_mode", false);
+        INFESTED_NEEDS_BRAIN_NODE = b
+                .comment("If true, infested paths and fertile grass only spread blocks while they are within the",
+                        "100-block reach of a brain node that has reached stage 2. This keeps a converted zone",
+                        "roughly inside the village's own radius instead of creeping across the map, and stops any",
+                        "conversion at all while the node is still stage 1. Set false and both spread on their own",
+                        "wherever they happen to be, which is the pre-1.5.2 behaviour. Default: true.")
+                .define("infested_paths_need_brain_node", true);
         DARIUS_INFLICTS_OBLITERATION = b
                 .comment("If true, every one of General Darius's blows marks its victim with Obliteration, and a stage-4 brain",
                         "node raises an Obliteration Furnace beside itself and pays 1 emerald per minute to keep it lit (never",
@@ -329,6 +337,7 @@ public final class Config {
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
         INDEX.put("unstick_test_mode", UNSTICK_TEST_MODE);
+        INDEX.put("infested_paths_need_brain_node", INFESTED_NEEDS_BRAIN_NODE);
         INDEX.put("enable_block_infection", ENABLE_BLOCK_INFECTION);
         INDEX.put("enable_mob_infection", ENABLE_MOB_INFECTION);
         INDEX.put("enable_emerald_infestation", ENABLE_EMERALD_INFESTATION);
@@ -449,6 +458,7 @@ public final class Config {
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }
     public static boolean unstickTestMode()               { return UNSTICK_TEST_MODE.get(); }
+    public static boolean infestedNeedsBrainNode()        { return INFESTED_NEEDS_BRAIN_NODE.get(); }
     public static boolean blockInfectionEnabled()         { return ENABLE_BLOCK_INFECTION.get(); }
     public static boolean mobInfectionEnabled()           { return ENABLE_MOB_INFECTION.get(); }
     public static boolean emeraldInfestationEnabled()     { return ENABLE_EMERALD_INFESTATION.get(); }
