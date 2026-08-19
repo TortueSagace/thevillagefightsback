@@ -17,9 +17,14 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * The "settler" behaviour: a villager far from every Village Brain Node -- but in a dimension that HAS at
- * least one -- founds a new home. It drops a Blue TNT on flat ground, lights it, and flees; the TNT then
- * builds a random house with the door facing the fled villager
- * (see {@link BlueTntBlock}/{@link com.example.villagefightsback.HousePlacer}).
+ * least one -- founds a new home. It drops a Cyan TNT on flat ground, lights it, and flees; the TNT then
+ * builds a random GRAND house with the door facing the fled villager
+ * (see {@link com.example.villagefightsback.CyanTntBlock}/{@link com.example.villagefightsback.HousePlacer}).
+ *
+ * <p>Cyan rather than Blue even though no brain node summoned this settler: a villager striking out on its
+ * own to found a home away from every existing village builds itself a proper one. The Cyan charge falls
+ * back to a small house by itself if there is no room for a grand one, so the worst case is what this goal
+ * used to do anyway.
  *
  * A villager settles at most once (a persistent NBT flag), so wanderers seed new houses without spamming
  * the world. Cheap to evaluate: the distance/flatness checks only run on a throttle, and a villager near
@@ -70,7 +75,7 @@ public class SettlerGoal extends Goal {
     @Override
     public void start() {
         ServerLevel level = (ServerLevel) villager.level();
-        BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
+        BlockState tnt = ModBlocks.CYAN_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, doorFacing);
         level.setBlock(tntPos, tnt, 3); // detonates instantly on placement -> builds the house
         villager.getPersistentData().putBoolean(NBT_SETTLED, true);
@@ -105,11 +110,17 @@ public class SettlerGoal extends Goal {
         return minSqr > MIN_DIST_FROM_BRAIN_NODE * MIN_DIST_FROM_BRAIN_NODE;
     }
 
-    /** The 7x7 footprint must rest on roughly level ground at the villager's feet. */
+    /**
+     * The footprint must rest on roughly level ground at the villager's feet.
+     *
+     * <p>Sampled at the GRAND house's half-width rather than the small house's 3, because this goal drops a
+     * Cyan charge: ground that is level over 7x7 says nothing about the 23-wide house about to land on it.
+     */
     private boolean isFlat(ServerLevel level, BlockPos center) {
         int feet = center.getY();
         int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
-        int[][] pts = {{0, 0}, {3, 3}, {-3, 3}, {3, -3}, {-3, -3}};
+        int r = com.example.villagefightsback.CyanTntBlock.CLEARANCE - 1; // 11: the corner of the largest house
+        int[][] pts = {{0, 0}, {r, r}, {-r, r}, {r, -r}, {-r, -r}};
         for (int[] d : pts) {
             int h = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.getX() + d[0], center.getZ() + d[1]);
             min = Math.min(min, h);

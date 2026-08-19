@@ -182,6 +182,15 @@ public final class ModBlocks {
             "blue_tnt",
             () -> new BlockItem(BLUE_TNT.get(), new Item.Properties()));
 
+    /** Cyan TNT: the stage-2+ house charge -- one of the three grand houses (see {@link CyanTntBlock}). */
+    public static final DeferredHolder<Block, Block> CYAN_TNT = BLOCKS.register(
+            "cyan_tnt",
+            () -> new CyanTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT)));
+
+    public static final DeferredHolder<Item, Item> CYAN_TNT_ITEM = ITEMS.register(
+            "cyan_tnt",
+            () -> new BlockItem(CYAN_TNT.get(), new Item.Properties()));
+
     /** Green TNT: builds the big square "village tower" structure block-by-block (see {@link GreenTntBlock}). */
     public static final DeferredHolder<Block, Block> GREEN_TNT = BLOCKS.register(
             "green_tnt",
@@ -798,6 +807,7 @@ public final class ModBlocks {
                 output.accept(YELLOW_TNT_ITEM.get());
                 output.accept(GREEN_TNT_ITEM.get());
                 output.accept(BLUE_TNT_ITEM.get());
+                output.accept(CYAN_TNT_ITEM.get());
                 output.accept(PURPLE_TNT_ITEM.get());
 
                 // === Weapons, ammo & mace enchants ===

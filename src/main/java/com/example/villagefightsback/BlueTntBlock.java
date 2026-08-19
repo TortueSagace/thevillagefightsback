@@ -28,9 +28,43 @@ public class BlueTntBlock extends Block {
     /** Ticks the founding flow budgets for a settler's house to finish building after it's dropped. */
     public static final int FUSE_TICKS = 80;
 
+    /** Which templates this charge builds, how much clear ground it wants, and how far it will look. */
+    private final java.util.function.Supplier<ResourceLocation[]> houses;
+    private final int clearance;
+    private final int[] relocateRadii;
+
+    /** The Blue charge: the eight small houses. */
     public BlueTntBlock(Properties properties) {
+        this(properties, () -> HousePlacer.HOUSES, 8, new int[]{6, 10, 14, 18});
+    }
+
+    protected BlueTntBlock(Properties properties, java.util.function.Supplier<ResourceLocation[]> houses,
+                           int clearance, int[] relocateRadii) {
         super(properties);
+        this.houses = houses;
+        this.clearance = clearance;
+        this.relocateRadii = relocateRadii;
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    /** The templates this charge picks from. */
+    protected ResourceLocation[] houses() {
+        return houses.get();
+    }
+
+    /** How this charge names itself in the log. */
+    protected String label() {
+        return "Blue TNT";
+    }
+
+    /**
+     * Last resort when nothing within reach fits this charge's templates. Blue simply gives up; the Cyan
+     * charge overrides this to fall back to a small house rather than waste the settler that carried it.
+     *
+     * @return where it built, or null if it built nothing.
+     */
+    protected BlockPos fallback(ServerLevel sl, BlockPos at, Direction doorFacing) {
+        return null;
     }
 
     @Override
@@ -58,8 +92,6 @@ public class BlueTntBlock extends Block {
         HouseBuildManager.detonateNextTick(sl, at, () -> detonate(sl, at, doorFacing));
     }
 
-    /** How far out to look for somewhere clear, when the spot the TNT is sitting on is already built on. */
-    private static final int[] RELOCATE_RADII = {6, 10, 14, 18};
     /** Refuse a relocation that would climb a cliff or drop into a hole rather than move along the ground. */
     private static final int RELOCATE_MAX_STEP = 6;
 
@@ -70,9 +102,11 @@ public class BlueTntBlock extends Block {
      * somewhere that works. It used to simply do nothing and stay put -- a live-looking blue block lying in the
      * village forever, which reads as a bug whatever the reason for it.
      */
-    private static void detonate(ServerLevel sl, BlockPos at, Direction doorFacing) {
-        ResourceLocation house = HousePlacer.HOUSES[sl.random.nextInt(HousePlacer.HOUSES.length)];
+    private void detonate(ServerLevel sl, BlockPos at, Direction doorFacing) {
+        ResourceLocation[] pool = houses();
+        ResourceLocation house = pool[sl.random.nextInt(pool.length)];
         BlockPos spot = HousePlacer.place(sl, at, doorFacing, house) ? at : relocate(sl, at, doorFacing, house);
+        if (spot == null) spot = fallback(sl, at, doorFacing);
 
         // Wherever it ended up, this charge is spent. The carve removes the block when the house lands on it;
         // when the house lands elsewhere -- or nowhere -- nothing else will, so clear it by hand.
@@ -82,8 +116,9 @@ public class BlueTntBlock extends Block {
         effect(sl, spot == null ? at : spot);
         if (spot == null) {
             TheVillageFightsBack.LOGGER.info(
-                    "[The Village Fights Back] Blue TNT at {} found nowhere clear within {} blocks; spent "
-                    + "without a house rather than left lying there.", at, RELOCATE_RADII[RELOCATE_RADII.length - 1]);
+                    "[The Village Fights Back] {} at {} found nowhere clear within {} blocks; spent "
+                    + "without a house rather than left lying there.",
+                    label(), at, relocateRadii[relocateRadii.length - 1]);
         }
     }
 
@@ -93,8 +128,13 @@ public class BlueTntBlock extends Block {
      * <p>{@code HousePlacer.place} refuses BEFORE it touches the world, so attempting a candidate costs nothing
      * when it fails. The cheap free-footprint test still runs first, to keep the number of attempts down.
      */
-    private static BlockPos relocate(ServerLevel sl, BlockPos from, Direction doorFacing, ResourceLocation house) {
-        for (int r : RELOCATE_RADII) {
+    protected BlockPos relocate(ServerLevel sl, BlockPos from, Direction doorFacing, ResourceLocation house) {
+        return relocate(sl, from, doorFacing, house, relocateRadii, clearance);
+    }
+
+    protected static BlockPos relocate(ServerLevel sl, BlockPos from, Direction doorFacing, ResourceLocation house,
+                                       int[] radii, int clearance) {
+        for (int r : radii) {
             for (int i = 0; i < 8; i++) {
                 double a = i * Math.PI / 4.0;
                 int x = from.getX() + (int) Math.round(Math.cos(a) * r);
@@ -102,7 +142,7 @@ public class BlueTntBlock extends Block {
                 int y = sl.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 if (Math.abs(y - from.getY()) > RELOCATE_MAX_STEP) continue;
                 BlockPos cand = new BlockPos(x, y, z);
-                if (!ExpansionManager.footprintFree(sl, cand, 8)) continue;
+                if (!ExpansionManager.footprintFree(sl, cand, clearance)) continue;
                 if (HousePlacer.place(sl, cand, doorFacing, house)) return cand;
             }
         }
