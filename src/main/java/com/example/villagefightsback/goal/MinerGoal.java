@@ -32,6 +32,16 @@ import net.minecraft.world.phys.Vec3;
  */
 public class MinerGoal extends Goal {
     private static final int SELECT_THROTTLE = 10;
+    /**
+     * Run the 1521-block local fallback scan on only one select attempt in this many.
+     *
+     * <p>It is the expensive half of target selection and it only runs when the rich TRACKER already came back
+     * empty -- i.e. for a miner with nothing to mine, which is exactly the miner that would otherwise pay it
+     * over and over. Worst case this delays noticing an untracked rich block by about 2.5 seconds, which costs
+     * a miner nothing and cuts the idle cost fivefold.
+     */
+    private static final int LOCAL_SCAN_EVERY = 5;
+    private int scanSkips;
     private static final double SEARCH_RANGE = 48.0;     // look for rich blocks within this (roam across the zone)
     private static final double REACH_SQR = 3.2 * 3.2;   // close enough to dig
     private static final double FEED_RANGE_SQR = 3.0 * 3.0;
@@ -89,7 +99,10 @@ public class MinerGoal extends Goal {
             pruneAvoid(sl.getGameTime());
             InfectionData inf = InfectionData.get(sl);
             BlockPos r = inf.nearestRich(villager.blockPosition(), SEARCH_RANGE, avoid.keySet());
-            if (r == null) r = scanLocalRich(sl, inf); // fallback: rich blocks the tracker doesn't know about
+            if (r == null && ++scanSkips >= LOCAL_SCAN_EVERY) {  // fallback: rich blocks the tracker missed
+                scanSkips = 0;
+                r = scanLocalRich(sl, inf);
+            }
             if (r != null) { target = r; seekTicks = 0; return true; }
             return false;
         } finally {

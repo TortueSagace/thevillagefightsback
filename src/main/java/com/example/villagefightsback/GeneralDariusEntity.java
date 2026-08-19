@@ -177,9 +177,12 @@ public class GeneralDariusEntity extends Monster {
         // entityTypeOrNull, not ENTITY_TYPE.get: the entity registry is DEFAULTED, so get() would return a PIG
         // rather than null when Guard Villagers is absent (see MCACompat#present) and Darius would march out
         // with an escort of pigs in stage-3 guard kit.
-        net.minecraft.world.entity.EntityType<?> guardType = com.example.villagefightsback.compat.MCACompat
-                .entityTypeOrNull(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("guardvillagers", "guard"));
-        if (guardType == null) return; // soft dep absent
+        // MCA first: with MCA installed its humans are what a village is made of, so an escort of blank-faced
+        // Guard Villagers guards stood out as the only non-humans in town. guardType falls back to the Guard
+        // Villagers entity on its own when MCA is absent, so this keeps the old behaviour without MCA.
+        net.minecraft.world.entity.EntityType<?> guardType =
+                com.example.villagefightsback.compat.MCACompat.guardType(level.getRandom());
+        if (guardType == null) return; // neither MCA nor Guard Villagers installed
         for (int i = 0; i < count; i++) {
             net.minecraft.world.entity.Entity e = guardType.create(level);
             if (!(e instanceof net.minecraft.world.entity.Mob m)) { if (e != null) e.discard(); continue; }
@@ -189,6 +192,7 @@ public class GeneralDariusEntity extends Monster {
                     level.random.nextFloat() * 360.0F, 0.0F);
             m.finalizeSpawn(level, level.getCurrentDifficultyAt(m.blockPosition()),
                     net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
+            com.example.villagefightsback.compat.MCACompat.makeGuard(m); // pin mca:guard (no-op off MCA)
             level.addFreshEntity(m);
             squad.add(m.getUUID());
         }

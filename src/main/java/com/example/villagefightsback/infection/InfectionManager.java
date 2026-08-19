@@ -383,7 +383,10 @@ public final class InfectionManager {
         // A path picks its colour at random when it is laid, and everything it goes on to convert inherits it.
         // That is what gives the map zones of different colours instead of one uniform green.
         String[] all = com.example.villagefightsback.infection.BlockMatcher.ALL_SUFFIXES;
-        String colour = all[level.getRandom().nextInt(all.length)];
+        // One of the two places a colour is CHOSEN (the other is BlockMatcher.colourOf, which inherits one).
+        // Both answer green when the player has asked for a monogreen world.
+        String colour = com.example.villagefightsback.Config.monochromeGreen()
+                ? "" : all[level.getRandom().nextInt(all.length)];
         level.setBlock(pos, coloured("infested_path", colour,
                 com.example.villagefightsback.ModBlocks.INFESTED_PATH.get()).defaultBlockState(), 3);
         InfectionData.get(level).addInfestedPath(pos.asLong());
@@ -670,14 +673,14 @@ public final class InfectionManager {
                     if (conv != null) {
                         // Any small plant next to this new fertile block becomes fertile grass. Done BEFORE the
                         // soil flips so a plant standing on it is replaced (and survives) rather than popping off.
-                        convertNearbyPlants(level, cand, zones, colour);
+                        convertNearbyPlants(level, inf, cand, zones, colour);
                         conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
                         level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
                         inf.addFrontier(cand.asLong());
                         inf.incConverted();
                         if (richVariant) inf.addRich(cand.asLong());
                         // Sparse flora: a tiny chance to sprout a fertile tree / chorus on the new fertile ground.
-                        FertileFlora.onConverted(level, cand, zones);
+                        FertileFlora.onConverted(level, cand, zones, colour);
                     }
                 }
             }
@@ -719,8 +722,8 @@ public final class InfectionManager {
     /** Turn small plants in the 26-neighbourhood of {@code center} into fertile grass. Called just BEFORE the
      *  block at {@code center} flips to fertile, so a plant standing on it is replaced (and survives on the new
      *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
-    private static void convertNearbyPlants(ServerLevel level, BlockPos center, StructureZones zones,
-                                            String colour) {
+    private static void convertNearbyPlants(ServerLevel level, InfectionData inf, BlockPos center,
+                                            StructureZones zones, String colour) {
         BlockState fg = coloured("fertile_grass", colour,
                 com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get()).defaultBlockState();
         BlockState fk = coloured("fertile_kelp", colour,
@@ -733,10 +736,21 @@ public final class InfectionManager {
             // itself is outside one. Guard every write, not just the parent cell.
             if (zones.contains(m.getX(), m.getY(), m.getZ())) continue;
             BlockState s = level.getBlockState(m);
+            // Each plant JOINS THE FRONTIER. Without that it is an orphan: the engine never walks it, so the
+            // ground beneath it is never converted -- which is why a flower turned into fertile grass left
+            // ordinary dirt under it while grass the engine converted directly did not. FertileGrassBlock's
+            // own comment already spells this rule out; this call site simply was not following it.
+            //
+            // No incConverted: the tally counts fertilized GROUND, not plants, and the soil below counts
+            // itself when the walk reaches it.
             if (s.is(Blocks.KELP) || s.is(Blocks.KELP_PLANT)) {        // underwater kelp -> our fertile kelp
-                level.setBlock(m.immutable(), fk, 3);
+                BlockPos at = m.immutable();
+                level.setBlock(at, fk, 3);
+                inf.addFrontier(at.asLong());
             } else if (BlockMatcher.isConvertiblePlant(s)) {           // grass/ferns/flowers -> fertile grass
-                level.setBlock(m.immutable(), fg, 3);
+                BlockPos at = m.immutable();
+                level.setBlock(at, fg, 3);
+                inf.addFrontier(at.asLong());
             }
         }
     }

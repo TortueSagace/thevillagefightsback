@@ -34,11 +34,11 @@ public final class SculkCatalystEvents {
     public static void onDeath(LivingDeathEvent event) {
         if (!(event.getEntity().level() instanceof ServerLevel sl)) return;
         BlockPos death = event.getEntity().blockPosition();
-        Block fertile = ModBlocks.FERTILE_SCULK_CATALYST.get(), rich = ModBlocks.RICH_SCULK_CATALYST.get();
 
         // Nearest catalyst within range decides whether (and which variant) to bloom.
         BlockPos best = null;
         boolean bestRich = false;
+        String bestColour = "";   // the winning catalyst's own colour -- its bloom is in that colour
         double bestD = Double.MAX_VALUE;
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int dx = -ACTIVATE_R; dx <= ACTIVATE_R; dx++)
@@ -47,22 +47,27 @@ public final class SculkCatalystEvents {
                     m.set(death.getX() + dx, death.getY() + dy, death.getZ() + dz);
                     if (!sl.isLoaded(m)) continue;
                     BlockState s = sl.getBlockState(m);
-                    boolean isF = s.is(fertile), isR = s.is(rich);
-                    if (!isF && !isR) continue;
+                    // Any colour, not just green: this used to compare against the two GREEN catalyst blocks,
+                    // so a cyan or purple catalyst simply never bloomed.
+                    boolean isR = BlockMatcher.isRichSculkCatalyst(s);
+                    if (!isR && !BlockMatcher.isFertileSculkCatalyst(s)) continue;
                     double d = m.distSqr(death);
-                    if (d < bestD) { bestD = d; best = m.immutable(); bestRich = isR; }
+                    if (d < bestD) {
+                        bestD = d; best = m.immutable(); bestRich = isR;
+                        bestColour = BlockMatcher.colourOf(s);
+                    }
                 }
         if (best == null) return;
 
         int budget = Math.max(MIN_SPREAD, Math.min(MAX_SPREAD, (int) event.getEntity().getMaxHealth()));
-        if (spread(sl, death, bestRich, budget) > 0) {
+        if (spread(sl, death, bestRich, bestColour, budget) > 0) {
             sl.playSound(null, best, SoundEvents.SCULK_CATALYST_BLOOM, SoundSource.BLOCKS, 1.0F, 1.0F);
         }
     }
 
     /** Creep our sculk outward over the ground from {@code center}, up to {@code budget} blocks. */
-    private static int spread(ServerLevel level, BlockPos center, boolean rich, int budget) {
-        Block sculk = BlockMatcher.sculk(rich);
+    private static int spread(ServerLevel level, BlockPos center, boolean rich, String colour, int budget) {
+        Block sculk = BlockMatcher.sculk(rich, colour);
         if (sculk == null) return 0;
         BlockState target = sculk.defaultBlockState();
 
