@@ -46,17 +46,30 @@ public final class ModPathTypes {
         try {
             BlockPathTypes[] grown = Arrays.copyOf(existing, existing.length + 1);
             grown[existing.length] = added;
-            // $VALUES is static final, which ordinary reflection refuses to write on Java 17, so it goes through
-            // Unsafe -- the same route every enum-extension library takes.
+            // The values array is found by TYPE, not by name: javac calls it $VALUES, but it is synthetic, so
+            // in the obfuscated jar the game actually runs it is called whatever the obfuscator chose and no
+            // mapping renames it back. It is also static final, which ordinary reflection refuses to write on
+            // Java 17, so the write goes through Unsafe -- the route every enum-extension library takes.
+            Field values = valuesField();
             Field theUnsafe = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
             theUnsafe.setAccessible(true);
             sun.misc.Unsafe unsafe = (sun.misc.Unsafe) theUnsafe.get(null);
-            Field values = BlockPathTypes.class.getDeclaredField("$VALUES");
             unsafe.putObject(unsafe.staticFieldBase(values), unsafe.staticFieldOffset(values), grown);
         } catch (ReflectiveOperationException | RuntimeException e) {
             TheVillageFightsBack.LOGGER.warn("[The Village Fights Back] Could not add {} to BlockPathTypes.values();"
                     + " the smart door still works, since passability is decided by the per-mob malus map.",
                     added.name(), e);
         }
+    }
+
+    /** The enum's own values array: the one static field of type {@code BlockPathTypes[]}. */
+    private static Field valuesField() throws NoSuchFieldException {
+        for (Field field : BlockPathTypes.class.getDeclaredFields()) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                    && field.getType() == BlockPathTypes[].class) {
+                return field;
+            }
+        }
+        throw new NoSuchFieldException("no BlockPathTypes[] field on the enum");
     }
 }
