@@ -131,12 +131,13 @@ public class FoundingSettlerGoal extends Goal {
     private boolean placeTnt() {
         ServerLevel level = (ServerLevel) villager.level();
         BlockPos pos = keepClearOfBrainNode(villager.blockPosition());
-        if (!com.example.villagefightsback.ExpansionManager.footprintFree(level, pos, 8)) return false;
+        int color = com.example.villagefightsback.ExpansionManager.houseTnt(level, brainNode);
+        if (!com.example.villagefightsback.ExpansionManager.footprintFree(level, pos,
+                com.example.villagefightsback.ExpansionManager.clearanceFor(color))) return false;
         // door faces the brain node (village centre)
         Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
         if (face.getAxis().isVertical()) face = villager.getDirection();
-        BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
-                .setValue(HorizontalDirectionalBlock.FACING, face);
+        BlockState tnt = com.example.villagefightsback.ExpansionManager.houseTntState(level, brainNode, face);
         level.setBlock(pos, tnt, 3); // detonates instantly on placement -> builds the house (no fuse, no fleeing)
         return true;
     }

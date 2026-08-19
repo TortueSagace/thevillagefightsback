@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "thevillagefightsback:block/cyan_tnt" },
+    "facing=south": { "model": "thevillagefightsback:block/cyan_tnt" },
+    "facing=east":  { "model": "thevillagefightsback:block/cyan_tnt" },
+    "facing=west":  { "model": "thevillagefightsback:block/cyan_tnt" }
+  }
+}

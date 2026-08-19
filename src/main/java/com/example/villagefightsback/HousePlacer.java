@@ -52,6 +52,21 @@ public final class HousePlacer {
             new ResourceLocation(TheVillageFightsBack.MODID, "basic_house8"),
     };
 
+    /**
+     * The grand houses a stage-2+ village raises, via Cyan TNT. Larger and more elaborate than the eight
+     * above, and -- unlike every other template in the mod -- NOT square, which is what
+     * {@link #place(ServerLevel, BlockPos, Rotation, ResourceLocation, ResourceLocation, int)} had to be
+     * taught to handle.
+     */
+    public static final ResourceLocation[] BIG_HOUSES = {
+            new ResourceLocation(TheVillageFightsBack.MODID, "big_house_1"),   // 15 x 20 x 20
+            new ResourceLocation(TheVillageFightsBack.MODID, "big_house_2"),   // 13 x 13 x 10
+            new ResourceLocation(TheVillageFightsBack.MODID, "big_house_3"),   // 15 x 12 x 23
+    };
+
+    /** Longest horizontal side across {@link #BIG_HOUSES}; the yardstick for how much room one needs. */
+    public static final int BIG_HOUSE_MAX_SIDE = 23;
+
     /** House path (Blue TNT): rotate so the door faces {@code doorFacing}; uses the house loot table. */
     public static boolean place(ServerLevel level, BlockPos center, Direction doorFacing, ResourceLocation houseId) {
         Rotation rotation = Rotation.NONE;
@@ -89,8 +104,9 @@ public final class HousePlacer {
         StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setRotation(rotation)
                 .setMirror(Mirror.NONE)
-                .setRotationPivot(new BlockPos(hx, 0, hz))  // square footprint -> rotation-invariant center
+                .setRotationPivot(new BlockPos(hx, 0, hz))  // the template's own centre -> the build stays on the TNT
                 .setKnownShape(true);
+
 
         // Read the template up front so we can (optionally) find its anchor layer before carving/placing.
         CompoundTag data = template.save(new CompoundTag());
@@ -114,6 +130,31 @@ public final class HousePlacer {
         int ox = center.getX() - hx, oy = center.getY() - 1 - floorLayer, oz = center.getZ() - hz;
         BlockPos offset = new BlockPos(ox, oy, oz);
 
+        // The occupied box in WORLD coordinates. Everything below -- the two refusals, the protected-zone claim
+        // and the carve -- must use this rather than the template's raw sx/sz.
+        //
+        // It was written when every template was square (7x7 houses, 15x15 towers), where the rotated and raw
+        // extents coincide and the distinction is invisible. The big houses are the first that are not (15x20,
+        // 13x10, 15x23), and there the raw box is wrong: a quarter turn swaps the axes, and an EVEN dimension
+        // also shifts the result a block off centre (under CLOCKWISE_180 as well). Either way part of the house
+        // would land outside the carved volume -- embedded in untouched terrain -- and outside the
+        // StructureZones claim, which is what stops block infection eating it.
+        //
+        // So the box is measured, not derived: run the footprint's four corners through the SAME transform the
+        // placement loop below uses. That is exact for any size, rotation and parity by construction, and for a
+        // square template it reproduces the old ox..ox+sx-1 box to the block.
+        int bx = Integer.MAX_VALUE, bxMax = Integer.MIN_VALUE;
+        int bz = Integer.MAX_VALUE, bzMax = Integer.MIN_VALUE;
+        for (int cx : new int[]{0, sx - 1}) {
+            for (int cz : new int[]{0, sz - 1}) {
+                BlockPos w = StructureTemplate.calculateRelativePosition(settings, new BlockPos(cx, 0, cz))
+                        .offset(offset);
+                bx = Math.min(bx, w.getX()); bxMax = Math.max(bxMax, w.getX());
+                bz = Math.min(bz, w.getZ()); bzMax = Math.max(bzMax, w.getZ());
+            }
+        }
+        int byMax = oy + sy - 1;
+
         // 0a) REFUSE outright if this footprint would eat a building that already exists.
         //
         // The carve below turns the whole footprint to air, and until this check existed it consulted nothing:
@@ -126,7 +167,7 @@ public final class HousePlacer {
         // BEFORE the addBox below, and that ordering is load-bearing: after it, the build would always find
         // its own freshly-registered box and refuse itself.
         if (com.example.villagefightsback.infection.StructureZones.get(level)
-                .intersectsForeign(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1)) {
+                .intersectsForeign(bx, oy, bz, bxMax, byMax, bzMax)) {
             TheVillageFightsBack.LOGGER.info(
                     "[The Village Fights Back] Refused a build at {}: it would have carved through a building "
                     + "that is already there.", center);
@@ -137,7 +178,7 @@ public final class HousePlacer {
         // check above and for the same reason: every build route comes through here, so one refusal covers
         // Blue TNT, Green TNT, the node TNTs and the settler death fallback alike.
         if (com.example.villagefightsback.infection.MarkerZones.get(level)
-                .blocksBox(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1)) {
+                .blocksBox(bx, oy, bz, bxMax, byMax, bzMax)) {
             TheVillageFightsBack.LOGGER.info(
                     "[The Village Fights Back] Refused a build at {}: a player has claimed that ground.", center);
             return false;
@@ -149,19 +190,19 @@ public final class HousePlacer {
         // buildings -- so this one registration covers the lot, including any template added later.
         // The box is the same footprint the carve below walks, so it is exact by construction.
         com.example.villagefightsback.infection.StructureZones.get(level)
-                .addBox(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1);
+                .addBox(bx, oy, bz, bxMax, byMax, bzMax);
         // Any infection already inside the volume is about to be carved to air anyway; drop those cells from the
         // engine's frontier so it stops revisiting them (bounded: once per building, over its own volume).
         com.example.villagefightsback.infection.InfectionManager.forgetVolume(
-                level, ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1);
+                level, bx, oy, bz, bxMax, byMax, bzMax);
 
-        // 1) carve the footprint to air instantly (square footprint -> rotation-independent box)
+        // 1) carve the footprint to air instantly, over the ROTATED box computed above
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < sx; dx++)
+        for (int wx = bx; wx <= bxMax; wx++)
             for (int dy = 0; dy < sy; dy++)
-                for (int dz = 0; dz < sz; dz++) {
-                    m.set(ox + dx, oy + dy, oz + dz);
+                for (int wz = bz; wz <= bzMax; wz++) {
+                    m.set(wx, oy + dy, wz);
                     if (isProtectedNode(level.getBlockState(m))) continue; // never carve a brain/node block to air
                     level.setBlock(m, air, HouseBuildManager.FLAGS);
                 }

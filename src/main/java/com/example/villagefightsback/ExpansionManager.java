@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -118,6 +119,9 @@ public final class ExpansionManager {
 
     private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos gm,
                                      double angle, double wallRadius, int color, int delay, int cost) {
+        // A house settler summoned by a stage-2+ node carries the grand-house charge instead. Done here, at the
+        // one point every summoning route passes through, so the reflexes and the expansion wave both inherit it.
+        if (color == TNT_BLUE) color = houseTnt(level, gm);
         // An MCA human when MCA Reborn is installed, else a vanilla villager (see MCACompat).
         Villager v = com.example.villagefightsback.compat.MCACompat.createVillager(level);
         if (v == null) return;
@@ -137,11 +141,50 @@ public final class ExpansionManager {
     // Settler TNT colours: 0 blue (house), 1 green (tower), 2 yellow (golem factory), 3 orange (barracks),
     // 4 purple (lure tower). 2-4 are the node-structure TNTs the brain's reflexes dispatch.
     public static final int TNT_BLUE = 0, TNT_GREEN = 1, TNT_YELLOW = 2, TNT_ORANGE = 3, TNT_PURPLE = 4;
+    /** 5 cyan: the grand house. Blue's stage-2+ replacement, never chosen directly -- see {@link #houseTnt}. */
+    public static final int TNT_CYAN = 5;
+
+    /**
+     * Which house charge a settler working for {@code brainNode} should carry: Cyan once that node has reached
+     * stage 2, Blue below it.
+     *
+     * <p>The village stops building small the moment it starts fertilizing, so the grand houses are what a
+     * mature village raises from then on. Keyed on the SUMMONING node rather than on the settler's route, so
+     * every path that hands out a house charge -- the expansion wave, the brain's reflexes, the founding flow
+     * and the organic settler -- agrees without each having to know the rule.
+     */
+    public static int houseTnt(ServerLevel level, BlockPos brainNode) {
+        BrainNodeData data = BrainNodeData.get(level.getServer());
+        GlobalPos gp = GlobalPos.of(level.dimension(), brainNode);
+        return data.econ(gp).getLevel() >= 2 ? TNT_CYAN : TNT_BLUE;
+    }
+
+    /** The house charge for {@code brainNode} as a placeable state, for the two goals that bypass placeTnt. */
+    public static BlockState houseTntState(ServerLevel level, BlockPos brainNode, Direction facing) {
+        Block b = houseTnt(level, brainNode) == TNT_CYAN ? ModBlocks.CYAN_TNT.get() : ModBlocks.BLUE_TNT.get();
+        return b.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, facing);
+    }
+
+    /**
+     * Clear ground a settler carrying {@code color} must find before it drops its charge.
+     *
+     * <p>A grand house is up to {@value com.example.villagefightsback.HousePlacer#BIG_HOUSE_MAX_SIDE} blocks
+     * across against the small houses' seven, so it needs proportionally more room or it would be refused the
+     * moment it detonated.
+     */
+    public static int clearanceFor(int color) {
+        return color == TNT_CYAN ? CyanTntBlock.CLEARANCE : 8;
+    }
 
     /** Place the settler's TNT at {@code pos}: Blue (house) faces the brain node; the rest have no facing. */
     public static void placeTnt(ServerLevel level, BlockPos pos, int color, BlockPos brainNode) {
         BlockState tnt = switch (color) {
             case TNT_GREEN  -> ModBlocks.GREEN_TNT.get().defaultBlockState();
+            case TNT_CYAN   -> {
+                Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
+                if (face.getAxis().isVertical()) face = Direction.NORTH;
+                yield ModBlocks.CYAN_TNT.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, face);
+            }
             case TNT_YELLOW -> ModBlocks.YELLOW_TNT.get().defaultBlockState();
             case TNT_ORANGE -> ModBlocks.ORANGE_TNT.get().defaultBlockState();
             case TNT_PURPLE -> ModBlocks.PURPLE_TNT.get().defaultBlockState();
@@ -262,7 +305,7 @@ public final class ExpansionManager {
         // happened to fall, which is the worst case in the whole feature: a settler killed inside its own
         // village raised a house on top of the one it was standing next to, and the build carved that one to
         // air. A death is not a permit. If the spot is not free, the gems go back instead.
-        if (footprintFree(level, v.blockPosition(), 8)) {
+        if (footprintFree(level, v.blockPosition(), clearanceFor(color))) {
             placeTnt(level, v.blockPosition(), color, gm);
             return;
         }

@@ -104,7 +104,7 @@ public class ExpansionSettlerGoal extends Goal {
         double dist = Math.sqrt(dx * dx + dz * dz);
         return dist >= wallRadius + WALL_CLEAR && ExpansionManager.isClear(level, spot, MIN_SPACING)
                 // isClear only knows this wave's own claims; this one knows what is already built.
-                && ExpansionManager.footprintFree(level, spot, 8);
+                && ExpansionManager.footprintFree(level, spot, ExpansionManager.clearanceFor(tntColor));
     }
 
     private void finish() {

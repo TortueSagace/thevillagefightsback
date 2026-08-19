@@ -70,6 +70,9 @@ public class SettlerGoal extends Goal {
     @Override
     public void start() {
         ServerLevel level = (ServerLevel) villager.level();
+        // Deliberately still BLUE, not the stage-2 Cyan charge. This settler is not summoned by any node --
+        // farFromBrainNodes below is what lets it act, so by construction it is nowhere near one and is seeding
+        // a brand-new village. A village starts small whatever the neighbours have grown into.
         BlockState tnt = ModBlocks.BLUE_TNT.get().defaultBlockState()
                 .setValue(HorizontalDirectionalBlock.FACING, doorFacing);
         level.setBlock(tntPos, tnt, 3); // detonates instantly on placement -> builds the house
