@@ -44,11 +44,25 @@ public final class EventBus {
     private static int registrationOrder;
 
     /**
-     * Binds every static {@code @SubscribeEvent} method on {@code handlerClass}. Registering the same class twice
-     * is a no-op, so a class that is in both the common and the client list is still only bound once.
+     * Binds every static {@code @SubscribeEvent} method on {@code handlerClass} and on its nested classes --
+     * some of the mod's handlers sit in a nested holder rather than on the outer class. Registering the same
+     * class twice is a no-op, so a class in both the common and the client list is still only bound once.
      */
     public static synchronized void register(Class<?> handlerClass) {
         if (!REGISTERED.add(handlerClass)) return;
+        int found = bind(handlerClass);
+        for (Class<?> nested : handlerClass.getDeclaredClasses()) {
+            found += bind(nested);
+        }
+        if (found == 0) {
+            throw new IllegalStateException(
+                    "No @SubscribeEvent methods on " + handlerClass.getName() + "; drop it from ModEventHandlers");
+        }
+        RESOLVED.clear();
+    }
+
+    /** Binds one class's handler methods, returning how many it found. */
+    private static int bind(Class<?> handlerClass) {
         int found = 0;
         for (Method m : handlerClass.getDeclaredMethods()) {
             SubscribeEvent ann = m.getAnnotation(SubscribeEvent.class);
@@ -65,11 +79,7 @@ public final class EventBus {
                     .add(new Listener(m, ann.priority(), ann.receiveCanceled(), registrationOrder++));
             found++;
         }
-        if (found == 0) {
-            throw new IllegalStateException(
-                    "No @SubscribeEvent methods on " + handlerClass.getName() + "; drop it from ModEventHandlers");
-        }
-        RESOLVED.clear();
+        return found;
     }
 
     /** True when at least one handler would see an event of this class. */
