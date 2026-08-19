@@ -133,6 +133,16 @@ public final class HousePlacer {
             return false;
         }
 
+        // 0b) REFUSE if a player has claimed this ground with a "Do not build here" sign. Same place as the
+        // check above and for the same reason: every build route comes through here, so one refusal covers
+        // Blue TNT, Green TNT, the node TNTs and the settler death fallback alike.
+        if (com.example.villagefightsback.infection.MarkerZones.get(level)
+                .blocksBox(ox, oy, oz, ox + sx - 1, oy + sy - 1, oz + sz - 1)) {
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] Refused a build at {}: a player has claimed that ground.", center);
+            return false;
+        }
+
         // 0) Claim this exact volume as PROTECTED: block infection (fertile spread + emerald infested paths) is
         // refused inside it from now on, so the village never digests its own buildings. Every structure the
         // village raises comes through here -- Blue TNT houses, Green TNT towers, and the StructureTnt node

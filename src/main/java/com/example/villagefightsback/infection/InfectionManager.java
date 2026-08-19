@@ -119,10 +119,14 @@ public final class InfectionManager {
                 // The village's own buildings are off limits. Fetched ONCE per pass and threaded down (exactly
                 // like ranges) so the 8192-cell walk never repeats the SavedData lookup.
                 StructureZones zones = StructureZones.get(level);
+                // The players' own claims. refreshActive resolves each sign's placer against their standing
+                // ONCE here, so the hot query below is a plain set lookup rather than a reputation read.
+                MarkerZones marks = MarkerZones.get(level);
+                marks.refreshActive(server);
                 // Dirt paths still grow only within brain ranges; conversion spreads across both, but the convert
                 // chance is scaled by speedAt() so infested-only ground proliferates at 1/5 the brain rate.
-                growPaths(level, inf, now, brain, zones);
-                convert(level, inf, now, ranges, zones);
+                growPaths(level, inf, now, brain, zones, marks);
+                convert(level, inf, now, ranges, zones, marks);
             }
         }
         com.example.villagefightsback.ModProfiler.add("infection", _p);
@@ -421,7 +425,7 @@ public final class InfectionManager {
     private static final Direction[] HORIZ = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
 
     private static void growPaths(ServerLevel level, InfectionData inf, long now, double[][] ranges,
-                                  StructureZones zones) {
+                                  StructureZones zones, MarkerZones marks) {
         RandomSource rnd = level.getRandom();
         for (long head : inf.pathHeadsSnapshot()) {
             BlockPos p = BlockPos.of(head);
@@ -431,7 +435,7 @@ public final class InfectionManager {
             double slow = (mult > 1.0) ? 1.0 : SLOW_FACTOR; // not slowed while fighting back
             double chance = Math.min(1.0, PATH_GROW_CHANCE * mult * slow * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() >= chance) continue;
-            int res = tryGrow(level, inf, p, rnd, ranges, zones);
+            int res = tryGrow(level, inf, p, rnd, ranges, zones, marks);
             if (res < 0) {
                 // spec 5: a path with NO viable extension, sitting over air/water, may drip a fertile sand below
                 BlockPos below = p.below();
@@ -454,7 +458,7 @@ public final class InfectionManager {
      * Returns 1 = extended, 0 = picked a non-viable direction (no-op this attempt), -1 = no viable extension.
      */
     private static int tryGrow(ServerLevel level, InfectionData inf, BlockPos p, RandomSource rnd,
-                               double[][] ranges, StructureZones zones) {
+                               double[][] ranges, StructureZones zones, MarkerZones marks) {
         int xCount = 0, zCount = 0;
         for (Direction d : HORIZ) if (hasPathNeighbour(level, p, d)) {
             if (d.getAxis() == Direction.Axis.X) xCount++; else zCount++;
@@ -467,7 +471,7 @@ public final class InfectionManager {
         double total = 0;
         boolean anyViable = false;
         for (int i = 0; i < HORIZ.length; i++) {
-            targets[i] = extendTarget(level, p, HORIZ[i], ranges, zones);
+            targets[i] = extendTarget(level, p, HORIZ[i], ranges, zones, marks);
             if (targets[i] != null) anyViable = true;
             boolean alongX = HORIZ[i].getAxis() == Direction.Axis.X;
             w[i] = tie ? 25.0 : ((xDominant == alongX) ? 45.0 : 5.0);
@@ -496,13 +500,14 @@ public final class InfectionManager {
     /** The ground cell (within +/-2 in Y) the path would convert to dirt-path in direction {@code d}, or null.
      *  Never extends beyond a brain node's (stage-scaled) range. */
     private static BlockPos extendTarget(ServerLevel level, BlockPos p, Direction d, double[][] ranges,
-                                         StructureZones zones) {
+                                         StructureZones zones, MarkerZones marks) {
         int nx = p.getX() + d.getStepX(), nz = p.getZ() + d.getStepZ();
         if (!inRange(nx + 0.5, nz + 0.5, ranges)) return null;       // outside every brain node's reach -> stop here
         for (int dy = 2; dy >= -2; dy--) {
             BlockPos g = new BlockPos(nx, p.getY() + dy, nz);
             if (!level.isLoaded(g)) continue;
             if (zones.contains(nx, g.getY(), nz)) continue;           // never pave through one of our own buildings
+            if (marks.blocked(nx, g.getY(), nz)) continue;            // nor across ground a player has claimed
             BlockState gs = level.getBlockState(g);
             if (!BlockMatcher.isPathGround(gs)) continue;            // must be dirt-like ground (not already a path)
             BlockState above = level.getBlockState(g.above());
@@ -513,7 +518,7 @@ public final class InfectionManager {
 
     // --- conversion (spec 2-3) + destruction detection (spec 8) -------------------------------------
     private static void convert(ServerLevel level, InfectionData inf, long now, double[][] ranges,
-                                StructureZones zones) {
+                                StructureZones zones, MarkerZones marks) {
         // The boost multiplier applies to the per-cell CHANCE only (below), not the cell count, so the per-tick
         // cost stays bounded regardless of speed-ups (anti-lag).
         int n = Math.min(MAX_CELLS_PER_PASS, inf.frontierSize());
@@ -540,7 +545,7 @@ public final class InfectionManager {
             // racing ahead onto fresh ground and conversion fills in BEHIND them (spec 3). Keep them active.
             if (inf.isPathHead(key)) { inf.reactivate(key); continue; }
 
-            BlockPos cand = findCandidate(level, pos, rnd, ranges, zones);
+            BlockPos cand = findCandidate(level, pos, rnd, ranges, zones, marks);
             if (cand == null) { inf.retire(key); continue; }           // nothing left to convert here -> drop it
 
             double mult = inf.multiplierAt(pos, now);
@@ -628,7 +633,7 @@ public final class InfectionManager {
     }
 
     private static BlockPos findCandidate(ServerLevel level, BlockPos pos, RandomSource rnd, double[][] ranges,
-                                          StructureZones zones) {
+                                          StructureZones zones, MarkerZones marks) {
         int start = rnd.nextInt(N26.length);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int k = 0; k < N26.length; k++) {
@@ -636,6 +641,7 @@ public final class InfectionManager {
             m.set(pos.getX() + o[0], pos.getY() + o[1], pos.getZ() + o[2]);
             if (!level.isLoaded(m)) continue;
             if (!inRange(m.getX() + 0.5, m.getZ() + 0.5, ranges)) continue; // beyond the brain node reach -> skip
+            if (marks.blocked(m.getX(), m.getY(), m.getZ())) continue;      // a player has claimed this ground
             // The village never eats its own buildings. This is THE hot guard -- see StructureZones for why it
             // is a chunk-bucketed lookup and not a scan over every building.
             BlockState ns;

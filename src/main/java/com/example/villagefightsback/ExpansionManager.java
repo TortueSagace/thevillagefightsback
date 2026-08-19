@@ -186,9 +186,14 @@ public final class ExpansionManager {
      * threading the real template size through every settler goal, none of which knows it.
      */
     public static boolean footprintFree(ServerLevel level, BlockPos centre, int radius) {
-        return !com.example.villagefightsback.infection.StructureZones.get(level).intersectsForeign(
-                centre.getX() - radius, centre.getY() - 2, centre.getZ() - radius,
-                centre.getX() + radius, centre.getY() + 12, centre.getZ() + radius);
+        int minX = centre.getX() - radius, minY = centre.getY() - 2, minZ = centre.getZ() - radius;
+        int maxX = centre.getX() + radius, maxY = centre.getY() + 12, maxZ = centre.getZ() + radius;
+        if (com.example.villagefightsback.infection.StructureZones.get(level)
+                .intersectsForeign(minX, minY, minZ, maxX, maxY, maxZ)) return false;
+        // A player's "Do not build here" sign. Checked here because all four settler routes funnel through
+        // this one method, so a claim cannot be missed by whichever goal happened to pick the spot.
+        return !com.example.villagefightsback.infection.MarkerZones.get(level)
+                .blocksBox(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**

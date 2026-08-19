@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "ESE",
+    "EEE"
+  ],
+  "key": {
+    "E": {
+      "item": "minecraft:emerald"
+    },
+    "S": {
+      "tag": "minecraft:signs"
+    }
+  },
+  "result": {
+    "item": "thevillagefightsback:no_build_sign",
+    "count": 1
+  }
+}
