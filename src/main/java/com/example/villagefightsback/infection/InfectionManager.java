@@ -296,6 +296,15 @@ public final class InfectionManager {
      * is enabled (enable_emerald_infestation) and that block is softer than ancient debris. Registers it as a slow,
      * full-radius proliferation source (5x slower than a brain node). (v1.0.3 mob infection.)
      */
+    /** The coloured twin of one of our blocks, or the green one when that colour does not exist. */
+    static net.minecraft.world.level.block.Block coloured(String greenName, String colour,
+                                                          net.minecraft.world.level.block.Block green) {
+        if (colour == null || colour.isEmpty()) return green;
+        net.minecraftforge.registries.RegistryObject<net.minecraft.world.level.block.Block> c =
+                com.example.villagefightsback.ModBlocks.COLOURED.get(greenName + colour);
+        return c != null && c.isPresent() ? c.get() : green;
+    }
+
     public static void placeInfestedPath(ServerLevel level, BlockPos pos) {
         if (!com.example.villagefightsback.Config.emeraldInfestationEnabled()) return;
         if (!level.isLoaded(pos)) return;
@@ -304,7 +313,12 @@ public final class InfectionManager {
         if (cur.is(com.example.villagefightsback.ModBlocks.INFESTED_PATH.get())) return;        // already ours
         if (cur.getBlock().getExplosionResistance() >= Blocks.ANCIENT_DEBRIS.getExplosionResistance()) return; // too tough
         if (cur.hasBlockEntity()) return;   // never convert chests / containers / other block entities
-        level.setBlock(pos, com.example.villagefightsback.ModBlocks.INFESTED_PATH.get().defaultBlockState(), 3);
+        // A path picks its colour at random when it is laid, and everything it goes on to convert inherits it.
+        // That is what gives the map zones of different colours instead of one uniform green.
+        String[] all = com.example.villagefightsback.infection.BlockMatcher.ALL_SUFFIXES;
+        String colour = all[level.getRandom().nextInt(all.length)];
+        level.setBlock(pos, coloured("infested_path", colour,
+                com.example.villagefightsback.ModBlocks.INFESTED_PATH.get()).defaultBlockState(), 3);
         InfectionData.get(level).addInfestedPath(pos.asLong());
     }
 
@@ -443,7 +457,10 @@ public final class InfectionManager {
                     BlockState bs = level.getBlockState(below);
                     boolean voidOrWater = bs.isAir() || !bs.getFluidState().isEmpty();
                     if (voidOrWater && rnd.nextDouble() < SAND_DROP_CHANCE && BlockMatcher.fertileSand() != null) {
-                        level.setBlock(below, BlockMatcher.fertileSand().defaultBlockState(), 3);
+                        // the drip matches the path that produced it
+                        level.setBlock(below, coloured("fertile_sand",
+                                BlockMatcher.colourOf(level.getBlockState(p)),
+                                BlockMatcher.fertileSand()).defaultBlockState(), 3);
                         inf.incConverted();
                     }
                 }
@@ -555,17 +572,21 @@ public final class InfectionManager {
                     * com.example.villagefightsback.Config.infectionSpeedMult());
             if (rnd.nextDouble() < chance) {
                 BlockState src = level.getBlockState(cand);
+                // The colour of the block we are spreading FROM. That is the whole mechanism: a zone keeps one
+                // colour because it grows from one origin, and nothing has to remember anything. A brain node
+                // seeding its first cell is not one of ours, so it answers green.
+                String colour = BlockMatcher.colourOf(level.getBlockState(pos));
                 if (BlockMatcher.isWoodenDoor(src)) {                   // doors: replace BOTH halves at once
-                    placeFertileDoor(level, cand, src);
+                    placeFertileDoor(level, cand, src, colour);
                     inf.addFrontier(cand.asLong());
                     inf.incConverted();
                 } else {
                     boolean richVariant = rnd.nextFloat() < RICH_CHANCE;
-                    BlockState conv = BlockMatcher.convertedState(src, richVariant);
+                    BlockState conv = BlockMatcher.convertedState(src, richVariant, colour);
                     if (conv != null) {
                         // Any small plant next to this new fertile block becomes fertile grass. Done BEFORE the
                         // soil flips so a plant standing on it is replaced (and survives) rather than popping off.
-                        convertNearbyPlants(level, cand, zones);
+                        convertNearbyPlants(level, cand, zones, colour);
                         conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
                         level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
                         inf.addFrontier(cand.asLong());
@@ -581,14 +602,15 @@ public final class InfectionManager {
     }
 
     /** Replace a (wooden) door with the fertile door -- BOTH halves -- preserving facing/hinge/open/powered. */
-    private static void placeFertileDoor(ServerLevel level, BlockPos cell, BlockState src) {
+    private static void placeFertileDoor(ServerLevel level, BlockPos cell, BlockState src, String colour) {
         net.minecraft.world.level.block.state.properties.DoubleBlockHalf half =
                 src.getValue(net.minecraft.world.level.block.DoorBlock.HALF);
         BlockPos lower = half == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
                 ? cell : cell.below();
         BlockState lowerSrc = level.getBlockState(lower);
         if (!(lowerSrc.getBlock() instanceof net.minecraft.world.level.block.DoorBlock)) return;
-        BlockState fd = com.example.villagefightsback.ModBlocks.FERTILE_DOOR.get().defaultBlockState()
+        BlockState fd = coloured("fertile_door", colour,
+                com.example.villagefightsback.ModBlocks.FERTILE_DOOR.get()).defaultBlockState()
                 .setValue(net.minecraft.world.level.block.DoorBlock.FACING,
                         lowerSrc.getValue(net.minecraft.world.level.block.DoorBlock.FACING))
                 .setValue(net.minecraft.world.level.block.DoorBlock.HINGE,
@@ -613,9 +635,12 @@ public final class InfectionManager {
     /** Turn small plants in the 26-neighbourhood of {@code center} into fertile grass. Called just BEFORE the
      *  block at {@code center} flips to fertile, so a plant standing on it is replaced (and survives on the new
      *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
-    private static void convertNearbyPlants(ServerLevel level, BlockPos center, StructureZones zones) {
-        BlockState fg = com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get().defaultBlockState();
-        BlockState fk = com.example.villagefightsback.ModBlocks.FERTILE_KELP.get().defaultBlockState();
+    private static void convertNearbyPlants(ServerLevel level, BlockPos center, StructureZones zones,
+                                            String colour) {
+        BlockState fg = coloured("fertile_grass", colour,
+                com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get()).defaultBlockState();
+        BlockState fk = coloured("fertile_kelp", colour,
+                com.example.villagefightsback.ModBlocks.FERTILE_KELP.get()).defaultBlockState();
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
         for (int[] o : N26) {
             m.set(center.getX() + o[0], center.getY() + o[1], center.getZ() + o[2]);

@@ -70,7 +70,8 @@ public class FertileGrassBlock extends BushBlock {
                 && !com.example.villagefightsback.infection.InfectionManager.withinBrainReach(level, below)) return;
         BlockState soil = level.getBlockState(below);
         if (!BlockMatcher.isCandidate(level, below, soil)) return;
-        BlockState converted = BlockMatcher.convertedState(soil, false); // fertile (not rich)
+        // In THIS grass's own colour, so a coloured zone stays one colour when its grass spreads downward.
+        BlockState converted = BlockMatcher.convertedState(soil, false, BlockMatcher.colourOf(state));
         if (converted == null || converted.is(soil.getBlock())) return;
         level.setBlock(below, converted, 3);
         InfectionData data = InfectionData.get(level);

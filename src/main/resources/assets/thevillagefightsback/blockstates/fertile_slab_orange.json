@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "thevillagefightsback:block/fertile_slab_orange"
+    },
+    "type=top": {
+      "model": "thevillagefightsback:block/fertile_slab_top"
+    },
+    "type=double": {
+      "model": "thevillagefightsback:block/fertile_stone_orange"
+    }
+  }
+}

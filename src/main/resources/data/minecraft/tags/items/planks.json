@@ -1,1 +1,10 @@
-{ "replace": false, "values": [ "thevillagefightsback:fertile_planks" ] }
+{
+  "replace": false,
+  "values": [
+    "thevillagefightsback:fertile_planks",
+    "thevillagefightsback:fertile_planks_cyan",
+    "thevillagefightsback:fertile_planks_purple",
+    "thevillagefightsback:fertile_planks_orange",
+    "thevillagefightsback:fertile_planks_yellow"
+  ]
+}

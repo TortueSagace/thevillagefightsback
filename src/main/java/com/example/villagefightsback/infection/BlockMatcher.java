@@ -79,6 +79,17 @@ public final class BlockMatcher {
     private static Set<Block> upgradableFertile;     // fertile blocks that have a rich counterpart (fertile -> rich)
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
 
+    /** Which colour set a block of ours belongs to; absent means green. See {@link #colourOf}. */
+    private static Map<Block, String> colourByBlock;
+
+    /** Every colour suffix, green first. Green is the empty string throughout. */
+    static final String[] ALL_SUFFIXES;
+    static {
+        ALL_SUFFIXES = new String[ModBlocks.COLOUR_SUFFIXES.length + 1];
+        ALL_SUFFIXES[0] = "";
+        System.arraycopy(ModBlocks.COLOUR_SUFFIXES, 0, ALL_SUFFIXES, 1, ModBlocks.COLOUR_SUFFIXES.length);
+    }
+
     private static Block byId(String name) {
         return ForgeRegistries.BLOCKS.getValue(new ResourceLocation(TheVillageFightsBack.MODID, name));
     }
@@ -94,11 +105,32 @@ public final class BlockMatcher {
         infectionBlocks = new HashSet<>();
         richBlockSet = new HashSet<>();
         upgradableFertile = new HashSet<>();
-        for (String b : BASES) {
-            Block f = byId("fertile_" + b), r = byId("rich_" + b);
-            if (f != null) { fertileByBase.put(b, f); infectionBlocks.add(f); }
-            if (r != null) { richByBase.put(b, r); infectionBlocks.add(r); richBlockSet.add(r); }
-            if (f != null && r != null) upgradableFertile.add(f); // this fertile block can ripen into its rich form
+        colourByBlock = new HashMap<>();
+        // Keys are "base" for green and "base_cyan" etc. for a colour, so one map serves all five sets and
+        // convertedState just appends the colour it was asked for.
+        for (String c : ALL_SUFFIXES) {
+            for (String b : BASES) {
+                Block f = byId("fertile_" + b + c), r = byId("rich_" + b + c);
+                if (f != null) {
+                    fertileByBase.put(b + c, f); infectionBlocks.add(f); colourByBlock.put(f, c);
+                }
+                if (r != null) {
+                    richByBase.put(b + c, r); infectionBlocks.add(r); richBlockSet.add(r); colourByBlock.put(r, c);
+                }
+                if (f != null && r != null) upgradableFertile.add(f); // can ripen into its rich form
+            }
+        }
+        // Every OTHER coloured block (stairs, grass, kelp, path, planks, chorus, catalysts, door). They are all
+        // ours by construction, so this replaces what would otherwise be 18 hard-coded lines per colour.
+        for (java.util.Map.Entry<String, net.minecraftforge.registries.RegistryObject<Block>> e
+                : ModBlocks.COLOURED.entrySet()) {
+            if (!e.getValue().isPresent()) continue;
+            Block b = e.getValue().get();
+            infectionBlocks.add(b);
+            if (e.getKey().startsWith("rich_")) richBlockSet.add(b);
+            for (String c : ModBlocks.COLOUR_SUFFIXES) {
+                if (e.getKey().endsWith(c)) { colourByBlock.putIfAbsent(b, c); break; }
+            }
         }
         infectionBlocks.add(Blocks.DIRT_PATH);
         if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
@@ -180,6 +212,19 @@ public final class BlockMatcher {
     }
 
     /** True if {@code s} is one of our infection blocks (any fertile/rich) or a dirt-path vector. */
+    /**
+     * Which colour set {@code s} belongs to, as the registry-name suffix ("" for green).
+     *
+     * <p>This is the whole colour-propagation mechanism. A conversion asks the block it is spreading FROM what
+     * colour it is and makes the new block match, so a zone stays one colour without anything tracking it. A
+     * block that is not ours -- a brain node seeding its first cell -- answers "", which is exactly the rule
+     * that the brain node always spreads green.
+     */
+    public static String colourOf(BlockState s) {
+        init();
+        return colourByBlock.getOrDefault(s.getBlock(), "");
+    }
+
     public static boolean isInfection(BlockState s) {
         init();
         return infectionBlocks.contains(s.getBlock());
@@ -379,11 +424,19 @@ public final class BlockMatcher {
 
     /** The fertile (or rich) blockstate a candidate should become, preserving pillar AXIS where applicable. */
     public static BlockState convertedState(BlockState source, boolean richVariant) {
+        return convertedState(source, richVariant, "");
+    }
+
+    /** As above, but in {@code colour} (a suffix from {@link #colourOf}; "" is green). */
+    public static BlockState convertedState(BlockState source, boolean richVariant, String colour) {
         init();
-        BlockState shaped = shapedConversion(source); // stairs/slabs/fences keep their shape (not a solid cube)
+        BlockState shaped = shapedConversion(source, colour); // stairs/slabs/fences keep their shape
         if (shaped != null) return shaped;
         String base = baseFor(source);
-        Block target = (richVariant ? richByBase : fertileByBase).get(base);
+        Map<String, Block> by = richVariant ? richByBase : fertileByBase;
+        Block target = by.get(base + colour);
+        if (target == null) target = by.get("stone" + colour);
+        if (target == null) target = by.get(base);          // colour missing entirely -> fall back to green
         if (target == null) target = (richVariant ? richByBase : fertileByBase).get("stone");
         if (target == null) return null;
         BlockState out = target.defaultBlockState();
@@ -398,23 +451,33 @@ public final class BlockMatcher {
      * Stairs, slabs and fences convert to a fertile block of the SAME shape (instead of a solid cube), so the
      * infection doesn't fill the cell and wreck the structure's geometry. Returns null for any other block.
      */
-    private static BlockState shapedConversion(BlockState source) {
+    /** The coloured twin of a shape-preserving block, falling back to the green one if that colour is absent. */
+    private static Block shaped(String greenName, String colour,
+                                net.minecraftforge.registries.RegistryObject<Block> green) {
+        if (!colour.isEmpty()) {
+            net.minecraftforge.registries.RegistryObject<Block> c = ModBlocks.COLOURED.get(greenName + colour);
+            if (c != null && c.isPresent()) return c.get();
+        }
+        return green.isPresent() ? green.get() : null;
+    }
+
+    private static BlockState shapedConversion(BlockState source, String colour) {
         Block b = source.getBlock();
         Block target;
         Property<?>[] props;
         if (b instanceof StairBlock) {
-            target = ModBlocks.FERTILE_STAIRS.get();
+            target = shaped("fertile_stairs", colour, ModBlocks.FERTILE_STAIRS);
             props = new Property<?>[]{BlockStateProperties.HORIZONTAL_FACING, BlockStateProperties.HALF,
                     BlockStateProperties.STAIRS_SHAPE, BlockStateProperties.WATERLOGGED};
         } else if (b instanceof SlabBlock) {
-            target = ModBlocks.FERTILE_SLAB.get();
+            target = shaped("fertile_slab", colour, ModBlocks.FERTILE_SLAB);
             props = new Property<?>[]{BlockStateProperties.SLAB_TYPE, BlockStateProperties.WATERLOGGED};
         } else if (b instanceof FenceBlock) {
-            target = ModBlocks.FERTILE_FENCE.get();
+            target = shaped("fertile_fence", colour, ModBlocks.FERTILE_FENCE);
             props = new Property<?>[]{BlockStateProperties.NORTH, BlockStateProperties.EAST,
                     BlockStateProperties.SOUTH, BlockStateProperties.WEST, BlockStateProperties.WATERLOGGED};
         } else if (b == Blocks.IRON_BARS) {
-            target = ModBlocks.FERTILE_IRON_BARS.get();
+            target = shaped("fertile_iron_bars", colour, ModBlocks.FERTILE_IRON_BARS);
             props = new Property<?>[]{BlockStateProperties.NORTH, BlockStateProperties.EAST,
                     BlockStateProperties.SOUTH, BlockStateProperties.WEST, BlockStateProperties.WATERLOGGED};
         } else {

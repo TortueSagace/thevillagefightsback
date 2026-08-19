@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/fence_inventory",
+  "textures": {
+    "texture": "thevillagefightsback:block/fertile_stone_orange"
+  }
+}

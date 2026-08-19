@@ -1,0 +1,56 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "texture": "thevillagefightsback:block/fertile_chorus_plant_orange",
+    "inside": "thevillagefightsback:block/fertile_chorus_plant_orange",
+    "particle": "thevillagefightsback:block/fertile_chorus_plant_orange"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        4,
+        4
+      ],
+      "to": [
+        12,
+        12,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#inside"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        5,
+        2
+      ],
+      "to": [
+        11,
+        11,
+        4
+      ],
+      "faces": {
+        "down": {
+          "texture": "#texture"
+        },
+        "up": {
+          "texture": "#texture"
+        },
+        "north": {
+          "texture": "#texture"
+        },
+        "west": {
+          "texture": "#texture"
+        },
+        "east": {
+          "texture": "#texture"
+        }
+      }
+    }
+  ]
+}

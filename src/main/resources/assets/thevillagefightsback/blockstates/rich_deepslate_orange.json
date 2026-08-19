@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "thevillagefightsback:block/rich_deepslate_orange"
+    },
+    "axis=z": {
+      "model": "thevillagefightsback:block/rich_deepslate_orange",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "thevillagefightsback:block/rich_deepslate_orange",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

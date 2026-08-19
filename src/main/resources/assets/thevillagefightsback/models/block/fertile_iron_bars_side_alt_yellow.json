@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/iron_bars_side_alt",
+  "render_type": "minecraft:cutout_mipped",
+  "textures": {
+    "particle": "thevillagefightsback:block/fertile_iron_bars_yellow",
+    "bars": "thevillagefightsback:block/fertile_iron_bars_yellow",
+    "edge": "thevillagefightsback:block/fertile_iron_bars_yellow"
+  }
+}

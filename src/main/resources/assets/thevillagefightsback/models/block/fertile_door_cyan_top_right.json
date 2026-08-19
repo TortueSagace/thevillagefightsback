@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_top_right",
+  "textures": {
+    "top": "thevillagefightsback:block/fertile_door_cyan_top",
+    "bottom": "thevillagefightsback:block/fertile_door_cyan_bottom"
+  }
+}

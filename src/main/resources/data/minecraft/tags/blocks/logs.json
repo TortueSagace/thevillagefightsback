@@ -2,6 +2,14 @@
   "replace": false,
   "values": [
     "thevillagefightsback:fertile_log",
-    "thevillagefightsback:rich_log"
+    "thevillagefightsback:rich_log",
+    "thevillagefightsback:fertile_log_cyan",
+    "thevillagefightsback:fertile_log_purple",
+    "thevillagefightsback:fertile_log_orange",
+    "thevillagefightsback:fertile_log_yellow",
+    "thevillagefightsback:rich_log_cyan",
+    "thevillagefightsback:rich_log_purple",
+    "thevillagefightsback:rich_log_orange",
+    "thevillagefightsback:rich_log_yellow"
   ]
 }

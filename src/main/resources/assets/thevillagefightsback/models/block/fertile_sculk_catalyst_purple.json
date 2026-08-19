@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "thevillagefightsback:block/fertile_sculk_catalyst_purple_top",
+    "bottom": "thevillagefightsback:block/fertile_sculk_catalyst_purple_bottom",
+    "side": "thevillagefightsback:block/fertile_sculk_catalyst_purple_side"
+  }
+}

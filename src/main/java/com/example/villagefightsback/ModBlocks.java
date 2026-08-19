@@ -505,6 +505,126 @@ public final class ModBlocks {
     public static final RegistryObject<Item> FERTILE_DOOR_ITEM = ITEMS.register("fertile_door",
             () -> new net.minecraft.world.item.DoubleHighBlockItem(FERTILE_DOOR.get(), new Item.Properties()));
 
+    // --- Colour variants of the whole fertile/rich family ------------------------------------------
+    //
+    // A wholly green landscape is monotonous, so the same 50 blocks exist in five flavours. Only the tint
+    // differs: same classes, same properties, same light, same behaviour. Green keeps the named constants
+    // above -- twenty-odd files refer to them -- and the four other colours live in these maps, keyed by
+    // registry name, so nothing that already exists has to change.
+    //
+    // Which colour a converted block comes out as is decided at conversion time from the block being spread
+    // FROM (see BlockMatcher.colourOf); there is no per-block colour state and nothing tracks it.
+
+    /** The four non-green sets. Green is the empty suffix and is NOT in {@link #COLOURED}. */
+    public static final String[] COLOUR_SUFFIXES = {"_cyan", "_purple", "_orange", "_yellow"};
+
+    /** Every coloured block, by full registry name (e.g. {@code fertile_dirt_cyan}). */
+    public static final java.util.Map<String, RegistryObject<Block>> COLOURED = new java.util.LinkedHashMap<>();
+
+    /** Colour suffix -> that set's items, in registration order, for the "VFB: blocks" tab. */
+    public static final java.util.Map<String, java.util.List<RegistryObject<Item>>> COLOURED_ITEMS =
+            new java.util.LinkedHashMap<>();
+
+    /** The glowing properties every fertile/rich block shares. */
+    private static BlockBehaviour.Properties glow(Block vanilla) {
+        return BlockBehaviour.Properties.copy(vanilla)
+                .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT);
+    }
+
+    private static RegistryObject<Block> colour(String sfx, String name, java.util.function.Supplier<Block> factory) {
+        RegistryObject<Block> b = BLOCKS.register(name, factory);
+        COLOURED.put(name, b);
+        COLOURED_ITEMS.computeIfAbsent(sfx, k -> new java.util.ArrayList<>())
+                .add(ITEMS.register(name, () -> new BlockItem(b.get(), new Item.Properties())));
+        return b;
+    }
+
+    /** Look a coloured block up lazily, for the few that reference a sibling (stairs, chorus). */
+    private static Block col(String name) {
+        return COLOURED.get(name).get();
+    }
+
+    private record ColourBase(String name, Block vanilla, FertileKind kind) {}
+
+    private static final ColourBase[] COLOUR_BASES = {
+            new ColourBase("dirt", Blocks.DIRT, FertileKind.CUBE),
+            new ColourBase("stone", Blocks.STONE, FertileKind.CUBE),
+            new ColourBase("netherrack", Blocks.NETHERRACK, FertileKind.CUBE),
+            new ColourBase("end_stone", Blocks.END_STONE, FertileKind.CUBE),
+            new ColourBase("sculk", Blocks.SCULK, FertileKind.SCULK),
+            new ColourBase("sand", Blocks.SAND, FertileKind.FALLING),
+            new ColourBase("sandstone", Blocks.SANDSTONE, FertileKind.CUBE),
+            new ColourBase("gravel", Blocks.GRAVEL, FertileKind.FALLING),
+            new ColourBase("log", Blocks.OAK_LOG, FertileKind.LOG),
+            new ColourBase("deepslate", Blocks.DEEPSLATE, FertileKind.LOG),
+            new ColourBase("leaves", Blocks.OAK_LEAVES, FertileKind.LEAVES),
+            new ColourBase("blackstone", Blocks.BLACKSTONE, FertileKind.CUBE),
+            new ColourBase("basalt", Blocks.BASALT, FertileKind.LOG),
+            new ColourBase("soul_sand", Blocks.SOUL_SAND, FertileKind.CUBE),
+            new ColourBase("soul_soil", Blocks.SOUL_SOIL, FertileKind.CUBE),
+            new ColourBase("snow_block", Blocks.SNOW_BLOCK, FertileKind.CUBE),
+    };
+
+    static {
+        for (String c : COLOUR_SUFFIXES) {
+            // the 32 base blocks
+            for (ColourBase cb : COLOUR_BASES) {
+                for (String variant : new String[]{"fertile_", "rich_"}) {
+                    String name = variant + cb.name() + c;
+                    Block vanilla = cb.vanilla();
+                    FertileKind kind = cb.kind();
+                    colour(c, name, () -> {
+                        BlockBehaviour.Properties p = glow(vanilla);
+                        if (kind == FertileKind.FALLING) return new FallingBlock(p);
+                        if (kind == FertileKind.LOG) return new RotatedPillarBlock(p);
+                        if (kind == FertileKind.LEAVES) return new FertileLeavesBlock(p.noOcclusion());
+                        return new Block(p);
+                    });
+                }
+            }
+
+            // Shape-preserving stone family. NOTE: no light and no emissive here, exactly as the GREEN ones
+            // are registered. The colours must match green block for block rather than be quietly "fixed",
+            // otherwise a cyan slab would glow where a green one does not.
+            colour(c, "fertile_stairs" + c, () -> new StairBlock(
+                    () -> Blocks.STONE.defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.STONE)));
+            colour(c, "fertile_slab" + c, () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
+            colour(c, "fertile_fence" + c, () -> new FenceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)));
+            colour(c, "fertile_iron_bars" + c,
+                    () -> new net.minecraft.world.level.block.IronBarsBlock(glow(Blocks.IRON_BARS)));
+            colour(c, "fertile_grass" + c, () -> new FertileGrassBlock(
+                    BlockBehaviour.Properties.copy(Blocks.GRASS).emissiveRendering((s, l, p) -> true)));
+            colour(c, "fertile_kelp" + c, () -> new FertileKelpBlock(glow(Blocks.KELP_PLANT)));
+            colour(c, "infested_path" + c, () -> new InfestedPathBlock(glow(Blocks.DIRT_PATH)));
+
+            // craftable wood + cobble
+            colour(c, "fertile_planks" + c, () -> new Block(glow(Blocks.OAK_PLANKS)));
+            colour(c, "fertile_planks_stairs" + c, () -> new StairBlock(
+                    () -> col("fertile_planks" + c).defaultBlockState(), glow(Blocks.OAK_PLANKS)));
+            colour(c, "fertile_planks_slab" + c, () -> new SlabBlock(glow(Blocks.OAK_PLANKS)));
+            colour(c, "fertile_cobblestone" + c, () -> new Block(glow(Blocks.COBBLESTONE)));
+
+            // chorus + catalyst: each flower spreads its OWN plant, so the pair is wired within the colour
+            for (String variant : new String[]{"fertile_", "rich_"}) {
+                colour(c, variant + "chorus_plant" + c, () -> new FertileChorusPlantBlock(
+                        glow(Blocks.CHORUS_PLANT), () -> col(variant + "chorus_flower" + c)));
+                colour(c, variant + "chorus_flower" + c, () -> new FertileChorusFlowerBlock(
+                        glow(Blocks.CHORUS_FLOWER).randomTicks(), () -> col(variant + "chorus_plant" + c)));
+                colour(c, variant + "sculk_catalyst" + c, () -> new Block(glow(Blocks.SCULK_CATALYST)));
+            }
+
+            // the door needs a DoubleHighBlockItem rather than a plain BlockItem, so it is registered by hand
+            String doorName = "fertile_door" + c;
+            RegistryObject<Block> door = BLOCKS.register(doorName, () -> new net.minecraft.world.level.block.DoorBlock(
+                    glow(Blocks.OAK_DOOR).noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+            COLOURED.put(doorName, door);
+            COLOURED_ITEMS.computeIfAbsent(c, k -> new java.util.ArrayList<>()).add(
+                    ITEMS.register(doorName, () -> new net.minecraft.world.item.DoubleHighBlockItem(
+                            door.get(), new Item.Properties())));
+        }
+    }
+
     /**
      * Limbo Bed: an indestructible (bedrock-tough), bedrock-textured "bed" that sits at a random spot inside
      * the Limbo cube. Sleeping on it (right-click) sends the entity back to where it came from -- see
@@ -772,25 +892,9 @@ public final class ModBlocks {
                 acceptPotionFamily(output, ModPotions.EMERALD_VIRUS_STRONG.get(), false);  // Emerald Virus II
                 output.accept(ModItems.EMERALD_VIRUS_ARROW.get());
                 output.accept(ModItems.EMERALD_VIRUS_ARROW_2.get());
-                for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
-                output.accept(FERTILE_STAIRS_ITEM.get());
-                output.accept(FERTILE_SLAB_ITEM.get());
-                output.accept(FERTILE_FENCE_ITEM.get());
-                output.accept(FERTILE_IRON_BARS_ITEM.get());
-                output.accept(FERTILE_GRASS_ITEM.get());
-                output.accept(FERTILE_KELP_ITEM.get());
-                output.accept(FERTILE_PLANKS_ITEM.get());
-                output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
-                output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
-                output.accept(FERTILE_COBBLESTONE_ITEM.get());
-                output.accept(FERTILE_DOOR_ITEM.get());
-                output.accept(FERTILE_CHORUS_PLANT_ITEM.get());
-                output.accept(FERTILE_CHORUS_FLOWER_ITEM.get());
-                output.accept(RICH_CHORUS_PLANT_ITEM.get());
-                output.accept(RICH_CHORUS_FLOWER_ITEM.get());
+                // The whole fertile/rich family now lives in its own "VFB: blocks" tab: at five
+                // colours it is 250 entries and would have swamped everything else in here.
                 output.accept(ModItems.FERTILE_CHORUS.get());
-                output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
-                output.accept(RICH_SCULK_CATALYST_ITEM.get());
 
                 // === Spawn eggs: ONE cluster (village defenders, bosses, staged, then the Limbo creatures) ===
                 output.accept(WALL_DEFENDER_SPAWN.get());
@@ -827,7 +931,6 @@ public final class ModBlocks {
                 output.accept(ModItems.EMERALD_WITHER_SPAWN.get());
                 output.accept(ModItems.EMERALD_GUARDIAN_SPAWN.get());
                 output.accept(ModItems.EMERALD_ELDER_GUARDIAN_SPAWN.get());
-                output.accept(INFESTED_PATH_ITEM.get());
 
                 // === Limbo cluster (the end): blocks -> materials -> potions -> armour -> tools ===
                 output.accept(LIMBO_BLOCK_ITEM.get());
@@ -863,6 +966,52 @@ public final class ModBlocks {
                 output.accept(ModItems.RICKROLL_PAINTING.get());
             })
             .build());
+
+    /**
+     * "VFB: blocks" -- the whole fertile/rich family, all five colours, in one place.
+     *
+     * <p>Its own tab because the family is 250 entries once the colours are counted, and dropping that into
+     * the main tab would have buried the brain node, the gear and the Limbo line under a wall of dirt.
+     *
+     * <p>Ordered green first, then cyan, purple, orange, yellow, with each colour's blocks in the same
+     * sequence -- so the five sets read as five copies of one shelf rather than 250 unrelated items.
+     */
+    public static final RegistryObject<CreativeModeTab> BLOCKS_TAB = TABS.register("blocks",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID + ".blocks"))
+                    .icon(() -> new ItemStack(FERTILE_GRASS_ITEM.get()))
+                    .withTabsBefore(TAB.getKey())
+                    .displayItems((params, output) -> {
+                        // --- green: the original set, in its long-standing order ---
+                        for (RegistryObject<Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
+                        output.accept(FERTILE_STAIRS_ITEM.get());
+                        output.accept(FERTILE_SLAB_ITEM.get());
+                        output.accept(FERTILE_FENCE_ITEM.get());
+                        output.accept(FERTILE_IRON_BARS_ITEM.get());
+                        output.accept(FERTILE_GRASS_ITEM.get());
+                        output.accept(FERTILE_KELP_ITEM.get());
+                        output.accept(INFESTED_PATH_ITEM.get());
+                        output.accept(FERTILE_PLANKS_ITEM.get());
+                        output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
+                        output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
+                        output.accept(FERTILE_COBBLESTONE_ITEM.get());
+                        output.accept(FERTILE_DOOR_ITEM.get());
+                        output.accept(FERTILE_CHORUS_PLANT_ITEM.get());
+                        output.accept(FERTILE_CHORUS_FLOWER_ITEM.get());
+                        output.accept(RICH_CHORUS_PLANT_ITEM.get());
+                        output.accept(RICH_CHORUS_FLOWER_ITEM.get());
+                        output.accept(FERTILE_SCULK_CATALYST_ITEM.get());
+                        output.accept(RICH_SCULK_CATALYST_ITEM.get());
+
+                        // --- the four colour sets, each in its registration order ---
+                        for (String c : COLOUR_SUFFIXES) {
+                            for (RegistryObject<Item> it : COLOURED_ITEMS.getOrDefault(
+                                    c, java.util.List.of())) {
+                                output.accept(it.get());
+                            }
+                        }
+                    })
+                    .build());
 
     /** Register the DeferredRegisters on the mod event bus (call from the mod constructor). */
     public static void register(IEventBus modBus) {

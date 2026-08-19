@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "thevillagefightsback:block/fertile_basalt_orange"
+    },
+    "axis=z": {
+      "model": "thevillagefightsback:block/fertile_basalt_orange",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "thevillagefightsback:block/fertile_basalt_orange",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

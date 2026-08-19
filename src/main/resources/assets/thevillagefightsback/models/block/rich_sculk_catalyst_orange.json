@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "thevillagefightsback:block/rich_sculk_catalyst_orange_top",
+    "bottom": "thevillagefightsback:block/rich_sculk_catalyst_orange_bottom",
+    "side": "thevillagefightsback:block/rich_sculk_catalyst_orange_side"
+  }
+}

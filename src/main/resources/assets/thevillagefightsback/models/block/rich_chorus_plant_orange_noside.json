@@ -1,0 +1,27 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "texture": "thevillagefightsback:block/rich_chorus_plant_orange",
+    "inside": "thevillagefightsback:block/rich_chorus_plant_orange",
+    "particle": "thevillagefightsback:block/rich_chorus_plant_orange"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        4,
+        4
+      ],
+      "to": [
+        12,
+        12,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#inside"
+        }
+      }
+    }
+  ]
+}
