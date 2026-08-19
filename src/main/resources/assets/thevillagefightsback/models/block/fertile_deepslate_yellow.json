@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "thevillagefightsback:block/fertile_deepslate_yellow",
+    "end": "thevillagefightsback:block/fertile_deepslate_yellow_top"
+  }
+}

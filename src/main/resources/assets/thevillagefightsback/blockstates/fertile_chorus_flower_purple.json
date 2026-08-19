@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "age=0": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple"
+    },
+    "age=1": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple"
+    },
+    "age=2": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple"
+    },
+    "age=3": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple"
+    },
+    "age=4": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple"
+    },
+    "age=5": {
+      "model": "thevillagefightsback:block/fertile_chorus_flower_purple_dead"
+    }
+  }
+}

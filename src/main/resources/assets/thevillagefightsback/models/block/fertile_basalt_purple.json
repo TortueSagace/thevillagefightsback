@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "thevillagefightsback:block/fertile_basalt_purple",
+    "end": "thevillagefightsback:block/fertile_basalt_purple_top"
+  }
+}

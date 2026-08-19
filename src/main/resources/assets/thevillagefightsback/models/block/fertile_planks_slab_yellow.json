@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "thevillagefightsback:block/fertile_planks_yellow",
+    "top": "thevillagefightsback:block/fertile_planks_yellow",
+    "side": "thevillagefightsback:block/fertile_planks_yellow"
+  }
+}

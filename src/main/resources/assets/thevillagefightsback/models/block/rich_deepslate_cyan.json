@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "thevillagefightsback:block/rich_deepslate_cyan",
+    "end": "thevillagefightsback:block/rich_deepslate_cyan_top"
+  }
+}

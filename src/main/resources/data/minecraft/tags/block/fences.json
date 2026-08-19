@@ -1,6 +1,10 @@
 {
   "replace": false,
   "values": [
-    "thevillagefightsback:fertile_fence"
+    "thevillagefightsback:fertile_fence",
+    "thevillagefightsback:fertile_fence_cyan",
+    "thevillagefightsback:fertile_fence_purple",
+    "thevillagefightsback:fertile_fence_orange",
+    "thevillagefightsback:fertile_fence_yellow"
   ]
 }

@@ -1,1 +1,10 @@
-{ "replace": false, "values": [ "thevillagefightsback:fertile_cobblestone" ] }
+{
+  "replace": false,
+  "values": [
+    "thevillagefightsback:fertile_cobblestone",
+    "thevillagefightsback:fertile_cobblestone_cyan",
+    "thevillagefightsback:fertile_cobblestone_purple",
+    "thevillagefightsback:fertile_cobblestone_orange",
+    "thevillagefightsback:fertile_cobblestone_yellow"
+  ]
+}
