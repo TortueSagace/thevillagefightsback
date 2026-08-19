@@ -28,6 +28,7 @@ public class ReturnToVillageGoal extends Goal {
 
     private final Villager villager;
     private BlockPos home;
+    private boolean outside = true;   // last enclosingPlan answer; see canContinueToUse
 
     public ReturnToVillageGoal(Villager villager) {
         this.villager = villager;
@@ -39,14 +40,25 @@ public class ReturnToVillageGoal extends Goal {
         if (villager.tickCount % RECHECK != 0) return false;
         if (!(villager.level() instanceof ServerLevel sl)) return false;
         if (WallBuild.enclosingPlan(sl, villager.blockPosition()) != null) return false; // already inside a wall
+        this.outside = true;
         this.home = nearestWalledNode(sl);
         return home != null;
     }
 
+    /**
+     * Still outside? Re-tested on the same throttle {@link #canUse} uses, and for the same reason.
+     *
+     * <p>{@code enclosingPlan} runs a point-in-polygon test against every column of every unfinished wall, and a
+     * wall runs to a thousand columns. Asking that every tick, for every villager walking home, is a real cost
+     * for an answer that cannot change meaningfully between ticks -- the villager is walking. Arriving inside
+     * the wall up to {@value #RECHECK} ticks before the goal notices costs nothing: it is already heading there.
+     */
     @Override
     public boolean canContinueToUse() {
         if (home == null || !(villager.level() instanceof ServerLevel sl)) return false;
-        return WallBuild.enclosingPlan(sl, villager.blockPosition()) == null; // stop once back inside the wall
+        if (villager.tickCount % RECHECK != 0) return outside;
+        outside = WallBuild.enclosingPlan(sl, villager.blockPosition()) == null;
+        return outside;
     }
 
     @Override

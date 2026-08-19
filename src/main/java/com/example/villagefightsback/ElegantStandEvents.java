@@ -26,8 +26,20 @@ public final class ElegantStandEvents {
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide) return;
         if (mob instanceof UnleashedBrainNodeEntity) return;          // never freeze the boss
+
+        // This fires for EVERY mob on the server EVERY tick, so the path for the 99.99% that are not standing
+        // on a stand has to cost as close to nothing as possible.
+        //
+        // A displayed mob always has noAi set, and almost nothing else does, so that flag rejects the whole
+        // world before we touch getPersistentData -- which is not a free read: Forge creates the tag on first
+        // access, so calling it unconditionally allocated a CompoundTag for every mob in the world.
+        //
+        // What is left is spotting a mob that has just been PUT on a stand, which needs a real block lookup.
+        // That one is throttled: a stand is a decoration, and taking up to 8 ticks to notice a mob placed on
+        // one is imperceptible, where 20 blockstate reads per tick per mob is not.
+        boolean displayed = mob.isNoAi() && mob.getPersistentData().getBoolean(NBT_DISPLAYED);
+        if (!displayed && (mob.tickCount & 7) != 0) return;
         boolean onStand = isOnStand(mob);
-        boolean displayed = mob.getPersistentData().getBoolean(NBT_DISPLAYED);
         if (onStand) {
             if (!displayed) {
                 mob.getPersistentData().putBoolean(NBT_DISPLAYED, true);

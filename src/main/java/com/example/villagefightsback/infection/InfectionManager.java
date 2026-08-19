@@ -223,7 +223,9 @@ public final class InfectionManager {
             }
             if (inf.waitingInfestedCount() == 0) return;   // queue drained; leave the rest of the active set alone
         }
-        idle.keySet().retainAll(new java.util.HashSet<>(ids));  // forget counters for paths no longer active
+        // Forget counters for paths that are no longer active. Only worth the allocation when there is
+        // actually something stale: the map gains a key only for a path in `ids`, so an equal size means clean.
+        if (idle.size() > ids.size()) idle.keySet().retainAll(new java.util.HashSet<>(ids));
     }
 
     /**
