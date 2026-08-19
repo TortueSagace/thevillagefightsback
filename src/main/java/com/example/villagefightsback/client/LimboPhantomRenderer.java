@@ -33,6 +33,10 @@ public class LimboPhantomRenderer extends MobRenderer<LimboPhantomEntity, Phanto
     @Override
     protected void scale(LimboPhantomEntity entity, PoseStack pose, float partialTick) {
         pose.scale(3.0F, 3.0F, 3.0F); // fixed 3x, matching the baked 2.7x1.5 hitbox (3x the vanilla phantom box)
+        // Vanilla's PhantomRenderer.scale ends with exactly this translate, and overriding scale() dropped it --
+        // which is why the body floated above its own hitbox. The phantom model is authored off-origin and this
+        // is the compensation for it; the numbers are vanilla's, applied after the scale as vanilla applies them.
+        pose.translate(0.0F, 1.3125F, 0.1875F);
     }
 
     @Override
