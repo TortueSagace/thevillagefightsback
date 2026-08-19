@@ -53,6 +53,18 @@ public final class ModEntities {
                     .fireImmune()
                     .build("brain_node_warden"));
 
+    /**
+     * The Village Spirit: the harmless scout that relocates a village when a node falls below Nightmare /
+     * Mega Brutal. MISC so nothing ever natural-spawns it -- it exists only where a node died.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<VillageSpiritEntity>> VILLAGE_SPIRIT =
+            ENTITIES.register("village_spirit",
+            () -> EntityType.Builder.<VillageSpiritEntity>of(VillageSpiritEntity::new, MobCategory.MISC)
+                    .sized(0.35F, 0.6F)             // the vanilla Allay's size, since it wears its model
+                    .clientTrackingRange(10)
+                    .updateInterval(2)
+                    .build("village_spirit"));
+
     /** The Village Brain Node, Unleashed: the boss that erupts when a brainNode block is destroyed ({@link UnleashedBrainNodeEntity}). */
     public static final DeferredHolder<EntityType<?>, EntityType<UnleashedBrainNodeEntity>> UNLEASHED_BRAIN_NODE = ENTITIES.register(
             "unleashed_brain_node",
@@ -284,6 +296,7 @@ public final class ModEntities {
         event.put(WALL_DEFENDER_STAGE4.get(), WallDefenderEntity.createAttributes().build());
         event.put(EMERALDGER.get(), Villager.createAttributes().build());
         event.put(BRAIN_NODE_WARDEN.get(), Warden.createAttributes().build());
+        event.put(VILLAGE_SPIRIT.get(), VillageSpiritEntity.createAttributes().build());
         event.put(UNLEASHED_BRAIN_NODE.get(), UnleashedBrainNodeEntity.createAttributes().build());
         event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
         event.put(GENERAL_DARIUS.get(), GeneralDariusEntity.createAttributes().build());

@@ -229,7 +229,7 @@ public class VillageBrainNodeBlock extends Block {
                 // Start the respawn grace BEFORE summoning, so the auto-placer can't race a duplicate node in
                 // while the boss emerges (it only summons on a non-clean removal, so the grace only gates those).
                 BrainNodeEvents.recordRemoval(key);
-                UnleashedManager.summonBoss(sl, pos.immutable());
+                UnleashedManager.onNodeDestroyed(sl, pos.immutable());
             }
         }
         super.onRemove(state, level, pos, newState, moved);

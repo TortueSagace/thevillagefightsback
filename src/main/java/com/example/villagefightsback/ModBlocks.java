@@ -95,6 +95,23 @@ public final class ModBlocks {
             () -> new TooltipBlockItem(FAKE_OBSIDIAN.get(), new Item.Properties(),
                     "block.thevillagefightsback.fake_obsidian.desc"));
 
+    /**
+     * The husk a defeated brain node leaves behind. Same toughness as the live node so it is no easier to dig
+     * out, but it glows at nothing: the light level is 0 and the animated top is replaced by a black, cracked
+     * one. See {@link DeadBrainNodeBlock} for why it is not tracked as a brain node.
+     */
+    public static final DeferredHolder<Block, Block> DEAD_BRAIN_NODE = BLOCKS.register(
+            "dead_brain_node",
+            () -> new DeadBrainNodeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(50.0F, 1200.0F)              // as tough as the living node
+                    .sound(SoundType.STONE)));
+
+    public static final DeferredHolder<Item, Item> DEAD_BRAIN_NODE_ITEM = ITEMS.register(
+            "dead_brain_node",
+            () -> new TooltipBlockItem(DEAD_BRAIN_NODE.get(), new Item.Properties(),
+                    "block.thevillagefightsback.dead_brain_node.desc"));
+
     // --- "Nodes": glowing ancient-debris-tough ore blocks. All add +10% to the village's daily sunset harvest
     //     (within a brain node's range); each also spawns its own reinforcement every sunset + on creation. ---
     private static BlockBehaviour.Properties nodeProps() {
@@ -800,6 +817,7 @@ public final class ModBlocks {
                 output.accept(OBSIDIAN_STAIRS_ITEM.get());
                 output.accept(IRON_GOLEM_HEAD_ITEM.get());
                 output.accept(ELEGANT_STAND_ITEM.get());
+                output.accept(DEAD_BRAIN_NODE_ITEM.get());
                 output.accept(DEBRIS_ITEM.get());
 
                 // === TNT family ===

@@ -132,6 +132,10 @@ public final class TheVillageFightsBackClient {
         event.registerEntityRenderer(ModEntities.BRAIN_NODE_WARDEN.get(), BrainNodeWardenRenderer::new);
         // The boss reuses the green-warden + brainNode-head renderer (it extends BrainNodeWardenEntity).
         event.registerEntityRenderer(ModEntities.UNLEASHED_BRAIN_NODE.get(), BrainNodeWardenRenderer::new);
+        // The Village Spirit IS an Allay as far as rendering is concerned -- it extends the vanilla mob, so the
+        // vanilla renderer binds straight to it and no model or texture has to be shipped.
+        event.registerEntityRenderer(ModEntities.VILLAGE_SPIRIT.get(),
+                net.minecraft.client.renderer.entity.AllayRenderer::new);
         // Vindictive guards render as plain zombie villagers (vanilla renderer).
         event.registerEntityRenderer(ModEntities.VINDICTIVE_GUARD.get(),
                 net.minecraft.client.renderer.entity.ZombieVillagerRenderer::new);
