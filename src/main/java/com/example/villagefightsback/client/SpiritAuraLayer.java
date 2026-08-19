@@ -70,7 +70,12 @@ public class SpiritAuraLayer extends RenderLayer<Allay, AllayModel> {
         VertexConsumer consumer = buffer.getBuffer(RenderType.lightning());
 
         pose.pushPose();
-        pose.translate(0.0F, 0.55F, 0.0F);              // centre it on the body rather than the feet
+        // Layer space is the MODEL's, not the world's: LivingEntityRenderer has already applied
+        // scale(-1,-1,1) and translate(0, -1.501, 0), so +Y points DOWN and the origin sits 1.501 above the
+        // entity's feet. Height above the feet is therefore (1.501 - y), and the 0.55 this used to pass put the
+        // halo 0.95 up -- a third of a block clear above the head of a mob only 0.6 tall, which is exactly the
+        // offset that showed. 1.2 puts it at ~0.3, through the middle of the body.
+        pose.translate(0.0F, 1.2F, 0.0F);
         pose.mulPose(Axis.YP.rotationDegrees(ageInTicks * SPIN));
 
         for (int i = 0; i < RAYS; i++) {
