@@ -3,7 +3,10 @@
   "package": "com.example.villagefightsback.mixin.client",
   "compatibilityLevel": "JAVA_17",
   "client": [
-    "HumanoidArmorLayerMixin"
+    "FogRendererMixin",
+    "GameRendererMixin",
+    "HumanoidArmorLayerMixin",
+    "LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

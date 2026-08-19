@@ -3,10 +3,23 @@
   "package": "com.example.villagefightsback.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "AbstractVillagerMixin",
+    "BlockItemPlaceMixin",
     "BlockPathTypesInvoker",
+    "CommandsMixin",
+    "EntityDimensionMixin",
+    "EntityDropsMixin",
     "EntityPersistentDataMixin",
+    "ExplosionEventsMixin",
+    "LevelDestroyBlockMixin",
+    "LivingEntityEventsMixin",
     "LivingEntityRemoveAllEffectsMixin",
+    "MobEventsMixin",
+    "PlayerEventsMixin",
     "PotionBrewingInvoker",
+    "ResultSlotMixin",
+    "ServerLevelEventsMixin",
+    "ServerPlayerEventsMixin",
     "WalkNodeEvaluatorMixin"
   ],
   "injectors": {
