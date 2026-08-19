@@ -109,13 +109,13 @@ public final class WorldModeEvents {
     }
 
     /**
-     * Re-assert the loaded world's mode after the config file is reloaded (Forge watches the .toml and will
-     * otherwise quietly replace our in-memory override with the file's values).
+     * Reconcile the loaded world's mode with the config file after a reload: a hand edit of one of the
+     * three infection flags is adopted, and anything untouched keeps the world's own answer.
      */
     public static void reapplyToRunningServer() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
         WorldModeData data = WorldModeData.getExisting(server);
-        if (data != null) data.pushToConfig();
+        if (data != null) data.reconcileFromConfig();
     }
 }

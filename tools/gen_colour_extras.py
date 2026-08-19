@@ -36,6 +36,15 @@ HUE_SHIFT = {"fertile_grass": "fertile_grass", "fertile_iron_bars": "fertile_iro
 # Target hues, in turns, matched to the tints in gen_colour_sets.COLOURS.
 HUES = {"_cyan": 0.50, "_purple": 0.78, "_orange": 0.07, "_yellow": 0.15}
 
+# Textures gen_textures() produces, by the name it saves them under.
+#
+# These must ALSO be rewritable references, and that is easy to miss: retarget() suffixes a reference only if
+# it names a block, and for almost every block in the family the texture happens to share the block's name, so
+# it works by coincidence. The infested path is the exception -- its faces are infested_path_top/_side, which
+# are not block names -- and its four coloured models were therefore copied still pointing at the GREEN
+# textures. All five colours rendered identically as a result.
+GEN_TEXTURES = ["fertile_kelp", "infested_path_top", "infested_path_side"]
+
 
 def family_names():
     """Every green block in the family -- what a reference is allowed to be suffixed."""
@@ -49,6 +58,7 @@ def family_names():
             continue
         if n.startswith("fertile_") or n.startswith("rich_") or n == "infested_path":
             out.add(n)
+    out.update(GEN_TEXTURES)   # texture-only names, which no blockstate would have contributed
     return out
 
 
@@ -104,7 +114,7 @@ def gen_textures(suffix):
         kelp = load_vanilla(zf, "kelp_plant")
         top = load_vanilla(zf, "dirt_path_top")
         side = load_vanilla(zf, "dirt_path_side")
-    for img, seed in ((kelp, "fertile_kelp"), (top, "infested_path_top"), (side, "infested_path_side")):
+    for img, seed in zip((kelp, top, side), GEN_TEXTURES):
         strip = animate_specks(green_tint(img), seed)   # seeded off the GREEN name: identical speck layout
         save_png(strip, seed + suffix)
         save_anim_mcmeta(seed + suffix)
@@ -112,10 +122,11 @@ def gen_textures(suffix):
 
 def main():
     names = family_names()
-    saved = (g.GREEN, g.SALT, g.SALT_DIM, g.PEPPER)
+    saved = (g.GREEN, g.SALT, g.SALT_DIM, g.PEPPER, g.GREEN_LIFT, g.GREEN_GAMMA)
     try:
-        for suffix, tint, salt, salt_dim, pepper in COLOURS:
+        for suffix, tint, salt, salt_dim, pepper, lift, gamma in COLOURS:
             g.GREEN, g.SALT, g.SALT_DIM, g.PEPPER = tint, salt, salt_dim, pepper
+            g.GREEN_LIFT, g.GREEN_GAMMA = lift, gamma
             gen_textures(suffix)
             for name in HUE_SHIFT:
                 hue_shift(name, suffix, HUES[suffix])
@@ -137,7 +148,7 @@ def main():
                             n += 1
             print("%-8s extras: %d block models + 9 families" % (suffix.lstrip("_"), n))
     finally:
-        g.GREEN, g.SALT, g.SALT_DIM, g.PEPPER = saved
+        (g.GREEN, g.SALT, g.SALT_DIM, g.PEPPER, g.GREEN_LIFT, g.GREEN_GAMMA) = saved
 
 
 if __name__ == "__main__":

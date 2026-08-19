@@ -556,7 +556,7 @@ def gen_chorus(gems):
     # ---- loot ----
     # fertile flower drops itself; fertile plant drops the (later-batch) fertile_chorus item.
     write_loot_self(sfx("fertile_chorus_flower"))
-    write_json(os.path.join(DATA, "loot_tables", "blocks", "fertile_chorus_plant.json"), {
+    write_json(os.path.join(DATA, "loot_tables", "blocks", sfx("fertile_chorus_plant") + ".json"), {
         "type": "minecraft:block",
         "pools": [{"rolls": 1, "bonus_rolls": 0,
                    "entries": [{"type": "minecraft:item", "name": f"{MODID}:fertile_chorus"}],

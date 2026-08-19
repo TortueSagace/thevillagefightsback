@@ -2,8 +2,8 @@
   "parent": "minecraft:block/block",
   "textures": {
     "particle": "minecraft:block/dirt",
-    "top": "thevillagefightsback:block/infested_path_top",
-    "side": "thevillagefightsback:block/infested_path_side",
+    "top": "thevillagefightsback:block/infested_path_top_yellow",
+    "side": "thevillagefightsback:block/infested_path_side_yellow",
     "bottom": "minecraft:block/dirt"
   },
   "elements": [
