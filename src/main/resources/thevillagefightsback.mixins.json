@@ -14,6 +14,7 @@
     "LevelDestroyBlockMixin",
     "LivingEntityEventsMixin",
     "LivingEntityRemoveAllEffectsMixin",
+    "MinecraftServerMixin",
     "MobEventsMixin",
     "PlayerEventsMixin",
     "PotionBrewingInvoker",

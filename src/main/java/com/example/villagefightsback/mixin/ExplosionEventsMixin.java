@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+
 import java.util.ArrayList;
-import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Explosion;
@@ -32,7 +33,7 @@ public abstract class ExplosionEventsMixin {
 
     @Shadow
     @Final
-    private List<BlockPos> toBlow;
+    private ObjectArrayList<BlockPos> toBlow;
 
     @Inject(method = "finalizeExplosion", at = @At("HEAD"))
     private void tvfb$detonate(boolean spawnParticles, CallbackInfo ci) {
