@@ -374,6 +374,8 @@ public final class BrainNodeEvents {
 
     private static final int BED_SCAN_RADIUS = 64; // collect beds this far from a brainNode for the wall plan
 
+    /** Step used when sampling a building's outline into the wall footprint (CLEARANCE is 5, so 4 overlaps). */
+    private static final int BUILDING_SAMPLE = 4;
     private static final int COBBLE_SCAN_RADIUS = 80; // survey village material this far (horizontally) for the wall
     private static final int COBBLE_Y_BAND = 10;      // ... within +/- this many blocks of the brain node's height
     private static final double ENSURE_GOAL_RADIUS = 96.0; // give villagers within this the build goal
@@ -792,6 +794,35 @@ public final class BrainNodeEvents {
             }
         }
         List<BlockPos> result = pts.size() >= WallPlanner.MIN_BEDS ? pts : collectBeds(level, center);
+
+        // EVERY building the village has raised is part of its footprint, whatever it is made of.
+        //
+        // Without this the footprint is only what the material scan happens to see, and WallPlanner.mainCluster
+        // then drops anything more than CLUSTER_LINK (24) blocks from the rest -- which is exactly what the
+        // stage-3 expansion ring is. Settlers found it OUTSIDE the wall at BUILDING_SPACING intervals, so the
+        // gap from the core to the ring routinely exceeds 24, the whole ring was discarded as an outlier, and
+        // the outer wall was then planned around the core alone and drawn straight through those houses and
+        // towers. A wall's job is to SURROUND the village, so the village's own buildings must be in the
+        // footprint by construction rather than by whether a scan noticed their walls.
+        //
+        // Boxes come from StructureZones, which is where every build registers itself (Blue/Cyan TNT houses,
+        // Green TNT towers, the node structures). The perimeter is sampled every few blocks rather than added
+        // cell by cell -- the footprint grid expands each point by CLEARANCE and links them, so a few points
+        // per building enclose it, and this keeps a 58-building village to a few hundred extra points.
+        for (int[] b : com.example.villagefightsback.infection.StructureZones.get(level)
+                .boxesNear(center.getX(), center.getZ(), scanRadius)) {
+            for (int x = b[0]; x <= b[3]; x += BUILDING_SAMPLE) {
+                result.add(new BlockPos(x, 0, b[2]));
+                result.add(new BlockPos(x, 0, b[5]));
+            }
+            for (int z = b[2]; z <= b[5]; z += BUILDING_SAMPLE) {
+                result.add(new BlockPos(b[0], 0, z));
+                result.add(new BlockPos(b[3], 0, z));
+            }
+            result.add(new BlockPos(b[3], 0, b[5]));                       // the far corner the steps can miss
+            result.add(new BlockPos((b[0] + b[3]) / 2, 0, (b[2] + b[5]) / 2));
+        }
+
         // The BrainNode block itself must always sit INSIDE the wall envelope -- it isn't "village material",
         // so nothing else marks its column. Add its (x,z) so the footprint is always grown to enclose it.
         result.add(new BlockPos(center.getX(), 0, center.getZ()));
