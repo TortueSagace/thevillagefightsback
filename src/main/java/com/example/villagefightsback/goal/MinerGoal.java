@@ -65,6 +65,9 @@ public class MinerGoal extends Goal {
     private int carryTicks;            // how long we've carried (anti-deadlock)
     private BlockPos target;           // rich block being sought
     private int seekTicks;             // how long we've been trying to reach the current target
+    /** Ticks before another scaffold may be placed, so climbing out of a pit is a climb and not a tower. */
+    private static final int SCAFFOLD_INTERVAL = 20;
+    private int scaffoldCooldown;
     private final java.util.HashMap<Long, Long> avoid = new java.util.HashMap<>(); // unreachable rich -> expiry
     private BlockPos brainNode;        // delivery target
     private int repathTimer;
@@ -182,11 +185,37 @@ public class MinerGoal extends Goal {
         boolean unreachable = villager.getNavigation().isDone() && seekTicks > 10; // navigator finished but not in reach
         if (++seekTicks > SEEK_TIMEOUT || unreachable) {
             if (digTowards(sl, target)) { seekTicks = 0; return; }   // dig through the obstacle and keep coming
+            // Still nowhere: it is probably in a hole. Digging sideways cannot fix that -- the way out is UP --
+            // so pillar on a Cheap Scaffold and step onto it, the same escape General Darius and the Limbo
+            // raiders use. The scaffold expires on its own (CheapScaffoldManager.LIFETIME), so a miner that
+            // climbs out of a pit does not leave a tower behind.
+            if (scaffoldEscape(sl)) { seekTicks = 0; return; }
             avoid.put(target.asLong(), sl.getGameTime() + BLACKLIST_TICKS);
             villager.getNavigation().stop();
             target = null;
             seekTicks = 0;
         }
+    }
+
+    /**
+     * Pillar up one Cheap Scaffold and step onto it, to climb out of a pit.
+     *
+     * <p>Rate-limited by {@link #SCAFFOLD_INTERVAL}: one block per interval is a climb, not a tower, and it
+     * keeps a miner that is merely blocked (rather than sunk) from stacking scaffolds into the sky. Returns
+     * false when it is on cooldown or the cell it stands in cannot take a block, so the caller falls through
+     * to blacklisting the target as it always did.
+     */
+    private boolean scaffoldEscape(ServerLevel sl) {
+        if (scaffoldCooldown > 0) { scaffoldCooldown--; return false; }
+        BlockPos feet = villager.blockPosition();
+        if (!sl.getBlockState(feet).canBeReplaced()) return false;
+        sl.setBlock(feet, com.example.villagefightsback.ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+        com.example.villagefightsback.CheapScaffoldManager.track(sl, feet);
+        villager.getNavigation().stop();
+        villager.setPos(feet.getX() + 0.5, feet.getY() + 1.0, feet.getZ() + 0.5);
+        villager.fallDistance = 0.0F;
+        scaffoldCooldown = SCAFFOLD_INTERVAL;
+        return true;
     }
 
     private void tickDeliver(ServerLevel sl) {

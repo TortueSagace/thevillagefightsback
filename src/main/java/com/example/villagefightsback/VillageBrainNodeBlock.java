@@ -60,6 +60,15 @@ public class VillageBrainNodeBlock extends Block {
         int au = held.is(Items.GOLD_INGOT) ? held.getCount() : 0;
         int li = held.is(ModItems.LIMBO_INGOT.get()) ? held.getCount() : 0;
         if (cu + au + li > 0) {
+            // Take only what this stage still wants. Offering a full stack when 8 are needed costs 8.
+            int lv = econ.getLevel();
+            cu = econ.wants(cu, econ.getCopper(), BrainNodeData.Econ.copperFor(lv));
+            au = econ.wants(au, econ.getGold(), BrainNodeData.Econ.goldFor(lv));
+            li = econ.wants(li, econ.getLimbo(), BrainNodeData.Econ.limboFor(lv));
+            if (cu + au + li == 0) {          // nothing of this metal is wanted right now
+                player.displayClientMessage(metalNeeded(econ), false);
+                return InteractionResult.CONSUME;
+            }
             int gained = econ.addMetal(cu, au, li);
             if (!player.getAbilities().instabuild) held.shrink(cu + au + li);
             sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.3F);

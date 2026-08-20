@@ -1314,6 +1314,16 @@ public final class BrainNodeEvents {
         for (GlobalPos gp : data.blocks()) {
             if (gp.dimension().equals(level.dimension()) && gp.pos().distSqr(pos) <= r2) return true;
         }
+        // Dead nodes claim their ground too: a village with a husk in it already has a brain, dormant or not,
+        // so a bell there must not raise a second one beside it.
+        //
+        // This is the ONLY rule dead nodes answer. They are not in data.blocks(), so nothing else -- infection
+        // reach, node spawns, settler dispatch, the immunity aura -- sees them. And the Village Spirit does not
+        // consult this at all: it founds wherever it lands, which is deliberate, since a spirit carrying a
+        // village must never be turned away by the husk it just left.
+        for (GlobalPos gp : data.deadNodes()) {
+            if (gp.dimension().equals(level.dimension()) && gp.pos().distSqr(pos) <= r2) return true;
+        }
         return false;
     }
 
