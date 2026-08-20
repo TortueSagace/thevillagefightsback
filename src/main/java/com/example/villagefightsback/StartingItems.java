@@ -50,8 +50,29 @@ public final class StartingItems {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // On a BRAND NEW world the creation screens have not been answered yet -- the player is already in the
+        // world while they are up -- so at login we do not yet know the experience or the difficulty, and
+        // handing out a bell here would give a Survival player the very thing Survival replaces. Wait: the
+        // difficulty packet calls grantStarterKit the moment the answers land. Established worlds fall through
+        // immediately, because setup is not pending for them.
+        WorldModeData mode = WorldModeData.getExisting(player.getServer());
+        if (mode != null && mode.isSetupPending()) return;
+        grantStarterKit(player);
+    }
 
-        giveOnce(player, NBT_GOT_BOOK, new ItemStack(ModItems.REPUTATION_BOOK.get()));
+    /**
+     * The opening kit, once the world knows what kind of world it is.
+     *
+     * <p>Creative gets what it always got: the Reputation Book, and a bell to found a village with. Survival
+     * gets a map instead, with the book buried in the cache at the other end of it -- so the rules and the
+     * means arrive together, after the walk.
+     */
+    public static void grantStarterKit(ServerPlayer player) {
+        boolean survival = WorldModeData.isSurvival(player.getServer());
+
+        if (!survival) {
+            giveOnce(player, NBT_GOT_BOOK, new ItemStack(ModItems.REPUTATION_BOOK.get()));
+        }
 
         if (!Config.playerGivenBellAtSpawn()) return;               // bell handout disabled by config
         // Hostile and Nightmare start you with a village instead of the means to found one (see HostileStart).
@@ -61,6 +82,14 @@ public final class StartingItems {
         if (persisted.getBoolean(NBT_GOT_BELL)) return;             // already received the starter bell
         persisted.putBoolean(NBT_GOT_BELL, true);
         player.getPersistentData().put(Player.PERSISTED_NBT_TAG, persisted);
+
+        // Survival: a map to a buried cache instead of a bell. If nowhere workable turns up the bell is the
+        // fallback, so the opening can never leave a player with nothing to found a village with.
+        if (survival && SurvivalStart.give(player)) {
+            TheVillageFightsBack.LOGGER.info("[The Village Fights Back] Survival starter map given to {}.",
+                    player.getGameProfile().getName());
+            return;
+        }
 
         ItemStack bell = new ItemStack(Items.BELL);
         if (!player.getInventory().add(bell)) player.drop(bell, false); // drop at feet if the inventory is full

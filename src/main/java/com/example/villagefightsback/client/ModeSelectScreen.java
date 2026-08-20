@@ -50,12 +50,12 @@ public class ModeSelectScreen extends ModeArtScreen {
         }
     }
 
-    /** Send the answer, then ask the second question: difficulty, which hands on to the send-off panel. */
+    /** Send the answer, then ask the second question: how involved the player wants to be. */
     private void choose(WorldMode mode) {
         if (answered) return;
         answered = true;
         ModNetwork.CHANNEL.sendToServer(new ChooseModePacket(mode.id()));
-        this.minecraft.setScreen(new DifficultySelectScreen());
+        this.minecraft.setScreen(new ExperienceSelectScreen());
     }
 
     @Override

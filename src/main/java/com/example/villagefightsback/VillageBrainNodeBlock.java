@@ -54,6 +54,24 @@ public class VillageBrainNodeBlock extends Block {
         BrainNodeData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
         ItemStack held = player.getItemInHand(hand);
 
+        // SURVIVAL: the node also eats the metals a stage costs. Fed exactly like emeralds, and the promotion
+        // fires the moment the last of the tribute lands (addMetal re-runs the check).
+        int cu = held.is(Items.COPPER_INGOT) ? held.getCount() : 0;
+        int au = held.is(Items.GOLD_INGOT) ? held.getCount() : 0;
+        int li = held.is(ModItems.LIMBO_INGOT.get()) ? held.getCount() : 0;
+        if (cu + au + li > 0) {
+            int gained = econ.addMetal(cu, au, li);
+            if (!player.getAbilities().instabuild) held.shrink(cu + au + li);
+            sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.3F);
+            if (gained > 0) {
+                player.displayClientMessage(
+                        Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
+            } else {
+                player.displayClientMessage(metalNeeded(econ), false);
+            }
+            return InteractionResult.CONSUME;
+        }
+
         if (held.is(Items.EMERALD)) {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
@@ -96,9 +114,52 @@ public class VillageBrainNodeBlock extends Block {
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
                             defenders[0], defenders[1], defenders[2], fertilized, econ.getOrganicPoints(),
-                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines()));
+                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines(),
+                            metalTribute(sl, econ)));
         }
         return InteractionResult.CONSUME;
+    }
+
+    /**
+     * The metal row for the brain node screen, or "" outside Survival.
+     *
+     * <p>Shows held / needed for each metal the NEXT stage wants, so the panel answers "what else does it
+     * need" at a glance rather than only after you feed it something.
+     */
+    private static String metalTribute(ServerLevel sl, BrainNodeData.Econ econ) {
+        if (!com.example.villagefightsback.WorldModeData.isSurvival(sl.getServer())) return "";
+        if (econ.isMaxLevel()) return "";
+        int lvl = econ.getLevel();
+        int cu = BrainNodeData.Econ.copperFor(lvl);
+        int au = BrainNodeData.Econ.goldFor(lvl);
+        int li = BrainNodeData.Econ.limboFor(lvl);
+        if (cu + au + li == 0) return "";
+        StringBuilder sb = new StringBuilder();
+        if (cu > 0) sb.append("§6").append(econ.getCopper()).append(" / ").append(cu).append(" copper");
+        if (au > 0) {
+            if (sb.length() > 0) sb.append("§7   ");
+            sb.append("§e").append(econ.getGold()).append(" / ").append(au).append(" gold");
+        }
+        if (li > 0) {
+            if (sb.length() > 0) sb.append("§7   ");
+            sb.append("§b").append(econ.getLimbo()).append(" / ").append(li).append(" Limbo ingot");
+        }
+        return sb.toString();
+    }
+
+    /** What the stage still wants, so feeding a stack tells you what is missing rather than nothing at all. */
+    private static Component metalNeeded(BrainNodeData.Econ econ) {
+        if (econ.isMaxLevel()) return Component.literal("§7The brain node is at its final stage.");
+        int lvl = econ.getLevel();
+        StringBuilder sb = new StringBuilder("§7Still needed: ");
+        sb.append("§a").append(Math.max(0, econ.costForNext() - econ.getEmeralds())).append(" emerald");
+        int cu = Math.max(0, BrainNodeData.Econ.copperFor(lvl) - econ.getCopper());
+        int au = Math.max(0, BrainNodeData.Econ.goldFor(lvl) - econ.getGold());
+        int li = Math.max(0, BrainNodeData.Econ.limboFor(lvl) - econ.getLimbo());
+        if (cu > 0) sb.append("§7, §6").append(cu).append(" copper");
+        if (au > 0) sb.append("§7, §e").append(au).append(" gold");
+        if (li > 0) sb.append("§7, §b").append(li).append(" Limbo ingot");
+        return Component.literal(sb.toString());
     }
 
     private static Component info(BrainNodeData.Econ econ) {

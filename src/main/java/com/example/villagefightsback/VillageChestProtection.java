@@ -73,7 +73,7 @@ public final class VillageChestProtection {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockPos pos = event.getPos();
         if (!isChestOrBarrel(level.getBlockEntity(pos))) return;
-        if (!withinBrainNodeRange(level, pos)) return;
+        if (!isVillageProperty(level, pos)) return;
         player.displayClientMessage(
                 Component.literal("Thanks! This chest now belongs to the village."), false);
     }
@@ -86,7 +86,7 @@ public final class VillageChestProtection {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         BlockPos pos = event.getPos();
         BlockEntity be = level.getBlockEntity(pos);
-        if (!isChestOrBarrel(be) || !withinBrainNodeRange(level, pos)) return;
+        if (!isChestOrBarrel(be) || !isVillageProperty(level, pos)) return;
         if (trusted(player)) return; // Hero of the Village I and up may take what they like
 
         // Warn that taking from here costs standing -- throttled to once per 10s, and never cancelling the open.
@@ -144,10 +144,25 @@ public final class VillageChestProtection {
 
     /** True if a chest or barrel at {@code pos} belongs to a village. Used by the break-in penalty. */
     public static boolean isProtectedContainer(ServerLevel level, BlockPos pos) {
-        return isChestOrBarrel(level.getBlockEntity(pos)) && withinBrainNodeRange(level, pos);
+        return isChestOrBarrel(level.getBlockEntity(pos)) && isVillageProperty(level, pos);
     }
 
     /** True if {@code pos} is within {@link VillageEvents#NODE_DEFEND_RADIUS} of any tracked brain node here. */
+    /**
+     * Is this the village's property?
+     *
+     * <p>Two ways to qualify, and the second is why this exists. The radius around a brain node covers the
+     * old, compact village; it does NOT cover a grand house or anything in the stage-3 expansion ring, which
+     * are built far past {@code NODE_DEFEND_RADIUS} -- so their chests were free to loot, which is exactly
+     * what showed up when the grand houses landed. A container inside a building the village RAISED is the
+     * village's whether or not it happens to sit near the node, and StructureZones is the register of every
+     * such building (it is also a chunk-bucketed lookup, so this costs nothing).
+     */
+    public static boolean isVillageProperty(ServerLevel level, BlockPos pos) {
+        return withinBrainNodeRange(level, pos)
+                || com.example.villagefightsback.infection.StructureZones.get(level).contains(pos);
+    }
+
     public static boolean withinBrainNodeRange(ServerLevel level, BlockPos pos) {
         BrainNodeData data = BrainNodeData.get(level.getServer());
         double r2 = VillageEvents.NODE_DEFEND_RADIUS * VillageEvents.NODE_DEFEND_RADIUS;

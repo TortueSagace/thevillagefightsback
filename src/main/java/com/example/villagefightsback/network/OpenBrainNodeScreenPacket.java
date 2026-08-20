@@ -27,10 +27,20 @@ public class OpenBrainNodeScreenPacket {
     public final List<String> organicLog; // the brain's last (up to 10) organic-spawn decisions, oldest first
     public final List<String> reputationLog; // the last (up to 10) reputation changes, world-wide, oldest first
 
+    /**
+     * SURVIVAL only: the metal tribute line shown under the emerald row, ready to draw. Empty in a Creative
+     * world, which is also how the screen knows to keep its old height.
+     *
+     * <p>Preformatted on the server on purpose. The numbers and the colours are already decided there (see
+     * BrainNodeData.Econ.copperFor and friends), and sending one string beats threading six counters through
+     * two different packet formats and duplicating the rule client-side where it could drift.
+     */
+    public final String metalLine;
+
     public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
                                      int villagers, int guards, int golems, int fertilized, int organic,
                                      int reputation, List<String> reflexLog, List<String> organicLog,
-                                     List<String> reputationLog) {
+                                     List<String> reputationLog, String metalLine) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -44,6 +54,7 @@ public class OpenBrainNodeScreenPacket {
         this.reflexLog = reflexLog;
         this.organicLog = organicLog;
         this.reputationLog = reputationLog;
+        this.metalLine = metalLine;
     }
 
     public static void encode(OpenBrainNodeScreenPacket msg, FriendlyByteBuf buf) {
@@ -62,6 +73,7 @@ public class OpenBrainNodeScreenPacket {
         // read back into the wrong one.
         buf.writeVarInt(msg.reputation);
         buf.writeCollection(msg.reputationLog, FriendlyByteBuf::writeUtf);
+        buf.writeUtf(msg.metalLine);
     }
 
     public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
@@ -74,8 +86,9 @@ public class OpenBrainNodeScreenPacket {
         List<String> organicLog = buf.readList(FriendlyByteBuf::readUtf);
         int reputation = buf.readVarInt();
         List<String> reputationLog = buf.readList(FriendlyByteBuf::readUtf);
+        String metalLine = buf.readUtf();
         return new OpenBrainNodeScreenPacket(level, maxLevel, emeralds, costNext, villagers, guards, golems,
-                fertilized, organic, reputation, reflexLog, organicLog, reputationLog);
+                fertilized, organic, reputation, reflexLog, organicLog, reputationLog, metalLine);
     }
 
     public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {

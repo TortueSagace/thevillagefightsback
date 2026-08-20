@@ -57,6 +57,10 @@ public final class BrainReflexes {
     private static final long CD_30M  = 36000L;
 
     /** Scale a base cooldown by multiplier_brain_initiatives_cooldown (>1 = rarer initiatives). */
+    /** How far from the brain a grave counts as the village's. Small: this is a scan, and it runs rarely. */
+    private static final int MEMORIAL_SCAN = 24;
+    private static final int MEMORIAL_SCAN_Y = 6;
+
     private static long cd(long base) { return (long) (base * Config.brainInitiativeCooldownMult()); }
 
     /** Vanilla fire blocks (normal + soul). The mod adds no fire blocks of its own; other mods' fire is ignored. */
@@ -81,6 +85,7 @@ public final class BrainReflexes {
         int firstHurtFiredStage;             // the stage at which the golem-factory reflex last fired (0 = never)
         long cdPeacetime, cdGuard, cdGolem, cdBarracks, cdLure; // game-time each cooldown expires
         long cdFireExtinguish, cdMegaExpansion;                 // game-time the fire-douse / mega-expansion cooldowns expire
+        long cdRevive;                                          // game-time the memorial-revival cooldown expires
         final ArrayDeque<String> log = new ArrayDeque<>();      // last 10 reflex lines, newest last
     }
 
@@ -332,6 +337,27 @@ public final class BrainReflexes {
             }
         }
 
+        // A0 (any stage): a grave in reach -> 1 gem raises whoever lies in it.
+        //
+        // The cheapest thing the village ever buys, and the most on-brand: it would rather have its people
+        // back than anything else a gem can pay for. The spirit does the work, so the villager walks out of
+        // the stone rather than blinking into existence.
+        if (now >= s.cdRevive && econ.getEmeralds() >= 1) {
+            BlockPos grave = nearestOccupiedMemorial(level, brain);
+            if (grave != null && econ.spendEmeralds(1)) {
+                VillageSpiritEntity spirit = ModEntities.VILLAGE_SPIRIT.get().create(level);
+                if (spirit != null) {
+                    spirit.moveTo(brain.getX() + 0.5, brain.getY() + 1.5, brain.getZ() + 0.5,
+                            level.random.nextFloat() * 360.0F, 0.0F);
+                    spirit.setOrigin(brain);
+                    spirit.setErrand(grave);
+                    level.addFreshEntity(spirit);
+                    s.cdRevive = now + cd(CD_5M);
+                    log(s, level, "Spirit sent to a grave (-1)");
+                }
+            }
+        }
+
         // A1 (stage 1+): peace (no villager killed in 10 min) -> +1 villager inside + a settler founds a house
         //                (blue TNT) outside. 5 gems, 10-min cooldown, off at 100+ beds.
         if (stage >= 1 && now >= s.cdPeacetime && beds < BED_CAP && (now - s.lastVillagerKill) > WIN_10M
@@ -342,6 +368,35 @@ public final class BrainReflexes {
             s.cdPeacetime = now + cd(CD_10M);
             log(s, level, "Villager + house settler (-5)");
         }
+    }
+
+    /**
+     * The nearest memorial with someone in it, within the brain's influence radius.
+     *
+     * <p>Bounded and throttled: this only runs when the node can afford the gem and its cooldown is up, and
+     * it walks a {@code MEMORIAL_SCAN}-radius box of block entities rather than the world. Memorials are
+     * block entities, so the level's own per-chunk map answers this without a block scan.
+     */
+    private static BlockPos nearestOccupiedMemorial(ServerLevel level, BlockPos brain) {
+        int r = MEMORIAL_SCAN;
+        BlockPos best = null;
+        double bestD = Double.MAX_VALUE;
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int dx = -r; dx <= r; dx += 1) {
+            for (int dz = -r; dz <= r; dz += 1) {
+                for (int dy = -MEMORIAL_SCAN_Y; dy <= MEMORIAL_SCAN_Y; dy++) {
+                    m.set(brain.getX() + dx, brain.getY() + dy, brain.getZ() + dz);
+                    if (!level.isLoaded(m)) continue;
+                    if (!level.getBlockState(m).is(ModBlocks.MEMORIAL.get())) continue;
+                    if (!(level.getBlockEntity(m) instanceof MemorialBlockEntity grave) || !grave.hasOccupant()) {
+                        continue;
+                    }
+                    double d = m.distSqr(brain);
+                    if (d < bestD) { bestD = d; best = m.immutable(); }
+                }
+            }
+        }
+        return best;
     }
 
     /** Douse all vanilla fire within {@code radius} (horizontal) and a +/-32 Y band of the brain. Whole chunk

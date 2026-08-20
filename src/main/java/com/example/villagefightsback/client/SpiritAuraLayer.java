@@ -61,6 +61,9 @@ public class SpiritAuraLayer extends RenderLayer<Allay, AllayModel> {
                        float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks,
                        float netHeadYaw, float headPitch) {
         if (entity.isInvisible()) return;
+        // The founding spirit carries a village and glows for it. One bought to raise a single villager is
+        // running an errand and looks like any other allay.
+        if (entity instanceof com.example.villagefightsback.VillageSpiritEntity vs && vs.isErrand()) return;
 
         // Gentle breathing, so the halo is alive without strobing.
         float pulse = 0.55F + 0.25F * Mth.sin(ageInTicks * 0.15F);

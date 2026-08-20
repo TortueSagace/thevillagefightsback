@@ -79,6 +79,12 @@ public final class ModNetwork {
                 .decoder(ChooseDifficultyPacket::decode)
                 .consumerMainThread(ChooseDifficultyPacket::handle)
                 .add();
+        CHANNEL.messageBuilder(ChooseExperiencePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ChooseExperiencePacket::encode)
+                .decoder(ChooseExperiencePacket::decode)
+                .consumerMainThread(ChooseExperiencePacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(ChooseModePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ChooseModePacket::encode)
                 .decoder(ChooseModePacket::decode)
