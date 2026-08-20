@@ -63,6 +63,8 @@ public class VillageSpiritEntity extends Allay {
 
     /** How far above the ground it cruises while searching. */
     private static final int CRUISE_HEIGHT = 10;
+    /** ...and how far a restoring spirit lifts off before it drops back onto its own brain. */
+    private static final int RESTORE_RISE = 10;
     /** It must be airborne at least this long before it is allowed to settle. */
     private static final int MIN_SEARCH_TICKS = 20 * 20;      // 20 seconds
     /** ...and after this long it settles wherever it is, ideal or not. */
@@ -95,6 +97,16 @@ public class VillageSpiritEntity extends Allay {
      * is running an errand.
      */
     private BlockPos errand;
+    /**
+     * The husk to fly back to and wake, or null for the founding flight.
+     *
+     * <p>Set when the husk was one the world was found with rather than one that died (see
+     * {@link DeadBrainNodeBlock#FOUND}). There is already a village standing here, so there is nothing to
+     * look for: the spirit rises {@value #RESTORE_RISE} blocks at most, comes straight back down to the same
+     * block and turns it into a living node. The site search, the steering and the whole founding state
+     * machine are skipped.
+     */
+    private BlockPos restore;
     /** Who fed the husk its golden apple, paid when (and only when) the new village is founded. */
     private java.util.UUID reviver;
     private int airTicks;
@@ -126,6 +138,11 @@ public class VillageSpiritEntity extends Allay {
     /** Remember who bought this flight, so founding the village can pay them back. */
     public void setReviver(java.util.UUID id) {
         this.reviver = id;
+    }
+
+    /** Send it back to {@code husk} to wake it, instead of carrying the village somewhere else. */
+    public void setRestore(BlockPos husk) {
+        this.restore = husk.immutable();
     }
 
     /** Send it to raise the dead at {@code memorial} instead of founding a village. */
@@ -228,6 +245,7 @@ public class VillageSpiritEntity extends Allay {
         airTicks++;
 
         if (errand != null) { runErrand(sl); return; }
+        if (restore != null) { runRestore(sl); return; }
 
         switch (phase) {
             case ASCEND -> {
@@ -319,6 +337,86 @@ public class VillageSpiritEntity extends Allay {
         this.hasImpulse = true;
         this.setYRot((float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F);
         this.yBodyRot = this.getYRot();
+    }
+
+    /**
+     * Up, then straight back down onto the brain it rose from.
+     *
+     * <p>Deliberately not the founding flight in miniature: there is no steering, no site test and no
+     * minimum time aloft, because the site was decided the day the village was built. The lift-off is
+     * theatre -- the spirit has to be seen leaving the block before it can be seen returning to it.
+     *
+     * <p>The climb stops at {@value #RESTORE_RISE} blocks, OR as soon as it stops gaining height, OR at the
+     * ordinary ascend timeout. A brain under a roof is completely normal (villages have roofs), and without
+     * the middle test the spirit would grind against the ceiling for the full timeout every time.
+     */
+    private void runRestore(ServerLevel sl) {
+        if (phase == Phase.ASCEND) {
+            boolean gaining = Double.isNaN(lastY) || this.getY() > lastY + 0.01;
+            wedgedTicks = gaining ? 0 : wedgedTicks + 1;
+            lastY = this.getY();
+            if (this.getY() < restore.getY() + 1.0 + RESTORE_RISE
+                    && wedgedTicks < WEDGED_TICKS && airTicks <= ASCEND_TIMEOUT) {
+                this.setDeltaMovement(0.0, SPEED, 0.0);
+                this.hasImpulse = true;
+                return;
+            }
+            phase = Phase.DESCEND;
+        }
+
+        double dx = restore.getX() + 0.5 - this.getX();
+        double dy = restore.getY() + 1.1 - this.getY();
+        double dz = restore.getZ() + 0.5 - this.getZ();
+        double d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 > 1.2 * 1.2) {
+            double len = Math.sqrt(d2);
+            this.setDeltaMovement(dx / len * SPEED, dy / len * SPEED, dz / len * SPEED);
+            this.hasImpulse = true;
+            return;
+        }
+        relight(sl);
+    }
+
+    /**
+     * Contact: the husk wakes up. {@code onPlace} on the living node registers the village, and
+     * {@code onRemove} on the husk drops the dead claim, so one {@code setBlock} is the whole handover.
+     */
+    private void relight(ServerLevel sl) {
+        if (!sl.getBlockState(restore).is(ModBlocks.DEAD_BRAIN_NODE.get())) {
+            // Somebody broke the husk while the spirit was in the air. The apple was still spent, so rather
+            // than waste it the spirit falls back to the founding flight and carries the village elsewhere.
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] the husk at {} was gone when its Village Spirit came back; "
+                    + "it goes looking for a new home instead.", restore);
+            restore = null;
+            phase = Phase.SEARCH;
+            return;
+        }
+        sl.setBlock(restore, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3);
+        sl.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                restore.getX() + 0.5, restore.getY() + 1.2, restore.getZ() + 0.5, 40, 0.6, 0.6, 0.6, 0.02);
+        sl.playSound(null, restore, SoundEvents.ALLAY_ITEM_GIVEN, SoundSource.NEUTRAL, 1.0F, 1.0F);
+        sl.players().forEach(pl -> pl.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                "§aThe village brain beats again."), false));
+        TheVillageFightsBack.LOGGER.info(
+                "[The Village Fights Back] a Village Spirit woke the brain node at {}.", restore);
+        payReviver(sl);
+        this.discard();
+    }
+
+    /**
+     * Killing it turns the world over, exactly as falling into the void with Darius' Special Sauce does.
+     *
+     * <p>Shooting the spirit down is what ends a village for good, and until now it cost nothing to do and
+     * looked like nothing happening -- a small blue thing stops flying. The dimension going upside down for
+     * five seconds is the village's answer, and it reuses the reversal already built for the Special Sauce
+     * rather than inventing a second one. The camera roll still honours
+     * {@code reversed_gravity_flips_screen}; that check lives inside the broadcast.
+     */
+    @Override
+    public void die(net.minecraft.world.damagesource.DamageSource cause) {
+        super.die(cause);
+        if (this.level() instanceof ServerLevel sl) ReversedGravity.flip(sl);
     }
 
     /** {@value #CRUISE_HEIGHT} above the ground, or as high as the dimension's ceiling allows. */
@@ -463,13 +561,23 @@ public class VillageSpiritEntity extends Allay {
         // Pay the player who fed the husk. Deliberately on ARRIVAL rather than on the apple: the apple buys an
         // attempt, and a spirit shot down in flight founds nothing -- the village standing again is the thing
         // being rewarded. On both experiences, since bringing a village back is worth the same either way.
-        if (reviver != null) {
-            net.minecraft.server.level.ServerPlayer p = sl.getServer().getPlayerList().getPlayer(reviver);
-            if (p != null) {
-                ReputationData.get(sl.getServer()).add(p, REVIVE_REWARD, "brought a village back to life");
-            }
-        }
+        payReviver(sl);
         this.discard();
+    }
+
+    /**
+     * Pay whoever fed the husk its golden apple.
+     *
+     * <p>Deliberately on ARRIVAL rather than on the apple: the apple buys an attempt, and a spirit shot down
+     * in flight leaves nothing standing. A village saved in place and a village founded anew are worth the
+     * same {@value #REVIVE_REWARD}, because the player did the same thing to earn either.
+     */
+    private void payReviver(ServerLevel sl) {
+        if (reviver == null) return;
+        net.minecraft.server.level.ServerPlayer p = sl.getServer().getPlayerList().getPlayer(reviver);
+        if (p != null) {
+            ReputationData.get(sl.getServer()).add(p, REVIVE_REWARD, "brought a village back to life");
+        }
     }
 
     // --- persistence -------------------------------------------------------------------------------
@@ -482,6 +590,7 @@ public class VillageSpiritEntity extends Allay {
         if (origin != null) tag.putLong("SpiritOrigin", origin.asLong());
         if (reviver != null) tag.putUUID("SpiritReviver", reviver);
         if (errand != null) tag.putLong("SpiritErrand", errand.asLong());
+        if (restore != null) tag.putLong("SpiritRestore", restore.asLong());
     }
 
     @Override
@@ -493,6 +602,7 @@ public class VillageSpiritEntity extends Allay {
         airTicks = tag.getInt("SpiritAirTicks");
         origin = tag.contains("SpiritOrigin") ? BlockPos.of(tag.getLong("SpiritOrigin")) : null;
         if (tag.contains("SpiritErrand")) setErrand(BlockPos.of(tag.getLong("SpiritErrand")));
+        restore = tag.contains("SpiritRestore") ? BlockPos.of(tag.getLong("SpiritRestore")) : null;
         reviver = tag.hasUUID("SpiritReviver") ? tag.getUUID("SpiritReviver") : null;
     }
 }

@@ -195,22 +195,28 @@ public final class UnleashedManager {
      * spirit actually founds the new village, not here -- the apple buys an attempt, and the reward is for
      * the village standing again. The spirit carries the UUID so the credit survives its flight.
      */
-    public static void spawnVillageSpirit(ServerLevel sl, BlockPos pos, net.minecraft.world.entity.player.Player reviver) {
+    public static void spawnVillageSpirit(ServerLevel sl, BlockPos pos, net.minecraft.world.entity.player.Player reviver,
+                                          boolean inPlace) {
         VillageSpiritEntity spirit = ModEntities.VILLAGE_SPIRIT.get().create(sl);
         if (spirit == null) return;
         spirit.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, sl.random.nextFloat() * 360.0F, 0.0F);
         spirit.setOrigin(pos);
+        if (inPlace) spirit.setRestore(pos);       // a found village: it comes straight back to this block
         if (reviver != null) spirit.setReviver(reviver.getUUID());
         spirit.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
         sl.addFreshEntity(spirit);
 
-        sl.setBlock(pos, ModBlocks.DEBRIS.get().defaultBlockState(), 3);   // the husk is spent
+        // The husk is spent -- unless the spirit is coming back to it. A found village's brain is
+        // re-lit in place, so crumbling it here would destroy the very block the spirit is flying home to.
+        if (!inPlace) sl.setBlock(pos, ModBlocks.DEBRIS.get().defaultBlockState(), 3);
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
                 pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, 40, 0.5, 0.7, 0.5, 0.02);
         sl.playSound(null, pos, net.minecraft.sounds.SoundEvents.ALLAY_AMBIENT_WITHOUT_ITEM,
                 net.minecraft.sounds.SoundSource.NEUTRAL, 1.2F, 0.8F);
         sl.players().forEach(pl -> pl.displayClientMessage(Component.literal(
-                "§bA Village Spirit rises, and drifts away to look for a new home."), false));
+                inPlace
+                ? "§bA Village Spirit rises from the dead brain, and circles back to wake it."
+                : "§bA Village Spirit rises, and drifts away to look for a new home."), false));
     }
 
     /** Emerge the boss at {@code pos} with the dramatic intro. Called from VillageBrainNodeBlock#onRemove. */

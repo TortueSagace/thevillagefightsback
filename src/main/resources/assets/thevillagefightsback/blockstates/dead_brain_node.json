@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "thevillagefightsback:block/dead_brain_node" }
+    "found=false": { "model": "thevillagefightsback:block/dead_brain_node" },
+    "found=true": { "model": "thevillagefightsback:block/dead_brain_node" }
   }
 }

@@ -38,8 +38,40 @@ import net.minecraft.world.phys.BlockHitResult;
  * never comes. Breaking it ends that village for good.
  */
 public class DeadBrainNodeBlock extends Block {
+    /**
+     * True for a husk that was never alive: the dead brain a Survival village is FOUND with.
+     *
+     * <p>The three ways a husk comes to exist want two different revivals, and this is what tells them apart:
+     * <ul>
+     *   <li><b>found</b> ({@code true}) -- placed dead by {@code BrainNodeEvents.tryPlaceBrainNode} when a
+     *       Survival village is first serviced. There is a whole village standing around it, so the spirit
+     *       has nowhere better to be: it lifts off, drops straight back and re-lights this same block.</li>
+     *   <li><b>placed</b> ({@code false}) -- a player put the item down. A block item always places the
+     *       default state, so this needs no code of its own.</li>
+     *   <li><b>died</b> ({@code false}) -- a living node was destroyed and
+     *       {@code UnleashedManager.leaveDeadNode} left the husk. Its village is what killed it; there is
+     *       nothing here worth staying for.</li>
+     * </ul>
+     *
+     * <p>A block state property rather than an entry in {@link BrainNodeData}: it travels with the block, so
+     * it cannot drift out of step with the world the way a position-keyed set does, and it costs no saved
+     * data. Both variants use the same model -- this is bookkeeping, not a second appearance.
+     */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty FOUND =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("found");
+
+    /** How far out to look for a spirit already on its way back. See {@link #use}. */
+    private static final double SPIRIT_SEARCH = 16.0;
+
     public DeadBrainNodeBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(FOUND, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(
+            net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FOUND);
     }
 
     /**
@@ -88,8 +120,14 @@ public class DeadBrainNodeBlock extends Block {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;   // -> the message below
         }
         if (level.isClientSide) return ItemInteractionResult.SUCCESS;
+        ServerLevel sl = (ServerLevel) level;
+        if (spiritIncoming(sl, pos, state)) {
+            player.displayClientMessage(Component.literal(
+                    "§bA Village Spirit is already on its way back to this brain."), false);
+            return ItemInteractionResult.CONSUME;      // deliberately BEFORE the apple is taken
+        }
         if (!player.getAbilities().instabuild) held.shrink(1);
-        UnleashedManager.spawnVillageSpirit((ServerLevel) level, pos.immutable(), player);
+        UnleashedManager.spawnVillageSpirit(sl, pos.immutable(), player, state.getValue(FOUND));
         return ItemInteractionResult.CONSUME;
     }
 
@@ -106,5 +144,21 @@ public class DeadBrainNodeBlock extends Block {
                 "§8Dead brain node. §fFeed it a golden apple to summon a Village Spirit!"), false);
         sl.playSound(null, pos, SoundEvents.SCULK_BLOCK_HIT, SoundSource.BLOCKS, 0.8F, 0.6F);
         return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Is a spirit already flying this husk's revival?
+     *
+     * <p>Only a FOUND husk can be asked twice. The other kind crumbles to Debris the moment its spirit rises,
+     * so the block is simply not there to click again -- but a found one is deliberately left standing, and
+     * without this a second apple during those few seconds would raise a second spirit onto the same brain.
+     *
+     * <p>The query is a {@value #SPIRIT_SEARCH}-block box around one block, run only on a right-click with an
+     * apple in hand. That is a handful of chunk sections, not a world sweep.
+     */
+    private static boolean spiritIncoming(ServerLevel sl, BlockPos pos, BlockState state) {
+        if (!state.getValue(FOUND)) return false;
+        return !sl.getEntitiesOfClass(VillageSpiritEntity.class,
+                new net.minecraft.world.phys.AABB(pos).inflate(SPIRIT_SEARCH)).isEmpty();
     }
 }
