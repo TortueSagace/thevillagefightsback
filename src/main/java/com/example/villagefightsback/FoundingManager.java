@@ -66,6 +66,14 @@ public final class FoundingManager {
     public static boolean gate(MinecraftServer server, ServerLevel level, GlobalPos gp, BrainNodeData data) {
         if (JOBS.containsKey(gp)) return false;                 // founding underway -> not ready
         if (hasVillagersNear(level, gp.pos())) return true;     // a populated village -> normal flow
+        // A node a Village Spirit woke inside a village that was ALREADY standing never founds anything. The
+        // houses, the paths and the wall footprint are all there; seven settlers lighting Blue TNT would
+        // build a second village through the first. It gets the same headcount as plain villagers and the
+        // same four guards, and wall planning proceeds immediately rather than waiting on a founding job.
+        if (data.isRevived(gp)) {
+            repopulate(level, gp);
+            return true;
+        }
         startFounding(server, level, gp);
         return false;
     }
@@ -153,6 +161,40 @@ public final class FoundingManager {
         if (!level.getBlockState(p).isAir() || !level.getBlockState(p.above()).isAir()) return false;
         BlockPos below = p.below();
         return level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
+    }
+
+    /**
+     * Fill a revived village with people instead of founders.
+     *
+     * <p>The same ring, the same count and the same guards as {@link #startFounding} -- what is missing is
+     * everything that makes a settler a settler: no {@link FoundingSettlerGoal}, no Blue TNT, no founding
+     * flag, and no jack o'lantern under anybody's feet. A standing village does not want seven house-shaped
+     * explosions in it, and it does not want lanterns scattered through its streets either.
+     */
+    private static void repopulate(ServerLevel level, GlobalPos gp) {
+        BlockPos g = gp.pos();
+        int count = Math.max(1, (int) Math.round(SETTLERS * Config.settlerCountMult()));
+        int placed = 0;
+        for (int k = 0; k < count; k++) {
+            BlockPos spot = findSettlerSpot(level, g, k, count);
+            if (spot == null) continue;
+            spawnVillager(level, spot);
+            placed++;
+        }
+        spawnGuards(level, g);
+        TheVillageFightsBack.LOGGER.info(
+                "[The Village Fights Back] the woken brain node at {} took on {} villager(s) and its guards "
+                + "instead of founding.", g, placed);
+    }
+
+    /** A plain villager: none of a settler's freight, and nothing to undo once it lands. */
+    private static void spawnVillager(ServerLevel level, BlockPos spot) {
+        Villager v = com.example.villagefightsback.compat.MCACompat.createVillager(level);
+        if (v == null) return;
+        v.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, level.random.nextFloat() * 360.0F, 0.0F);
+        v.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.MOB_SUMMONED, null);
+        v.setBaby(false);
+        level.addFreshEntity(v);   // onEntityJoin arms it (nerfed) and adds the dormant goals
     }
 
     private static void spawnSettler(ServerLevel level, BlockPos spot, BlockPos brainNode) {

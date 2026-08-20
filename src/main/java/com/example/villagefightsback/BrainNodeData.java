@@ -68,6 +68,7 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> outerDefendersBuilt = new HashSet<>(); // brainNodes whose OUTER-wall turrets are placed
     private final Set<GlobalPos> domeBuilt = new HashSet<>();       // brainNodes whose level-4 glass dome is placed
     private final Set<GlobalPos> expanded = new HashSet<>();        // brainNodes that have run their stage-3 expansion
+    private final Set<GlobalPos> revived = new HashSet<>();         // brainNodes woken inside a village that was already there
     private final Map<GlobalPos, java.util.UUID> bellPlacers = new HashMap<>(); // bell pos -> player who placed it
     private final Map<GlobalPos, GlobalPos> nodeFurnaces = new HashMap<>(); // brainNode -> the ONE furnace it fuels
 
@@ -314,6 +315,19 @@ public class BrainNodeData extends SavedData {
     public boolean isExpanded(GlobalPos brainNode) { return expanded.contains(brainNode); }
     public void markExpanded(GlobalPos brainNode) { if (expanded.add(brainNode)) setDirty(); }
 
+    // --- woken by a Village Spirit inside a village that was already standing ---
+
+    /**
+     * True for a node a spirit re-lit in place rather than one planted on open ground.
+     *
+     * <p>Deliberately NOT cleared by {@link #eraseVillage}, unlike every once-only flag above it. Those record
+     * what this node has DONE, and erasing the village should make it do all of it again. This one records
+     * what is on the ground around it, which no amount of erasing changes: the houses are still there, so
+     * settlers would still build a second village through the first.
+     */
+    public boolean isRevived(GlobalPos brainNode) { return revived.contains(brainNode); }
+    public void markRevived(GlobalPos brainNode) { if (revived.add(brainNode)) setDirty(); }
+
     // --- who placed a village bell (so the brain node that rises there rewards them) ---
 
     /**
@@ -360,6 +374,7 @@ public class BrainNodeData extends SavedData {
         readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
         readPositions(tag, "dome", d.domeBuilt);
         readPositions(tag, "expanded", d.expanded);
+        readPositions(tag, "revived", d.revived);
         ListTag econList = tag.getList("econs", Tag.TAG_COMPOUND);
         for (int i = 0; i < econList.size(); i++) {
             CompoundTag c = econList.getCompound(i);
@@ -421,6 +436,7 @@ public class BrainNodeData extends SavedData {
         writePositions(tag, "outerDefenders", outerDefendersBuilt);
         writePositions(tag, "dome", domeBuilt);
         writePositions(tag, "expanded", expanded);
+        writePositions(tag, "revived", revived);
         ListTag econList = new ListTag();
         for (Map.Entry<GlobalPos, Econ> e : econs.entrySet()) {
             CompoundTag c = new CompoundTag();

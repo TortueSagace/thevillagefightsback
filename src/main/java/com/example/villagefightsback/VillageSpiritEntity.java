@@ -393,6 +393,9 @@ public class VillageSpiritEntity extends Allay {
             return;
         }
         sl.setBlock(restore, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3);
+        // The village around it never went anywhere, so this node must never found one. See
+        // FoundingManager.gate: it repopulates instead of dispatching settlers.
+        BrainNodeData.get(sl.getServer()).markRevived(GlobalPos.of(sl.dimension(), restore));
         sl.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
                 restore.getX() + 0.5, restore.getY() + 1.2, restore.getZ() + 0.5, 40, 0.6, 0.6, 0.6, 0.02);
         sl.playSound(null, restore, SoundEvents.ALLAY_ITEM_GIVEN, SoundSource.NEUTRAL, 1.0F, 1.0F);
@@ -506,6 +509,16 @@ public class VillageSpiritEntity extends Allay {
     private boolean siteIsGood(ServerLevel sl, BlockPos at) {
         if (airTicks >= RELAX_TICKS) return true;
 
+        // Not over open water. The heightmap column is the one cruiseY already reads, so this is an array
+        // lookup and one block read -- the cheapest test here, and it goes first for that reason. It is only
+        // a PREFERENCE: past RELAX_TICKS the return above skips it, and an all-ocean search would otherwise
+        // circle for ever. What stops the node ending up on a seabed in that case is floorUnder, which lands
+        // it on the surface rather than under it.
+        int ground = sl.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at.getX(), at.getZ());
+        if (!sl.getBlockState(new BlockPos(at.getX(), ground - 1, at.getZ())).getFluidState().isEmpty()) {
+            return false;
+        }
+
         AABB box = new AABB(at).inflate(CLEAR_RADIUS);
         if (!sl.getEntitiesOfClass(LivingEntity.class, box,
                 e -> e.isAlive() && (e instanceof Enemy)).isEmpty()) {
@@ -548,6 +561,12 @@ public class VillageSpiritEntity extends Allay {
             m.move(0, -1, 0);
             if (!sl.isLoaded(m)) return null;
             BlockState s = sl.getBlockState(m);
+            // Water does not block motion, so a plain search for the first solid block walks straight down
+            // through a lake and reports the seabed -- and the node was then planted at the bottom of it,
+            // drowned, with the whole village to follow. The surface counts as the floor instead: the caller
+            // plants one block above whatever comes back, which puts the node on top of the water rather
+            // than under it. Only a fallback; siteIsGood turns down open water while there is still time.
+            if (!s.getFluidState().isEmpty()) return m.immutable();
             if (s.blocksMotion()) return m.immutable();
         }
         return null;
