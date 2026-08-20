@@ -114,8 +114,13 @@ public class LimboScytheItem extends HoeItem {
         return InteractionResult.CONSUME;
     }
 
-    /** Empty this mod's own memorial and release whoever lies in it. */
-    private static boolean raiseFromMemorial(ServerLevel level, BlockPos pos) {
+    /**
+     * Empty this mod's own memorial and release whoever lies in it.
+     *
+     * <p>Public because the Village Spirit performs the same act when it reaches a grave (see
+     * {@link VillageSpiritEntity}); there is one way to raise the dead and this is it.
+     */
+    public static boolean raiseFromMemorial(ServerLevel level, BlockPos pos) {
         if (!(level.getBlockEntity(pos) instanceof MemorialBlockEntity grave)) return false;
         net.minecraft.nbt.CompoundTag occupant = grave.takeOccupant();
         if (occupant == null) return false;

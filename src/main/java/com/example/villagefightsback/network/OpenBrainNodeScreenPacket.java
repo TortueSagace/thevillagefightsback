@@ -26,7 +26,14 @@ public record OpenBrainNodeScreenPacket(
         int reputation, // the OPENING player's standing with the village faction (global, not per node)
         List<String> reflexLog, // the brain's last (up to 10) reflex (emerald-spend) log lines, oldest first
         List<String> organicLog, // the brain's last (up to 10) organic-spawn decisions, oldest first
-        List<String> reputationLog // the last (up to 10) reputation changes, world-wide, oldest first
+        List<String> reputationLog, // the last (up to 10) reputation changes, world-wide, oldest first
+        /**
+         * SURVIVAL only: the metal tribute line drawn under the emerald row, ready to draw. Empty in a
+         * Creative world, which is also how the screen knows to keep its old height. Preformatted on the
+         * server: the numbers and colours are decided there, and one string beats threading six counters
+         * through two packet formats and duplicating the rule client-side where it could drift.
+         */
+        String metalLine
 ) implements CustomPacketPayload {
     public static final Type<OpenBrainNodeScreenPacket> TYPE =
             new Type<>(TheVillageFightsBack.id("open_brain_node_screen"));
@@ -50,13 +57,15 @@ public record OpenBrainNodeScreenPacket(
         buf.writeCollection(this.reflexLog, (b, s) -> b.writeUtf(s));
         buf.writeCollection(this.organicLog, (b, s) -> b.writeUtf(s));
         buf.writeCollection(this.reputationLog, (b, s) -> b.writeUtf(s));
+        buf.writeUtf(this.metalLine);
     }
 
     private static OpenBrainNodeScreenPacket read(RegistryFriendlyByteBuf buf) {
         return new OpenBrainNodeScreenPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readInt(),
-                buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()));
+                buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()),
+                buf.readUtf());
     }
 
     @Override

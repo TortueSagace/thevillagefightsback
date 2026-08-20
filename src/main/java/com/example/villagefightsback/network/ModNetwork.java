@@ -35,6 +35,7 @@ public final class ModNetwork {
         registrar.playToServer(ChooseModePacket.TYPE, ChooseModePacket.STREAM_CODEC, ChooseModePacket::handle);
         // 1.4.0 / 1.5.0 additions.
         registrar.playToServer(ChooseDifficultyPacket.TYPE, ChooseDifficultyPacket.STREAM_CODEC, ChooseDifficultyPacket::handle);
+        registrar.playToServer(ChooseExperiencePacket.TYPE, ChooseExperiencePacket.STREAM_CODEC, ChooseExperiencePacket::handle);
         registrar.playToClient(ScytheSavePacket.TYPE, ScytheSavePacket.STREAM_CODEC, ScytheSavePacket::handle);
         registrar.playToClient(OpenReputationBookPacket.TYPE, OpenReputationBookPacket.STREAM_CODEC, OpenReputationBookPacket::handle);
         registrar.playToClient(ReversedGravityPacket.TYPE, ReversedGravityPacket.STREAM_CODEC, ReversedGravityPacket::handle);

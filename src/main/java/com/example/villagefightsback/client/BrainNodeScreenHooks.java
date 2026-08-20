@@ -15,6 +15,6 @@ public final class BrainNodeScreenHooks {
         Minecraft.getInstance().setScreen(new BrainNodeScreen(
                 msg.level(), msg.maxLevel(), msg.emeralds(), msg.costNext(),
                 msg.villagers(), msg.guards(), msg.golems(), msg.fertilized(), msg.organic(), msg.reputation(),
-                msg.reflexLog(), msg.organicLog(), msg.reputationLog()));
+                msg.reflexLog(), msg.organicLog(), msg.reputationLog(), msg.metalLine()));
     }
 }

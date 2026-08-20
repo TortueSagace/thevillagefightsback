@@ -42,6 +42,17 @@ public class DeadBrainNodeBlock extends Block {
         super(properties);
     }
 
+    /** Say what it wants the moment it is placed -- an inert block gives no other clue that it can be revived. */
+    @Override
+    public void setPlacedBy(net.minecraft.world.level.Level level, BlockPos pos, BlockState state,
+                            net.minecraft.world.entity.LivingEntity placer,
+                            net.minecraft.world.item.ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (level.isClientSide || !(placer instanceof Player p)) return;
+        p.displayClientMessage(Component.literal(
+                "§7Feed the dead brain a golden apple for an attempt to bring the Village back to life"), false);
+    }
+
     @Override
     public ItemInteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos,
                                            Player player, InteractionHand hand, BlockHitResult hit) {
@@ -50,7 +61,7 @@ public class DeadBrainNodeBlock extends Block {
         }
         if (level.isClientSide) return ItemInteractionResult.SUCCESS;
         if (!player.getAbilities().instabuild) held.shrink(1);
-        UnleashedManager.spawnVillageSpirit((ServerLevel) level, pos.immutable());
+        UnleashedManager.spawnVillageSpirit((ServerLevel) level, pos.immutable(), player);
         return ItemInteractionResult.CONSUME;
     }
 

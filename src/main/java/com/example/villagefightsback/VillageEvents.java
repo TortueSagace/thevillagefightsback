@@ -120,13 +120,16 @@ public final class VillageEvents {
             settler.goalSelector.addGoal(6, new com.example.villagefightsback.goal.SettlerGoal(settler));
         }
 
-        // A villager stranded OUTSIDE its wall heads back toward the brain node when it isn't fighting (low
-        // priority, so combat preempts it). Villagers never CROSS the wall to chase -- this only brings home
-        // one that is already out. Idempotent.
-        if (!emeraldger && !soldier && mob instanceof Villager strayed
-                && !hasGoal(strayed, com.example.villagefightsback.goal.ReturnToVillageGoal.class)) {
-            strayed.goalSelector.addGoal(5, new com.example.villagefightsback.goal.ReturnToVillageGoal(strayed));
-        }
+        // NO return-to-village goal. There used to be one: a villager outside its wall walked back toward the
+        // brain node. It was dropped because it caused the thing it was meant to prevent -- every returning
+        // villager aimed at the same single block, it fired the instant anyone stepped outside, and it never
+        // gave up, so villagers heaped around the core and looked stuck.
+        //
+        // Aiming at a gate instead would have fixed the pile, but not the root problem: deciding "is this
+        // villager outside the wall" means a point-in-polygon test against every column of a concave wall that
+        // runs to a thousand columns. There is no cheap way to ask that per villager per tick, and a goal that
+        // has to be throttled into vagueness to afford its own trigger is not worth having. Vanilla brings
+        // villagers home via their beds and POIs, which is what it did before this existed.
 
         // A unit that falls in a hole and stops getting anywhere is lifted back to its node. Villagers AND
         // guards -- both walk into pits, and neither noticed before. Idempotent, and cheap when nothing is

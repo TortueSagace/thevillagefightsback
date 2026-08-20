@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.FormattedCharSequence;
 
 /**
@@ -31,7 +32,20 @@ public class ReputationBookScreen extends Screen {
 
     private final int difficulty;
     private final int reputation;
-    private final List<List<Component>> pages;
+    /**
+     * One line: text, and optionally an item drawn beside it.
+     *
+     * <p>The same shape {@code LimboBookScreen} uses. Its pages have carried inline item icons since the book
+     * was written, and there is no reason this book should render them differently -- a reader flipping
+     * between the two should not meet two different idioms for "here is the thing I am talking about".
+     */
+    private record Line(Component text, ItemStack icon) {}
+
+    /** Width an icon reserves, and the least vertical space its row may take (a 16px item plus breathing). */
+    private static final int ICON_W = 20;
+    private static final int ICON_H = 18;
+
+    private final List<List<Line>> pages;
 
     private int leftPos;
     private int topPos;
@@ -101,13 +115,18 @@ public class ReputationBookScreen extends Screen {
                 leftPos + PANEL_W - MARGIN - font.width(standing), topPos + 10, 0xFFFFFFFF, false);
 
         int y = topPos + 30;
-        int wrap = PANEL_W - MARGIN * 2;
-        for (Component line : pages.get(page)) {
-            if (line.getString().isEmpty()) { y += 5; continue; }
-            for (FormattedCharSequence seq : font.split(line, wrap)) {
-                g.drawString(font, seq, leftPos + MARGIN, y, 0xFFFFFFFF, false);
+        for (Line line : pages.get(page)) {
+            if (line.text().getString().isEmpty() && line.icon() == null) { y += 5; continue; }
+            boolean hasIcon = line.icon() != null;
+            int rowTop = y;
+            if (hasIcon) g.renderItem(line.icon(), leftPos + MARGIN, y - 4);
+            int x = leftPos + MARGIN + (hasIcon ? ICON_W : 0);
+            int wrap = PANEL_W - MARGIN * 2 - (hasIcon ? ICON_W : 0);
+            for (FormattedCharSequence seq : font.split(line.text(), wrap)) {
+                g.drawString(font, seq, x, y, 0xFFFFFFFF, false);
                 y += 10;
             }
+            if (hasIcon) y = Math.max(y, rowTop + ICON_H);   // never let the next row clip a 16px item
         }
 
         if (pages.size() > 1) {
@@ -126,48 +145,56 @@ public class ReputationBookScreen extends Screen {
 
     // --- the text ------------------------------------------------------------------------------------
 
-    private static Component head(String s) {
-        return Component.literal(s).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+    private static Line head(String s) {
+        return new Line(Component.literal(s).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), null);
     }
 
-    private static Component body(String s) {
-        return Component.literal(s).withStyle(ChatFormatting.WHITE);
+    private static Line body(String s) {
+        return new Line(Component.literal(s).withStyle(ChatFormatting.WHITE), null);
     }
 
-    private static Component good(String s) {
-        return Component.literal(s).withStyle(ChatFormatting.GREEN);
+    private static Line good(String s) {
+        return new Line(Component.literal(s).withStyle(ChatFormatting.GREEN), null);
     }
 
-    private static Component bad(String s) {
-        return Component.literal(s).withStyle(ChatFormatting.RED);
+    private static Line bad(String s) {
+        return new Line(Component.literal(s).withStyle(ChatFormatting.RED), null);
     }
 
-    private static final Component BLANK = Component.literal("");
+    /** A line in an arbitrary style, for the two joke pages that do not fit head/body/good/bad. */
+    private static Line styled(String s, ChatFormatting... styles) {
+        return new Line(Component.literal(s).withStyle(styles), null);
+    }
 
-    private static List<List<Component>> buildPages(int difficulty) {
-        List<List<Component>> out = new ArrayList<>();
+    /** A text line with an item drawn beside it. */
+    private static Line item(net.minecraft.world.level.ItemLike what, String s) {
+        return new Line(Component.literal(s).withStyle(ChatFormatting.WHITE), new ItemStack(what));
+    }
+
+    private static final Line BLANK = new Line(Component.literal(""), null);
+
+    private static List<List<Line>> buildPages(int difficulty) {
+        List<List<Line>> out = new ArrayList<>();
 
         // Hostile (2) and Nightmare (3): standing is pinned, so there is nothing to teach.
         if (difficulty == 2) {
-            out.add(List.of(Component.literal(
-                    "You picked Hostile difficulty. You will remain forever an enemy of the village. Sorry!")
-                    .withStyle(ChatFormatting.RED)));
+            out.add(List.of(bad(
+                    "You picked Hostile difficulty. You will remain forever an enemy of the village. Sorry!")));
             return out;
         }
         if (difficulty == 3) {
-            out.add(List.of(Component.literal("HAHAHAHAHAHAHAHAHAHA")
-                            .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD),
+            out.add(List.of(
+                    styled("HAHAHAHAHAHAHAHAHAHA", ChatFormatting.DARK_RED, ChatFormatting.BOLD),
                     BLANK,
-                    Component.literal("You're so cooked. SO COOKED.").withStyle(ChatFormatting.DARK_RED),
+                    styled("You're so cooked. SO COOKED.", ChatFormatting.DARK_RED),
                     BLANK,
-                    Component.literal("Run, you fool").withStyle(ChatFormatting.DARK_RED,
-                            ChatFormatting.BOLD)));
+                    styled("Run, you fool", ChatFormatting.DARK_RED, ChatFormatting.ITALIC)));
             return out;
         }
 
         boolean peaceful = difficulty == 0;
 
-        List<Component> p1 = new ArrayList<>(List.of(
+        List<Line> p1 = new ArrayList<>(List.of(
                 head("What the village thinks of you"),
                 BLANK,
                 body("The village keeps a number. It goes up when you are useful to it and down when you are "
@@ -185,7 +212,7 @@ public class ReputationBookScreen extends Screen {
         }
         out.add(p1);
 
-        List<Component> p2 = new ArrayList<>(List.of(
+        List<Line> p2 = new ArrayList<>(List.of(
                 head("Earning it"),
                 BLANK,
                 good("+2   every trade with a villager"),
@@ -200,6 +227,25 @@ public class ReputationBookScreen extends Screen {
                 body("Nothing under 75 health is worth naming, and the village will not hire you while "
                         + "General Darius is already out.")));
         out.add(p2);
+
+        // The Survival tribute. Phrased as a condition rather than hidden behind a flag, because the book is
+        // the rules and a Creative player is entitled to know what the other experience asks for.
+        out.add(new ArrayList<>(List.of(
+                head("The metal tribute"),
+                BLANK,
+                body("In the Survival experience, emeralds alone no longer raise a village. Each stage also "
+                        + "asks for metal, fed to the brain node the same way:"),
+                BLANK,
+                item(net.minecraft.world.item.Items.EMERALD, "Emeralds: every stage, as always."),
+                item(net.minecraft.world.item.Items.COPPER_INGOT, "Stage 1 -> 2:  8 copper ingots"),
+                item(net.minecraft.world.item.Items.GOLD_INGOT, "Stage 2 -> 3:  8 copper, 8 gold ingots"),
+                item(com.example.villagefightsback.ModItems.LIMBO_INGOT.get(),
+                        "Stage 3 -> 4:  8 copper, 8 gold, 1 Limbo ingot"),
+                BLANK,
+                body("The tribute is held by the node until the emeralds are in too, and both are spent "
+                        + "together. Feed it anything and it will tell you what is still missing."),
+                BLANK,
+                body("In the Creative experience none of this applies: emeralds are the whole price."))));
 
         if (!peaceful) {
             out.add(new ArrayList<>(List.of(
@@ -223,7 +269,7 @@ public class ReputationBookScreen extends Screen {
                             + "up, not just reached."))));
         }
 
-        List<Component> p4 = new ArrayList<>(List.of(
+        List<Line> p4 = new ArrayList<>(List.of(
                 head("Hero of the Village"),
                 BLANK,
                 good("100    Hero I"),

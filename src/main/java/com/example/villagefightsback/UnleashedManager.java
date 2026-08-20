@@ -188,11 +188,19 @@ public final class UnleashedManager {
      * <p>Called from {@link DeadBrainNodeBlock} when a player feeds the husk a golden apple -- never
      * automatically.
      */
-    public static void spawnVillageSpirit(ServerLevel sl, BlockPos pos) {
+    /**
+     * Raise the scout, and remember who paid for it.
+     *
+     * <p>{@code reviver} is the player who fed the husk its golden apple. They are credited only when the
+     * spirit actually founds the new village, not here -- the apple buys an attempt, and the reward is for
+     * the village standing again. The spirit carries the UUID so the credit survives its flight.
+     */
+    public static void spawnVillageSpirit(ServerLevel sl, BlockPos pos, net.minecraft.world.entity.player.Player reviver) {
         VillageSpiritEntity spirit = ModEntities.VILLAGE_SPIRIT.get().create(sl);
         if (spirit == null) return;
         spirit.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, sl.random.nextFloat() * 360.0F, 0.0F);
         spirit.setOrigin(pos);
+        if (reviver != null) spirit.setReviver(reviver.getUUID());
         spirit.finalizeSpawn(sl, sl.getCurrentDifficultyAt(pos), MobSpawnType.EVENT, null);
         sl.addFreshEntity(spirit);
 

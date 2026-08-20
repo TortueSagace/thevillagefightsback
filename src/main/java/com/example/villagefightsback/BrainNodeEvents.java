@@ -851,6 +851,21 @@ public final class BrainNodeEvents {
         return beds;
     }
 
+    /**
+     * Tell everyone nearby that a dead brain node has turned up, once, where it is.
+     *
+     * <p>A dead node is inert and easy to walk past, and in Survival it is the single most important thing in
+     * a village -- so it announces itself rather than waiting to be noticed.
+     */
+    private static void announceDeadNode(ServerLevel level, BlockPos at) {
+        for (ServerPlayer p : level.players()) {
+            if (p.distanceToSqr(at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5) > 128.0 * 128.0) continue;
+            p.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    "§7You found a dead brain node at §f" + at.getX() + ", " + at.getY() + ", " + at.getZ()
+                    + "§7. Seems like this village had a hard time! You can still save it."), false);
+        }
+    }
+
     /** Remove any temporary cheap scaffolds the builders left while pillaring up to high courses. */
     private static void cleanupScaffolds(ServerLevel level, WallPlan plan) {
         for (BlockPos p : plan.scaffoldTemp()) {
@@ -956,6 +971,21 @@ public final class BrainNodeEvents {
         if (!level.getEntitiesOfClass(UnleashedBrainNodeEntity.class,
                 new net.minecraft.world.phys.AABB(spot).inflate(128.0)).isEmpty()) return;
 
+        // SURVIVAL: a village's brain is found DEAD. The player has to bring it back with a golden apple
+        // rather than inherit a working village, which is the whole point of that experience. Hostile and
+        // Nightmare are exempt -- the player has no interest in raising villages there, so the living node
+        // stands as it always did.
+        //
+        // A dead node is deliberately NOT registered in BrainNodeData (see DeadBrainNodeBlock), so nothing
+        // downstream treats this village as having a brain until somebody revives it.
+        Difficulty diff = Difficulty.current();
+        if (WorldModeData.isSurvival(level.getServer())
+                && diff != Difficulty.HOSTILE && diff != Difficulty.NIGHTMARE) {
+            level.setBlock(spot, ModBlocks.DEAD_BRAIN_NODE.get().defaultBlockState(), 3);
+            announceDeadNode(level, spot);
+            data.addServiced(key);
+            return;
+        }
         level.setBlock(spot, ModBlocks.VILLAGE_BRAIN_NODE.get().defaultBlockState(), 3); // onPlace tracks it
         data.addServiced(key);
         // Note: founding a village no longer grants Hero of the Village, and the SETTLEMENT PHASE banner is NOT

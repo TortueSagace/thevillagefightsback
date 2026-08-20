@@ -76,12 +76,14 @@ public final class FertileFlora {
      * a fertile tree or a fertile chorus flower at {@code converted.above()}. Cheap (a handful of block reads)
      * and fully guarded so it can never throw / lag the infection loop.
      */
-    public static void onConverted(ServerLevel level, BlockPos converted, StructureZones zones, String colour) {
+    public static void onConverted(ServerLevel level, BlockPos converted, StructureZones zones,
+                                   MarkerZones marks, String colour) {
         if (level == null || converted == null) return;
         try {
             BlockPos up = converted.above();
             if (!level.isLoaded(up)) return;
             if (zones.contains(up)) return; // never sprout inside one of the village's own buildings
+            if (marks.blocked(up.getX(), up.getY(), up.getZ())) return; // nor on ground a player has claimed
             // The conversion itself must be a SURFACE (open sky-step) -- air directly above the converted block.
             // (Plants standing on/near the new fertile soil are turned into fertile grass earlier, by
             //  InfectionManager.convertNearbyPlants, BEFORE the soil flips.)
