@@ -58,7 +58,35 @@ public final class WallPlanner {
 
     /** Compute the wall plan. {@code obsidian} = the stage-3 OUTER wall (obsidian + fake-obsidian gates). */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds, boolean obsidian) {
-        List<int[]> pts = mainCluster(distinctXz(beds), brainNode);
+        List<int[]> all = distinctXz(beds);
+        List<int[]> pts = mainCluster(all, brainNode);
+
+        // The village's OWN buildings are never outliers, whatever the clustering says.
+        //
+        // mainCluster keeps the component containing the brain node, linking points within CLUSTER_LINK (24).
+        // That is right for a pillager outpost's beds and wrong for the stage-3 expansion: settlers found that
+        // ring OUTSIDE the wall, the wall itself is not village material, and the gap from the ring back to the
+        // core routinely exceeds 24 -- so the entire ring, grand houses and all, formed its own component and
+        // was discarded. Sampling the buildings into the footprint did not help, because those samples landed
+        // in the discarded component too.
+        //
+        // So anything standing inside a claimed building is added back unconditionally. StructureZones is the
+        // register of what the village built, which is exactly the line between "ours, enclose it" and "someone
+        // else's, ignore it" -- and it is the same test that decides a build may not carve through another.
+        com.example.villagefightsback.infection.StructureZones zones =
+                com.example.villagefightsback.infection.StructureZones.get(level);
+        if (!zones.isEmpty()) {
+            java.util.Set<Long> have = new java.util.HashSet<>();
+            for (int[] q : pts) have.add((((long) q[0]) << 32) ^ (q[1] & 0xFFFFFFFFL));
+            for (int[] q : all) {
+                if (!have.add((((long) q[0]) << 32) ^ (q[1] & 0xFFFFFFFFL))) continue;
+                // Column test: the sample carries no Y, so ask the index over the building's own height band.
+                if (zones.intersectsForeign(q[0], level.getMinBuildHeight(), q[1],
+                        q[0], level.getMaxBuildHeight() - 1, q[1])) {
+                    pts.add(q);
+                }
+            }
+        }
         if (pts.size() < MIN_BEDS) return null;
 
         // The inner wall hugs the village concavely, and on a big sprawling village that hug is what busts the

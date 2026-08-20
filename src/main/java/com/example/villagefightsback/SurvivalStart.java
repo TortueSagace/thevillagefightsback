@@ -1,16 +1,9 @@
 package com.example.villagefightsback;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.MapItem;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
 /**
  * The Survival opening: a map instead of a bell.
@@ -27,9 +20,9 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 public final class SurvivalStart {
     private SurvivalStart() {}
 
-    /** How far out the cache is buried. Far enough to be a journey, close enough to be today's journey. */
-    private static final int MIN_DIST = 300;
-    private static final int MAX_DIST = 800;
+    /** How far out the cache is buried. A walk, not an expedition -- 100 blocks is the ceiling. */
+    private static final int MIN_DIST = 40;
+    private static final int MAX_DIST = 100;
 
     /** How deep below the surface the chest sits, so it reads as buried treasure rather than a gift box. */
     private static final int BURY_DEPTH = 4;
@@ -52,28 +45,15 @@ public final class SurvivalStart {
             return false;
         }
 
-        // PROMISED, not written. The chest is hundreds of blocks away and that chunk does not exist yet;
+        // PROMISED, not written. The chunk it goes in may well not exist yet;
         // setBlock there would need a synchronous generation that cannot happen inside a packet handler, so
         // the write landed on nothing and the whole opening quietly became a bell. SurvivalCache writes it
         // when the chunk genuinely loads -- which is when the player arrives to dig it up.
-        SurvivalCache.get(level).promise(spot);
+        //
+        // No map item and no shovel: SurvivalCache shows a live distance on the action bar instead, which
+        // needs no inventory slot and cannot be lost, dropped or filled out of existence by another mod.
+        SurvivalCache.get(level).promise(level, spot, player.getUUID());
 
-        ItemStack map = MapItem.create(level, spot.getX(), spot.getZ(), (byte) 2, true, true);
-        MapItem.renderBiomePreviewMap(level, map);
-        // 1.21: decoration types come from a registry, and the display name is a data component.
-        MapItemSavedData.addTargetDecoration(map, spot, "+",
-                net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_X);
-        map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-                Component.literal("Map to a Buried Brain Node"));
-        if (!player.getInventory().add(map)) player.drop(map, false);
-
-        // A shovel with it, so the instruction reads without a word of text: you have an X and something to
-        // dig with. Wooden on purpose -- it is a prompt, not a gift.
-        ItemStack shovel = new ItemStack(Items.WOODEN_SHOVEL);
-        if (!player.getInventory().add(shovel)) player.drop(shovel, false);
-
-        player.sendSystemMessage(Component.literal(
-                "§6Survival: §fthe means to found a village is buried out there. Follow the map, and bring the shovel."));
         TheVillageFightsBack.LOGGER.info(
                 "[The Village Fights Back] Survival starter cache promised at {} for {}.",
                 spot, player.getGameProfile().getName());
