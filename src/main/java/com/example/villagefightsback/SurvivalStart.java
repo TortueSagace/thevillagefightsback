@@ -46,6 +46,9 @@ public final class SurvivalStart {
         BlockPos spot = findSpot(level, player.blockPosition());
         if (spot == null) return false;
 
+        // Writing here loads and generates that one chunk, once. That is NOT the force-loading the mod
+        // otherwise forbids: no ticket is taken and nothing is kept ticking -- it is a single synchronous
+        // generation at world start, the same cost the player pays when they walk out to dig it up.
         level.setBlock(spot, Blocks.CHEST.defaultBlockState(), 3);
         if (!(level.getBlockEntity(spot) instanceof ChestBlockEntity chest)) return false;
         // A DEAD node, not a living one: Survival never hands the player a working village. The apple to wake
@@ -72,22 +75,27 @@ public final class SurvivalStart {
     /**
      * Somewhere to bury it: a random bearing, a random distance, and solid ground under the surface.
      *
-     * <p>Tries a handful of bearings rather than one, so a player who spawned beside an ocean still gets a
-     * cache. Only the surface height is consulted -- no chunk is force-loaded to look, because the heightmap
-     * is available for chunks the server will generate anyway when the player walks out there.
+     * <p>The height comes from the chunk GENERATOR, not from {@code level.getHeight}. That distinction is the
+     * whole reason this works: the cache is hundreds of blocks away, those chunks are not loaded, and
+     * {@code Level.getHeight} answers {@code getMinBuildHeight()} for an unloaded chunk rather than admitting
+     * it does not know. Every candidate was therefore rejected as "no room under it", all eight attempts, and
+     * the opening silently fell through to the bell. {@code getBaseHeight} computes the terrain height from
+     * the generator's own noise without generating anything, which is how vanilla locates structures and how
+     * a real treasure map picks its X.
      */
     private static BlockPos findSpot(ServerLevel level, BlockPos from) {
+        net.minecraft.world.level.chunk.ChunkGenerator gen = level.getChunkSource().getGenerator();
+        net.minecraft.world.level.levelgen.RandomState rs = level.getChunkSource().randomState();
         for (int attempt = 0; attempt < 8; attempt++) {
             double angle = level.random.nextDouble() * Math.PI * 2.0;
             int dist = MIN_DIST + level.random.nextInt(MAX_DIST - MIN_DIST);
             int x = from.getX() + (int) Math.round(Math.cos(angle) * dist);
             int z = from.getZ() + (int) Math.round(Math.sin(angle) * dist);
-            int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+            int surface = gen.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, rs);
             int y = surface - BURY_DEPTH;
-            if (y <= level.getMinBuildHeight() + 2) continue;      // no room under it
-            BlockPos spot = new BlockPos(x, y, z);
-            if (!level.getBlockState(spot).getFluidState().isEmpty()) continue;  // not in a lake or an ocean
-            return spot;
+            if (y <= level.getMinBuildHeight() + 2) continue;      // genuinely no room under it
+            if (surface <= level.getSeaLevel()) continue;          // under water: keep looking for dry land
+            return new BlockPos(x, y, z);
         }
         return null;
     }
