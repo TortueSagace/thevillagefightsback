@@ -411,11 +411,27 @@ public class VillageSpiritEntity extends Allay {
      * five seconds is the village's answer, and it reuses the reversal already built for the Special Sauce
      * rather than inventing a second one. The camera roll still honours
      * {@code reversed_gravity_flips_screen}; that check lives inside the broadcast.
+     *
+     * <h2>What must NOT flip the world</h2>
+     * <ul>
+     *   <li><b>A spirit that finished its job.</b> Founding a village, waking a husk and raising the dead all
+     *       end in {@code discard()}, which is {@code remove(RemovalReason.DISCARDED)} and never reaches this
+     *       method -- so a successful flight is silent. Anything added later that ends the flight must keep
+     *       using {@code discard()} and not {@code kill()}, which does route through here.</li>
+     *   <li><b>A spirit that died of the scenery.</b> Suffocation, drowning, fire, the void: nobody did those,
+     *       and turning the world upside down for them would read as a bug rather than a consequence.
+     *       A wedged spirit suffocating at 1 HP a tick is a real possibility -- it deliberately pushes upward
+     *       into ceilings -- and it takes exactly {@value #SPIRIT_HEALTH} ticks to kill one.</li>
+     * </ul>
+     * So the flip asks for a killer, not merely a death. Both the direct source and the causing one count, so
+     * an arrow answers for whoever loosed it and a dispenser still answers for whoever built it.
      */
     @Override
     public void die(net.minecraft.world.damagesource.DamageSource cause) {
         super.die(cause);
-        if (this.level() instanceof ServerLevel sl) ReversedGravity.flip(sl);
+        if (!(this.level() instanceof ServerLevel sl)) return;      // the client death event lands here too
+        if (cause.getEntity() == null && cause.getDirectEntity() == null) return;
+        ReversedGravity.flip(sl);
     }
 
     /** {@value #CRUISE_HEIGHT} above the ground, or as high as the dimension's ceiling allows. */
