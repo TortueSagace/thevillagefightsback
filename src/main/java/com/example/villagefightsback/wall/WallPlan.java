@@ -252,7 +252,9 @@ public final class WallPlan {
                 // A standing torch needs the cap below it (placed earlier this same pass) -- skip till it's there.
                 if (wb.type() == WallBlock.BlockType.STANDING_TORCH
                         && level.getBlockState(pos.below()).canBeReplaced()) continue;
-                if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
+                if (protectedBuilding(level, pos)) continue;    // never eat a claimed building
+                if (protectedBuilding(level, pos)) continue;        // never eat a claimed building
+            if (!level.getBlockState(pos).canBeReplaced()) level.destroyBlock(pos, false); // clear soft terrain
                 level.setBlock(pos,
                         net.minecraft.world.level.block.Block.updateFromNeighbourShapes(wb.toState(), level, pos), 3);
                 placed++;
@@ -260,6 +262,18 @@ public final class WallPlan {
             c++; // advance to the next course (its supports are now in place)
         }
         return placed;
+    }
+
+    /**
+     * Is this cell inside a building the village has claimed?
+     *
+     * <p>The planner already drops such columns, so in a settled village this answers false every time. It is
+     * the backstop for the case the planner cannot cover: a plan is fixed once and then raised over many
+     * seconds, and a settler can finish a house on the ring's line in between. Without it the raise would
+     * destroy that house, because its only other test is whether the block is replaceable.
+     */
+    private static boolean protectedBuilding(ServerLevel level, BlockPos pos) {
+        return com.example.villagefightsback.infection.StructureZones.get(level).contains(pos);
     }
 
     // Forward build cursor for the GRADUAL outer-wall raise (raiseDirectlyStep). Transient: on reload it resets

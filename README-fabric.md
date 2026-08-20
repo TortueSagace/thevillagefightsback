@@ -103,6 +103,20 @@ What the last run showed, and what each line is worth:
 
 Gameplay and client rendering are deliberately not covered by this; they are for a playtest.
 
+## Block flammability
+
+Forge asks a block (`isFlammable` / `getFlammability` / `getFireSpreadSpeed`); Fabric keeps a registry instead, so
+those overrides do not exist here and a block copied over from `main` carrying them will simply never burn --
+silently, with no compile error. `CheapScaffoldBlock.registerFlammability` and
+`FertileLeavesBlock.registerFlammability` are the Fabric halves, both called from the initializer after the blocks
+are registered.
+
+The leaves sweep `BuiltInRegistries.BLOCK` by class rather than naming variants, which keeps the property the
+Forge overrides had -- every variant covered, including ones added later. It copies vanilla oak leaves' own entry
+rather than repeating the numbers, because Fabric's two arguments are easy to swap and one wrong ordering gives
+leaves that catch like planks. The startup line reports the count at INFO on purpose: a count of 0 is what a
+broken initialiser order looks like, and silence would read exactly like success.
+
 ## Client check
 
 A first client launch (Fabric 1.20.1 + Fabric API + Guard Villagers, new world) came up clean:

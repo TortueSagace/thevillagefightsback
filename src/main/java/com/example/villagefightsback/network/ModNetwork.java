@@ -93,6 +93,9 @@ public final class ModNetwork {
         define("choose_difficulty", ChooseDifficultyPacket.class,
                 ChooseDifficultyPacket::encode, ChooseDifficultyPacket::decode,
                 ChooseDifficultyPacket::handle, false);
+        define("choose_experience", ChooseExperiencePacket.class,
+                ChooseExperiencePacket::encode, ChooseExperiencePacket::decode,
+                ChooseExperiencePacket::handle, false);
         define("choose_mode", ChooseModePacket.class,
                 ChooseModePacket::encode, ChooseModePacket::decode, ChooseModePacket::handle, false);
         define("open_reputation_book", OpenReputationBookPacket.class,

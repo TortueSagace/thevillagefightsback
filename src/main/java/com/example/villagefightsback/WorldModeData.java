@@ -30,6 +30,18 @@ public class WorldModeData extends SavedData {
     private boolean emeraldInfestation;
     /** -1 until the difficulty screen is answered, so an old save can be told from one that picked Peaceful. */
     private int difficulty = -1;
+
+    /**
+     * Survival experience, as opposed to Creative.
+     *
+     * <p>Creative is the mod as it has always been: you watch a village evolve. Survival makes the village
+     * something you have to work FOR -- brain nodes found in the world are dead until you revive one, the
+     * starter bell is replaced by a map to a buried one, and evolution costs metal as well as emeralds.
+     *
+     * <p>Defaults false, which is what every world created before this existed answers, so an old save keeps
+     * playing exactly as it did.
+     */
+    private boolean survival;
     /** True from world creation until BOTH creation screens have been answered. */
     private boolean setupPending;
 
@@ -128,6 +140,25 @@ public class WorldModeData extends SavedData {
         setupPending = false;   // both questions are in; the world may start
         setDirty();
         pushToConfig();
+    }
+
+    /** Record an answer to the EXPERIENCE screen, asked between the mode and difficulty screens. */
+    public void chooseExperience(boolean survivalExperience) {
+        this.survival = survivalExperience;
+        setDirty();
+        // setupPending is NOT cleared here: the difficulty answer still has to arrive, and on the Creative
+        // path it arrives a moment later as an automatic Neutral rather than from a screen.
+    }
+
+    /** True in a Survival-experience world. */
+    public boolean isSurvival() {
+        return survival;
+    }
+
+    /** Survival for the world this server is running, false if it was never asked. Null-safe for early calls. */
+    public static boolean isSurvival(MinecraftServer server) {
+        WorldModeData d = getExisting(server);
+        return d != null && d.survival;
     }
 
     /** The difficulty this world was created with, or null if it was never asked (a pre-existing save). */
@@ -234,6 +265,7 @@ public class WorldModeData extends SavedData {
         data.mobInfection = tag.getBoolean("MobInfection");
         data.emeraldInfestation = tag.getBoolean("EmeraldInfestation");
         data.difficulty = tag.contains("Difficulty") ? tag.getInt("Difficulty") : -1;
+        data.survival = tag.getBoolean("Survival");
         data.setupPending = tag.getBoolean("SetupPending");
         return data;
     }
@@ -246,6 +278,7 @@ public class WorldModeData extends SavedData {
         tag.putBoolean("MobInfection", mobInfection);
         tag.putBoolean("EmeraldInfestation", emeraldInfestation);
         tag.putInt("Difficulty", difficulty);
+        tag.putBoolean("Survival", survival);
         tag.putBoolean("SetupPending", setupPending);
         return tag;
     }

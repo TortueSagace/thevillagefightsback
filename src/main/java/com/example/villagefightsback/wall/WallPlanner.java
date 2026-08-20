@@ -32,6 +32,18 @@ public final class WallPlanner {
     private static final int CLEARANCE = 5;        // wall sits ~this many blocks out from the nearest bed
     private static final int FLOAT_GAP = 10;       // >= this much air below a surface => floating island, skip it
     private static final int MAX_GRID = 220 * 220; // footprint-grid cell cap (runaway-village guard)
+    /**
+     * The same guard for the stage-3 OUTER ring, which needs a far bigger one.
+     *
+     * <p>That survey scans {@code OUTER_SCAN_RADIUS} (140) blocks out, so its footprint spans up to 280 and
+     * its grid up to 294x294 = 86,436 cells -- comfortably over MAX_GRID. The obsidian plan therefore came
+     * back null EVERY time and no obsidian wall was ever built, for exactly the villages that had expanded
+     * far enough to want one. The inner wall never hit it because it only scans 80.
+     *
+     * <p>Sized to what that scan can actually produce, with headroom. The cost is one boolean[] of about
+     * 100 KB, allocated once per survey and thrown away, and the survey is throttled to every 200 ticks.
+     */
+    private static final int MAX_GRID_OUTER = 320 * 320;
     private static final int MAX_COLUMNS = 1000;    // perimeter cap
     private static final int MAX_BLOCKS = 6500;     // total placement cap
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
@@ -46,7 +58,35 @@ public final class WallPlanner {
 
     /** Compute the wall plan. {@code obsidian} = the stage-3 OUTER wall (obsidian + fake-obsidian gates). */
     public static WallPlan plan(ServerLevel level, GlobalPos brainNode, List<BlockPos> beds, boolean obsidian) {
-        List<int[]> pts = mainCluster(distinctXz(beds), brainNode);
+        List<int[]> all = distinctXz(beds);
+        List<int[]> pts = mainCluster(all, brainNode);
+
+        // The village's OWN buildings are never outliers, whatever the clustering says.
+        //
+        // mainCluster keeps the component containing the brain node, linking points within CLUSTER_LINK (24).
+        // That is right for a pillager outpost's beds and wrong for the stage-3 expansion: settlers found that
+        // ring OUTSIDE the wall, the wall itself is not village material, and the gap from the ring back to the
+        // core routinely exceeds 24 -- so the entire ring, grand houses and all, formed its own component and
+        // was discarded. Sampling the buildings into the footprint did not help, because those samples landed
+        // in the discarded component too.
+        //
+        // So anything standing inside a claimed building is added back unconditionally. StructureZones is the
+        // register of what the village built, which is exactly the line between "ours, enclose it" and "someone
+        // else's, ignore it" -- and it is the same test that decides a build may not carve through another.
+        com.example.villagefightsback.infection.StructureZones zones =
+                com.example.villagefightsback.infection.StructureZones.get(level);
+        if (!zones.isEmpty()) {
+            java.util.Set<Long> have = new java.util.HashSet<>();
+            for (int[] q : pts) have.add((((long) q[0]) << 32) ^ (q[1] & 0xFFFFFFFFL));
+            for (int[] q : all) {
+                if (!have.add((((long) q[0]) << 32) ^ (q[1] & 0xFFFFFFFFL))) continue;
+                // Column test: the sample carries no Y, so ask the index over the building's own height band.
+                if (zones.intersectsForeign(q[0], level.getMinBuildHeight(), q[1],
+                        q[0], level.getMaxBuildHeight() - 1, q[1])) {
+                    pts.add(q);
+                }
+            }
+        }
         if (pts.size() < MIN_BEDS) return null;
 
         // The inner wall hugs the village concavely, and on a big sprawling village that hug is what busts the
@@ -80,25 +120,37 @@ public final class WallPlanner {
         int pad = CLEARANCE + 2;
         int ox = minX - pad, oz = minZ - pad;                 // grid origin in world coords
         int W = (maxX + pad) - ox + 1, H = (maxZ + pad) - oz + 1;
-        if ((long) W * H > MAX_GRID) return null;             // village footprint too sprawling
+        if ((long) W * H > (obsidian ? MAX_GRID_OUTER : MAX_GRID)) return null; // footprint too sprawling
 
         boolean[] interior = new boolean[W * H];
         for (int[] p : pts) markDisc(interior, W, H, p[0] - ox, p[1] - oz);          // CLEARANCE around each bed
-        for (int[] e : spanningEdges(pts)) {                                          // ...and along the MST,
-            int[] a = pts.get(e[0]), b = pts.get(e[1]);                               // so scattered houses
-            rasterizeTube(interior, W, H, a[0] - ox, a[1] - oz, b[0] - ox, b[1] - oz); // enclose as ONE ring
+        // CONVEX (the stage-3 obsidian ring) skips all of this. The MST, the tubes it rasterises and the
+        // pocket fill exist to join scattered houses into ONE concave ring -- and convexify below subsumes
+        // every one of them: the hull of the disc-marked points is identical whether or not they were
+        // connected first.
+        //
+        // Skipping it is not a micro-optimisation. spanningEdges is Prim's algorithm, O(n^2), and the outer
+        // survey feeds it every village-material column within OUTER_SCAN_RADIUS (140) -- thousands of points,
+        // so tens of millions of distance computations in a single tick. That is the multi-second freeze on
+        // reaching stage 3, and for the convex case it bought nothing at all.
+        if (!convex) {
+            for (int[] e : spanningEdges(pts)) {                                          // ...and along the MST,
+                int[] a = pts.get(e[0]), b = pts.get(e[1]);                               // so scattered houses
+                rasterizeTube(interior, W, H, a[0] - ox, a[1] - oz, b[0] - ox, b[1] - oz); // enclose as ONE ring
+            }
+
+            // Close any pocket of non-interior cells the footprint completely surrounds. The boundary pass below
+            // calls ANY interior cell with an outside neighbour a wall column, and an enclosed courtyard is exactly
+            // that -- so without this a gap in the middle of a village grows its own little wall ring inside the
+            // real one. (The obsidian wall never showed this: convexify fills every pocket on its way past.)
+            fillEnclosed(interior, W, H);
         }
 
-        // Close any pocket of non-interior cells the footprint completely surrounds. The boundary pass below
-        // calls ANY interior cell with an outside neighbour a wall column, and an enclosed courtyard is exactly
-        // that -- so without this a gap in the middle of a village grows its own little wall ring inside the
-        // real one. (The obsidian wall never showed this: convexify fills every pocket on its way past.)
-        fillEnclosed(interior, W, H);
-
         // The OUTER (obsidian) wall is deliberately CONVEX -- the opposite of the inner wall's concave hug.
-        // Replace the concave footprint with its filled convex hull (which still clears every bed, since the
-        // hull is taken of the already-CLEARANCE-expanded cells). The inner wall also lands here on its
-        // too-sprawling retry (see plan).
+        // Replace the footprint with its filled convex hull (which still clears every bed, since the hull is
+        // taken of the already-CLEARANCE-expanded cells). The inner wall also lands here on its too-sprawling
+        // retry (see plan).
+
         if (convex) convexify(interior, W, H);
 
         // --- Boundary cells: an interior cell with a non-interior orthogonal neighbour. outward = the
@@ -165,6 +217,7 @@ public final class WallPlanner {
             if (!obsidian && Math.abs(foot[i] - brainNode.pos().getY()) > MAX_WALL_ELEVATION) {
                 skip[i] = true;
             }
+
         }
 
         List<List<WallBlock>> columns = new ArrayList<>();

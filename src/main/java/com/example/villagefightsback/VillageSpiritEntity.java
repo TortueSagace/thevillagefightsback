@@ -58,12 +58,19 @@ import com.example.villagefightsback.infection.StructureZones;
 public class VillageSpiritEntity extends Allay {
     public static final float SPIRIT_HEALTH = 10.0F;
 
+    /** Reputation for reviving a village -- enough to clear the 100 that Hero of the Village asks for. */
+    private static final int REVIVE_REWARD = 120;
+
     /** How far above the ground it cruises while searching. */
     private static final int CRUISE_HEIGHT = 10;
     /** It must be airborne at least this long before it is allowed to settle. */
     private static final int MIN_SEARCH_TICKS = 20 * 20;      // 20 seconds
     /** ...and after this long it settles wherever it is, ideal or not. */
     private static final int RELAX_TICKS = 60 * 20;           // 60 seconds
+    /** Ticks of climbing without gaining height before it assumes a ceiling and slides sideways. */
+    private static final int WEDGED_TICKS = 10;
+    /** ...and the hard cap on climbing at all. Past this it searches from whatever height it reached. */
+    private static final int ASCEND_TIMEOUT = 100;            // 5 seconds
     /** Radius that must be free of hostiles and alien blocks for a site to count. */
     private static final int CLEAR_RADIUS = 10;
     /** How often the (relatively expensive) steering + site evaluation runs. */
@@ -79,9 +86,23 @@ public class VillageSpiritEntity extends Allay {
 
     private Phase phase = Phase.ASCEND;
     private BlockPos origin;
+    /**
+     * A grave to fly to, or null for the founding flight.
+     *
+     * <p>Set when the brain node buys a resurrection: with an errand the spirit ignores the whole
+     * site-search state machine, beelines to the memorial and raises whoever lies in it. It is also what the
+     * renderer reads to withhold the halo -- the founding spirit carries a village and glows for it; this one
+     * is running an errand.
+     */
+    private BlockPos errand;
+    /** Who fed the husk its golden apple, paid when (and only when) the new village is founded. */
+    private java.util.UUID reviver;
     private int airTicks;
     /** Steering direction, recomputed every {@value #EVAL_INTERVAL} ticks and flown in between. */
     private Vec3 heading = Vec3.ZERO;
+    /** Height last tick and how long it has failed to gain any, for getting out from under a ceiling. */
+    private double lastY = Double.NaN;
+    private int wedgedTicks;
 
     public VillageSpiritEntity(EntityType<? extends VillageSpiritEntity> type, Level level) {
         super(type, level);
@@ -100,6 +121,32 @@ public class VillageSpiritEntity extends Allay {
     /** Where it started, so it can be made to travel a real distance rather than circle the ruin. */
     public void setOrigin(BlockPos pos) {
         this.origin = pos.immutable();
+    }
+
+    /** Remember who bought this flight, so founding the village can pay them back. */
+    public void setReviver(java.util.UUID id) {
+        this.reviver = id;
+    }
+
+    /** Send it to raise the dead at {@code memorial} instead of founding a village. */
+    public void setErrand(BlockPos memorial) {
+        this.errand = memorial.immutable();
+        this.entityData.set(DATA_ERRAND, true);
+    }
+
+    /** True for a spirit on a resurrection errand -- read on the client, which is where the halo is drawn. */
+    public boolean isErrand() {
+        return this.entityData.get(DATA_ERRAND);
+    }
+
+    private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_ERRAND =
+            net.minecraft.network.syncher.SynchedEntityData.defineId(
+                    VillageSpiritEntity.class, net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(DATA_ERRAND, false);
     }
 
     // --- everything an Allay does that this is not -------------------------------------------------
@@ -174,15 +221,36 @@ public class VillageSpiritEntity extends Allay {
 
     private void fly(ServerLevel sl) {
         if (origin == null) origin = this.blockPosition();
+        // Counted from the moment it appears, deliberately -- not from when it reaches cruising height. A
+        // spirit that never gets high still ages, so the 20-second minimum and the 60-second relaxation
+        // arrive on time and it settles somewhere rather than hovering under a ceiling for good.
         airTicks++;
+
+        if (errand != null) { runErrand(sl); return; }
 
         switch (phase) {
             case ASCEND -> {
                 int target = cruiseY(sl, this.blockPosition());
-                if (this.getY() >= target - 0.5) {
+                // Give up climbing once it is high enough, OR once it has spent long enough trying. A spirit
+                // that rose under an overhang used to push at it forever and never reach SEARCH at all, so it
+                // never founded anything. Cruising lower than intended is fine; never arriving is not.
+                if (this.getY() >= target - 0.5 || airTicks > ASCEND_TIMEOUT) {
                     phase = Phase.SEARCH;
                 } else {
-                    this.setDeltaMovement(0.0, SPEED, 0.0);
+                    // Not gaining height means something is directly overhead. Slide sideways to get out from
+                    // under it rather than grinding upward into the same block.
+                    boolean gaining = Double.isNaN(lastY) || this.getY() > lastY + 0.01;
+                    wedgedTicks = gaining ? 0 : wedgedTicks + 1;
+                    lastY = this.getY();
+                    if (wedgedTicks >= WEDGED_TICKS) {
+                        if (heading.lengthSqr() < 1.0E-4 || wedgedTicks % 20 == 0) {
+                            heading = new Vec3(this.random.nextDouble() * 2 - 1, 0.0,
+                                    this.random.nextDouble() * 2 - 1).normalize();
+                        }
+                        this.setDeltaMovement(heading.x * SPEED, SPEED * 0.5, heading.z * SPEED);
+                    } else {
+                        this.setDeltaMovement(0.0, SPEED, 0.0);
+                    }
                     this.hasImpulse = true;
                     return;
                 }
@@ -213,6 +281,43 @@ public class VillageSpiritEntity extends Allay {
             this.setYRot((float) (Math.atan2(heading.z, heading.x) * (180.0 / Math.PI)) - 90.0F);
             this.yBodyRot = this.getYRot();
         }
+    }
+
+    /**
+     * Fly to the grave and raise whoever lies in it.
+     *
+     * <p>No search, no scoring, no minimum flight: this spirit was bought for one job. It steers straight at
+     * the memorial, and on arrival hands off to the scythe's own resurrection so there is exactly one code
+     * path that opens a grave.
+     *
+     * <p>If the grave is gone or empty by the time it arrives -- someone else raised them, or broke it -- the
+     * spirit simply leaves. It does not fall back to founding a village, because the emerald was spent on a
+     * resurrection and quietly turning that into a new settlement is not what was paid for.
+     */
+    private void runErrand(ServerLevel sl) {
+        double dx = errand.getX() + 0.5 - this.getX();
+        double dy = errand.getY() + 0.9 - this.getY();
+        double dz = errand.getZ() + 0.5 - this.getZ();
+        double d2 = dx * dx + dy * dy + dz * dz;
+
+        if (d2 <= 1.4 * 1.4) {                              // arrived: contact with the stone
+            boolean raised = LimboScytheItem.raiseFromMemorial(sl, errand);
+            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                    errand.getX() + 0.5, errand.getY() + 1.0, errand.getZ() + 0.5, 30, 0.5, 0.6, 0.5, 0.02);
+            sl.playSound(null, errand, SoundEvents.ALLAY_ITEM_GIVEN, SoundSource.NEUTRAL, 1.0F, 1.2F);
+            if (raised) {
+                TheVillageFightsBack.LOGGER.info(
+                        "[The Village Fights Back] a Village Spirit raised the dead at {}.", errand);
+            }
+            this.discard();
+            return;
+        }
+
+        double len = Math.sqrt(d2);
+        this.setDeltaMovement(dx / len * SPEED, dy / len * SPEED, dz / len * SPEED);
+        this.hasImpulse = true;
+        this.setYRot((float) (Math.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F);
+        this.yBodyRot = this.getYRot();
     }
 
     /** {@value #CRUISE_HEIGHT} above the ground, or as high as the dimension's ceiling allows. */
@@ -353,6 +458,16 @@ public class VillageSpiritEntity extends Allay {
         TheVillageFightsBack.LOGGER.info(
                 "[The Village Fights Back] a Village Spirit founded a new village at {} after {}s aloft.",
                 at, airTicks / 20);
+
+        // Pay the player who fed the husk. Deliberately on ARRIVAL rather than on the apple: the apple buys an
+        // attempt, and a spirit shot down in flight founds nothing -- the village standing again is the thing
+        // being rewarded. On both experiences, since bringing a village back is worth the same either way.
+        if (reviver != null) {
+            net.minecraft.server.level.ServerPlayer p = sl.getServer().getPlayerList().getPlayer(reviver);
+            if (p != null) {
+                ReputationData.get(sl.getServer()).add(p, REVIVE_REWARD, "brought a village back to life");
+            }
+        }
         this.discard();
     }
 
@@ -364,6 +479,8 @@ public class VillageSpiritEntity extends Allay {
         tag.putInt("SpiritPhase", phase.ordinal());
         tag.putInt("SpiritAirTicks", airTicks);
         if (origin != null) tag.putLong("SpiritOrigin", origin.asLong());
+        if (reviver != null) tag.putUUID("SpiritReviver", reviver);
+        if (errand != null) tag.putLong("SpiritErrand", errand.asLong());
     }
 
     @Override
@@ -374,5 +491,7 @@ public class VillageSpiritEntity extends Allay {
         phase = (i >= 0 && i < all.length) ? all[i] : Phase.ASCEND;
         airTicks = tag.getInt("SpiritAirTicks");
         origin = tag.contains("SpiritOrigin") ? BlockPos.of(tag.getLong("SpiritOrigin")) : null;
+        if (tag.contains("SpiritErrand")) setErrand(BlockPos.of(tag.getLong("SpiritErrand")));
+        reviver = tag.hasUUID("SpiritReviver") ? tag.getUUID("SpiritReviver") : null;
     }
 }

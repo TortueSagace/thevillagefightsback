@@ -371,6 +371,9 @@ public final class InfectionManager {
     }
 
     public static void placeInfestedPath(ServerLevel level, BlockPos pos) {
+        // An emerald unit dying on a player's claim must not leave a proliferation source behind: this is the
+        // one infested-path write that does not come from the throttled pass, so it carries its own check.
+        if (MarkerZones.get(level).blocked(pos.getX(), pos.getY(), pos.getZ())) return;
         if (!com.example.villagefightsback.Config.emeraldInfestationEnabled()) return;
         if (!level.isLoaded(pos)) return;
         if (StructureZones.get(level).contains(pos)) return;   // never inside one of the village's own buildings
@@ -510,9 +513,18 @@ public final class InfectionManager {
             if (gs.isAir() || !gs.getFluidState().isEmpty() || !gs.blocksMotion()) continue; // need solid ground
             if (BlockMatcher.isInfection(gs)) return;                  // already ours
             if (StructureZones.get(level).contains(g)) return;         // never seed a path inside a building
+            if (MarkerZones.get(level).blocked(g.getX(), g.getY(), g.getZ())) return; // ...nor on a player's claim
             BlockState above = level.getBlockState(g.above());
             if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
-                level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
+                // The village's own path, in a random colour: this is the one place a village-only world
+                // gets any colour at all, since the coloured infested path only ever appears where an emerald
+                // unit died. Identical to an infested path to look at; the difference is that the brain cannot
+                // spawn emerald units above it, which follows from it never entering the tracked infested set.
+                String[] all = BlockMatcher.ALL_SUFFIXES;
+                String pathColour = com.example.villagefightsback.Config.monochromeGreen()
+                        ? "" : all[level.getRandom().nextInt(all.length)];
+                level.setBlock(g, coloured("village_path", pathColour,
+                        com.example.villagefightsback.ModBlocks.VILLAGE_PATH.get()).defaultBlockState(), 3);
                 inf.addPathHead(g.asLong());
                 return;
             }
@@ -537,7 +549,8 @@ public final class InfectionManager {
             if (res < 0) {
                 // spec 5: a path with NO viable extension, sitting over air/water, may drip a fertile sand below
                 BlockPos below = p.below();
-                if (level.isLoaded(below) && !zones.contains(below)) {
+                if (level.isLoaded(below) && !zones.contains(below)
+                        && !marks.blocked(below.getX(), below.getY(), below.getZ())) {
                     BlockState bs = level.getBlockState(below);
                     boolean voidOrWater = bs.isAir() || !bs.getFluidState().isEmpty();
                     if (voidOrWater && rnd.nextDouble() < SAND_DROP_CHANCE && BlockMatcher.fertileSand() != null) {
@@ -671,14 +684,21 @@ public final class InfectionManager {
                     if (conv != null) {
                         // Any small plant next to this new fertile block becomes fertile grass. Done BEFORE the
                         // soil flips so a plant standing on it is replaced (and survives) rather than popping off.
-                        convertNearbyPlants(level, inf, cand, zones, colour);
+                        convertNearbyPlants(level, inf, cand, zones, marks, colour);
                         conv = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(conv, level, cand);
-                        level.setBlock(cand, conv, 3); // updateFromNeighbourShapes -> fertile fences keep connections
+                        // Flag 3 notifies neighbours, which makes anything resting on this cell re-check its
+                        // support -- and redstone dust or a repeater sitting on top would drop, breaking the
+                        // circuit the infection just passed under. The fertile block is a full solid cube like
+                        // the one it replaces, so the component is still perfectly legal; it is only the update
+                        // that would have removed it. Placing with UPDATE_CLIENTS alone converts the ground and
+                        // leaves the contraption standing.
+                        int flags = BlockMatcher.isRedstone(level.getBlockState(cand.above())) ? 2 : 3;
+                        level.setBlock(cand, conv, flags); // updateFromNeighbourShapes -> fertile fences keep connections
                         inf.addFrontier(cand.asLong());
                         inf.incConverted();
                         if (richVariant) inf.addRich(cand.asLong());
                         // Sparse flora: a tiny chance to sprout a fertile tree / chorus on the new fertile ground.
-                        FertileFlora.onConverted(level, cand, zones, colour);
+                        FertileFlora.onConverted(level, cand, zones, marks, colour);
                     }
                 }
             }
@@ -721,7 +741,7 @@ public final class InfectionManager {
      *  block at {@code center} flips to fertile, so a plant standing on it is replaced (and survives on the new
      *  fertile soil) instead of popping off via vanilla canSurvive. Bounded: one 26-cell scan per conversion. */
     private static void convertNearbyPlants(ServerLevel level, InfectionData inf, BlockPos center,
-                                            StructureZones zones, String colour) {
+                                            StructureZones zones, MarkerZones marks, String colour) {
         BlockState fg = coloured("fertile_grass", colour,
                 com.example.villagefightsback.ModBlocks.FERTILE_GRASS.get()).defaultBlockState();
         BlockState fk = coloured("fertile_kelp", colour,
@@ -733,6 +753,7 @@ public final class InfectionManager {
             // This reaches one block PAST the converted cell, so it can poke into a building even when the cell
             // itself is outside one. Guard every write, not just the parent cell.
             if (zones.contains(m.getX(), m.getY(), m.getZ())) continue;
+            if (marks.blocked(m.getX(), m.getY(), m.getZ())) continue;   // a player has claimed this ground
             BlockState s = level.getBlockState(m);
             // Each plant JOINS THE FRONTIER. Without that it is an orphan: the engine never walks it, so the
             // ground beneath it is never converted -- which is why a flower turned into fertile grass left

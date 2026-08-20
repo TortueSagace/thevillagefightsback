@@ -18,7 +18,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * A village unit that has fallen in a hole and stopped getting anywhere is lifted back to its brain node.
  *
  * <p>Villagers walk into pits, into one-block gaps behind a wall course, into the crater a creeper left, and
- * once in they shuffle inside a single block forever. Nothing in the mod noticed: {@code ReturnToVillageGoal}
+ * once in they shuffle inside a single block forever. Nothing in the mod noticed: the old return-to-village goal
  * only fires for a villager OUTSIDE its wall, which is exactly the case a pit is not.
  *
  * <p>THE COST IS THE WHOLE DESIGN. This runs on every villager and every guard in the world, so the ordinary

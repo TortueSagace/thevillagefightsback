@@ -62,6 +62,11 @@ public class ChooseDifficultyPacket {
             // and the difficulty still read Normal. Every player online gets it, not just the one who
             // answered, since the answer applies to the whole world.
             for (ServerPlayer p : server.getPlayerList().getPlayers()) HostileStart.apply(p);
+            // ...and the opening kit, for the same reason: at login the answers did not exist, so a Survival
+            // player would have been handed the Creative bell before anyone said which world this was.
+            for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+                com.example.villagefightsback.StartingItems.grantStarterKit(p);
+            }
         });
         ctx.get().setPacketHandled(true);
     }

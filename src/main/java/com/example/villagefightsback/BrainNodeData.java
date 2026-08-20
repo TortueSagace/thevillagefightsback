@@ -51,6 +51,15 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed brainNode blocks
     private final Set<GlobalPos> nodes = new HashSet<>();         // placed node blocks (golem-factory/barracks/lure-tower): +10% sunset gems each, in radius
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a brainNode
+    /**
+     * Dead brain nodes: husks a village left behind, and the ones Survival finds in villages.
+     *
+     * <p>Kept apart from {@link #blocks()} on purpose -- a dead node must stay invisible to everything that
+     * asks "is there a brain in reach", which is what that set is for. This one exists for the single rule
+     * that a dead node SHOULD answer: a village with a husk in it already has a brain, dormant or not, so a
+     * bell there must not raise a second one.
+     */
+    private final Set<GlobalPos> deadNodes = new HashSet<>();
     private final Set<GlobalPos> announced = new HashSet<>();       // brain nodes whose discovery banner already fired (to any player)
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per brainNode
     private final Map<GlobalPos, WallPlan> outerWallPlans = new HashMap<>(); // stage-3 OUTER obsidian wall per brainNode
@@ -76,9 +85,65 @@ public class BrainNodeData extends SavedData {
         private int emeralds = 0;
         private long lastIncomeDay = Long.MIN_VALUE;
         private int organicPoints = 0; // ORGANIC MASS: a SEPARATE spawn-only currency (never touches level/emeralds)
+        // SURVIVAL only: the metal tribute a stage costs on top of its emeralds. Fed to the node like emeralds
+        // are, held until the stage they pay for is reached, and then consumed with it.
+        private int copper = 0, gold = 0, limbo = 0;
 
         public int getLevel() { return level; }
         public int getEmeralds() { return emeralds; }
+
+        public int getCopper() { return copper; }
+        public int getGold() { return gold; }
+        public int getLimbo() { return limbo; }
+
+        /**
+         * How much of {@code offered} the node will actually take: never more than the stage still wants.
+         *
+         * <p>Handing it a stack of 64 when 8 are needed should cost 8. Emeralds bank without limit because a
+         * surplus rolls into the next stage, but the metal tribute is a fixed per-stage price -- taking the
+         * whole stack would quietly eat 56 ingots for nothing.
+         */
+        public int wants(int offered, int have, int need) {
+            return Math.max(0, Math.min(offered, need - have));
+        }
+
+        /**
+         * Feed the node metal, taking only what the current stage still needs.
+         *
+         * @return how many stages it bought (metal alone can complete a stage whose emeralds are already in).
+         */
+        public int addMetal(int copperN, int goldN, int limboN) {
+            copper += copperN;
+            gold += goldN;
+            limbo += limboN;
+            setDirty();
+            return addEmeralds(0);   // re-run the promotion check: the emeralds may already be in
+        }
+
+        /** Copper the stage after {@code lvl} costs in Survival. */
+        public static int copperFor(int lvl) { return lvl >= 1 && lvl <= 3 ? 8 : 0; }
+        /** Gold the stage after {@code lvl} costs in Survival. */
+        public static int goldFor(int lvl) { return lvl >= 2 && lvl <= 3 ? 8 : 0; }
+        /** Limbo Ingots the stage after {@code lvl} costs in Survival. */
+        public static int limboFor(int lvl) { return lvl == 3 ? 1 : 0; }
+
+        /** Is the metal for the stage after {@code lvl} all in? */
+        public boolean hasMetalFor(int lvl) {
+            return copper >= copperFor(lvl) && gold >= goldFor(lvl) && limbo >= limboFor(lvl);
+        }
+
+        /**
+         * True in a Survival world, where a stage costs metal as well as emeralds.
+         *
+         * <p>Read from the running server rather than passed down: every caller of {@code addEmeralds} would
+         * otherwise have to know about it, and the mod already reaches for the server this way in the
+         * infection and expansion managers.
+         */
+        private static boolean survival() {
+            net.minecraft.server.MinecraftServer sv =
+                    com.example.villagefightsback.platform.ServerRef.getCurrentServer();
+            return sv != null && WorldModeData.isSurvival(sv);
+        }
 
         /** Organic mass: the brain's unit-spawn budget (1.1.2 organic system). Fully independent of emeralds/level. */
         public int getOrganicPoints() { return organicPoints; }
@@ -108,13 +173,22 @@ public class BrainNodeData extends SavedData {
          * lower phase banner (e.g. SETTLEMENT PHASE) is re-broadcast. Returns +levels gained, 0, or -levels lost.
          */
         public int addEmeralds(int n) {
-            if (n == 0) return 0;
             emeralds += n;
             int delta = 0;
-            if (n > 0) {
+            if (n >= 0) {
                 while (!isMaxLevel()) {
                     int cost = scaledCost(level);
                     if (emeralds < cost) break;
+                    // SURVIVAL: emeralds alone no longer buy a stage. The metal has to be in too, and it is
+                    // consumed with the emeralds so the next stage starts from nothing.
+                    boolean paid = !survival();
+                    if (!paid && hasMetalFor(level)) {
+                        copper -= copperFor(level);
+                        gold -= goldFor(level);
+                        limbo -= limboFor(level);
+                        paid = true;
+                    }
+                    if (!paid) break;
                     emeralds -= cost;
                     level++;
                     delta++;
@@ -192,6 +266,10 @@ public class BrainNodeData extends SavedData {
     public Set<GlobalPos> nodes() { return nodes; }
     public void addNode(GlobalPos pos) { if (nodes.add(pos)) setDirty(); }
     public void removeNode(GlobalPos pos) { if (nodes.remove(pos)) setDirty(); }
+
+    public Set<GlobalPos> deadNodes() { return deadNodes; }
+    public void addDeadNode(GlobalPos pos) { if (deadNodes.add(pos)) setDirty(); }
+    public void removeDeadNode(GlobalPos pos) { if (deadNodes.remove(pos)) setDirty(); }
 
     public boolean isServiced(GlobalPos center) { return servicedCenters.contains(center); }
     public void addServiced(GlobalPos center) { if (servicedCenters.add(center)) setDirty(); }
@@ -274,6 +352,7 @@ public class BrainNodeData extends SavedData {
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "nodes", d.nodes);
         readPositions(tag, "serviced", d.servicedCenters);
+        readPositions(tag, "deadNodes", d.deadNodes);
         readPositions(tag, "announced", d.announced);
         readPositions(tag, "defenders", d.defendersBuilt);
         readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
@@ -287,6 +366,9 @@ public class BrainNodeData extends SavedData {
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
             e.emeralds = c.getInt("emeralds");
+            e.copper = c.getInt("copper");
+            e.gold = c.getInt("gold");
+            e.limbo = c.getInt("limbo");
             e.organicPoints = Math.max(ORGANIC_FLOOR, c.getInt("organic"));
             e.lastIncomeDay = c.contains("income") ? c.getLong("income") : Long.MIN_VALUE;
             d.econs.put(key, e);
@@ -331,6 +413,7 @@ public class BrainNodeData extends SavedData {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "nodes", nodes);
         writePositions(tag, "serviced", servicedCenters);
+        writePositions(tag, "deadNodes", deadNodes);
         writePositions(tag, "announced", announced);
         writePositions(tag, "defenders", defendersBuilt);
         writePositions(tag, "outerDefenders", outerDefendersBuilt);
@@ -344,6 +427,9 @@ public class BrainNodeData extends SavedData {
             c.putInt("level", e.getValue().level);
             c.putInt("emeralds", e.getValue().emeralds);
             c.putInt("organic", e.getValue().organicPoints);
+            c.putInt("copper", e.getValue().copper);
+            c.putInt("gold", e.getValue().gold);
+            c.putInt("limbo", e.getValue().limbo);
             c.putLong("income", e.getValue().lastIncomeDay);
             econList.add(c);
         }

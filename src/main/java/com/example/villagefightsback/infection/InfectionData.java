@@ -23,6 +23,10 @@ import net.minecraft.world.level.saveddata.SavedData;
  * Everything is stored as packed {@code BlockPos.asLong()}.
  */
 public class InfectionData extends SavedData {
+    // NOTE: there used to be a 5x "first 10 seconds" window here (fastUntil / setFastUntil / isFast). It had
+    // no callers left -- nothing ever turned it on -- so it was removed rather than left as a switch that
+    // looked like it governed the infection rate and did not. Old saves may still carry a "fastUntil" key;
+    // it is simply ignored.
     private static final String NAME = "thevillagefightsback_infection";
 
     public static final int PATH_HEAD_CAP = 100;     // only the 100 newest path blocks can grow (spec point 1)
@@ -65,7 +69,6 @@ public class InfectionData extends SavedData {
     private final ArrayDeque<Long> waiting = new ArrayDeque<>();
     private final Set<Long> waitingSet = new HashSet<>();
 
-    private long fastUntil = Long.MIN_VALUE; // gametime until which infection runs at 5x (first 10s)
 
     // Running tally of "fertilized" blocks (our fertile/rich/shaped/door blocks only -- NOT dirt paths), shown
     // in the brain node UI. There is no longer a hard cap; the spread is bounded spatially by brainNode range.
@@ -243,10 +246,6 @@ public class InfectionData extends SavedData {
         if (changed) setDirty();
     }
 
-    // --- 5x window ---
-    public void setFastUntil(long t) { fastUntil = Math.max(fastUntil, t); setDirty(); }
-    public boolean isFast(long now) { return now < fastUntil; }
-
     // --- sanctioned removals (transient) ---
     public void sanction(long pos, long now) { sanctioned.put(pos, now + 100L); } // ~5s grace
     public boolean wasSanctioned(long pos, long now) {
@@ -273,7 +272,6 @@ public class InfectionData extends SavedData {
         tag.putLongArray("seeded", toArray(seeded));
         tag.putLongArray("infested", toArray(infested));
         tag.putLongArray("infestedWaiting", toArray(waiting));
-        tag.putLong("fastUntil", fastUntil);
         tag.putInt("convertedV3", converted); // V3: fertilized-only tally; older keys (path-inflated / stuck) ignored
         long[] bc = new long[boosts.size()], be = new long[boosts.size()];
         int i = 0;
@@ -291,7 +289,6 @@ public class InfectionData extends SavedData {
         for (long l : tag.getLongArray("seeded")) d.seeded.add(l);
         for (long l : tag.getLongArray("infested")) { d.infested.addLast(l); d.infestedSet.add(l); }
         for (long l : tag.getLongArray("infestedWaiting")) { d.waiting.addLast(l); d.waitingSet.add(l); }
-        d.fastUntil = tag.getLong("fastUntil");
         d.converted = tag.getInt("convertedV3"); // missing in old saves -> 0, so the stuck/inflated count resets
         long[] bc = tag.getLongArray("boostC"), be = tag.getLongArray("boostE");
         for (int i = 0; i < bc.length && i < be.length; i++) d.boosts.addLast(new long[]{bc[i], be[i]});

@@ -80,6 +80,8 @@ public final class BlockMatcher {
     private static Set<Block> richCatalysts;         // ...and the rich ones
     private static Set<Block> upgradableFertile;     // fertile blocks that have a rich counterpart (fertile -> rich)
     private static Set<Block> jobSites;              // villager workstation / meeting POI blocks -> never infected
+    private static Set<Block> redstone;              // the redstone family -> never infected, never broken
+    private static Set<Block> villagePaths;          // our coloured wall paths, in every colour
 
     /** Which colour set a block of ours belongs to; absent means green. See {@link #colourOf}. */
     private static Map<Block, String> colourByBlock;
@@ -144,9 +146,35 @@ public final class BlockMatcher {
             if (r != null) richCatalysts.add(r);
         }
 
+        // The village's coloured paths, by colour, so isPath can answer for all five without naming them.
+        villagePaths = new HashSet<>();
+        for (String c : ALL_SUFFIXES) {
+            Block vp = byId("village_path" + c);
+            if (vp != null) villagePaths.add(vp);
+        }
+
         infectionBlocks.add(Blocks.DIRT_PATH);
         if (ModBlocks.INFESTED_PATH.isPresent()) infectionBlocks.add(ModBlocks.INFESTED_PATH.get()); // slow emerald path
+        if (ModBlocks.VILLAGE_PATH.isPresent()) infectionBlocks.add(ModBlocks.VILLAGE_PATH.get());  // the village's own
         if (ModBlocks.FERTILE_KELP.isPresent()) infectionBlocks.add(ModBlocks.FERTILE_KELP.get());   // converted kelp
+
+        // The redstone family: never converted, so a player's contraption survives the village growing over it.
+        //
+        // Most of these are non-solid and already fall out of isCandidate's blocksMotion test -- listing them
+        // is belt and braces, and it is also what lets convert() ASK "is there redstone above this cell", which
+        // is the case that actually mattered: converting the block under dust or a repeater used to pop the
+        // component off. See InfectionManager.convert.
+        redstone = new HashSet<>();
+        for (Block b : new Block[]{
+                Blocks.REDSTONE_BLOCK, Blocks.REDSTONE_WIRE, Blocks.REDSTONE_TORCH, Blocks.REDSTONE_WALL_TORCH,
+                Blocks.REPEATER, Blocks.COMPARATOR, Blocks.OBSERVER, Blocks.TARGET, Blocks.REDSTONE_LAMP,
+                Blocks.PISTON, Blocks.STICKY_PISTON, Blocks.PISTON_HEAD, Blocks.MOVING_PISTON,
+                Blocks.DISPENSER, Blocks.DROPPER, Blocks.HOPPER, Blocks.NOTE_BLOCK, Blocks.LEVER,
+                Blocks.DAYLIGHT_DETECTOR, Blocks.TRIPWIRE, Blocks.TRIPWIRE_HOOK, Blocks.LIGHTNING_ROD,
+                Blocks.SCULK_SENSOR, Blocks.CALIBRATED_SCULK_SENSOR,
+                Blocks.RAIL, Blocks.POWERED_RAIL, Blocks.DETECTOR_RAIL, Blocks.ACTIVATOR_RAIL}) {
+            redstone.add(b);
+        }
 
         // Villager job-site workstations + the meeting bell: never infected, so a village keeps its jobs.
         jobSites = new HashSet<>();
@@ -246,8 +274,16 @@ public final class BlockMatcher {
         return infectionBlocks.contains(s.getBlock());
     }
 
+    /**
+     * A path the infection can grow from: a vanilla dirt path, or one of the village's own coloured paths.
+     *
+     * <p>The village paths have to be here. A path head whose block does not answer this is dropped from the
+     * frontier on the next pass, so laying a coloured path along the wall and NOT listing it would have made
+     * the whole wall ring inert -- the ring is exactly what those paths are for.
+     */
     public static boolean isPath(BlockState s) {
-        return s.is(Blocks.DIRT_PATH);
+        init();
+        return s.is(Blocks.DIRT_PATH) || villagePaths.contains(s.getBlock());
     }
 
     /** A "fertilized" block that counts toward the footprint cap: any fertile/rich/shaped/door block, but NOT
@@ -256,6 +292,7 @@ public final class BlockMatcher {
         init();
         if (!infectionBlocks.contains(s.getBlock())) return false;
         if (s.is(Blocks.DIRT_PATH)) return false;
+        if (villagePaths.contains(s.getBlock())) return false;   // a path vector, like the two above
         return !(ModBlocks.INFESTED_PATH.isPresent() && s.is(ModBlocks.INFESTED_PATH.get())); // path vector, not a tally block
     }
 
@@ -352,6 +389,7 @@ public final class BlockMatcher {
         // before the light-emission rule below, so even a lit/working furnace gets taken over.
         if (b == Blocks.CRAFTING_TABLE || b == Blocks.FURNACE) return hasAirContact(level, pos);
         if (jobSites.contains(b)) return false;                        // keep village jobs (workstations + bell)
+        if (isRedstone(s)) return false;                               // never eat a contraption
         if (b instanceof net.minecraft.world.level.block.ChestBlock
                 || b instanceof net.minecraft.world.level.block.EnderChestBlock
                 || b instanceof net.minecraft.world.level.block.BedBlock) return false; // keep chests & beds
@@ -526,6 +564,23 @@ public final class BlockMatcher {
         Map<String, Block> by = rich ? richByBase : fertileByBase;
         Block b = by.get("sculk" + (colour == null ? "" : colour));
         return b != null ? b : by.get("sculk");
+    }
+
+    /**
+     * Part of the redstone family: a component, or a block that carries or is wired into a circuit.
+     *
+     * <p>Also matches by class for the families with a block per variant (buttons, pressure plates), so a
+     * modded or newly added one is covered without listing it.
+     */
+    public static boolean isRedstone(BlockState s) {
+        init();
+        Block b = s.getBlock();
+        return redstone.contains(b)
+                || b instanceof net.minecraft.world.level.block.ButtonBlock
+                || b instanceof net.minecraft.world.level.block.BasePressurePlateBlock
+                || b instanceof net.minecraft.world.level.block.DiodeBlock
+                || b instanceof net.minecraft.world.level.block.RedStoneWireBlock
+                || b instanceof net.minecraft.world.level.block.BaseRailBlock;
     }
 
     /** A fertile sculk catalyst of ANY colour. */

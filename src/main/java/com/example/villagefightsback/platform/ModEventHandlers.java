@@ -70,6 +70,7 @@ public final class ModEventHandlers {
         EventBus.register(com.example.villagefightsback.SpawnInVillage.class);
         EventBus.register(com.example.villagefightsback.StandingEffects.class);
         EventBus.register(com.example.villagefightsback.StartingItems.class);
+        EventBus.register(com.example.villagefightsback.SurvivalCache.class);
         EventBus.register(com.example.villagefightsback.UnleashedManager.class);
         EventBus.register(com.example.villagefightsback.UpgradeEvents.class);
         EventBus.register(com.example.villagefightsback.VillageChestProtection.class);

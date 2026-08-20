@@ -54,6 +54,33 @@ public class VillageBrainNodeBlock extends Block {
         BrainNodeData.Econ econ = data.econ(GlobalPos.of(level.dimension(), pos.immutable())); // THIS village
         ItemStack held = player.getItemInHand(hand);
 
+        // SURVIVAL: the node also eats the metals a stage costs. Fed exactly like emeralds, and the promotion
+        // fires the moment the last of the tribute lands (addMetal re-runs the check).
+        int cu = held.is(Items.COPPER_INGOT) ? held.getCount() : 0;
+        int au = held.is(Items.GOLD_INGOT) ? held.getCount() : 0;
+        int li = held.is(ModItems.LIMBO_INGOT.get()) ? held.getCount() : 0;
+        if (cu + au + li > 0) {
+            // Take only what this stage still wants. Offering a full stack when 8 are needed costs 8.
+            int lv = econ.getLevel();
+            cu = econ.wants(cu, econ.getCopper(), BrainNodeData.Econ.copperFor(lv));
+            au = econ.wants(au, econ.getGold(), BrainNodeData.Econ.goldFor(lv));
+            li = econ.wants(li, econ.getLimbo(), BrainNodeData.Econ.limboFor(lv));
+            if (cu + au + li == 0) {          // nothing of this metal is wanted right now
+                player.displayClientMessage(metalNeeded(econ), false);
+                return InteractionResult.CONSUME;
+            }
+            int gained = econ.addMetal(cu, au, li);
+            if (!player.getAbilities().instabuild) held.shrink(cu + au + li);
+            sl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.3F);
+            if (gained > 0) {
+                player.displayClientMessage(
+                        Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
+            } else {
+                player.displayClientMessage(metalNeeded(econ), false);
+            }
+            return InteractionResult.CONSUME;
+        }
+
         if (held.is(Items.EMERALD)) {
             int donated = held.getCount();
             int gained = econ.addEmeralds(donated);
@@ -77,7 +104,7 @@ public class VillageBrainNodeBlock extends Block {
                 player.displayClientMessage(
                         Component.literal(BrainNodeEvents.phaseBanner(econ.getLevel())), false);
             } else {
-                player.displayClientMessage(info(econ), false);
+                player.displayClientMessage(info(sl, econ), false);
             }
             return InteractionResult.CONSUME;
         }
@@ -96,15 +123,88 @@ public class VillageBrainNodeBlock extends Block {
                     new com.example.villagefightsback.network.OpenBrainNodeScreenPacket(
                             econ.getLevel(), BrainNodeData.MAX_LEVEL, econ.getEmeralds(), econ.costForNext(),
                             defenders[0], defenders[1], defenders[2], fertilized, econ.getOrganicPoints(),
-                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines()));
+                            rep.get(sp.getUUID()), reflexLog, organicLog, rep.logLines(),
+                            metalTribute(sl, econ), progressOverride(sl, econ)));
         }
         return InteractionResult.CONSUME;
     }
 
-    private static Component info(BrainNodeData.Econ econ) {
+    /**
+     * The metal row for the brain node screen, or "" outside Survival.
+     *
+     * <p>Shows held / needed for each metal the NEXT stage wants, so the panel answers "what else does it
+     * need" at a glance rather than only after you feed it something.
+     */
+    private static String metalTribute(ServerLevel sl, BrainNodeData.Econ econ) {
+        if (!com.example.villagefightsback.WorldModeData.isSurvival(sl.getServer())) return "";
+        if (econ.isMaxLevel()) return "";
+        int lvl = econ.getLevel();
+        int cu = BrainNodeData.Econ.copperFor(lvl);
+        int au = BrainNodeData.Econ.goldFor(lvl);
+        int li = BrainNodeData.Econ.limboFor(lvl);
+        if (cu + au + li == 0) return "";
+        StringBuilder sb = new StringBuilder();
+        if (cu > 0) sb.append("§6").append(econ.getCopper()).append(" / ").append(cu).append(" copper");
+        if (au > 0) {
+            if (sb.length() > 0) sb.append("§7   ");
+            sb.append("§e").append(econ.getGold()).append(" / ").append(au).append(" gold");
+        }
+        if (li > 0) {
+            if (sb.length() > 0) sb.append("§7   ");
+            sb.append("§b").append(econ.getLimbo()).append(" / ").append(li).append(" Limbo ingot");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * The progress line when the emeralds are already in and only the metal tribute is outstanding, or "".
+     *
+     * <p>Reads "8 copper, 8 gold ingots to level 3" instead of an emerald count that has already been met.
+     */
+    private static String progressOverride(ServerLevel sl, BrainNodeData.Econ econ) {
+        if (!com.example.villagefightsback.WorldModeData.isSurvival(sl.getServer())) return "";
+        if (econ.isMaxLevel() || econ.getEmeralds() < econ.costForNext()) return "";
+        int lvl = econ.getLevel();
+        int cu = Math.max(0, BrainNodeData.Econ.copperFor(lvl) - econ.getCopper());
+        int au = Math.max(0, BrainNodeData.Econ.goldFor(lvl) - econ.getGold());
+        int li = Math.max(0, BrainNodeData.Econ.limboFor(lvl) - econ.getLimbo());
+        if (cu + au + li == 0) return "";        // nothing missing at all; the stage is about to fire
+        StringBuilder sb = new StringBuilder("§e");
+        if (cu > 0) sb.append(cu).append(" copper");
+        if (au > 0) sb.append(sb.length() > 2 ? ", " : "").append(au).append(" gold");
+        if (li > 0) sb.append(sb.length() > 2 ? ", " : "").append(li).append(" Limbo");
+        sb.append(" ingot").append(cu + au + li > 1 ? "s" : "");
+        sb.append(" to level ").append(lvl + 1);
+        return sb.toString();
+    }
+
+    /** What the stage still wants, so feeding a stack tells you what is missing rather than nothing at all. */
+    private static Component metalNeeded(BrainNodeData.Econ econ) {
+        if (econ.isMaxLevel()) return Component.literal("§7The brain node is at its final stage.");
+        int lvl = econ.getLevel();
+        StringBuilder sb = new StringBuilder("§7Still needed: ");
+        sb.append("§a").append(Math.max(0, econ.costForNext() - econ.getEmeralds())).append(" emerald");
+        int cu = Math.max(0, BrainNodeData.Econ.copperFor(lvl) - econ.getCopper());
+        int au = Math.max(0, BrainNodeData.Econ.goldFor(lvl) - econ.getGold());
+        int li = Math.max(0, BrainNodeData.Econ.limboFor(lvl) - econ.getLimbo());
+        if (cu > 0) sb.append("§7, §6").append(cu).append(" copper");
+        if (au > 0) sb.append("§7, §e").append(au).append(" gold");
+        if (li > 0) sb.append("§7, §b").append(li).append(" Limbo ingot");
+        return Component.literal(sb.toString());
+    }
+
+    private static Component info(ServerLevel sl, BrainNodeData.Econ econ) {
         if (econ.isMaxLevel()) {
             return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
                     + " §7(max) §7| §a" + econ.getEmeralds() + " §7emeralds stored");
+        }
+        // Emeralds are in and only the tribute is missing: say THAT, in chat as well as on the screen. Being
+        // told "31/8 emeralds to level 3" after overshooting by a stack points at the one thing that is not
+        // the problem.
+        String blocked = progressOverride(sl, econ);
+        if (!blocked.isEmpty()) {
+            return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
+                    + " §7| still needs " + blocked);
         }
         return Component.literal("§aVillage Brain Node §7| Level §e" + econ.getLevel()
                 + " §7| §a" + econ.getEmeralds() + "§7/§a" + econ.costForNext()

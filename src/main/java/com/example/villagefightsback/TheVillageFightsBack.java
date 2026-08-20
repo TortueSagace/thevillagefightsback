@@ -45,6 +45,7 @@ public class TheVillageFightsBack implements ModInitializer {
         ModSounds.register();
         ModLoot.register();      // the village-chest extras, as loot-table modifications
         CheapScaffoldBlock.registerFlammability();
+        FertileLeavesBlock.registerFlammability();
         LimboElytraEvents.register();
 
         ModTriggers.register();  // custom advancement triggers (brain node stage)

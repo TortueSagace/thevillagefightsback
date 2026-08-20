@@ -19,8 +19,10 @@ import net.minecraft.network.chat.Component;
 public class BrainNodeScreen extends Screen {
     private static final int PANEL_W = 252;
     private static final int HEADER_H = 26;
+    /** Extra height the Survival metal row needs, so it never overflows the panel it sits in. */
+    private static final int METAL_ROW_H = 12;
     private static final int ROW_H = 28;
-    private static final int FOOTER_H = 80; // emerald progress + defender-count + fertilized-count + a 2-line help note
+    private static final int FOOTER_H = 68; // emerald progress + defender counts + a 2-line help note
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -29,6 +31,10 @@ public class BrainNodeScreen extends Screen {
     private final int level;
     private final int maxLevel;
     private final int emeralds;
+    /** SURVIVAL only: the metal tribute line drawn under the emerald row. Empty in Creative. */
+    private final String metalLine;
+    /** Shown in place of the emerald line when only metal is missing. Empty otherwise. */
+    private final String progressOverride;
     private final int costNext;
     private final int villagers;
     private final int guards;
@@ -48,8 +54,10 @@ public class BrainNodeScreen extends Screen {
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
                            int villagers, int guards, int golems, int fertilized, int organic,
                            int reputation, List<String> reflexLog, List<String> organicLog,
-                           List<String> reputationLog) {
+                           List<String> reputationLog, String metalLine, String progressOverride) {
         super(Component.literal("Village Brain Node"));
+        this.metalLine = metalLine == null ? "" : metalLine;
+        this.progressOverride = progressOverride == null ? "" : progressOverride;
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -84,7 +92,9 @@ public class BrainNodeScreen extends Screen {
 
     @Override
     protected void init() {
-        this.panelH = HEADER_H + maxLevel * ROW_H + FOOTER_H;
+        // The metal row only exists in Survival, so the panel only grows there -- a Creative world keeps the
+        // exact height it always had rather than carrying a blank strip.
+        this.panelH = HEADER_H + maxLevel * ROW_H + FOOTER_H + (metalLine.isEmpty() ? 0 : METAL_ROW_H);
         this.leftPos = (this.width - PANEL_W) / 2;
         this.topPos = (this.height - panelH) / 2;
         // A header toggle that cycles Upgrades -> Reflex log -> Organic log (-> Upgrades). The button shows the
@@ -171,11 +181,25 @@ public class BrainNodeScreen extends Screen {
         if (costNext < 0) {
             progress = Component.literal("Max level reached  -  " + emeralds + " emeralds stored")
                     .withStyle(ChatFormatting.AQUA);
+        } else if (!progressOverride.isEmpty()) {
+            // The emeralds are in; metal is what is left. Saying "12 / 8 emeralds" here would point at the
+            // one thing that is NOT holding the stage back.
+            progress = Component.literal(progressOverride);
         } else {
             progress = Component.literal(emeralds + " / " + costNext + " emeralds to level " + (level + 1))
                     .withStyle(ChatFormatting.GREEN);
         }
         g.drawString(font, progress, leftPos + 8, footerY, 0xFFFFFFFF, false);
+
+        // SURVIVAL: the metal tribute, immediately under the emerald line it belongs with. Everything after it
+        // is pushed down by exactly the height the panel grew by, so nothing overlaps.
+        int metalShift = 0;
+        if (!metalLine.isEmpty()) {
+            g.drawString(font, Component.literal(metalLine), leftPos + 8, footerY + METAL_ROW_H,
+                    0xFFFFFFFF, false);
+            metalShift = METAL_ROW_H;
+        }
+        footerY += metalShift;
 
         // The standing row: organic mass on the LEFT when the organic system is on, and this village's opinion
         // of you on the RIGHT, always.
@@ -203,10 +227,9 @@ public class BrainNodeScreen extends Screen {
                 .append(Component.literal(String.valueOf(golems)).withStyle(ChatFormatting.WHITE));
         g.drawString(font, counts, leftPos + 8, footerY + 12 + extra, 0xFFFFFFFF, false);
 
-        // Fertilized blocks spread by the village (the green takeover footprint).
-        Component fert = Component.literal("Fertilized blocks: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
-        g.drawString(font, fert, leftPos + 8, footerY + 24 + extra, 0xFFFFFFFF, false);
+        // The fertilized-block count used to sit here. Removed: it is a world-wide tally that says nothing
+        // about THIS village and nothing a player can act on. The row it occupied is gone with it, so the
+        // panel is a line shorter rather than carrying a gap.
 
         // Small light-gray footnote at the very bottom (rendered at a reduced scale), wrapped to the panel width.
         float helpScale = 0.72F;
