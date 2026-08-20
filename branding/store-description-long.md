@@ -182,6 +182,8 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   `enable_block_infection`: master switch for the village's own fertile-zone takeover (the Brain Node's natural spread)
 *   `enable_mob_infection`: master switch for the Emerald faction; off means no emerald unit can ever appear (no conversion, no brain summon, not even a spawn egg)
 *   `enable_emerald_infestation`: whether emerald conversions lay infested paths that slowly spread the fertile growth on their own (separate from `enable_block_infection`)
+*   `infested_paths_need_brain_node`: infested paths and fertile grass only keep spreading while within reach of a stage-2 or higher Brain Node, so a converted zone stays roughly inside the village's own radius instead of creeping across the map. Turn it off for the old free-for-all spread (default on)
+*   `monochrome_green_fertile_blocks`: everything the infection converts from now on comes out **green**, the way it did before the five colour sets arrived. The other colours stay registered and stay in the creative tab, and blocks already placed keep the colour they were placed with (default off)
 *   `emerald_mobs_are_hostile_to_player`: if on, emerald units hunt Enemy-of-the-Village players; off by default, leaving them neutral toward you (they only fight back when struck)
 *   `emerald_mobs_max_number`: soft cap on emerald units near a player (to limit lag); emeralds far away don't count. Over the cap a new unit's health is poured into the nearest emerald instead of spawning, and an egg/summon tells you
 *   `enable_organic_mass_system`: emerald kills bank "organic points" in the nearest Brain Node, which spends them to field its own emerald army instead of converting each kill directly (off = classic convert-on-kill)
@@ -189,20 +191,23 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   `enable_emerald_virus_explosion`: master switch for the emerald-virus death explosion; off means no blast at all (no damage, no fire), while the emeraldger and emerald loot still appear
 *   `guards_drop_fire_grenade_upon_death`: whether a slain stage-3 guard goes out in a fiery blast
 *   `brain_node_extinguishes_fire`: the Brain Node douses fire in its radius for an emerald
-*   `defeated_brain_node_spawn_spirit`: whether destroying a Brain Node (any non-silk-touch break) unleashes the Vindictive Village Spirit boss; off lets a node be broken without summoning it (default on)
+*   `defeated_brain_node_spawn_spirit`: whether destroying a Brain Node (any non-silk-touch break) raises anything at all. On Mega Brutal or Nightmare that is the Vindictive Village Spirit boss; on any other difficulty the node instead leaves a **Dead Brain Node** behind, which any player can feed a golden apple to send a Village Spirit off to found the village again elsewhere. Off means a node can be broken with no consequence at all (default on)
+*   `reversed_gravity_flips_screen`: when General Darius' Special Sauce turns the world upside down, whether every player's *view* rolls over with it. The physics are identical either way, this is only the camera (default on)
 *   `air_strikes_appear_at_stage` (1-4): the stage air strikes unlock at
 *   `unstable_limbo_gravel_HP_threshold`: the HP above which a banished creature is "unstable" in Limbo
 *   `enable_chunk_portals`: work in progress; when on, once a brain reaches stage 3 about 1% of nearby chunks turn into 4-wall portals that show and lead into the Limbo (default off; turning it off stops new portals but leaves existing ones)
 *   `guards_spawning_with_general_darius`: guards that spawn already under General Darius's command
 *   `general_darius_remains`: Darius holds the field instead of returning home
 *   `emeraldgers_size_variation`: emeraldgers sized by the HP of the host they sprang from
-*   `player_spawn_in_village` / `player_is_given_bell_at_spawn`: where you start and whether you start with a Bell
+*   `mca_compat`: with Minecraft Comes Alive (MCA Reborn) installed, every villager and guard this mod spawns is an MCA human rather than a vanilla villager, so the village stays uniformly MCA instead of turning into a mix. Harmless when MCA is absent (default on)
+*   `player_spawn_in_village` / `player_is_given_bell_at_spawn`: where you start and whether you start with a Bell. In the **Survival experience** the bell is replaced by a buried cache: you get a live distance readout on the action bar instead, and the chest at the end of the walk holds a Dead Brain Node between the two books, ringed with eight gold ingots
 *   `player_is_hostile`: bounds your reputation the way Hostile does, so you are an Enemy of the Village for good
 *   `darius_inflicts_obliteration`: every blow from General Darius marks its victim with Obliteration, and a stage-4 Brain Node builds an Obliteration Furnace beside itself and pays 1 emerald a minute to keep it lit. Anything Darius kills near the village is then struck off the spawn tables for as long as the fuel lasts. Players are never affected. Turn it off and Darius is simply a hard fighter
 *   `mega_expansion_mode`: the Brain Node founds a new building every minute
 *   `mega_brutal_mode`: every village unit gains permanent Strength/Regen/Resistance/Speed III, guards swing Alien Smashers, and golems teleport to their prey
+*   `unstick_test_mode`: a testing aid. A villager trapped in a pit is normally rescued after 30 seconds, or 60 seconds when it is stuck for any other reason; this drops both clocks to a few seconds so the rescue can actually be watched. Leave it off in a real world (default off)
 
-**Handy commands:** `/thevillagefightsback brain_stage_get` and `brain_stage_set <1-4>`, `village_status_report` (the nearest Brain Node's report), and `tp_to_nearest_node` (warp above the nearest Brain Node).
+**Handy commands:** `/thevillagefightsback brain_stage_get` and `brain_stage_set <1-4>`, `village_status_report` (the nearest Brain Node's report), `tp_to_nearest_node` (warp above the nearest Brain Node), `unstick` (free any villager trapped nearby), `clear_forced_chunks` (release chunk tickets left behind by old 1.4.0 saves), `reset_default_configs` (restore every setting above to its default), and `firework [count]` (set off the village's own celebration fireworks overhead).
 
 ## Requirements and credits
 
