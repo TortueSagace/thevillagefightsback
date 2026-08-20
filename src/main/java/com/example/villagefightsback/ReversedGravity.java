@@ -109,12 +109,27 @@ public final class ReversedGravity {
         // The flip above happens on every re-hit; everything below is once per reversal. Vanilla re-deals
         // void damage about every 10 ticks, so without this the swirl and the packet would stutter out
         // five times over.
+        if (flip(sl)) LimboBanishFx.start(e);                                // the void spits it back out
+    }
+
+    /**
+     * Turn {@code sl} over for {@value #DURATION} ticks with nobody falling out of the world behind it.
+     *
+     * <p>Split out of {@link #trigger} so something other than a Special Sauce holder in the void can flip a
+     * dimension: killing a Village Spirit does exactly that (see {@link VillageSpiritEntity#die}). Same
+     * reversal, same camera roll, same de-duplication -- what is missing is the launch and the rescue
+     * bookkeeping, because there is no unit being spat back out.
+     *
+     * @return true if this call started a reversal, false if one was already running here. {@link #trigger}
+     *         reads that to keep the void swirl to once per flip rather than once per 10-tick re-hit.
+     */
+    public static boolean flip(ServerLevel sl) {
         long want = sl.getGameTime() + DURATION;
         Long cur = ACTIVE.get(sl.dimension());
-        if (cur != null && want <= cur + 20L) return;                        // the 10-tick re-hit, not a new one
+        if (cur != null && want <= cur + 20L) return false;                  // the 10-tick re-hit, not a new one
         ACTIVE.put(sl.dimension(), want);
-        LimboBanishFx.start(e);                                              // the void spits it back out
         broadcast(sl, DURATION);
+        return true;
     }
 
     // --- the field -----------------------------------------------------------------------------------

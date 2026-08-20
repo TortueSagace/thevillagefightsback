@@ -1088,7 +1088,11 @@ public final class BrainNodeEvents {
         Difficulty diff = Difficulty.current();
         if (WorldModeData.isSurvival(level.getServer())
                 && diff != Difficulty.HOSTILE && diff != Difficulty.NIGHTMARE) {
-            level.setBlock(spot, ModBlocks.DEAD_BRAIN_NODE.get().defaultBlockState(), 3);
+            // FOUND: this brain was never alive, and a whole village is standing around it. Its spirit
+            // re-lights this very block rather than carrying the village off somewhere else -- see
+            // DeadBrainNodeBlock.FOUND.
+            level.setBlock(spot, ModBlocks.DEAD_BRAIN_NODE.get().defaultBlockState()
+                    .setValue(DeadBrainNodeBlock.FOUND, true), 3);
             announceDeadNode(level, spot);
             data.addServiced(GlobalPos.of(level.dimension(), bell.immutable()));
             spendBell(level, bell);
