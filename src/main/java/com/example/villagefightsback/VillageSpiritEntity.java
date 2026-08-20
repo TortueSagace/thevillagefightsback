@@ -67,6 +67,10 @@ public class VillageSpiritEntity extends Allay {
     private static final int MIN_SEARCH_TICKS = 20 * 20;      // 20 seconds
     /** ...and after this long it settles wherever it is, ideal or not. */
     private static final int RELAX_TICKS = 60 * 20;           // 60 seconds
+    /** Ticks of climbing without gaining height before it assumes a ceiling and slides sideways. */
+    private static final int WEDGED_TICKS = 10;
+    /** ...and the hard cap on climbing at all. Past this it searches from whatever height it reached. */
+    private static final int ASCEND_TIMEOUT = 100;            // 5 seconds
     /** Radius that must be free of hostiles and alien blocks for a site to count. */
     private static final int CLEAR_RADIUS = 10;
     /** How often the (relatively expensive) steering + site evaluation runs. */
@@ -96,6 +100,9 @@ public class VillageSpiritEntity extends Allay {
     private int airTicks;
     /** Steering direction, recomputed every {@value #EVAL_INTERVAL} ticks and flown in between. */
     private Vec3 heading = Vec3.ZERO;
+    /** Height last tick and how long it has failed to gain any, for getting out from under a ceiling. */
+    private double lastY = Double.NaN;
+    private int wedgedTicks;
 
     public VillageSpiritEntity(EntityType<? extends VillageSpiritEntity> type, Level level) {
         super(type, level);
@@ -215,6 +222,9 @@ public class VillageSpiritEntity extends Allay {
 
     private void fly(ServerLevel sl) {
         if (origin == null) origin = this.blockPosition();
+        // Counted from the moment it appears, deliberately -- not from when it reaches cruising height. A
+        // spirit that never gets high still ages, so the 20-second minimum and the 60-second relaxation
+        // arrive on time and it settles somewhere rather than hovering under a ceiling for good.
         airTicks++;
 
         if (errand != null) { runErrand(sl); return; }
@@ -222,10 +232,26 @@ public class VillageSpiritEntity extends Allay {
         switch (phase) {
             case ASCEND -> {
                 int target = cruiseY(sl, this.blockPosition());
-                if (this.getY() >= target - 0.5) {
+                // Give up climbing once it is high enough, OR once it has spent long enough trying. A spirit
+                // that rose under an overhang used to push at it forever and never reach SEARCH at all, so it
+                // never founded anything. Cruising lower than intended is fine; never arriving is not.
+                if (this.getY() >= target - 0.5 || airTicks > ASCEND_TIMEOUT) {
                     phase = Phase.SEARCH;
                 } else {
-                    this.setDeltaMovement(0.0, SPEED, 0.0);
+                    // Not gaining height means something is directly overhead. Slide sideways to get out from
+                    // under it rather than grinding upward into the same block.
+                    boolean gaining = Double.isNaN(lastY) || this.getY() > lastY + 0.01;
+                    wedgedTicks = gaining ? 0 : wedgedTicks + 1;
+                    lastY = this.getY();
+                    if (wedgedTicks >= WEDGED_TICKS) {
+                        if (heading.lengthSqr() < 1.0E-4 || wedgedTicks % 20 == 0) {
+                            heading = new Vec3(this.random.nextDouble() * 2 - 1, 0.0,
+                                    this.random.nextDouble() * 2 - 1).normalize();
+                        }
+                        this.setDeltaMovement(heading.x * SPEED, SPEED * 0.5, heading.z * SPEED);
+                    } else {
+                        this.setDeltaMovement(0.0, SPEED, 0.0);
+                    }
                     this.hasImpulse = true;
                     return;
                 }
