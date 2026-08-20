@@ -42,6 +42,34 @@ public class DeadBrainNodeBlock extends Block {
         super(properties);
     }
 
+    /**
+     * Claim this ground for the village that died here.
+     *
+     * <p>Registered in {@link BrainNodeData#deadNodes()}, which is kept apart from the live node set so the
+     * husk stays invisible to every "is a brain in reach" test -- infection range, node spawns, settler
+     * dispatch. The one rule it DOES answer is the claim radius: a village whose brain is lying dead in it
+     * already has a brain, so a bell there must not raise a second one.
+     */
+    @Override
+    public void onPlace(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+                        BlockState oldState, boolean moved) {
+        super.onPlace(state, level, pos, oldState, moved);
+        if (level.isClientSide || oldState.is(this)) return;
+        BrainNodeData.get(((ServerLevel) level).getServer())
+                .addDeadNode(net.minecraft.core.GlobalPos.of(level.dimension(), pos.immutable()));
+    }
+
+    /** Broken, or spent raising a spirit: the claim goes with it. */
+    @Override
+    public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+                         BlockState newState, boolean moved) {
+        if (!level.isClientSide && !newState.is(this)) {
+            BrainNodeData.get(((ServerLevel) level).getServer())
+                    .removeDeadNode(net.minecraft.core.GlobalPos.of(level.dimension(), pos.immutable()));
+        }
+        super.onRemove(state, level, pos, newState, moved);
+    }
+
     /** Say what it wants the moment it is placed -- an inert block gives no other clue that it can be revived. */
     @Override
     public void setPlacedBy(net.minecraft.world.level.Level level, BlockPos pos, BlockState state,

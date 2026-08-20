@@ -52,6 +52,15 @@ public class BrainNodeData extends SavedData {
     private final Set<GlobalPos> blocks = new HashSet<>();        // placed brainNode blocks
     private final Set<GlobalPos> nodes = new HashSet<>();         // placed node blocks (golem-factory/barracks/lure-tower): +10% sunset gems each, in radius
     private final Set<GlobalPos> servicedCenters = new HashSet<>(); // village centers already given a brainNode
+    /**
+     * Dead brain nodes: husks a village left behind, and the ones Survival finds in villages.
+     *
+     * <p>Kept apart from {@link #blocks()} on purpose -- a dead node must stay invisible to everything that
+     * asks "is there a brain in reach", which is what that set is for. This one exists for the single rule
+     * that a dead node SHOULD answer: a village with a husk in it already has a brain, dormant or not, so a
+     * bell there must not raise a second one.
+     */
+    private final Set<GlobalPos> deadNodes = new HashSet<>();
     private final Set<GlobalPos> announced = new HashSet<>();       // brain nodes whose discovery banner already fired (to any player)
     private final Map<GlobalPos, WallPlan> wallPlans = new HashMap<>(); // computed defensive wall per brainNode
     private final Map<GlobalPos, WallPlan> outerWallPlans = new HashMap<>(); // stage-3 OUTER obsidian wall per brainNode
@@ -89,7 +98,22 @@ public class BrainNodeData extends SavedData {
         public int getGold() { return gold; }
         public int getLimbo() { return limbo; }
 
-        /** Feed the node metal. Returns how many stages it bought (metal alone can complete a paid-up stage). */
+        /**
+         * How much of {@code offered} the node will actually take: never more than the stage still wants.
+         *
+         * <p>Handing it a stack of 64 when 8 are needed should cost 8. Emeralds bank without limit because a
+         * surplus rolls into the next stage, but the metal tribute is a fixed per-stage price -- taking the
+         * whole stack would quietly eat 56 ingots for nothing.
+         */
+        public int wants(int offered, int have, int need) {
+            return Math.max(0, Math.min(offered, need - have));
+        }
+
+        /**
+         * Feed the node metal, taking only what the current stage still needs.
+         *
+         * @return how many stages it bought (metal alone can complete a stage whose emeralds are already in).
+         */
         public int addMetal(int copperN, int goldN, int limboN) {
             copper += copperN;
             gold += goldN;
@@ -245,6 +269,10 @@ public class BrainNodeData extends SavedData {
     public void addNode(GlobalPos pos) { if (nodes.add(pos)) setDirty(); }
     public void removeNode(GlobalPos pos) { if (nodes.remove(pos)) setDirty(); }
 
+    public Set<GlobalPos> deadNodes() { return deadNodes; }
+    public void addDeadNode(GlobalPos pos) { if (deadNodes.add(pos)) setDirty(); }
+    public void removeDeadNode(GlobalPos pos) { if (deadNodes.remove(pos)) setDirty(); }
+
     public boolean isServiced(GlobalPos center) { return servicedCenters.contains(center); }
     public void addServiced(GlobalPos center) { if (servicedCenters.add(center)) setDirty(); }
 
@@ -326,6 +354,7 @@ public class BrainNodeData extends SavedData {
         readPositions(tag, "blocks", d.blocks);
         readPositions(tag, "nodes", d.nodes);
         readPositions(tag, "serviced", d.servicedCenters);
+        readPositions(tag, "deadNodes", d.deadNodes);
         readPositions(tag, "announced", d.announced);
         readPositions(tag, "defenders", d.defendersBuilt);
         readPositions(tag, "outerDefenders", d.outerDefendersBuilt);
@@ -386,6 +415,7 @@ public class BrainNodeData extends SavedData {
         writePositions(tag, "blocks", blocks);
         writePositions(tag, "nodes", nodes);
         writePositions(tag, "serviced", servicedCenters);
+        writePositions(tag, "deadNodes", deadNodes);
         writePositions(tag, "announced", announced);
         writePositions(tag, "defenders", defendersBuilt);
         writePositions(tag, "outerDefenders", outerDefendersBuilt);

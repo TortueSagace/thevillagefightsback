@@ -22,7 +22,7 @@ public class BrainNodeScreen extends Screen {
     /** Extra height the Survival metal row needs, so it never overflows the panel it sits in. */
     private static final int METAL_ROW_H = 12;
     private static final int ROW_H = 28;
-    private static final int FOOTER_H = 80; // emerald progress + defender-count + fertilized-count + a 2-line help note
+    private static final int FOOTER_H = 68; // emerald progress + defender counts + a 2-line help note
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -234,10 +234,9 @@ public class BrainNodeScreen extends Screen {
                 .append(Component.literal(String.valueOf(golems)).withStyle(ChatFormatting.WHITE));
         g.drawString(font, counts, leftPos + 8, footerY + 12 + extra, 0xFFFFFFFF, false);
 
-        // Fertilized blocks spread by the village (the green takeover footprint).
-        Component fert = Component.literal("Fertilized blocks: ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(String.valueOf(fertilized)).withStyle(ChatFormatting.DARK_GREEN));
-        g.drawString(font, fert, leftPos + 8, footerY + 24 + extra, 0xFFFFFFFF, false);
+        // The fertilized-block count used to sit here. Removed: it is a world-wide tally that says nothing
+        // about THIS village and nothing a player can act on. The row it occupied is gone with it, so the
+        // panel is a line shorter rather than carrying a gap.
 
         // Small light-gray footnote at the very bottom (rendered at a reduced scale), wrapped to the panel width.
         float helpScale = 0.72F;

@@ -59,6 +59,15 @@ public class VillageBrainNodeBlock extends Block {
             ServerLevel msl = (ServerLevel) level;
             BrainNodeData.Econ mecon = BrainNodeData.get(msl.getServer())
                     .econ(GlobalPos.of(level.dimension(), pos.immutable()));
+            // Take only what this stage still wants. Offering a full stack when 8 are needed costs 8.
+            int lv = mecon.getLevel();
+            cu = mecon.wants(cu, mecon.getCopper(), BrainNodeData.Econ.copperFor(lv));
+            au = mecon.wants(au, mecon.getGold(), BrainNodeData.Econ.goldFor(lv));
+            li = mecon.wants(li, mecon.getLimbo(), BrainNodeData.Econ.limboFor(lv));
+            if (cu + au + li == 0) {          // nothing of this metal is wanted right now
+                player.displayClientMessage(metalNeeded(mecon), false);
+                return ItemInteractionResult.CONSUME;
+            }
             int gained = mecon.addMetal(cu, au, li);
             if (!player.getAbilities().instabuild) held.shrink(cu + au + li);
             msl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.3F);

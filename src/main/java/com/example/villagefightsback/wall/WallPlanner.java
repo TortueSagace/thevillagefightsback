@@ -32,6 +32,18 @@ public final class WallPlanner {
     private static final int CLEARANCE = 5;        // wall sits ~this many blocks out from the nearest bed
     private static final int FLOAT_GAP = 10;       // >= this much air below a surface => floating island, skip it
     private static final int MAX_GRID = 220 * 220; // footprint-grid cell cap (runaway-village guard)
+    /**
+     * The same guard for the stage-3 OUTER ring, which needs a far bigger one.
+     *
+     * <p>That survey scans {@code OUTER_SCAN_RADIUS} (140) blocks out, so its footprint spans up to 280 and
+     * its grid up to 294x294 = 86,436 cells -- comfortably over MAX_GRID. The obsidian plan therefore came
+     * back null EVERY time and no obsidian wall was ever built, for exactly the villages that had expanded
+     * far enough to want one. The inner wall never hit it because it only scans 80.
+     *
+     * <p>Sized to what that scan can actually produce, with headroom. The cost is one boolean[] of about
+     * 100 KB, allocated once per survey and thrown away, and the survey is throttled to every 200 ticks.
+     */
+    private static final int MAX_GRID_OUTER = 320 * 320;
     private static final int MAX_COLUMNS = 1000;    // perimeter cap
     private static final int MAX_BLOCKS = 6500;     // total placement cap
     private static final int DOOR_SPACING = 30;     // ~one gate (and so one builder + one defender) per this many perimeter columns
@@ -80,7 +92,7 @@ public final class WallPlanner {
         int pad = CLEARANCE + 2;
         int ox = minX - pad, oz = minZ - pad;                 // grid origin in world coords
         int W = (maxX + pad) - ox + 1, H = (maxZ + pad) - oz + 1;
-        if ((long) W * H > MAX_GRID) return null;             // village footprint too sprawling
+        if ((long) W * H > (obsidian ? MAX_GRID_OUTER : MAX_GRID)) return null; // footprint too sprawling
 
         boolean[] interior = new boolean[W * H];
         for (int[] p : pts) markDisc(interior, W, H, p[0] - ox, p[1] - oz);          // CLEARANCE around each bed
