@@ -132,10 +132,6 @@ public final class WallPlanner {
         java.util.Set<Long> doors = pickDoors(cells, doorCount);
 
         int minY = level.getMinBuildHeight();
-        // The village's own buildings. Fetched ONCE for the whole survey, like the infection pass does with its
-        // own copy, so the per-column test below is a chunk-bucketed lookup and not a SavedData fetch each time.
-        com.example.villagefightsback.infection.StructureZones zones =
-                com.example.villagefightsback.infection.StructureZones.get(level);
         int n = cells.size();
         int[] surf = new int[n];     // top of the column the wall's courses sit on (the WATER surface, over water)
         int[] foot = new int[n];     // what the column actually rests on: the ground, or the bed under the water
@@ -168,23 +164,8 @@ public final class WallPlanner {
             // separate "how far may a wall bridge water" limit needed.
             if (!obsidian && Math.abs(foot[i] - brainNode.pos().getY()) > MAX_WALL_ELEVATION) {
                 skip[i] = true;
-                continue;
             }
 
-            // Never plan a column through a building the village has already claimed.
-            //
-            // The outer obsidian ring is the reason this exists. It is raised by the brain node itself, and that
-            // raise BULLDOZES: any cell that is not replaceable is destroyed to make room (see
-            // WallPlan.raiseDirectlyStep, whose comment says "clear soft terrain" but whose test is only
-            // "is it replaceable"). Nothing in the wall package consulted StructureZones at all, so a ring whose
-            // line crossed a house or a tower simply cut through it. Dropping the column here plans the ring
-            // AROUND the building instead, which leaves a gap -- and a wall with a house in it beats a house
-            // with a wall through it.
-            if (zones.isEmpty()) continue;                      // no buildings anywhere -> nothing to dodge
-            int yTop = surf[i] + WallPlan.COURSES + 1;
-            for (int y = foot[i]; y <= yTop; y++) {
-                if (zones.contains(col.x, y, col.z)) { skip[i] = true; break; }
-            }
         }
 
         List<List<WallBlock>> columns = new ArrayList<>();

@@ -53,6 +53,23 @@ public class StructureZones extends SavedData {
         return level.getDataStorage().computeIfAbsent(StructureZones::load, StructureZones::new, NAME);
     }
 
+    /**
+     * Every protected building whose box lies within {@code radius} of (x, z), as {minX,minY,minZ,maxX,maxY,maxZ}.
+     *
+     * <p>Cold path: the wall survey calls this once per plan, not per block, so it walks the canonical list
+     * rather than the chunk index. The village's own buildings have to be part of the footprint a wall is
+     * planned around -- see BrainNodeEvents.collectVillagePoints.
+     */
+    public java.util.List<int[]> boxesNear(int x, int z, int radius) {
+        java.util.List<int[]> out = new ArrayList<>();
+        for (int[] b : boxes) {
+            if (b[3] < x - radius || b[0] > x + radius) continue;
+            if (b[5] < z - radius || b[2] > z + radius) continue;
+            out.add(b);
+        }
+        return out;
+    }
+
     /** True when nothing is protected in this dimension, so callers can skip the query entirely. */
     public boolean isEmpty() {
         return byChunk.isEmpty();
