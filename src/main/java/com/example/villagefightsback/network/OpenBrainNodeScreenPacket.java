@@ -37,10 +37,20 @@ public class OpenBrainNodeScreenPacket {
      */
     public final String metalLine;
 
+    /**
+     * SURVIVAL only: replaces the emerald progress line when the emeralds are already in and only metal is
+     * missing. Empty otherwise.
+     *
+     * <p>"12 / 8 emeralds to level 3" is a confusing thing to read when the emeralds are not what is holding
+     * the stage back, so the line says what actually is.
+     */
+    public final String progressOverride;
+
     public OpenBrainNodeScreenPacket(int level, int maxLevel, int emeralds, int costNext,
                                      int villagers, int guards, int golems, int fertilized, int organic,
                                      int reputation, List<String> reflexLog, List<String> organicLog,
-                                     List<String> reputationLog, String metalLine) {
+                                     List<String> reputationLog, String metalLine,
+                                     String progressOverride) {
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -55,6 +65,7 @@ public class OpenBrainNodeScreenPacket {
         this.organicLog = organicLog;
         this.reputationLog = reputationLog;
         this.metalLine = metalLine;
+        this.progressOverride = progressOverride;
     }
 
     public static void encode(OpenBrainNodeScreenPacket msg, FriendlyByteBuf buf) {
@@ -74,6 +85,7 @@ public class OpenBrainNodeScreenPacket {
         buf.writeVarInt(msg.reputation);
         buf.writeCollection(msg.reputationLog, FriendlyByteBuf::writeUtf);
         buf.writeUtf(msg.metalLine);
+        buf.writeUtf(msg.progressOverride);
     }
 
     public static OpenBrainNodeScreenPacket decode(FriendlyByteBuf buf) {
@@ -87,8 +99,9 @@ public class OpenBrainNodeScreenPacket {
         int reputation = buf.readVarInt();
         List<String> reputationLog = buf.readList(FriendlyByteBuf::readUtf);
         String metalLine = buf.readUtf();
+        String progressOverride = buf.readUtf();
         return new OpenBrainNodeScreenPacket(level, maxLevel, emeralds, costNext, villagers, guards, golems,
-                fertilized, organic, reputation, reflexLog, organicLog, reputationLog, metalLine);
+                fertilized, organic, reputation, reflexLog, organicLog, reputationLog, metalLine, progressOverride);
     }
 
     public static void handle(OpenBrainNodeScreenPacket msg, Supplier<NetworkEvent.Context> ctx) {

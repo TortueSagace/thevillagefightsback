@@ -607,7 +607,14 @@ public final class BrainNodeEvents {
      * it launches fireworks and instantly raises its gate turrets (like the inner wall's level-2 defenders).
      */
     private static void driveOuterWalls(MinecraftServer server, BrainNodeData data) {
-        boolean trySurvey = server.getTickCount() % 200 == 0; // the survey is heavy; throttle it
+        // Offset from the INNER survey on purpose. Both are heavy, both ran on % 200 == 0, and the handler
+        // around them only ticks on % 40 -- so 200 being a multiple of 40 meant the two surveys, the expansion
+        // and everything else in this method always landed on the SAME tick. 80 is still a multiple of 40 (so
+        // it is reachable) and is four seconds clear of the inner survey.
+        //
+        // The wall plan goes last of the stage-3 work, which is what this offset buys: by the time it runs, the
+        // expansion that decides its footprint has already happened.
+        boolean trySurvey = server.getTickCount() % 200 == 80; // the survey is heavy; throttle AND stagger it
         for (GlobalPos gp : new ArrayList<>(data.blocks())) {
             if (data.econ(gp).getLevel() < 3) continue;        // stage 3+
             if (!data.isExpanded(gp)) continue;                // only after the settler expansion launched

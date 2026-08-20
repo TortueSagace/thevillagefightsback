@@ -44,19 +44,20 @@ public final class SurvivalStart {
     public static boolean give(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos spot = findSpot(level, player.blockPosition());
-        if (spot == null) return false;
+        if (spot == null) {
+            // Loud, not silent. This falls back to the bell, and a silent fallback is exactly how the Survival
+            // opening went unnoticed twice: the log said "starter bell given" and nothing said why.
+            TheVillageFightsBack.LOGGER.warn(
+                    "[The Village Fights Back] found nowhere to bury the Survival starter cache near {}; "
+                    + "falling back to the bell.", player.blockPosition());
+            return false;
+        }
 
-        // Writing here loads and generates that one chunk, once. That is NOT the force-loading the mod
-        // otherwise forbids: no ticket is taken and nothing is kept ticking -- it is a single synchronous
-        // generation at world start, the same cost the player pays when they walk out to dig it up.
-        level.setBlock(spot, Blocks.CHEST.defaultBlockState(), 3);
-        if (!(level.getBlockEntity(spot) instanceof ChestBlockEntity chest)) return false;
-        // A DEAD node, not a living one: Survival never hands the player a working village. The apple to wake
-        // it is theirs to craft, and both books are here so the rules arrive with the thing they describe.
-        chest.setItem(12, new ItemStack(ModBlocks.DEAD_BRAIN_NODE.get()));
-        chest.setItem(13, new ItemStack(ModItems.REPUTATION_BOOK.get()));
-        chest.setItem(14, new ItemStack(ModItems.LIMBO_BOOK.get()));
-        chest.setChanged();
+        // PROMISED, not written. The chest is hundreds of blocks away and that chunk does not exist yet;
+        // setBlock there would need a synchronous generation that cannot happen inside a packet handler, so
+        // the write landed on nothing and the whole opening quietly became a bell. SurvivalCache writes it
+        // when the chunk genuinely loads -- which is when the player arrives to dig it up.
+        SurvivalCache.get(level).promise(spot);
 
         ItemStack map = MapItem.create(level, spot.getX(), spot.getZ(), (byte) 2, true, true);
         MapItem.renderBiomePreviewMap(level, map);
@@ -64,10 +65,15 @@ public final class SurvivalStart {
         map.setHoverName(Component.literal("Map to a Buried Brain Node"));
         if (!player.getInventory().add(map)) player.drop(map, false);
 
+        // A shovel with it, so the instruction reads without a word of text: you have an X and something to
+        // dig with. Wooden on purpose -- it is a prompt, not a gift.
+        ItemStack shovel = new ItemStack(Items.WOODEN_SHOVEL);
+        if (!player.getInventory().add(shovel)) player.drop(shovel, false);
+
         player.sendSystemMessage(Component.literal(
-                "§6Survival: §fthe means to found a village is buried out there. Follow the map."));
+                "§6Survival: §fthe means to found a village is buried out there. Follow the map, and bring the shovel."));
         TheVillageFightsBack.LOGGER.info(
-                "[The Village Fights Back] buried the Survival starter cache at {} for {}.",
+                "[The Village Fights Back] Survival starter cache promised at {} for {}.",
                 spot, player.getGameProfile().getName());
         return true;
     }
@@ -86,17 +92,31 @@ public final class SurvivalStart {
     private static BlockPos findSpot(ServerLevel level, BlockPos from) {
         net.minecraft.world.level.chunk.ChunkGenerator gen = level.getChunkSource().getGenerator();
         net.minecraft.world.level.levelgen.RandomState rs = level.getChunkSource().randomState();
-        for (int attempt = 0; attempt < 8; attempt++) {
+        int floor = level.getMinBuildHeight();
+        BlockPos wetOrShallow = null;
+
+        for (int attempt = 0; attempt < 12; attempt++) {
             double angle = level.random.nextDouble() * Math.PI * 2.0;
             int dist = MIN_DIST + level.random.nextInt(MAX_DIST - MIN_DIST);
             int x = from.getX() + (int) Math.round(Math.cos(angle) * dist);
             int z = from.getZ() + (int) Math.round(Math.sin(angle) * dist);
+
             int surface = gen.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, rs);
-            int y = surface - BURY_DEPTH;
-            if (y <= level.getMinBuildHeight() + 2) continue;      // genuinely no room under it
-            if (surface <= level.getSeaLevel()) continue;          // under water: keep looking for dry land
-            return new BlockPos(x, y, z);
+            if (surface <= floor + 1) continue;                 // genuinely no ground here at all
+
+            // Bury as deep as there is room for, rather than demanding the full BURY_DEPTH. A SUPERFLAT world
+            // is three blocks thick: asking for four below the surface put every candidate at or under the
+            // world floor, all twelve attempts, so the opening fell back to the bell in every flat world.
+            int y = Math.max(floor + 1, surface - BURY_DEPTH);
+
+            BlockPos cand = new BlockPos(x, y, z);
+            if (surface > level.getSeaLevel()) return cand;     // dry land: ideal, take it
+
+            // Below sea level -- probably an ocean floor. Worth avoiding, NOT worth failing over: a superflat
+            // sits far below y=63 and would never pass this, and an all-ocean start would rather have a wet
+            // cache than no map. Remembered, and used only if nothing drier turns up.
+            if (wetOrShallow == null) wetOrShallow = cand;
         }
-        return null;
+        return wetOrShallow;
     }
 }

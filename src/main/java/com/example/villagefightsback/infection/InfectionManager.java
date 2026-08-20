@@ -518,7 +518,15 @@ public final class InfectionManager {
             if (MarkerZones.get(level).blocked(g.getX(), g.getY(), g.getZ())) return; // ...nor on a player's claim
             BlockState above = level.getBlockState(g.above());
             if (above.isAir() || !above.getFluidState().isEmpty() || !above.blocksMotion()) {
-                level.setBlock(g, Blocks.DIRT_PATH.defaultBlockState(), 3);
+                // The village's own path, in a random colour: this is the one place a village-only world
+                // gets any colour at all, since the coloured infested path only ever appears where an emerald
+                // unit died. Identical to an infested path to look at; the difference is that the brain cannot
+                // spawn emerald units above it, which follows from it never entering the tracked infested set.
+                String[] all = BlockMatcher.ALL_SUFFIXES;
+                String pathColour = com.example.villagefightsback.Config.monochromeGreen()
+                        ? "" : all[level.getRandom().nextInt(all.length)];
+                level.setBlock(g, coloured("village_path", pathColour,
+                        com.example.villagefightsback.ModBlocks.VILLAGE_PATH.get()).defaultBlockState(), 3);
                 inf.addPathHead(g.asLong());
                 return;
             }

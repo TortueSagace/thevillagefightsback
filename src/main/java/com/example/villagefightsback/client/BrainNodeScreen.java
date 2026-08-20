@@ -33,6 +33,8 @@ public class BrainNodeScreen extends Screen {
     private final int emeralds;
     /** SURVIVAL only: the metal tribute line drawn under the emerald row. Empty in Creative. */
     private final String metalLine;
+    /** Shown in place of the emerald line when only metal is missing. Empty otherwise. */
+    private final String progressOverride;
     private final int costNext;
     private final int villagers;
     private final int guards;
@@ -52,9 +54,10 @@ public class BrainNodeScreen extends Screen {
     public BrainNodeScreen(int level, int maxLevel, int emeralds, int costNext,
                            int villagers, int guards, int golems, int fertilized, int organic,
                            int reputation, List<String> reflexLog, List<String> organicLog,
-                           List<String> reputationLog, String metalLine) {
+                           List<String> reputationLog, String metalLine, String progressOverride) {
         super(Component.literal("Village Brain Node"));
         this.metalLine = metalLine == null ? "" : metalLine;
+        this.progressOverride = progressOverride == null ? "" : progressOverride;
         this.level = level;
         this.maxLevel = maxLevel;
         this.emeralds = emeralds;
@@ -178,6 +181,10 @@ public class BrainNodeScreen extends Screen {
         if (costNext < 0) {
             progress = Component.literal("Max level reached  -  " + emeralds + " emeralds stored")
                     .withStyle(ChatFormatting.AQUA);
+        } else if (!progressOverride.isEmpty()) {
+            // The emeralds are in; metal is what is left. Saying "12 / 8 emeralds" here would point at the
+            // one thing that is NOT holding the stage back.
+            progress = Component.literal(progressOverride);
         } else {
             progress = Component.literal(emeralds + " / " + costNext + " emeralds to level " + (level + 1))
                     .withStyle(ChatFormatting.GREEN);
