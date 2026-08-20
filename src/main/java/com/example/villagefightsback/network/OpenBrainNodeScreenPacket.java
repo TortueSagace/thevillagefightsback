@@ -33,7 +33,13 @@ public record OpenBrainNodeScreenPacket(
          * server: the numbers and colours are decided there, and one string beats threading six counters
          * through two packet formats and duplicating the rule client-side where it could drift.
          */
-        String metalLine
+        String metalLine,
+        /**
+         * SURVIVAL only: replaces the emerald progress line when the emeralds are already in and only metal
+         * is missing. Empty otherwise -- "12 / 8 emeralds to level 3" is a confusing thing to read when the
+         * emeralds are not what is holding the stage back.
+         */
+        String progressOverride
 ) implements CustomPacketPayload {
     public static final Type<OpenBrainNodeScreenPacket> TYPE =
             new Type<>(TheVillageFightsBack.id("open_brain_node_screen"));
@@ -58,6 +64,7 @@ public record OpenBrainNodeScreenPacket(
         buf.writeCollection(this.organicLog, (b, s) -> b.writeUtf(s));
         buf.writeCollection(this.reputationLog, (b, s) -> b.writeUtf(s));
         buf.writeUtf(this.metalLine);
+        buf.writeUtf(this.progressOverride);
     }
 
     private static OpenBrainNodeScreenPacket read(RegistryFriendlyByteBuf buf) {
@@ -65,7 +72,7 @@ public record OpenBrainNodeScreenPacket(
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readInt(),
                 buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()), buf.readList(b -> b.readUtf()),
-                buf.readUtf());
+                buf.readUtf(), buf.readUtf());
     }
 
     @Override

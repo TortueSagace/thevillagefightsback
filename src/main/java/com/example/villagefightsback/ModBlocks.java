@@ -420,6 +420,13 @@ public final class ModBlocks {
     /** Infested Path (v1.0.3 mob infection): a lime, glowing path laid below an emerald-converted unit. Spreads
      *  fertile/rich blocks like a village path -- to a stage-4 brain radius but 5x slower. See {@link InfestedPathBlock}
      *  + {@link com.example.villagefightsback.infection.InfectionManager}. */
+    /** The village's own coloured path, laid along a stage-2 wall footprint. See {@link VillagePathBlock}. */
+    public static final DeferredHolder<Block, Block> VILLAGE_PATH = BLOCKS.register("village_path",
+            () -> new VillagePathBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)
+                    .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
+    public static final DeferredHolder<Item, Item> VILLAGE_PATH_ITEM = ITEMS.register("village_path",
+            () -> new BlockItem(VILLAGE_PATH.get(), new Item.Properties()));
+
     public static final DeferredHolder<Block, Block> INFESTED_PATH = BLOCKS.register("infested_path",
             () -> new InfestedPathBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT_PATH)
                     .emissiveRendering((s, l, p) -> true).lightLevel(s -> FERTILE_LIGHT)));
@@ -592,6 +599,7 @@ public final class ModBlocks {
                             .emissiveRendering((s, l, p) -> true)));
             colour(c, "fertile_kelp" + c, () -> new FertileKelpBlock(glow(Blocks.KELP_PLANT)));
             colour(c, "infested_path" + c, () -> new InfestedPathBlock(glow(Blocks.DIRT_PATH)));
+            colour(c, "village_path" + c, () -> new VillagePathBlock(glow(Blocks.DIRT_PATH)));
 
             // craftable wood + cobble
             colour(c, "fertile_planks" + c, () -> new Block(glow(Blocks.OAK_PLANKS)));
@@ -980,6 +988,7 @@ public final class ModBlocks {
                         output.accept(FERTILE_GRASS_ITEM.get());
                         output.accept(FERTILE_KELP_ITEM.get());
                         output.accept(INFESTED_PATH_ITEM.get());
+                output.accept(VILLAGE_PATH_ITEM.get());
                         output.accept(FERTILE_PLANKS_ITEM.get());
                         output.accept(FERTILE_PLANKS_STAIRS_ITEM.get());
                         output.accept(FERTILE_PLANKS_SLAB_ITEM.get());
