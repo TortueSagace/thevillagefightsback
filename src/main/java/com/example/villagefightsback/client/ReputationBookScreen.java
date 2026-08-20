@@ -219,12 +219,7 @@ public class ReputationBookScreen extends Screen {
                 item(net.minecraft.world.item.Items.COPPER_INGOT, "Stage 1 -> 2:  8 copper ingots"),
                 item(net.minecraft.world.item.Items.GOLD_INGOT, "Stage 2 -> 3:  8 copper, 8 gold ingots"),
                 item(com.example.villagefightsback.ModItems.LIMBO_INGOT.get(),
-                        "Stage 3 -> 4:  8 copper, 8 gold, 1 Limbo ingot"),
-                BLANK,
-                body("The tribute is held by the node until the emeralds are in too, and both are spent "
-                        + "together. Feed it anything and it will tell you what is still missing."),
-                BLANK,
-                body("In the Creative experience none of this applies: emeralds are the whole price."))));
+                        "Stage 3 -> 4:  8 copper, 8 gold, 1 Limbo ingot"))));
 
         if (!peaceful) {
             out.add(new ArrayList<>(List.of(
