@@ -54,8 +54,32 @@ public class GeneralDariusGoal extends Goal {
     private static final float FALL_CAP = 24.0F;
     private static final int FIRE_ASPECT_SECONDS = 8;
 
-    private static final int STUCK_TICKS = 40;              // can't progress for this long -> try a scaffold escape
+    private static final int STUCK_TICKS = 40;
+    /**
+     * A plain hop over whatever the pathfinder could not get round.
+     *
+     * <p>Until 1.7.2 he closed every gap by leaping, because the leap recharged in 35 ticks. Making that a
+     * ten-second SPECIAL took his mobility away with it, and what was left was a walk on a pathfinder that
+     * had never had to carry him before -- so he stalled on terrain he used to sail over. This is that
+     * mobility back without the damage: no Smasher, no smash, no special spent. It fires only once he has
+     * actually stopped making progress, so it is a recovery rather than a habit.
+     */
+    private static final int HOP_COOLDOWN = 30;
+    private static final double HOP_VY = 0.62;
+    private static final double HOP_HORIZ = 0.42;
+    private int hopCooldown;              // can't progress for this long -> try a scaffold escape
     private static final int SCAFFOLD_INTERVAL = 4;
+    /**
+     * How far above him a target has to be before he starts building up to it, and how high he will go.
+     *
+     * <p>He could always dig UP through a ceiling, but a flier in open air has no ceiling to dig -- digUp
+     * finds the way already open and declines, and with the leap now a ten-second special there was nothing
+     * left to close the gap. So he does what the stage-3 guards do and builds a scaffold column under
+     * himself. The cap stops him towering into the sky after something that simply flew away.
+     */
+    private static final double CLIMB_MIN_ABOVE = 3.0;
+    private static final int CLIMB_MAX_HEIGHT = 24;
+    private int climbSteps;
 
     private static final int WITHER_SCAN_INTERVAL = 20;     // re-scan for a wither storm ~1/s (it is the priority)
     private static final double WITHER_HUNT_RANGE = 160.0;  // hunt a wither storm within this (found even hitbox-off)
@@ -94,6 +118,7 @@ public class GeneralDariusGoal extends Goal {
         if (meleeCooldown > 0) meleeCooldown--;
         if (launchCooldown > 0) launchCooldown--;
         if (scaffoldCooldown > 0) scaffoldCooldown--;
+        if (hopCooldown > 0) hopCooldown--;
         // Back on his feet -> back to the Obliterator, whether or not the smash actually connected. Before
         // ensureWeapon, so the two never disagree about what should be in his hand this tick.
         if (darius.onGround() && darius.isSmashing()) darius.endSmash();
@@ -183,6 +208,14 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
+        // Target in the AIR above him: build up to it. digUp only helps when something is in the way, and
+        // a phantom over open ground is exactly the case it declines.
+        if ((t.getY() - darius.getY()) > CLIMB_MIN_ABOVE) {
+            if (climbToward(sl, t)) return;
+        } else {
+            climbSteps = 0;      // level with it again: the next flier gets a full allowance
+        }
+
         // Jump-close when comfortably out of reach and the launch is ready (no ceiling check -- breaks through).
         if (distSqr >= JUMP_MIN_DIST_SQR && darius.smashReady()
                 && (t.getY() - darius.getY()) > -2.0) {
@@ -198,8 +231,13 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
-        // Otherwise walk toward the target.
+        // Otherwise walk toward the target -- and hop when the walk is visibly not working.
         NavThrottle.follow(darius, t, 1.2);
+        if (hopCooldown <= 0 && noProgressTicks >= STUCK_TICKS / 2 && darius.onGround()
+                && (t.getY() - darius.getY()) > -2.0) {
+            hop(t);
+            return;
+        }
         trackProgress(sl, distSqr);
     }
 
@@ -286,6 +324,52 @@ public class GeneralDariusGoal extends Goal {
         return true;
     }
 
+    /**
+     * Walk under the target, then pillar up on cheap scaffolds until he can reach it.
+     *
+     * <p>The same trick {@code StageThreeGuardGoal.climbWithScaffold} uses, and the same blocks: they carry
+     * no support requirement and expire on their own after about thirty seconds, so a chase into the sky
+     * does not leave a tower standing in the village afterwards.
+     *
+     * @return true when it handled the tick, so the caller stops
+     */
+    private boolean climbToward(ServerLevel sl, LivingEntity t) {
+        if (climbSteps >= CLIMB_MAX_HEIGHT) return false;               // high enough; let something else try
+        int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
+        int hx = (int) Math.floor(t.getX()) - gx, hz = (int) Math.floor(t.getZ()) - gz;
+        if (Math.abs(hx) > 1 || Math.abs(hz) > 1) {
+            NavThrottle.goTo(darius, t.getX(), darius.getY(), t.getZ(), 1.2);   // get under it first
+            return true;
+        }
+        if (scaffoldCooldown > 0) return true;                         // pacing the climb, not failing it
+
+        BlockPos feet = new BlockPos(gx, gy, gz);
+        if (sl.getBlockState(feet.above()).blocksMotion()) return false;   // capped: digUp's problem, not this
+        if (sl.getBlockState(feet).canBeReplaced()) {
+            sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+            CheapScaffoldManager.track(sl, feet);
+        }
+        darius.getNavigation().stop();
+        darius.setPos(gx + 0.5, gy + 1.0, gz + 0.5);
+        darius.fallDistance = 0.0F;
+        scaffoldCooldown = SCAFFOLD_INTERVAL;
+        climbSteps++;
+        return true;
+    }
+
+    /** A short vault toward the target. Deliberately NOT launchAt: nothing is spent and nothing is armed. */
+    private void hop(LivingEntity t) {
+        Vec3 to = t.position().subtract(darius.position());
+        double hl = Math.sqrt(to.x * to.x + to.z * to.z);
+        double hx = hl > 1.0E-4 ? to.x / hl : 0, hz = hl > 1.0E-4 ? to.z / hl : 0;
+        darius.setDeltaMovement(hx * HOP_HORIZ, HOP_VY, hz * HOP_HORIZ);
+        darius.hasImpulse = true;
+        darius.hurtMarked = true;
+        darius.fallDistance = 0.0F;
+        hopCooldown = HOP_COOLDOWN;
+        noProgressTicks = 0;
+    }
+
     // --- mace jump (double height, no ceiling check) ------------------------------------------------
     private void launchAt(LivingEntity t) {
         launchAt(t, LAUNCH_HORIZ);
@@ -314,6 +398,8 @@ public class GeneralDariusGoal extends Goal {
             Vec3 m = darius.getDeltaMovement();
             darius.setDeltaMovement(m.x + (to.x / hl) * 0.08, m.y, m.z + (to.z / hl) * 0.08);
         }
+        if (!darius.isSmashing() || darius.smashSpent()) return;   // a bounce is not a new special
+        if (!darius.isSmashing() || darius.smashSpent()) return;   // a bounce is not a new special
         boolean descending = darius.getDeltaMovement().y < 0;
         if (descending && darius.distanceToSqr(t) <= SMASH_RANGE_SQR && darius.fallDistance > 0.6F) {
             smash(t);
@@ -329,6 +415,7 @@ public class GeneralDariusGoal extends Goal {
         darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.9F, 1.3F);
         darius.fallDistance = 0.0F;
+        darius.spendSmash();       // one blow; he comes down and goes back to the Obliterator
     }
 
     // --- walk home + despawn (with refund, handled by the entity) -----------------------------------

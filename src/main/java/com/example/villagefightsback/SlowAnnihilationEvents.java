@@ -39,7 +39,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * <h2>The exit</h2>
  * Levitation would normally pin you to the ceiling until the Wither finishes. Crouching mirrors the rise
  * into a fall of the same speed, so a player who works that out can still reach the bed. A Gas Mask refuses
- * the effect outright.
+ * the effect outright, and so does anything that belongs to the Limbo already -- its own raiders are made
+ * of the stuff, and a raid that dissolves before it lands is not a raid.
  *
  * <h2>What is left behind</h2>
  * Dying with it turns you into one of the Limbo's own: the black banish swirl, then a random member of the
@@ -123,7 +124,10 @@ public final class SlowAnnihilationEvents {
     @SubscribeEvent
     public static void onApplicable(MobEffectEvent.Applicable event) {
         if (!event.getEffectInstance().is(ModEffects.SLOW_ANNIHILATION)) return;
-        if (event.getEntity().getItemBySlot(EquipmentSlot.HEAD).is(ModArmor.GAS_MASK.get())) {
+        // The Limbo's own are made of the stuff. Annihilating a Limbo Phantom with Limbo air reads as
+        // the dimension eating itself, and a raid that dissolves before it lands is not a raid.
+        if (Factions.isLimbo(event.getEntity())
+                || event.getEntity().getItemBySlot(EquipmentSlot.HEAD).is(ModArmor.GAS_MASK.get())) {
             event.setResult(MobEffectEvent.Applicable.Result.DO_NOT_APPLY);
         }
     }

@@ -14,8 +14,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Draws the banish-ability cooldown indicator (a small green square that fills as it recharges, with the
- * seconds remaining) just left of the hotbar -- but only while the player wears the full Limbo set, i.e. only
- * once they actually have the ability.
+ * seconds remaining) just RIGHT of the hotbar -- but only while the player wears the full Limbo set, i.e.
+ * only once they actually have the ability.
+ *
+ * <p>The right rather than the left because the left is where the offhand slot sits, and a shield in the
+ * offhand put the two squares side by side arguing over the same corner.
  */
 @EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class LimboAbilityHud {
@@ -38,7 +41,7 @@ public final class LimboAbilityHud {
         if (mc.player == null || mc.options.hideGui || !LimboGear.hasFullSet(mc.player)) return;
 
         int size = 18;
-        int x = w / 2 - 91 - size - 6; // just left of the 182-wide hotbar
+        int x = w / 2 + 91 + 6;        // just right of the 182-wide hotbar
         int y = h - 22;
         int cd = LimboAbilityClient.getCooldownTicks();
         boolean ready = cd <= 0;

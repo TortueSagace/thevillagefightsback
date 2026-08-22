@@ -9,6 +9,22 @@ Every voxel then samples the texture pixel on whichever face it sits on -- front
 bottom -- from limbo_layer_1.png (helmet, chest, arms) and limbo_layer_2.png (legs), which are the worn
 armour textures the game itself draws on him.
 
+THE MAN INSIDE THE ARMOUR. The armour layers are transparent wherever the armour does not cover, so
+sampling them alone gives an empty suit -- and, worse, one that FLOATS: the leggings layer has nothing
+below the knee, so the statue's lowest three rows came out empty and it stood three blocks off its own
+base. So Darius's own skin is sampled first and the armour composited over it. Two things are then
+forced to stay skin no matter what the armour says, because they are what makes it a statue of somebody
+rather than of a suit: the FACE inside the helmet, and the HANDS at the ends of the sleeves.
+
+BOOTS come off layer 1, not layer 2. Vanilla splits worn armour across two sheets -- helmet, chest and
+BOOTS on layer 1, leggings on layer 2 -- so sampling the legs from layer 2 alone left him barefoot. The
+bottom rows of each leg are taken from layer 1 instead.
+
+SPIKES. The Limbo helmet is drawn with three spikes by a render layer, not by its texture, so nothing in
+the armour sheet knows about them. They are added here as geometry.
+
+FACING. The statue is mirrored on Z so it looks back at whoever set the charge down, rather than away.
+
 Each sampled colour is snapped to the nearest block in a NON-FLAMMABLE palette: concretes, terracottas
 and a few stones. That constraint is the whole reason wool is absent -- a 30-block statue of the village's
 champion that a single flint could burn down would be a monument to the wrong thing.
@@ -66,6 +82,8 @@ PALETTE = {
 PALETTE_ITEMS = list(PALETTE.items())
 
 BASE_BLOCK = "minecraft:dirt_path"
+# The spikes read as the helmet's brightest metal.
+SPIKE_COLOUR = (130, 226, 158)
 
 
 def nearest(rgb):
@@ -93,7 +111,7 @@ def faces(ox, oy, w, h, d):
 
 
 PARTS = [
-    # name,        layer, size (w,h,d),  uv origin, offset from the statue's origin (x,y,z)
+    # name,        layer, size (w,h,d),  armour uv, offset from the statue's origin (x,y,z)
     ("head", 1, (8, 8, 8), (0, 0), (2, 24, -2)),
     ("body", 1, (8, 12, 4), (16, 16), (2, 12, 0)),
     ("right_arm", 1, (4, 12, 4), (40, 16), (-2, 12, 0)),
@@ -101,6 +119,34 @@ PARTS = [
     ("right_leg", 2, (4, 12, 4), (0, 16), (2, 0, 0)),
     ("left_leg", 2, (4, 12, 4), (0, 16), (6, 0, 0)),
 ]
+
+SKIN = os.path.join(ROOT, "src", "main", "resources", "assets", "thevillagefightsback",
+                    "textures", "entity", "general_darius.png")
+
+# Darius is drawn with a VILLAGER model, so his skin is a villager sheet and its boxes are not the
+# player ones the armour layers use. These are the villager UV origins that best cover each part; the
+# faces are stretched to the box's own size, which is why sample() takes the face size separately.
+SKIN_PARTS = {
+    "head": (0, 0, (8, 10, 8)),        # villager head is 8x10x8
+    "body": (16, 20, (8, 12, 6)),      # ...and its body 8x12x6
+    "right_arm": (0, 22, (4, 12, 4)),  # the villager's arms are one joined box, so the LEG uv is
+    "left_arm": (0, 22, (4, 12, 4)),   # borrowed: same 4x12x4 shape, same robe and skin tones
+    "right_leg": (0, 22, (4, 12, 4)),
+    "left_leg": (0, 22, (4, 12, 4)),
+}
+
+# How far in from the edge of the head's front face the FACE starts (the rest of that face is helmet),
+# and how many rows at the bottom of each arm are HAND rather than sleeve.
+FACE_INSET = 1
+HAND_ROWS = 3
+# How many rows at the bottom of each leg are BOOT rather than legging.
+BOOT_ROWS = 4
+# The three spikes on the Limbo helmet, as (x offset from the head's left, height). Each is a
+# square column SPIKE_BASE on a side, and they are Forgotten Glowstone, so the statue is lit
+# from the head at night rather than being a silhouette.
+SPIKES = ((0, 2), (3, 3), (6, 2))
+SPIKE_BLOCK = "thevillagefightsback:forgotten_glowstone"
+SPIKE_BASE = 2          # each spike is a SPIKE_BASE x SPIKE_BASE column, not a single stack
 
 
 def sample(img, uv, fw, fh, u, v):
@@ -145,34 +191,83 @@ def build():
     # Frame 8 is the top of the breath: 71 colours spanning 16..122, which is a statue with shading in it.
     layer = {1: _load("limbo_layer_1_8.png", "limbo_layer_1.png"),
              2: _load("limbo_layer_2_8.png", "limbo_layer_2.png")}
+    skin = Image.open(SKIN).convert("RGBA")
+
     voxels = {}
     for name, lay, (w, h, d), (ux, uy), (ox, oy, oz) in PARTS:
-        img = layer[lay]
-        f = faces(ux, uy, w, h, d)
+        armour = layer[lay]
+        af = faces(ux, uy, w, h, d)
+        sx, sy, (sw, sh, sd) = SKIN_PARTS[name]
+        sf = faces(sx, sy, sw, sh, sd)
+
         for x in range(w):
             for y in range(h):
                 for z in range(d):
-                    # The face this voxel shows. Interior voxels are given the front face's colour, which
-                    # never shows and only has to be something.
+                    # Which face this voxel shows, and where on it. Interior voxels take the front face,
+                    # which never shows and only has to be something.
                     if z == 0:
-                        px = sample(img, f["front"], w, h, x, h - 1 - y)
+                        key, u, v, fw, fh = "front", x, h - 1 - y, w, h
                     elif z == d - 1:
-                        px = sample(img, f["back"], w, h, w - 1 - x, h - 1 - y)
+                        key, u, v, fw, fh = "back", w - 1 - x, h - 1 - y, w, h
                     elif x == 0:
-                        px = sample(img, f["right"], d, h, z, h - 1 - y)
+                        key, u, v, fw, fh = "right", z, h - 1 - y, d, h
                     elif x == w - 1:
-                        px = sample(img, f["left"], d, h, d - 1 - z, h - 1 - y)
+                        key, u, v, fw, fh = "left", d - 1 - z, h - 1 - y, d, h
                     elif y == h - 1:
-                        px = sample(img, f["top"], w, d, x, z)
+                        key, u, v, fw, fh = "top", x, z, w, d
                     else:
-                        px = sample(img, f["front"], w, h, x, h - 1 - y)
+                        key, u, v, fw, fh = "front", x, h - 1 - y, w, h
+
+                    # The skin underneath, stretched from the villager sheet onto this box's face.
+                    su = u * sf[key][2] // max(1, fw)
+                    sv = v * sf[key][3] // max(1, fh)
+                    under = sample(skin, sf[key], fw, fh, su, sv)
+                    over = sample(armour, af[key], fw, fh, u, v)
+
+                    # The two places the man must win over the suit.
+                    show_face = (name == "head" and key == "front"
+                                 and FACE_INSET <= x < w - FACE_INSET and 1 <= (h - 1 - y) < h - 1)
+                    show_hand = (name.endswith("_arm") and y < HAND_ROWS)
+
+                    # Boots are on layer 1, not the leggings sheet, so the lower leg comes from there or
+                    # he stands there barefoot.
+                    if name.endswith("_leg") and y < BOOT_ROWS:
+                        over = sample(layer[1], faces(0, 16, w, h, d)[key], fw, fh, u, v)
+
+                    px = under if (show_face or show_hand or over[3] < 40) else over
                     if px[3] < 40:
-                        continue                       # transparent armour pixel -> no block
+                        px = under
+                    if px[3] < 40:
+                        continue                       # neither the suit nor the man is here
                     voxels[(ox + x, oy + y, oz + z)] = px[:3]
+
+    # Mirrored on Z so he faces whoever set the charge down rather than turning his back on them.
+    zs_all = [p[2] for p in voxels]
+    zmin, zmax = min(zs_all), max(zs_all)
+    voxels = {(x, y, zmin + (zmax - z)): c for (x, y, z), c in voxels.items()}
 
     lit = stretch(set(voxels.values()))
     for k in list(voxels):
         voxels[k] = nearest(lit[voxels[k]])
+
+    # The three helmet spikes, AFTER the palette pass: they are a named block rather than a colour to be
+    # matched, and Forgotten Glowstone is not in the palette (nor should it be -- nothing else on him
+    # should glow). They are a render LAYER on the real helmet, so no armour texture carries them and
+    # nothing sampled above could have found them; a statue of Darius without them is not him.
+    #
+    # Placed off the head's own top face rather than off the PARTS offsets, so the mirror above cannot put
+    # them on the back of his skull.
+    top = max(y for (_x, y, _z) in voxels)
+    crown = [(x, z) for (x, y, z) in voxels if y == top]
+    cx0 = min(x for x, _z in crown)
+    cz0 = min(z for _x, z in crown)
+    cz1 = max(z for _x, z in crown)
+    zmid = (cz0 + cz1) // 2 - (SPIKE_BASE // 2) + 1
+    for (sx, tall) in SPIKES:
+        for t in range(tall):
+            for dx in range(SPIKE_BASE):
+                for dz in range(SPIKE_BASE):
+                    voxels[(cx0 + sx + dx, top + 1 + t, zmid + dz)] = SPIKE_BLOCK
 
     # The footing: a slab of dirt path one block under the whole footprint, as the houses have.
     xs = [p[0] for p in voxels]

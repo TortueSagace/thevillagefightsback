@@ -46,6 +46,23 @@ public class LimboShieldItem extends ShieldItem {
     }
 
     /**
+     * Rendered with vanilla's shield model, not as a sprite.
+     *
+     * <p>That is what gives it the shield behaviour the player already knows -- edge-on at the arm while
+     * carried, flat in front when raised -- because it is literally vanilla's model under vanilla's
+     * transforms. See {@link com.example.villagefightsback.client.ShieldItemRenderer}.
+     */
+    @Override
+    public void initializeClient(java.util.function.Consumer<net.neoforged.neoforge.client.extensions.common.IClientItemExtensions> consumer) {
+        consumer.accept(new net.neoforged.neoforge.client.extensions.common.IClientItemExtensions() {
+            @Override
+            public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return com.example.villagefightsback.client.ShieldItemRenderer.instance();
+            }
+        });
+    }
+
+    /**
      * Not the vanilla "shield" name lookup.
      *
      * <p>{@code ShieldItem.getDescriptionId} inspects the banner colour on the stack and answers
