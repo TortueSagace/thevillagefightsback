@@ -109,7 +109,8 @@ public class DeadBrainNodeBlock extends Block {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (level.isClientSide || !(placer instanceof Player p)) return;
         p.displayClientMessage(Component.literal(
-                "§7Feed the dead brain a golden apple for an attempt to bring the Village back to life"), false);
+                "§7Feed the dead brain a " + UpgradeTribute.revivingItemName()
+                + " for an attempt to bring the Village back to life"), false);
     }
 
     @Override
@@ -119,7 +120,7 @@ public class DeadBrainNodeBlock extends Block {
         ServerLevel sl = (ServerLevel) level;
         ItemStack held = player.getItemInHand(hand);
 
-        if (held.is(Items.GOLDEN_APPLE) || held.is(Items.ENCHANTED_GOLDEN_APPLE)) {
+        if (UpgradeTribute.isRevivingItem(held)) {
             if (spiritIncoming(sl, pos, state)) {
                 player.displayClientMessage(Component.literal(
                         "§bA Village Spirit is already on its way back to this brain."), false);
@@ -133,7 +134,8 @@ public class DeadBrainNodeBlock extends Block {
         // Anything else (including an empty hand): say what this is and what it wants. The live node opens its
         // upgrade screen here; a dead one has no economy, no stage and no upgrades to show.
         player.displayClientMessage(Component.literal(
-                "§8Dead brain node. §fFeed it a golden apple to summon a Village Spirit!"), false);
+                "§8Dead brain node. §fFeed it a " + UpgradeTribute.revivingItemName()
+                + " to summon a Village Spirit!"), false);
         sl.playSound(null, pos, SoundEvents.SCULK_BLOCK_HIT, SoundSource.BLOCKS, 0.8F, 0.6F);
         return InteractionResult.CONSUME;
     }

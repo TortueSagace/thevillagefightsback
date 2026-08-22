@@ -133,7 +133,38 @@ public final class Factions {
     public static boolean isVillageThreat(Entity e) {
         return e instanceof net.minecraft.world.entity.monster.Enemy
                 || isInfected(e)
-                || com.example.villagefightsback.compat.MCACompat.isHostileVillager(e);
+                || com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)
+                || isExtraHostile(e);
+    }
+
+    /**
+     * Mobs the config names as hostile even though nothing about them says so.
+     *
+     * <p>{@code instanceof Enemy} covers modded monsters for free and that is normally the right call, but it
+     * only works for mods that declare their mobs monsters. A player reported one -- Hostile Civilization --
+     * whose settlers attack players and break the village's glass while the village stood there treating them
+     * as neighbours. Rather than hardcode that mod's namespace, the list is config: it fixes that mod, and the
+     * next one, without needing the jar to hand.
+     *
+     * <p>Entries are either a full id or a whole namespace ({@code "somemod:*"}). Read live rather than cached
+     * because the list is tiny and this must follow a {@code /thevillagefightsback config} change immediately;
+     * it is a handful of string comparisons on a list that is one entry long by default.
+     */
+    private static boolean isExtraHostile(Entity e) {
+        java.util.List<? extends String> extra = Config.EXTRA_HOSTILE_ENTITIES.get();
+        if (extra.isEmpty()) return false;
+        net.minecraft.resources.ResourceLocation id =
+                ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
+        if (id == null) return false;
+        for (String s : extra) {
+            String t = s.trim();
+            if (t.endsWith(":*")) {
+                if (id.getNamespace().equals(t.substring(0, t.length() - 2))) return true;
+            } else if (t.equals(id.toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The "emerald" faction (the v1.0.3 mob-infection units + the Emeraldger). Membership = the {@link EmeraldUnit}

@@ -3,6 +3,7 @@ package com.example.villagefightsback.client;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.villagefightsback.ModArmor;
 import com.example.villagefightsback.ModBlocks;
 import com.example.villagefightsback.ModItems;
 
@@ -262,6 +263,24 @@ public class LimboBookScreen extends Screen {
                         + "never sells armour."),
                 BLANK,
                 body("He can defend himself. He throws a Volatile Limbo Potion at anything above 10 hearts."))));
+
+        out.add(new ArrayList<>(List.of(
+                head("The air is not free"),
+                BLANK,
+                red("Ten seconds here and it starts."),
+                BLANK,
+                body("Slow Annihilation: Wither, and Levitation together. The Wither is what kills you. The "
+                        + "Levitation is what stops you leaving, because you cannot walk to the bed while you "
+                        + "are drifting off the floor."),
+                BLANK,
+                body("CROUCH. You come down exactly as fast as it takes you up. That is the way out."),
+                BLANK,
+                item(ModArmor.GAS_MASK.get(),
+                        "A Gas Mask stops it completely, for as long as you wear it. It cannot be crafted. "
+                        + "Villages keep them in their chests, rarely."),
+                BLANK,
+                red("Die with it and you do not simply die."),
+                body("Something of the Limbo's own gets up where you fell."))));
 
         return out;
     }
