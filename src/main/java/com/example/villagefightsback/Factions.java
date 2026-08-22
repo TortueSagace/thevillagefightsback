@@ -13,6 +13,12 @@ import net.minecraftforge.registries.ForgeRegistries;
  * guard combat goal, and the friendly-fire / change-target event hooks in {@link UnleashedManager}.
  */
 public final class Factions {
+    // Every predicate here answers false for null rather than throwing. That is not defensive habit: the
+    // usual argument is event.getSource().getEntity(), which is null for any ownerless source, and the mod
+    // raises those itself -- the guards' death blast is level.explode(null, ...). A null killer means
+    // nothing killed them, so every question here has an obvious answer. It used to hold by accident and
+    // one release without it crashed a server mid-tick, so it is written down now.
+
     private Factions() {}
 
     /** True for the unleashed brainNode boss and its minions (vindictive guards + vindictive gigachads). */
@@ -52,6 +58,7 @@ public final class Factions {
 
     /** True for a wither storm. Matched by entity id, so the Wither Storm mod stays an optional soft dependency. */
     public static boolean isWitherStorm(Entity e) {
+        if (e == null) return false;   // an ownerless damage source has no entity
         return WITHER_STORM_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()));
     }
 
@@ -62,6 +69,7 @@ public final class Factions {
 
     /** True for any part of a wither storm's body (core / head / segment / tentacle). Used to banish the lot. */
     public static boolean isWitherStormPart(Entity e) {
+        if (e == null) return false;   // an ownerless damage source has no entity
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(e.getType());
         return id != null && "witherstormmod".equals(id.getNamespace()) && WITHER_STORM_PARTS.contains(id.getPath());
     }
@@ -104,6 +112,7 @@ public final class Factions {
      * passed over by the mega-brutal buff and by Darius when he conscripts a squad.
      */
     public static boolean isGuard(Entity e) {
+        if (e == null) return false;   // an ownerless damage source has no entity
         return GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))
                 || com.example.villagefightsback.compat.MCACompat.isMcaGuard(e);
     }
@@ -111,6 +120,7 @@ public final class Factions {
     /** True for the village's own (non-infected) defenders: villagers (incl. emeraldgers), iron golems, wall
      *  defenders, General Darius, and Guard Villagers guards. Vindictive units (infected) are NOT village. */
     public static boolean isVillage(Entity e) {
+        if (e == null) return false;   // an ownerless damage source has no entity
         if (isInfected(e)) return false; // a vindictive gigachad is an IronGolem -> exclude the boss faction
         if (isEmerald(e)) return false;  // an emerald iron golem is an IronGolem -> it's emerald, not village
         // An MCA Reborn outlaw / cultist is a Villager carrying a hostile profession -- a raider, not a citizen.
@@ -131,6 +141,16 @@ public final class Factions {
      * <p>The single definition of "a threat to the village", shared by the villager/guard/golem target scans.
      */
     public static boolean isVillageThreat(Entity e) {
+        // NULL IS A REAL ANSWER HERE, not a defensive habit. Callers pass
+        // {@code event.getSource().getEntity()}, which is null for any ownerless source -- and the mod
+        // creates those itself: {@code level.explode(null, ...)} is exactly how the guards' death blast is
+        // raised. Nothing killed them, so nothing threatened the village.
+        //
+        // This used to hold by accident: every test below happened to tolerate null, so the question was
+        // never asked out loud. 1.7.2's extra-hostile list broke that silence by dereferencing e, and the
+        // first thing it hit was a guard killed by another guard's death explosion -- which crashed the
+        // server mid-tick. It is asked out loud now.
+        if (e == null) return false;
         return e instanceof net.minecraft.world.entity.monster.Enemy
                 || isInfected(e)
                 || com.example.villagefightsback.compat.MCACompat.isHostileVillager(e)
@@ -151,6 +171,7 @@ public final class Factions {
      * it is a handful of string comparisons on a list that is one entry long by default.
      */
     private static boolean isExtraHostile(Entity e) {
+        if (e == null) return false;      // see isVillageThreat: an ownerless source has no entity
         java.util.List<? extends String> extra = Config.EXTRA_HOSTILE_ENTITIES.get();
         if (extra.isEmpty()) return false;
         net.minecraft.resources.ResourceLocation id =

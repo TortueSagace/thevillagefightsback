@@ -18,6 +18,16 @@ import net.minecraftforge.registries.ForgeRegistries;
  * A stage-3 (upgraded) Guard Villagers guard that is killed BY a hostile mob goes out with a bang: a
  * TNT-strength explosion that also sets the whole blast range on fire. Only fires for upgraded guards
  * killed by an {@link Enemy} (not fall damage, drowning, friendly fire, etc.).
+ *
+ * <h2>It cannot set itself off</h2>
+ * The blast is raised with no owner, so a guard killed by it has a null killer and fails the threat
+ * test -- which is what has always stopped the chain. That is a subtle thing to be relying on, and it
+ * stopped being true for one release when the threat test started dereferencing its argument: a guard
+ * caught in another guard's blast crashed the server from inside the explosion's own damage loop.
+ *
+ * <p>So the rule is now stated rather than inferred. While a blast is being resolved, no death it
+ * causes raises another one. Even with a hostile somehow credited for the kill, a line of guards
+ * cannot detonate down its own length.
  */
 @Mod.EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class GuardDeathExplosionEvents {
@@ -27,6 +37,9 @@ public final class GuardDeathExplosionEvents {
     private static final float BLAST_RADIUS = 4.0F;   // TNT-strength
     private static final int FIRE_RADIUS = 4;         // ignite the whole blast range
 
+    /** True while one of these blasts is resolving. Not thread-shared: the server ticks on one thread. */
+    private static boolean exploding;
+
     @SubscribeEvent
     public static void onGuardDeath(LivingDeathEvent event) {
         if (!Config.guardsDropFireGrenadeUponDeath()) return;                            // config: off = guards die quietly
@@ -34,6 +47,7 @@ public final class GuardDeathExplosionEvents {
         if (!(e.level() instanceof ServerLevel level)) return;
         if (!GUARD_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(e.getType()))) return; // Guard Villagers guard only
         if (!UpgradeState.isUpgraded(e)) return;                                         // stage-3 only
+        if (exploding) return;                           // caught in another guard's blast; see the class doc
         Entity killer = event.getSource().getEntity();
         if (!Factions.isVillageThreat(killer)) return;   // killed by a hostile / boss-minion / MCA raider only
         explodeWithFire(level, e.getX(), e.getY() + 0.5, e.getZ());
@@ -41,6 +55,15 @@ public final class GuardDeathExplosionEvents {
 
     /** TNT-strength explosion that also leaves the whole blast range on fire. */
     private static void explodeWithFire(ServerLevel level, double x, double y, double z) {
+        exploding = true;
+        try {
+            blast(level, x, y, z);
+        } finally {
+            exploding = false;   // a throw inside the blast must not leave the guards permanently inert
+        }
+    }
+
+    private static void blast(ServerLevel level, double x, double y, double z) {
         level.explode(null, x, y, z, BLAST_RADIUS, true, Level.ExplosionInteraction.TNT);
         BlockPos center = BlockPos.containing(x, y, z);
         int r = FIRE_RADIUS;
