@@ -318,9 +318,9 @@ public final class Config {
                 .comment("The brain stage (1-4) at which air strikes become available. Default: 4.")
                 .defineInRange("air_strikes_appear_at_stage", 4, 1, 4);
         UNSTABLE_LIMBO_GRAVEL_HP_THRESHOLD = b
-                .comment("A creature whose base max-health exceeds this is 'unstable' in Limbo (its placed gravel self-destructs",
-                        "after the countdown). Default: 150.")
-                .defineInRange("unstable_limbo_gravel_HP_threshold", 150, 1, 100000);
+                .comment("A creature whose base max-health reaches this is 'unstable' in Limbo (its placed gravel self-destructs",
+                        "after the countdown). Default: 50.")
+                .defineInRange("unstable_limbo_gravel_HP_threshold", 50, 1, 100000);
         GUARDS_SPAWNING_WITH_GENERAL_DARIUS = b
                 .comment("If greater than 0, this many guards spawn alongside General Darius and are immediately enrolled by him.",
                         "Default: 0.")

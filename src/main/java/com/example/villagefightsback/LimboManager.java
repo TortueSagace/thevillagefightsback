@@ -39,7 +39,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * is freed -- broken, or its carried "soul gravel" item dropped/destroyed. Falling just re-homes a leash.
  *
  * <p>Extras layered on top: a banished WITHER STORM is one creature anchored by MANY gravel "parts" (breaking
- * any returns the whole storm and clears the rest); creatures over {@value LimboData#UNSTABLE_HP} HP are
+ * any returns the whole storm and clears the rest); creatures at or over {@value LimboData#UNSTABLE_HP} HP are
  * UNSTABLE -- their placed gravel self-destructs after {@value #UNSTABLE_TICKS} ticks (silk-mining it into the
  * carried item is the only stable hold); and Silk Touch converts a gravel into a carried soul-gravel item that
  * keeps the creature banished until it is freed.
@@ -49,7 +49,7 @@ public final class LimboManager {
     private LimboManager() {}
 
     public static final int MAX_CREATURES = 100;
-    public static final int UNSTABLE_TICKS = 600;    // 30s: a >150 HP hold's placed gravel self-destructs
+    public static final int UNSTABLE_TICKS = 600;    // 30s: a >=50 HP hold's placed gravel self-destructs
     private static final int FORGET_GRACE_TICKS = 100; // 5s grace before a missing creature is "forgotten"
     private static final int TICK_INTERVAL = 20;     // register / cap / countdown upkeep ~1/s
     private static final int PENDING_STALE_TICKS = 200;
@@ -114,7 +114,7 @@ public final class LimboManager {
             // property of what it IS, so a temporary buff or a chunk of damage must not change the verdict.
             float maxhp = (float) e.getAttributeBaseValue(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
             String typeId = typeKey(e);
-            long unstable = maxhp > Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
+            long unstable = maxhp >= Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
             BlockPos gravelPos = placeGravel(server, po.dim(), po.pos(), data);
             ServerLevel origin = server.getLevel(po.dim());
             String name = e.getName().getString();
@@ -147,7 +147,7 @@ public final class LimboManager {
             }
         }
 
-        // 3. Unstable holds (> 150 HP): a placed gravel past its deadline self-destructs -> the creature returns.
+        // 3. Unstable holds (>= 50 HP): a placed gravel past its deadline self-destructs -> the creature returns.
         for (LimboData.Entry entry : data.entries()) {
             if (entry.held || entry.unstableUntil == 0L || now < entry.unstableUntil) continue;
             // If the player has STARTED collecting this creature -- any sibling leash already silk-mined into a
@@ -245,7 +245,7 @@ public final class LimboManager {
         LimboData data = LimboData.get(server);
         long now = level.getGameTime();
         String typeId = Factions.WITHER_STORM_ID.toString();
-        long unstable = maxHealth > Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
+        long unstable = maxHealth >= Config.unstableLimboGravelHpThreshold() ? now + UNSTABLE_TICKS : 0L;
         int placed = 0;
         for (int attempt = 0; attempt < partCount * 4 && placed < partCount; attempt++) {
             int dx = (int) Math.round((level.random.nextDouble() * 2 - 1) * 10);
@@ -333,7 +333,7 @@ public final class LimboManager {
         // Re-anchor only a genuinely HELD leash. A stale token (creature already returned) or a DUPLICATED item
         // (creative pick-block / /give) whose leash is still placed elsewhere must NOT steal the index -> inert.
         if (entry == null || !entry.held) return;
-        long unstable = entry.maxHealth > Config.unstableLimboGravelHpThreshold() ? level.getGameTime() + UNSTABLE_TICKS : 0L;
+        long unstable = entry.maxHealth >= Config.unstableLimboGravelHpThreshold() ? level.getGameTime() + UNSTABLE_TICKS : 0L;
         UUID marker = spawnMarker(level, pos, entry.name);
         data.markPlaced(entry, level.dimension(), pos, marker, unstable);
         stampBE(level, pos, entry);

@@ -392,6 +392,9 @@ public final class BrainNodeEvents {
     // Back-off: brainNodes that survey but yield no wall (no cobble / too large) aren't retried for a while,
     // so a no-plan village can't re-run the survey every 10s. Cleared once a plan forms or the brain node is gone.
     private static final int SURVEY_BACKOFF_TICKS = 1200; // ~60s before retrying a village that produced no wall
+    /** ...and the same idea for a bell with nowhere to put a node, so the retry does not narrate itself. */
+    private static final int NODE_SPOT_BACKOFF_TICKS = 1200;
+    private static final Map<GlobalPos, Integer> nodeSpotBackoff = new HashMap<>();
     private static final Map<GlobalPos, Integer> surveyBackoff = new HashMap<>();
 
     // Stage bell: last level we saw per brain node, to detect a level-up from ANY source (sunset income,
@@ -951,11 +954,19 @@ public final class BrainNodeEvents {
                 ? bell.immutable()
                 : findBrainNodeSpot(level, bell);
         if (spot == null) {
+            // Retry quietly. The scan runs every TICK_INTERVAL ticks for every bell near every player, so an
+            // unplaceable one used to emit ~1800 warnings an hour -- and two players in range of the same bell
+            // doubled it, because the POI query is per player with no de-duplication.
+            Integer until = nodeSpotBackoff.get(key);
+            int now2 = level.getServer().getTickCount();
+            if (until != null && now2 < until) return;
+            nodeSpotBackoff.put(key, now2 + NODE_SPOT_BACKOFF_TICKS);
             // Nowhere usable around this bell yet. Not marked serviced, so the next scan tries again, but log it:
             // a village silently never getting a node is otherwise invisible to diagnose.
             TheVillageFightsBack.LOGGER.warn(
-                    "[The Village Fights Back] no usable brain node spot around the village centre at {}; will retry.",
-                    bell);
+                    "[The Village Fights Back] no usable brain node spot around the village centre at {}; "
+                            + "retrying in {} ticks.",
+                    bell, NODE_SPOT_BACKOFF_TICKS);
             return;
         }
 
@@ -1165,9 +1176,10 @@ public final class BrainNodeEvents {
         for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
             for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
                 if (Math.max(Math.abs(dx), Math.abs(dz)) < minAway) continue;   // keep out of the summoning ring
-                BlockPos surface = level.getHeightmapPos(
-                        Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
-                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue;  // roofs / cliffs
+                // Same column search as the node's own: this had the identical heightmap assumption, so the
+                // stage-4 Obliteration Furnace was unplaceable in exactly the villages the node was.
+                BlockPos surface = standingSpotNear(level, center, dx, dz);
+                if (surface == null) continue;                                  // roofs / cliffs
                 if (!level.getBlockState(surface).canBeReplaced()) continue;
                 if (!onRealGround(level, surface)) continue;
                 if (level.getBlockState(surface.above()).blocksMotion()) continue;          // room to stand over it
@@ -1197,14 +1209,51 @@ public final class BrainNodeEvents {
         return best != null ? best : search(level, center, false);
     }
 
+    /**
+     * The standing surface of one column NEAR the bell, rather than the top of the world.
+     *
+     * <p>{@code getHeightmapPos} answers the highest motion-blocking block in the column. For a village on
+     * the surface that is exact and free, so it is still asked first. For a village UNDERGROUND it is
+     * catastrophically wrong: a bell at y=-57 in a cave village gets the surface at y=70 back, every one of
+     * the 80 candidate columns then fails the {@value #NODE_Y_TOLERANCE} height test, {@code search} returns
+     * null in both passes, and the village never gets a node. It is not even quiet about it -- it logs
+     * "no usable brain node spot" once per bell, per nearby player, every {@value #TICK_INTERVAL} ticks,
+     * which is some 1800 lines an hour with one player standing there. That was the report.
+     *
+     * <p>So when the heightmap answer is out of range, walk the column around the BELL's own level instead
+     * and take the first replaceable cell with a sturdy floor under it, closest to the bell first. Same
+     * pattern as {@code BrainReflexes.findInsideSpot} and {@code FoundingManager.closestStandable}, both of
+     * which have always searched relative to their own anchor rather than the sky.
+     */
+    private static BlockPos standingSpotNear(ServerLevel level, BlockPos center, int dx, int dz) {
+        BlockPos surface = level.getHeightmapPos(
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
+        if (Math.abs(surface.getY() - center.getY()) <= NODE_Y_TOLERANCE) return surface;
+
+        int x = center.getX() + dx, z = center.getZ() + dz;
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        for (int d = 0; d <= NODE_Y_TOLERANCE; d++) {
+            for (int k = 0; k < 2; k++) {
+                if (d == 0 && k == 1) continue;                 // y = center.getY() is one cell, not two
+                m.set(x, center.getY() + (k == 0 ? -d : d), z);
+                if (!level.isLoaded(m)) continue;
+                if (!level.getBlockState(m).canBeReplaced()) continue;
+                BlockPos below = m.below();
+                if (!level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) continue;
+                return m.immutable();                           // d ascends, so this is the closest to the bell
+            }
+        }
+        return null;
+    }
+
     /** Best spot near {@code center}; {@code roomy} also demands the summoning ring, see {@link #isGoodNodeSpot}. */
     private static BlockPos search(ServerLevel level, BlockPos center, boolean roomy) {
         BlockPos best = null;
         for (int dx = -NODE_SEARCH; dx <= NODE_SEARCH; dx++) {
             for (int dz = -NODE_SEARCH; dz <= NODE_SEARCH; dz++) {
                 if (dx == 0 && dz == 0) continue;                 // leave the bell's own cell alone
-                BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, center.offset(dx, 0, dz));
-                if (Math.abs(surface.getY() - center.getY()) > NODE_Y_TOLERANCE) continue; // roofs / cliffs
+                BlockPos surface = standingSpotNear(level, center, dx, dz);
+                if (surface == null) continue;                    // roofs / cliffs / nothing to stand on
                 boolean ok = roomy ? isGoodNodeSpot(level, surface, false)
                         : (level.getBlockState(surface).canBeReplaced()
                                 && onRealGround(level, surface)
