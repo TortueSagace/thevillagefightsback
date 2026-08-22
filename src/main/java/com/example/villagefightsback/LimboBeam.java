@@ -45,8 +45,20 @@ public final class LimboBeam {
         Vec3 end = origin.add(dir.scale(RANGE));
         for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
                 new AABB(origin, end).inflate(RADIUS),
+                // Emeralds are spared (the village and the emerald faction leave each other alone), but the two
+                // BOSSES are not. Excluding them used to ride along on isSparedByVillage, which bundles Darius
+                // and the Vindictive Village Spirit in with the emeralds -- one predicate answering two
+                // different questions. Sparing someone from the village's AI is not the same as being immune to
+                // a banish beam, and the bosses should be bannable: the potion always could, so the beam
+                // refusing them was the odd one out.
+                //
+                // ...and a Darius never banishes another Darius. The beam is a swept cone, so sparing him in
+                // the TARGETING is not enough -- a second champion merely standing in it was still being
+                // thrown into the Limbo. Everyone else's beam still takes a boss.
                 x -> x != shooter && x.isAlive() && x instanceof Enemy
-                        && !Factions.isLimbo(x) && !Factions.isSparedByVillage(x))) { // never Darius or the friendly spirit
+                        && !Factions.isLimbo(x) && !Factions.isEmerald(x)
+                        && !(shooter instanceof GeneralDariusEntity
+                                && x instanceof GeneralDariusEntity))) {
             // whole-hitbox test so big creatures (boss, golems) are caught, not just centre points;
             // contains(origin) also catches point-blank targets (clip() is empty when origin is inside the box).
             AABB box = e.getBoundingBox().inflate(RADIUS);

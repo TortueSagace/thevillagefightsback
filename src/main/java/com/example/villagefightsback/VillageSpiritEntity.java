@@ -151,6 +151,20 @@ public class VillageSpiritEntity extends Allay {
         this.entityData.set(DATA_ERRAND, true);
     }
 
+    /**
+     * An errand spirit is just a "Spirit".
+     *
+     * <p>It is not carrying a village anywhere -- it was bought for one resurrection and then it is gone --
+     * so the full name overclaims what the player is looking at. {@code DATA_ERRAND} is synched, so this
+     * resolves on the client where the name is actually drawn. A hand-given custom name still wins.
+     */
+    @Override
+    public net.minecraft.network.chat.Component getName() {
+        if (this.hasCustomName() || !isErrand()) return super.getName();
+        return net.minecraft.network.chat.Component.translatable(
+                "entity.thevillagefightsback.village_spirit.errand");
+    }
+
     /** True for a spirit on a resurrection errand -- read on the client, which is where the halo is drawn. */
     public boolean isErrand() {
         return this.entityData.get(DATA_ERRAND);
@@ -314,6 +328,11 @@ public class VillageSpiritEntity extends Allay {
      * resurrection and quietly turning that into a new settlement is not what was paid for.
      */
     private void runErrand(ServerLevel sl) {
+        // Straight through whatever is in the way. The grave is usually inside the village -- behind a
+        // wall, under a roof, in a house -- and a spirit that has to path around all of it spends its
+        // flight bouncing off masonry. It is a ghost on an errand; walls are not its problem. Safe on a
+        // mob: only a PLAYER rubber-bands when the server sets noPhysics (see LimboBedrockPhaseClient).
+        this.noPhysics = true;
         double dx = errand.getX() + 0.5 - this.getX();
         double dy = errand.getY() + 0.9 - this.getY();
         double dz = errand.getZ() + 0.5 - this.getZ();

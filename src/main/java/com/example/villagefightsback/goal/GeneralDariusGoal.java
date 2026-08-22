@@ -324,7 +324,9 @@ public class GeneralDariusGoal extends Goal {
 
     private boolean isEnemy(LivingEntity e) {
         // Emerald units are a separate faction the village never fights, so Darius never locks/retaliates on them.
-        if (e == darius || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
+        // See GeneralDariusEntity.isHuntable: isSparedByVillage covers the emeralds AND the other
+        // champions, so one Darius never locks onto another.
+        if (e == darius || !e.isAlive() || Factions.isInfected(e) || Factions.isSparedByVillage(e)) return false;
         if (e instanceof Player p) return !p.isCreative() && !p.isSpectator();
         return com.example.villagefightsback.Factions.isVillageThreat(e);
     }

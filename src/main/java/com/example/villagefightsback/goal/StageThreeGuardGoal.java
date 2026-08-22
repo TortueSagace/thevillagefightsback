@@ -249,6 +249,8 @@ public class StageThreeGuardGoal extends Goal {
             ground = ground.below();
         }
         if (feet.getY() - ground.getY() > 2) return; // still high up -> keep falling
+        // See WaterClutchEvents.placeClutch: clutching INTO water holes the player's pond.
+        if (!level.getBlockState(feet).getFluidState().isEmpty()) return;
         if (!level.getBlockState(feet).canBeReplaced()) return;
         level.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
         clutchPos = feet.immutable();
@@ -261,6 +263,8 @@ public class StageThreeGuardGoal extends Goal {
         if (clutchPos != null) return; // a clutch (landing or fire) is already down
         BlockPos feet = guard.blockPosition();
         Level level = guard.level();
+        // Same rule, and doubly pointless here: a guard standing in water is not on fire.
+        if (!level.getBlockState(feet).getFluidState().isEmpty()) return;
         if (!level.getBlockState(feet).canBeReplaced()) return;
         level.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
         clutchPos = feet.immutable();

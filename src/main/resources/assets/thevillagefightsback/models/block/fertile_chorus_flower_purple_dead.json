@@ -1,0 +1,6 @@
+{
+  "parent": "thevillagefightsback:block/fertile_chorus_flower_purple_template",
+  "textures": {
+    "texture": "thevillagefightsback:block/fertile_chorus_flower_dead_purple"
+  }
+}

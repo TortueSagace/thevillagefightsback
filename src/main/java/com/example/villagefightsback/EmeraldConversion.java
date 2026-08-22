@@ -68,6 +68,14 @@ public final class EmeraldConversion {
             com.example.villagefightsback.compat.MCACompat.forgetEmeraldTarget(me); // and drop any brain-memory copy
         } else if (Factions.isEmerald(me) && (Factions.isVillage(target) || Factions.isEmerald(target))) {
             event.setCanceled(true);     // emerald never targets the village OR a fellow emerald, even when provoked
+        } else if (Factions.isEmerald(me) && target instanceof net.minecraft.world.entity.player.Player p
+                && !Config.emeraldMobsHostileToPlayer()
+                && !p.hasEffect(ModEffects.ENEMY_OF_THE_VILLAGE)) {
+            // Emerald units are neutral toward the player by default, and that was enforced only where WE set
+            // a target. Any other mod calling setTarget -- one was reported making emerald zombies hunt the
+            // player -- walked straight past it. Enforcing it on the EVENT covers every mod at once, and
+            // costs nothing: the handler already runs for every target change in the game.
+            event.setCanceled(true);
         }
     }
 

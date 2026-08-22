@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "thevillagefightsback:rickroll_painting"
+    },
+    "title": "You just got rickrolled!",
+    "description": "Never gonna give you up. Never gonna let you down.",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thevillagefightsback:rickroll_painting"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "thevillagefightsback:brain_node/root"
+}

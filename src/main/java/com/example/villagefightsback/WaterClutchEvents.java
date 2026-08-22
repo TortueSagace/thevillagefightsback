@@ -59,6 +59,11 @@ public final class WaterClutchEvents {
     private static void placeClutch(LivingEntity e) {
         if (!(e.level() instanceof ServerLevel sl) || ACTIVE.size() >= MAX_ACTIVE) return;
         BlockPos feet = e.blockPosition();
+        // Never into water that is already there. canBeReplaced() is true for a water source, so a
+        // villager landing in a pond stamped a FRESH source into it -- and the cleanup, which cannot
+        // tell its own water from the pond's, punched an air hole in somebody's lake 25 ticks later.
+        // Nothing needs saving in the first place: it landed in water.
+        if (!sl.getBlockState(feet).getFluidState().isEmpty()) return;
         if (!sl.getBlockState(feet).canBeReplaced()) return;
         sl.setBlock(feet, Blocks.WATER.defaultBlockState(), 3);
         ACTIVE.add(new Clutch(sl, feet.immutable(), sl.getGameTime() + REMOVE_TICKS));

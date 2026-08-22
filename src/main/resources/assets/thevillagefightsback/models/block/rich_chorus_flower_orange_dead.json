@@ -1,0 +1,6 @@
+{
+  "parent": "thevillagefightsback:block/rich_chorus_flower_orange_template",
+  "textures": {
+    "texture": "thevillagefightsback:block/rich_chorus_flower_dead_orange"
+  }
+}
