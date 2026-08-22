@@ -154,7 +154,7 @@ public class LimboGravelBlock extends FallingBlock implements EntityBlock {
         }
     }
 
-    /** Ambient soul particles, like soul soil. The &gt;150 HP "unstable" purple GLOW is drawn by the block
+    /** Ambient soul particles, like soul soil. The &gt;=50 HP "unstable" purple GLOW is drawn by the block
      *  entity renderer ({@code LimboGravelRenderer}), not by particles. Client-side. */
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {

@@ -9,6 +9,12 @@
     "water_fog_color": 1193503,
     "grass_color": 2867022,
     "foliage_color": 3928186,
+    "particle": {
+      "options": {
+        "type": "minecraft:white_ash"
+      },
+      "probability": 0.118093334
+    },
     "mood_sound": {
       "sound": "minecraft:ambient.cave",
       "tick_delay": 6000,

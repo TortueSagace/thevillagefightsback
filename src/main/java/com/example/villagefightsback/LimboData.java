@@ -24,7 +24,7 @@ import net.minecraft.world.level.saveddata.SavedData;
  *
  * <p>Each {@link Entry} is ONE leash: a stable {@code token}, the live Limbo {@code creature} it tethers, the
  * origin dimension it returns to, the gravel's current position (when {@code held} is false), the captured
- * name + max-health + entity type id (the last two drive the &gt;150 HP instability and the gravel's colour),
+ * name + max-health + entity type id (the last two drive the &gt;=50 HP instability and the gravel's colour),
  * and bookkeeping (entry time, name-tag marker, self-destruct deadline).
  *
  * <p>Normally one creature = one leash. A banished WITHER STORM is the exception: it is ONE creature anchored
@@ -45,7 +45,7 @@ public class LimboData extends SavedData {
         public final String name;
         public UUID marker;               // floating name-tag armor stand, or null
         public final String typeId;       // banished entity's type id (for the client gravel colour), or ""
-        public final float maxHealth;     // BASE max-health captured at banish (> 150 => unstable in Limbo)
+        public final float maxHealth;     // BASE max-health captured at banish (>= 50 => unstable in Limbo)
         public final boolean stormPart;   // part of a multi-gravel wither storm
         public boolean held;              // currently carried as an item (no physical block; countdown paused)
         public long unstableUntil;        // game-time the placed gravel self-destructs (0 = stable)
@@ -67,12 +67,12 @@ public class LimboData extends SavedData {
             this.unstableUntil = unstableUntil;
         }
 
-        public boolean unstable() { return maxHealth > Config.unstableLimboGravelHpThreshold(); }
+        public boolean unstable() { return maxHealth >= Config.unstableLimboGravelHpThreshold(); }
     }
 
     /** Creatures stronger than this are not stable in Limbo: their placed gravel self-destructs after a delay. */
     /** Default unstable threshold. The live value comes from {@link Config#unstableLimboGravelHpThreshold()}. */
-    public static final float UNSTABLE_HP = 150.0F;
+    public static final float UNSTABLE_HP = 50.0F;
 
     private final Map<UUID, Entry> byToken = new HashMap<>();
     private final Map<String, Entry> byGravel = new HashMap<>();          // key = dim '@' packedPos (placed only)
