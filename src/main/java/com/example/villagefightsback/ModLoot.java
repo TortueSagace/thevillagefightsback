@@ -21,6 +21,10 @@ public final class ModLoot {
     public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<LimboTemplateLootModifier>> LIMBO_SMITHING_TEMPLATE =
             SERIALIZERS.register("limbo_smithing_template", () -> LimboTemplateLootModifier.CODEC);
 
+    /** The Gas Mask, 2% in a village's chests. See {@link GasMaskLootModifier}. */
+    public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<GasMaskLootModifier>> GAS_MASK =
+            SERIALIZERS.register("gas_mask", () -> GasMaskLootModifier.CODEC);
+
     public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<RickrollLootModifier>> RICKROLL =
             SERIALIZERS.register("rickroll", () -> RickrollLootModifier.CODEC);
 

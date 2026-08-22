@@ -3,6 +3,7 @@ package com.example.villagefightsback;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
@@ -131,6 +132,16 @@ public final class ModCommands {
         } else if (value instanceof ModConfigSpec.IntValue iv) {
             node.then(Commands.argument("value", intArgFor(key)).requires(s -> s.hasPermission(OP))
                     .executes(c -> setConfig(c.getSource(), key, iv, IntegerArgumentType.getInteger(c, "value"))));
+        } else if (isListValue(value)) {
+            // A list is set as one greedy string of comma-separated entries:
+            //   /thevillagefightsback config upgrade_items_stage_1_2 minecraft:copper_ingot 8
+            //   /thevillagefightsback config extra_hostile_entities somemod:*, othermod:raider
+            // Brigadier has no list argument, and the alternative -- a sub-command per index -- would be a
+            // worse thing to type than the config file it is trying to save you from opening.
+            node.then(Commands.argument("value", StringArgumentType.greedyString())
+                    .requires(s -> s.hasPermission(OP))
+                    .executes(c -> setListConfig(c.getSource(), key, value,
+                            StringArgumentType.getString(c, "value"))));
         } else if (value instanceof ModConfigSpec.DoubleValue dv) {
             node.then(Commands.argument("value", DoubleArgumentType.doubleArg(Config.MULT_MIN, Config.MULT_MAX))
                     .requires(s -> s.hasPermission(OP))
@@ -147,6 +158,33 @@ public final class ModCommands {
             case "unstable_limbo_gravel_HP_threshold" -> IntegerArgumentType.integer(1, 100000);
             default -> IntegerArgumentType.integer();
         };
+    }
+
+    /** True for the list-valued keys. Their default is what says so; the value itself may be empty. */
+    private static boolean isListValue(ModConfigSpec.ConfigValue<?> cv) {
+        return cv.getDefault() instanceof java.util.List;
+    }
+
+    /**
+     * Set a list key from one comma-separated string.
+     *
+     * <p>Entries are trimmed and empties dropped, so "a, b," and "a,b" mean the same thing. Nothing is
+     * validated here on purpose: the readers ({@link com.example.villagefightsback.UpgradeTribute},
+     * {@link com.example.villagefightsback.Factions}) already log and skip what they cannot use, and having
+     * the command refuse a value the config file would have accepted is a worse inconsistency than a typo.
+     */
+    @SuppressWarnings("unchecked")
+    private static int setListConfig(CommandSourceStack src, String key,
+                                     ModConfigSpec.ConfigValue<?> cv, String raw) {
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        for (String p : raw.split(",")) {
+            String t = p.trim();
+            if (!t.isEmpty()) parts.add(t);
+        }
+        ((ModConfigSpec.ConfigValue<java.util.List<? extends String>>) cv).set(parts);
+        try { Config.SPEC.save(); } catch (Exception ignored) { }
+        src.sendSuccess(() -> Component.literal("§a" + key + " §7set to §e" + parts), true);
+        return 1;
     }
 
     private static int getConfig(CommandSourceStack src, String key, ModConfigSpec.ConfigValue<?> value) {

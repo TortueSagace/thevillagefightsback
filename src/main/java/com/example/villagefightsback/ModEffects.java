@@ -52,6 +52,10 @@ public final class ModEffects {
     public static final DeferredHolder<MobEffect, MobEffect> EMERALD_MARKER =
             EFFECTS.register("emerald_marker", EmeraldMarkerEffect::new);
 
+    /** What the Limbo's air does to anything that stays in it. See {@link SlowAnnihilationEffect}. */
+    public static final DeferredHolder<MobEffect, MobEffect> SLOW_ANNIHILATION =
+            EFFECTS.register("slow_annihilation", SlowAnnihilationEffect::new);
+
     /** "Obliteration": harmless in itself, but dying with it strikes the species off the spawn tables
      *  (see {@link ObliterationEffect} / {@link ObliterationEvents}). */
     public static final DeferredHolder<MobEffect, MobEffect> OBLITERATION =

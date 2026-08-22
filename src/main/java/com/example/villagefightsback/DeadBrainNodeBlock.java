@@ -110,13 +110,14 @@ public class DeadBrainNodeBlock extends Block {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (level.isClientSide || !(placer instanceof Player p)) return;
         p.displayClientMessage(Component.literal(
-                "§7Feed the dead brain a golden apple for an attempt to bring the Village back to life"), false);
+                "§7Feed the dead brain a " + UpgradeTribute.revivingItemName()
+                + " for an attempt to bring the Village back to life"), false);
     }
 
     @Override
     public ItemInteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos,
                                            Player player, InteractionHand hand, BlockHitResult hit) {
-        if (!held.is(Items.GOLDEN_APPLE) && !held.is(Items.ENCHANTED_GOLDEN_APPLE)) {
+        if (!UpgradeTribute.isRevivingItem(held)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;   // -> the message below
         }
         if (level.isClientSide) return ItemInteractionResult.SUCCESS;
@@ -141,7 +142,8 @@ public class DeadBrainNodeBlock extends Block {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         ServerLevel sl = (ServerLevel) level;
         player.displayClientMessage(Component.literal(
-                "§8Dead brain node. §fFeed it a golden apple to summon a Village Spirit!"), false);
+                "§8Dead brain node. §fFeed it a " + UpgradeTribute.revivingItemName()
+                + " to summon a Village Spirit!"), false);
         sl.playSound(null, pos, SoundEvents.SCULK_BLOCK_HIT, SoundSource.BLOCKS, 0.8F, 0.6F);
         return InteractionResult.CONSUME;
     }

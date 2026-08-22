@@ -235,7 +235,8 @@ public final class ChunkPortalManager {
 
     /** One random member of the Limbo-raid roster (LimboRaidManager.limboType + the wave phantom). Vex is a
      *  summon-only raid mob, so it is omitted here. */
-    private static Mob randomRosterMob(ServerLevel level, RandomSource rng) {
+    /** One random member of the Limbo roster. Package-visible so Slow Annihilation can raise one too. */
+    static Mob randomRosterMob(ServerLevel level, RandomSource rng) {
         return switch (rng.nextInt(6)) {
             case 0 -> ModEntities.LIMBO_PILLAGER.get().create(level);
             case 1 -> ModEntities.LIMBO_VINDICATOR.get().create(level);

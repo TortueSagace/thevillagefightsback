@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * 64 gems he cost to that brain's economy ({@link #refundAndDespawn()}).
  */
 public class GeneralDariusEntity extends Monster {
+    private static final String NBT_KILLS = "darius_kills";
+    private static final String NBT_RIGHT_ARM = "darius_right_arm";
+    private static final String NBT_LEFT_ARM = "darius_left_arm";
     private static final String NBT_HOME_DIM = "darius_home_dim";
     private static final String NBT_HOME_POS = "darius_home_pos";
 
@@ -57,6 +60,28 @@ public class GeneralDariusEntity extends Monster {
 
     private static final int BEAM_COOLDOWN = 600; // 30s, only fires below 50% HP
 
+    /**
+     * The jump-and-smash is now a SPECIAL, once every {@value #SMASH_COOLDOWN} ticks.
+     *
+     * <p>It used to be his default move. The launch recharged in 35 ticks and the smash itself had no
+     * cooldown at all -- it was gated only on being airborne and descending -- so a Darius in the open
+     * simply never stopped leaping, and a player never got a window in which to fight him. He now does it
+     * once, then fights with the Obliterator like anything else until it comes back.
+     */
+    private static final int SMASH_COOLDOWN = 200;              // 10s
+    /** ...and it is handed back ONCE, the first time he drops this low, so the last stand still bites. */
+    private static final float SMASH_RESET_HP = 0.25F;
+    /** How often he can put an Arm back on the field. */
+    private static final int ARMS_COOLDOWN = 400;               // 20s
+    /**
+     * How often he may drink his own Special Sauce.
+     *
+     * <p>The below-50% grant used to re-arm the moment he healed back above half, and since the Sauce
+     * reflects everything thrown at him he could heal past half on the reflection alone -- drop, drink,
+     * reflect, heal, repeat. Ten minutes between doses makes it a comeback rather than a state of being.
+     */
+    private static final int SAUCE_COOLDOWN = 12000;            // 10 minutes
+
     private final ServerBossEvent bossBar = new ServerBossEvent(
             Component.literal("General Darius"),
             BossEvent.BossBarColor.GREEN, BossEvent.BossBarOverlay.PROGRESS);
@@ -66,6 +91,18 @@ public class GeneralDariusEntity extends Monster {
 
     @Nullable private GlobalPos homeBrain;
     private int beamCooldown;
+    private int smashCooldown;
+    private int armsCooldown;
+    private int sauceCooldown;
+    /** True while the special is in the air: he is holding the Smasher and owes the world one landing. */
+    private boolean smashing;
+    /** The one below-{@value #SMASH_RESET_HP} refund, so it cannot be farmed by healing back up. */
+    private boolean smashRefunded;
+    /** Lives taken, for {@link DariusStatue}. Counted here because VillagerKills only counts defenders. */
+    private int kills;
+    /** His two escorts, so exactly one of each stands at a time. */
+    private java.util.UUID rightArm;
+    private java.util.UUID leftArm;
     private boolean despawning;     // guards refund-once
     private boolean lowHpBuffed; // true once the below-50%-HP buffs (Regen II + Darius' Special Sauce) fired (re-armed above 50%)
 
@@ -113,10 +150,154 @@ public class GeneralDariusEntity extends Monster {
         equipLimbo(EquipmentSlot.CHEST, ModArmor.LIMBO_ELYTRA_CHESTPLATE.get());
         equipLimbo(EquipmentSlot.LEGS, ModArmor.LIMBO_LEGGINGS.get());
         equipLimbo(EquipmentSlot.FEET, ModArmor.LIMBO_BOOTS.get());
-        setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.alienSmasher().copy());
+        // The Obliterator is what he FIGHTS with now, and the Paladin Shield is what he fights behind.
+        // The Alien Smasher is no longer his sidearm: it is the special, swapped in for the leap and swapped
+        // straight back out on landing (see beginSmash/endSmash), so the craters stay tied to the smash.
+        setItemSlot(EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(ModItems.OBLITERATOR.get()));
         setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        setItemSlot(EquipmentSlot.OFFHAND, new net.minecraft.world.item.ItemStack(ModItems.PALADIN_SHIELD.get()));
+        setDropChance(EquipmentSlot.OFFHAND, 0.0F);
+
+        // Every cooldown starts FULL, so he cannot open the fight with all three specials at once. The first
+        // thing a player meets is a swordsman; the rest arrives while they are already committed.
+        beamCooldown = BEAM_COOLDOWN;
+        smashCooldown = SMASH_COOLDOWN;
+        armsCooldown = ARMS_COOLDOWN;
+        sauceCooldown = SAUCE_COOLDOWN;
         return r;
     }
+
+    // --- the jump-smash special ------------------------------------------------------------------
+
+    /** One more life taken; the running total. */
+    public int recordKill() {
+        return ++kills;
+    }
+
+    /**
+     * Hand back the statue trigger.
+     *
+     * <p>Called when the twentieth kill found nowhere to put it, so the statue is owed rather than lost.
+     */
+    public void rearmStatue() {
+        kills--;
+    }
+
+    /** Is the leap available? Read by {@code GeneralDariusGoal} before it commits to one. */
+    public boolean smashReady() {
+        return smashCooldown <= 0 && !smashing;
+    }
+
+    /**
+     * Commit to the special: the Smasher comes out and the clock starts.
+     *
+     * <p>The clock starts HERE rather than on the landing, so a leap that misses still costs the full
+     * {@value #SMASH_COOLDOWN} ticks. Otherwise a Darius who kept missing would keep leaping.
+     */
+    public void beginSmash() {
+        smashing = true;
+        smashCooldown = SMASH_COOLDOWN;
+        setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.alienSmasher().copy());
+        setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+    }
+
+    /** Back to the Obliterator, whether the smash landed or he simply came down. */
+    public void endSmash() {
+        if (!smashing) return;
+        smashing = false;
+        setItemSlot(EquipmentSlot.MAINHAND, new net.minecraft.world.item.ItemStack(ModItems.OBLITERATOR.get()));
+        setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+    }
+
+    public boolean isSmashing() {
+        return smashing;
+    }
+
+    // --- the Right Arm and the Left Arm -----------------------------------------------------------
+
+    /**
+     * Put an Arm back on the field, at most one of each, at most one every {@value #ARMS_COOLDOWN} ticks.
+     *
+     * <p>Two checks, because either alone leaks. The tracked UUID is the cheap one and survives a reload;
+     * the name sweep is the one that stops a SECOND Darius standing nearby from raising a third Right Arm,
+     * since the user's rule is one of each on the field rather than one of each per champion. The sweep is a
+     * 64-block box on a 20-second cooldown, so it is nothing.
+     */
+    private void maybeSummonArms(ServerLevel sl) {
+        if (armsCooldown > 0) return;
+        boolean spawned = false;
+        if (armFor(sl, rightArm, ARM_RIGHT) == null) {
+            LivingEntity m = spawnArm(sl, ARM_RIGHT, -1.0);
+            if (m != null) { rightArm = m.getUUID(); spawned = true; }
+        }
+        if (armFor(sl, leftArm, ARM_LEFT) == null) {
+            LivingEntity m = spawnArm(sl, ARM_LEFT, 1.0);
+            if (m != null) { leftArm = m.getUUID(); spawned = true; }
+        }
+        if (spawned) armsCooldown = ARMS_COOLDOWN;
+    }
+
+    /** The living Arm with this id, or any other bearing the name nearby; null when the post is vacant. */
+    private LivingEntity armFor(ServerLevel sl, java.util.UUID id, String name) {
+        if (id != null) {
+            net.minecraft.world.entity.Entity e = sl.getEntity(id);
+            if (e instanceof LivingEntity le && le.isAlive()) return le;
+        }
+        for (LivingEntity e : sl.getEntitiesOfClass(LivingEntity.class,
+                getBoundingBox().inflate(64.0), x -> x.isAlive() && x.hasCustomName())) {
+            if (name.equals(e.getCustomName().getString())) return e;
+        }
+        return null;
+    }
+
+    /** A stage-4 guard at his shoulder. {@code side} is -1 for his right, +1 for his left. */
+    private LivingEntity spawnArm(ServerLevel sl, String name, double side) {
+        net.minecraft.world.entity.EntityType<?> type =
+                com.example.villagefightsback.compat.MCACompat.guardType(sl.getRandom());
+        if (type == null) return null;                     // neither MCA nor Guard Villagers present
+        double yaw = Math.toRadians(getYRot());
+        // The vector to his right is the facing turned 90 degrees, which in Minecraft's yaw is (-cos, -sin).
+        double rx = getX() + side * -Math.cos(yaw) * 1.5;
+        double rz = getZ() + side * -Math.sin(yaw) * 1.5;
+        net.minecraft.core.BlockPos spot = BrainNodeEvents.nearestFit(
+                sl, net.minecraft.core.BlockPos.containing(rx, getY(), rz), type, 3);
+        if (spot == null) return null;
+
+        net.minecraft.world.entity.Entity e = type.create(sl);
+        if (!(e instanceof net.minecraft.world.entity.Mob mob)) return null;
+        mob.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, getYRot(), 0.0F);
+        // 1.21.1 dropped finalizeSpawn's trailing CompoundTag argument.
+        mob.finalizeSpawn(sl, sl.getCurrentDifficultyAt(spot),
+                net.minecraft.world.entity.MobSpawnType.MOB_SUMMONED, null);
+        com.example.villagefightsback.compat.MCACompat.makeGuard(mob);
+        // Stage 4 must be stamped BEFORE the join handler reads it, exactly as StagedDefenderEggItem does.
+        UpgradeState.setStage4(mob);
+        mob.setCustomName(net.minecraft.network.chat.Component.literal(name));
+        mob.setCustomNameVisible(true);
+        mob.setPersistenceRequired();
+        sl.addFreshEntity(mob);
+        squad.add(mob.getUUID());          // they follow him like the rest of the escort
+        return mob;
+    }
+
+    /**
+     * The Arms fight whatever he is fighting.
+     *
+     * <p>They are guards, and a guard left to its own AI picks the nearest thing it dislikes -- which is
+     * how an escort ends up scattered across a field while the champion fights alone. Pushing his lock onto
+     * them every ten ticks keeps the three of them as one unit.
+     */
+    private void commandArms(ServerLevel sl) {
+        LivingEntity t = getTarget();
+        for (java.util.UUID id : new java.util.UUID[]{rightArm, leftArm}) {
+            if (id == null) continue;
+            if (!(sl.getEntity(id) instanceof net.minecraft.world.entity.Mob arm) || !arm.isAlive()) continue;
+            if (arm.getTarget() != t) arm.setTarget(t);
+        }
+    }
+
+    private static final String ARM_RIGHT = "Right Arm";
+    private static final String ARM_LEFT = "Left Arm";
 
     /** How long Darius's mark lasts. The same minute the Obliterator gives, so one rule covers both. */
     private static final int OBLITERATION_TICKS = 20 * 60;
@@ -157,9 +338,12 @@ public class GeneralDariusEntity extends Monster {
     @Override
     protected void dropCustomDeathLoot(net.minecraft.server.level.ServerLevel level, net.minecraft.world.damagesource.DamageSource source, boolean recentlyHit) {
         super.dropCustomDeathLoot(level, source, recentlyHit);
-        net.minecraft.world.item.ItemStack smasher = getMainHandItem();
-        if (!smasher.isEmpty()) {
-            spawnAtLocation(smasher.copy());
+        // Always the Obliterator, even if he died mid-leap with the Smasher in hand: the weapon he is
+        // known by should not depend on which frame of which animation killed him.
+        endSmash();
+        net.minecraft.world.item.ItemStack weapon = getMainHandItem();
+        if (!weapon.isEmpty()) {
+            spawnAtLocation(weapon.copy());
             setItemSlot(EquipmentSlot.MAINHAND, net.minecraft.world.item.ItemStack.EMPTY); // no duplicate
         }
     }
@@ -222,23 +406,39 @@ public class GeneralDariusEntity extends Monster {
         clearFire();
         fallDistance = 0.0F;
         if ((tickCount & 7) == 0) clearHarmfulEffects();
-        LimboGear.breakSoftBlocksOnContact(this); // breaks soft blocks (incl. cobblestone) on contact
+        // Gated HERE rather than inside LimboGear, which players in a full Limbo set also call.
+        if (Config.dariusCanBreakBlocks()) {
+            LimboGear.breakSoftBlocksOnContact(this); // breaks soft blocks (incl. cobblestone) on contact
+        }
 
         if (beamCooldown > 0) beamCooldown--;
+        if (smashCooldown > 0) smashCooldown--;
+        if (armsCooldown > 0) armsCooldown--;
+        if (sauceCooldown > 0) sauceCooldown--;
 
         // Below 50% HP: spontaneously gain Regeneration II (30s) AND Darius' Special Sauce (10s). Granted once on
         // dropping below half, then re-armed if he heals back above half (so a second collapse triggers again).
         if (getHealth() < getMaxHealth() * 0.5F) {
-            if (!lowHpBuffed) {
+            if (!lowHpBuffed && sauceCooldown <= 0) {
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.REGENERATION, 600, 1, false, true, true));
                 addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         ModEffects.DARIUS_SPECIAL_EFFECT, 200, 0, false, true, true));
                 lowHpBuffed = true;
+                sauceCooldown = SAUCE_COOLDOWN;
+            }
+            // The one smash refund, at a quarter health. Separate from the Sauce on purpose: this is the
+            // moment the fight should get harder again, and it should happen even when the Sauce is spent.
+            if (!smashRefunded && getHealth() < getMaxHealth() * SMASH_RESET_HP) {
+                smashCooldown = 0;
+                smashRefunded = true;
             }
         } else {
             lowHpBuffed = false;
         }
+
+        maybeSummonArms(sl);
+        if ((tickCount % 10) == 0) commandArms(sl);
 
         bossBar.setProgress(getHealth() / getMaxHealth());
         // While hunting (a locked target) Darius glows so players can always spot him; off when walking home.
@@ -390,6 +590,9 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
+        tag.putInt(NBT_KILLS, kills);
+        if (rightArm != null) tag.putUUID(NBT_RIGHT_ARM, rightArm);
+        if (leftArm != null) tag.putUUID(NBT_LEFT_ARM, leftArm);
         if (homeBrain != null) {
             tag.putString(NBT_HOME_DIM, homeBrain.dimension().location().toString());
             tag.putLong(NBT_HOME_POS, homeBrain.pos().asLong());
@@ -399,6 +602,9 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        kills = tag.getInt(NBT_KILLS);
+        rightArm = tag.hasUUID(NBT_RIGHT_ARM) ? tag.getUUID(NBT_RIGHT_ARM) : null;
+        leftArm = tag.hasUUID(NBT_LEFT_ARM) ? tag.getUUID(NBT_LEFT_ARM) : null;
         if (tag.contains(NBT_HOME_DIM) && tag.contains(NBT_HOME_POS)) {
             ResourceKey<Level> dim = ResourceKey.create(Registries.DIMENSION,
                     ResourceLocation.parse(tag.getString(NBT_HOME_DIM)));

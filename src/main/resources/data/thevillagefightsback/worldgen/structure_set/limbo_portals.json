@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "thevillagefightsback:limbo_portal",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 32,
+    "separation": 8,
+    "salt": 19970103
+  }
+}

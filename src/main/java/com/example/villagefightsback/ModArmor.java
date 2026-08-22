@@ -23,6 +23,8 @@ public final class ModArmor {
             ARMOR_MATERIALS.register("emerald", EmeraldArmorMaterial::create);
     public static final DeferredHolder<ArmorMaterial, ArmorMaterial> LIMBO_MATERIAL =
             ARMOR_MATERIALS.register("limbo", LimboArmorMaterial::create);
+    public static final DeferredHolder<ArmorMaterial, ArmorMaterial> GAS_MASK_MATERIAL =
+            ARMOR_MATERIALS.register("gas_mask", GasMaskArmorMaterial::create);
 
     public static final DeferredHolder<Item, ArmorItem> EMERALD_HELMET = ITEMS.register("emerald_helmet",
             () -> new ArmorItem(EMERALD_MATERIAL, ArmorItem.Type.HELMET,
@@ -60,6 +62,15 @@ public final class ModArmor {
                     .durability(LimboArmorMaterial.durabilityForType(ArmorItem.Type.CHESTPLATE))));
 
     /** Call from the mod constructor. */
+    /**
+     * The Gas Mask: leather stats, and the only thing that keeps the Limbo's air out of you.
+     *
+     * <p>Deliberately uncraftable -- it is found, at 2% in a village's chests, or not at all.
+     */
+    public static final DeferredHolder<Item, Item> GAS_MASK = ITEMS.register("gas_mask",
+            () -> new ArmorItem(GAS_MASK_MATERIAL, ArmorItem.Type.HELMET, new Item.Properties()
+                    .durability(GasMaskArmorMaterial.durabilityForType(ArmorItem.Type.HELMET))));
+
     public static void register(IEventBus modBus) {
         ARMOR_MATERIALS.register(modBus);
         ITEMS.register(modBus);

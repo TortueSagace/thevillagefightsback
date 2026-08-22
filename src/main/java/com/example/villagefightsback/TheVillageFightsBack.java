@@ -37,6 +37,7 @@ public class TheVillageFightsBack {
         ModParticles.register(modBus);
         ModSounds.register(modBus);
         ModLoot.register(modBus);
+        ModStructures.register(modBus);
         ModTriggers.register(modBus); // custom advancement trigger (trigger_type registry is frozen by setup)
         // RegisterBrewingRecipesEvent fires on the GAME bus (NeoForge.EVENT_BUS) in 1.21.1, not the mod bus.
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRegisterBrewingRecipes);

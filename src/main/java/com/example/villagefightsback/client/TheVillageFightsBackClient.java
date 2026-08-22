@@ -49,6 +49,20 @@ public final class TheVillageFightsBackClient {
                 TheVillageFightsBack.id("aiming"),
                 (stack, level, entity, seed) ->
                         (entity != null && entity.isUsingItem() && entity.getUseItem() == stack) ? 1.0F : 0.0F));
+
+        // The shields' raised pose. Vanilla registers "blocking" against Items.SHIELD specifically, not
+        // generically, so a modded shield gets no such property for free and its _blocking override would
+        // never fire. Same test vanilla uses, same property name, so the model json reads as expected.
+        event.enqueueWork(() -> {
+            for (var shield : java.util.List.of(ModItems.LIMBO_SHIELD, ModItems.PALADIN_SHIELD)) {
+                net.minecraft.client.renderer.item.ItemProperties.register(
+                        shield.get(),
+                        net.minecraft.resources.ResourceLocation.withDefaultNamespace("blocking"),
+                        (stack, level, entity, seed) ->
+                                (entity != null && entity.isUsingItem() && entity.getUseItem() == stack)
+                                        ? 1.0F : 0.0F);
+            }
+        });
     }
 
     /** The Limbo's dark-green void sky (used by worlds whose limbo dimension_type points at this effects key). */

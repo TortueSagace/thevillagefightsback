@@ -390,6 +390,7 @@ public final class VillageEvents {
         // the combat goal swaps in the crossbow / Alien Slasher as the situation demands.
         guard.setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.mace().copy());
         guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        GuardWeapons.equipShield(guard);
         GuardWeapons.equipEmeraldArmor(guard);
         guard.goalSelector.addGoal(1, new com.example.villagefightsback.goal.StageThreeGuardGoal(guard));
     }
@@ -404,6 +405,7 @@ public final class VillageEvents {
         CombatUtil.extendFollowRange(guard, FOLLOW_RANGE);
         guard.setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.crossbow().copy()); // idle look: an archer (no mace)
         guard.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
+        GuardWeapons.equipShield(guard);
         GuardWeapons.equipEmeraldArmor(guard);
         guard.goalSelector.addGoal(1, new com.example.villagefightsback.goal.StageThreeGuardGoal(guard));
     }

@@ -230,17 +230,27 @@ public class ReputationBookScreen extends Screen {
 
         // The Survival tribute. Phrased as a condition rather than hidden behind a flag, because the book is
         // the rules and a Creative player is entitled to know what the other experience asks for.
-        out.add(new ArrayList<>(List.of(
-                head("The metal tribute"),
+        // Built from the CONFIG rather than written out, since 1.7.2: what a stage costs is now
+        // upgrade_items_stage_*, and a rulebook that confidently states the defaults while the server asks
+        // for something else is worse than no page at all.
+        List<Line> tribute = new ArrayList<>(List.of(
+                head("The tribute"),
                 BLANK,
                 body("In the Survival experience, emeralds alone no longer raise a village. Each stage also "
-                        + "asks for metal, fed to the brain node the same way:"),
+                        + "asks for goods, fed to the brain node the same way:"),
                 BLANK,
-                item(net.minecraft.world.item.Items.EMERALD, "Emeralds: every stage, as always."),
-                item(net.minecraft.world.item.Items.COPPER_INGOT, "Stage 1 -> 2:  8 copper ingots"),
-                item(net.minecraft.world.item.Items.GOLD_INGOT, "Stage 2 -> 3:  8 copper, 8 gold ingots"),
-                item(com.example.villagefightsback.ModItems.LIMBO_INGOT.get(),
-                        "Stage 3 -> 4:  8 copper, 8 gold, 1 Limbo ingot"))));
+                item(net.minecraft.world.item.Items.EMERALD, "Emeralds: every stage, as always.")));
+        for (int lvl = 1; lvl <= 3; lvl++) {
+            var needs = com.example.villagefightsback.UpgradeTribute.needsFor(lvl);
+            if (needs.isEmpty()) continue;
+            StringBuilder line = new StringBuilder("Stage " + lvl + " -> " + (lvl + 1) + ":  ");
+            for (int i = 0; i < needs.size(); i++) {
+                if (i > 0) line.append(", ");
+                line.append(needs.get(i).label());
+            }
+            tribute.add(item(needs.get(0).item(), line.toString()));
+        }
+        out.add(tribute);
 
         if (!peaceful) {
             out.add(new ArrayList<>(List.of(

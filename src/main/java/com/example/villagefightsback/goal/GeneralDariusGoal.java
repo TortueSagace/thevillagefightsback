@@ -44,6 +44,8 @@ public class GeneralDariusGoal extends Goal {
 
     private static final double LAUNCH_VY = 2.0;            // ~2x a mace guard's 1.0-1.2 (double jump)
     private static final double LAUNCH_HORIZ = 0.55;
+    /** Point-blank: almost straight up, so he lands ON the target rather than behind it. */
+    private static final double LAUNCH_HORIZ_CLOSE = 0.12;
     private static final int LAUNCH_COOLDOWN = 35;
     private static final double JUMP_MIN_DIST_SQR = 16.0;   // only jump-close when >4 blocks out
     private static final double SMASH_RANGE_SQR = 9.0;
@@ -92,6 +94,9 @@ public class GeneralDariusGoal extends Goal {
         if (meleeCooldown > 0) meleeCooldown--;
         if (launchCooldown > 0) launchCooldown--;
         if (scaffoldCooldown > 0) scaffoldCooldown--;
+        // Back on his feet -> back to the Obliterator, whether or not the smash actually connected. Before
+        // ensureWeapon, so the two never disagree about what should be in his hand this tick.
+        if (darius.onGround() && darius.isSmashing()) darius.endSmash();
         ensureWeapon();
 
         // 0) WITHER STORM gets special treatment: while one is near it is ALWAYS Darius's target, overriding
@@ -145,10 +150,26 @@ public class GeneralDariusGoal extends Goal {
 
         if (distSqr <= MELEE_REACH_SQR) {
             darius.getNavigation().stop();
+            // GOING UP IS THE ATTACK, even point-blank: the smash is worth several times a plain swing and
+            // it is what the special is for. Nearly vertical at this range -- the long-range LAUNCH_HORIZ
+            // would sail him clean over the target and land him behind it, so a small nudge keeps him above
+            // them and diveAndSmash steers the rest of the way down. (This branch existed only on 1.20.1
+            // until 1.7.2; the port never had it.)
+            if (darius.smashReady() && (t.getY() - darius.getY()) > -2.0) {
+                launchAt(t, LAUNCH_HORIZ_CLOSE);
+                noProgressTicks = 0;
+                return;
+            }
             if (meleeCooldown <= 0) {
+                darius.stopUsingItem();          // drop the guard to swing
                 darius.swing(InteractionHand.MAIN_HAND);
                 darius.doHurtTarget(t);
                 meleeCooldown = MELEE_COOLDOWN;
+            } else if (!darius.isUsingItem()) {
+                // Recovering between swings is exactly when a shield is worth holding, and it is what gives
+                // the Paladin Shield's reflection any uptime at all. Nothing raises it for him: he is a
+                // Monster with a hand-written goal, not a Guard Villagers guard with their shield AI.
+                darius.startUsingItem(InteractionHand.OFF_HAND);
             }
             noProgressTicks = 0;
             return;
@@ -163,7 +184,7 @@ public class GeneralDariusGoal extends Goal {
         }
 
         // Jump-close when comfortably out of reach and the launch is ready (no ceiling check -- breaks through).
-        if (distSqr >= JUMP_MIN_DIST_SQR && launchCooldown <= 0
+        if (distSqr >= JUMP_MIN_DIST_SQR && darius.smashReady()
                 && (t.getY() - darius.getY()) > -2.0) {
             launchAt(t);
             return;
@@ -224,6 +245,8 @@ public class GeneralDariusGoal extends Goal {
      * gate blocks (so he never tears the village's gates apart digging). Returns true if it acted this tick.
      */
     private boolean digDown(ServerLevel sl) {
+        if (!com.example.villagefightsback.Config.dariusCanBreakBlocks()) return false;
+
         BlockPos below = darius.blockPosition().below();
         net.minecraft.world.level.block.state.BlockState s = sl.getBlockState(below);
         if (s.isAir() || !s.getFluidState().isEmpty()) return false;       // already a way down
@@ -243,6 +266,8 @@ public class GeneralDariusGoal extends Goal {
      * open air, and skips bedrock and the village's own phase-door gate blocks. Returns true if it acted.
      */
     private boolean digUp(ServerLevel sl) {
+        if (!com.example.villagefightsback.Config.dariusCanBreakBlocks()) return false;
+
         int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
         BlockPos head = new BlockPos(gx, gy + 2, gz);                       // the block just above his head (~2 tall)
         net.minecraft.world.level.block.state.BlockState s = sl.getBlockState(head);
@@ -263,14 +288,21 @@ public class GeneralDariusGoal extends Goal {
 
     // --- mace jump (double height, no ceiling check) ------------------------------------------------
     private void launchAt(LivingEntity t) {
+        launchAt(t, LAUNCH_HORIZ);
+    }
+
+    private void launchAt(LivingEntity t, double horiz) {
         Vec3 to = t.position().subtract(darius.position());
         double hl = Math.sqrt(to.x * to.x + to.z * to.z);
         double hx = hl > 1.0E-4 ? to.x / hl : 0, hz = hl > 1.0E-4 ? to.z / hl : 0;
-        darius.setDeltaMovement(hx * LAUNCH_HORIZ, LAUNCH_VY, hz * LAUNCH_HORIZ);
+        darius.setDeltaMovement(hx * horiz, LAUNCH_VY, hz * horiz);
         darius.hasImpulse = true;
         darius.hurtMarked = true;
         darius.fallDistance = 0.0F;
-        launchCooldown = LAUNCH_COOLDOWN;
+        // The entity owns the clock now, not the goal: a goal's fields are lost whenever it restarts,
+        // and a special that recharges by breaking line of sight is not a special.
+        darius.stopUsingItem();       // you cannot hold a guard and leap at the same time
+        darius.beginSmash();
         darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 1.3F, 0.6F);
     }
@@ -332,7 +364,11 @@ public class GeneralDariusGoal extends Goal {
     }
 
     private void ensureWeapon() {
-        ItemStack want = GuardWeapons.alienSmasher();
+        // The Smasher only while the special is in the air; the Obliterator the rest of the time. Without the
+        // smashing test this would rip the Smasher back out of his hand on the very tick he leapt.
+        ItemStack want = darius.isSmashing()
+                ? GuardWeapons.alienSmasher()
+                : new ItemStack(com.example.villagefightsback.ModItems.OBLITERATOR.get());
         if (darius.getMainHandItem().getItem() != want.getItem()) {
             darius.setItemSlot(EquipmentSlot.MAINHAND, want.copy());
             darius.setDropChance(EquipmentSlot.MAINHAND, 0.0F);

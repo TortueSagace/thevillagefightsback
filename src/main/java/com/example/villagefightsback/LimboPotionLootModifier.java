@@ -5,7 +5,6 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
@@ -33,17 +32,12 @@ public class LimboPotionLootModifier extends LootModifier {
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        ResourceLocation table = context.getQueriedLootTableId();
-        if (table != null && isTargetChest(table) && context.getRandom().nextFloat() < chance) {
+        if (VillageLoot.isVillageChest(context) && context.getRandom().nextFloat() < chance) {
             generatedLoot.add(new ItemStack(ModItems.LIMBO_POTION.get()));
         }
         return generatedLoot;
     }
 
-    private static boolean isTargetChest(ResourceLocation id) {
-        if ("minecraft".equals(id.getNamespace()) && id.getPath().startsWith("chests/village/")) return true;
-        return TheVillageFightsBack.MODID.equals(id.getNamespace()) && id.getPath().startsWith("chests/");
-    }
 
     @Override
     public MapCodec<? extends IGlobalLootModifier> codec() {

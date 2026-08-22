@@ -90,14 +90,25 @@ public class BrainNodeData extends SavedData {
         private int organicPoints = 0; // ORGANIC MASS: a SEPARATE spawn-only currency (never touches level/emeralds)
         // SURVIVAL only: the metal tribute a stage costs on top of its emeralds. Fed to the node like emeralds
         // are, held until the stage they pay for is reached, and then consumed with it.
-        private int copper = 0, gold = 0, limbo = 0;
+        /**
+         * SURVIVAL only: the item tribute held toward the next stage, keyed by item id.
+         *
+         * <p>Was three named ints (copper, gold, limbo) until 1.7.2, when what a stage costs became config
+         * ({@link UpgradeTribute}). A map keyed by id rather than by {@code Item} deliberately: it is what
+         * gets written to NBT, and a saved village whose config later names a different item then still
+         * loads -- the old holding simply stops counting toward anything instead of crashing the world.
+         */
+        private final java.util.Map<String, Integer> tribute = new java.util.HashMap<>();
 
         public int getLevel() { return level; }
         public int getEmeralds() { return emeralds; }
 
-        public int getCopper() { return copper; }
-        public int getGold() { return gold; }
-        public int getLimbo() { return limbo; }
+        /** How much of {@code item} is banked toward the next stage. */
+        public int held(net.minecraft.world.item.Item item) {
+            net.minecraft.resources.ResourceLocation id =
+                    net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
+            return id == null ? 0 : tribute.getOrDefault(id.toString(), 0);
+        }
 
         /**
          * How much of {@code offered} the node will actually take: never more than the stage still wants.
@@ -115,24 +126,29 @@ public class BrainNodeData extends SavedData {
          *
          * @return how many stages it bought (metal alone can complete a stage whose emeralds are already in).
          */
-        public int addMetal(int copperN, int goldN, int limboN) {
-            copper += copperN;
-            gold += goldN;
-            limbo += limboN;
+        public int addTribute(java.util.Map<net.minecraft.world.item.Item, Integer> offered) {
+            for (var e : offered.entrySet()) {
+                net.minecraft.resources.ResourceLocation id =
+                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(e.getKey());
+                if (id != null) tribute.merge(id.toString(), e.getValue(), Integer::sum);
+            }
             setDirty();
             return addEmeralds(0);   // re-run the promotion check: the emeralds may already be in
         }
 
-        /** Copper the stage after {@code lvl} costs in Survival. */
-        public static int copperFor(int lvl) { return lvl >= 1 && lvl <= 3 ? 8 : 0; }
-        /** Gold the stage after {@code lvl} costs in Survival. */
-        public static int goldFor(int lvl) { return lvl >= 2 && lvl <= 3 ? 8 : 0; }
-        /** Limbo Ingots the stage after {@code lvl} costs in Survival. */
-        public static int limboFor(int lvl) { return lvl == 3 ? 1 : 0; }
+        public static int needFor(int lvl, net.minecraft.world.item.Item item) {
+            for (UpgradeTribute.Need n : UpgradeTribute.needsFor(lvl)) {
+                if (n.item() == item) return n.count();
+            }
+            return 0;
+        }
 
         /** Is the metal for the stage after {@code lvl} all in? */
         public boolean hasMetalFor(int lvl) {
-            return copper >= copperFor(lvl) && gold >= goldFor(lvl) && limbo >= limboFor(lvl);
+            for (UpgradeTribute.Need n : UpgradeTribute.needsFor(lvl)) {
+                if (held(n.item()) < n.count()) return false;
+            }
+            return true;
         }
 
         /**
@@ -186,9 +202,11 @@ public class BrainNodeData extends SavedData {
                     // consumed with the emeralds so the next stage starts from nothing.
                     boolean paid = !survival();
                     if (!paid && hasMetalFor(level)) {
-                        copper -= copperFor(level);
-                        gold -= goldFor(level);
-                        limbo -= limboFor(level);
+                        for (UpgradeTribute.Need need : UpgradeTribute.needsFor(level)) {
+                            net.minecraft.resources.ResourceLocation id =
+                                    net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(need.item());
+                            if (id != null) tribute.merge(id.toString(), -need.count(), Integer::sum);
+                        }
                         paid = true;
                     }
                     if (!paid) break;
@@ -383,9 +401,13 @@ public class BrainNodeData extends SavedData {
             Econ e = d.new Econ();
             e.level = Math.max(1, c.getInt("level"));
             e.emeralds = c.getInt("emeralds");
-            e.copper = c.getInt("copper");
-            e.gold = c.getInt("gold");
-            e.limbo = c.getInt("limbo");
+            // 1.7.2 -- the three named metals became a map. Old saves are read back into it so a village
+            // mid-way through paying for a stage does not lose what it had banked.
+            if (c.contains("copper")) e.tribute.put("minecraft:copper_ingot", c.getInt("copper"));
+            if (c.contains("gold")) e.tribute.put("minecraft:gold_ingot", c.getInt("gold"));
+            if (c.contains("limbo")) e.tribute.put("thevillagefightsback:limbo_ingot", c.getInt("limbo"));
+            CompoundTag trib = c.getCompound("tribute");
+            for (String tk : trib.getAllKeys()) e.tribute.merge(tk, trib.getInt(tk), Integer::sum);
             e.organicPoints = Math.max(ORGANIC_FLOOR, c.getInt("organic"));
             e.lastIncomeDay = c.contains("income") ? c.getLong("income") : Long.MIN_VALUE;
             d.econs.put(key, e);
@@ -445,9 +467,11 @@ public class BrainNodeData extends SavedData {
             c.putInt("level", e.getValue().level);
             c.putInt("emeralds", e.getValue().emeralds);
             c.putInt("organic", e.getValue().organicPoints);
-            c.putInt("copper", e.getValue().copper);
-            c.putInt("gold", e.getValue().gold);
-            c.putInt("limbo", e.getValue().limbo);
+            CompoundTag trib = new CompoundTag();
+            for (var t : e.getValue().tribute.entrySet()) {
+                if (t.getValue() > 0) trib.putInt(t.getKey(), t.getValue());
+            }
+            c.put("tribute", trib);
             c.putLong("income", e.getValue().lastIncomeDay);
             econList.add(c);
         }

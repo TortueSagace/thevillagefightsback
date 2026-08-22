@@ -49,6 +49,12 @@ public final class Config {
     public static final ModConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
     public static final ModConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
     public static final ModConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
+    public static final ModConfigSpec.BooleanValue DARIUS_CAN_BREAK_BLOCKS;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> REVIVING_ITEMS;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> UPGRADE_ITEMS_1_2;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> UPGRADE_ITEMS_2_3;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> UPGRADE_ITEMS_3_4;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXTRA_HOSTILE_ENTITIES;
     public static final ModConfigSpec.BooleanValue MEGA_BRUTAL_MODE;
     public static final ModConfigSpec.BooleanValue PLAYER_SPAWN_IN_VILLAGE;
     public static final ModConfigSpec.BooleanValue PLAYER_IS_GIVEN_BELL_AT_SPAWN;
@@ -155,6 +161,42 @@ public final class Config {
         GENERAL_DARIUS_REMAINS = b
                 .comment("If true, General Darius never returns to the brain node, even after every 100+ HP enemy is cleared.")
                 .define("general_darius_remains", true);
+        REVIVING_ITEMS = b
+                .comment("What a Dead Brain Node accepts to raise a Village Spirit. Item ids; feeding any one of",
+                        "them works, and the first is the one the in-game prompts name.",
+                        "Default: [\"minecraft:golden_apple\", \"minecraft:enchanted_golden_apple\"].")
+                .defineList("reviving_items",
+                        java.util.List.of("minecraft:golden_apple", "minecraft:enchanted_golden_apple"),
+                        o -> o instanceof String);
+        UPGRADE_ITEMS_1_2 = b
+                .comment("What the brain node's stage 1 -> 2 costs in items, on top of its emeralds (SURVIVAL",
+                        "experience only). Each entry is \"<item id> <count>\", at most 3 entries. An empty list",
+                        "means emeralds alone. Default: [\"minecraft:copper_ingot 8\"].")
+                .defineList("upgrade_items_stage_1_2", java.util.List.of("minecraft:copper_ingot 8"),
+                        o -> o instanceof String);
+        UPGRADE_ITEMS_2_3 = b
+                .comment("Stage 2 -> 3. Default: [\"minecraft:copper_ingot 8\", \"minecraft:gold_ingot 8\"].")
+                .defineList("upgrade_items_stage_2_3",
+                        java.util.List.of("minecraft:copper_ingot 8", "minecraft:gold_ingot 8"),
+                        o -> o instanceof String);
+        UPGRADE_ITEMS_3_4 = b
+                .comment("Stage 3 -> 4. Default: [\"thevillagefightsback:limbo_ingot 1\"].")
+                .defineList("upgrade_items_stage_3_4",
+                        java.util.List.of("thevillagefightsback:limbo_ingot 1"),
+                        o -> o instanceof String);
+        EXTRA_HOSTILE_ENTITIES = b
+                .comment("Entities the village treats as threats even though nothing about them says so -- mobs",
+                        "from other mods that are hostile in play but are not tagged as monsters. An entry is",
+                        "either a full id (\"somemod:raider\") or a whole namespace (\"somemod:*\").",
+                        "Seeded with Hostile Civilization, whose settlers the village otherwise ignored.")
+                .defineList("extra_hostile_entities", java.util.List.of("hostilecivilization:*"),
+                        o -> o instanceof String);
+        DARIUS_CAN_BREAK_BLOCKS = b
+                .comment("If true, General Darius chews through terrain: he breaks soft blocks on contact, digs down to",
+                        "a target below him and tunnels up to one above him. Turn it off and he leaves the world alone",
+                        "and paths around it like anything else -- his pathfinder is told about the change too, so he",
+                        "does not simply walk into the rock he can no longer break. Default: true.")
+                .define("darius_can_break_blocks", true);
         REVERSED_GRAVITY_FLIPS_SCREEN = b
                 .comment("If true, the five seconds of reversed gravity that follow a Special Sauce holder falling out of",
                         "the world also turn every player's view upside down. The physics are unaffected either way -- this",
@@ -343,6 +385,12 @@ public final class Config {
         INDEX.put("emeraldgers_size_variation", EMERALDGERS_SIZE_VARIATION);
         INDEX.put("mega_expansion_mode", MEGA_EXPANSION_MODE);
         INDEX.put("general_darius_remains", GENERAL_DARIUS_REMAINS);
+        INDEX.put("darius_can_break_blocks", DARIUS_CAN_BREAK_BLOCKS);
+        INDEX.put("reviving_items", REVIVING_ITEMS);
+        INDEX.put("upgrade_items_stage_1_2", UPGRADE_ITEMS_1_2);
+        INDEX.put("upgrade_items_stage_2_3", UPGRADE_ITEMS_2_3);
+        INDEX.put("upgrade_items_stage_3_4", UPGRADE_ITEMS_3_4);
+        INDEX.put("extra_hostile_entities", EXTRA_HOSTILE_ENTITIES);
         INDEX.put("mega_brutal_mode", MEGA_BRUTAL_MODE);
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
         INDEX.put("player_is_given_bell_at_spawn", PLAYER_IS_GIVEN_BELL_AT_SPAWN);
@@ -465,6 +513,7 @@ public final class Config {
     public static boolean emeraldgerSizeVariation()       { return EMERALDGERS_SIZE_VARIATION.get(); }
     public static boolean megaExpansionMode()             { return MEGA_EXPANSION_MODE.get(); }
     public static boolean generalDariusRemains()          { return GENERAL_DARIUS_REMAINS.get(); }
+    public static boolean dariusCanBreakBlocks()          { return DARIUS_CAN_BREAK_BLOCKS.get(); }
     public static boolean megaBrutalMode()                { return MEGA_BRUTAL_MODE.get(); }
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }
     public static boolean playerGivenBellAtSpawn()        { return PLAYER_IS_GIVEN_BELL_AT_SPAWN.get(); }

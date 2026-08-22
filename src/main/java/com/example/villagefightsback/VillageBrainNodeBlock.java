@@ -49,27 +49,24 @@ public class VillageBrainNodeBlock extends Block {
     @Override
     public ItemInteractionResult useItemOn(ItemStack held, BlockState state, Level level, BlockPos pos,
                                            Player player, InteractionHand hand, BlockHitResult hit) {
-        // SURVIVAL: the node also eats the metals a stage costs. Fed exactly like emeralds, and the promotion
-        // fires the moment the last of the tribute lands (addMetal re-runs the check).
-        int cu = held.is(Items.COPPER_INGOT) ? held.getCount() : 0;
-        int au = held.is(Items.GOLD_INGOT) ? held.getCount() : 0;
-        int li = held.is(ModItems.LIMBO_INGOT.get()) ? held.getCount() : 0;
-        if (cu + au + li > 0) {
+        // SURVIVAL: the node also eats whatever items the stage costs (config; see UpgradeTribute). Fed
+        // exactly like emeralds, and the promotion fires the moment the last of the tribute lands, because
+        // addTribute re-runs the check.
+        if (UpgradeTribute.isTributeItem(held.getItem())) {
             if (level.isClientSide) return ItemInteractionResult.SUCCESS;
             ServerLevel msl = (ServerLevel) level;
             BrainNodeData.Econ mecon = BrainNodeData.get(msl.getServer())
                     .econ(GlobalPos.of(level.dimension(), pos.immutable()));
             // Take only what this stage still wants. Offering a full stack when 8 are needed costs 8.
             int lv = mecon.getLevel();
-            cu = mecon.wants(cu, mecon.getCopper(), BrainNodeData.Econ.copperFor(lv));
-            au = mecon.wants(au, mecon.getGold(), BrainNodeData.Econ.goldFor(lv));
-            li = mecon.wants(li, mecon.getLimbo(), BrainNodeData.Econ.limboFor(lv));
-            if (cu + au + li == 0) {          // nothing of this metal is wanted right now
+            int wantedNow = mecon.wants(held.getCount(), mecon.held(held.getItem()),
+                    BrainNodeData.Econ.needFor(lv, held.getItem()));
+            if (wantedNow == 0) {             // a later stage's tribute, or this one is already paid
                 player.displayClientMessage(metalNeeded(mecon), false);
                 return ItemInteractionResult.CONSUME;
             }
-            int gained = mecon.addMetal(cu, au, li);
-            if (!player.getAbilities().instabuild) held.shrink(cu + au + li);
+            int gained = mecon.addTribute(java.util.Map.of(held.getItem(), wantedNow));
+            if (!player.getAbilities().instabuild) held.shrink(wantedNow);
             msl.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 1.0F, 1.3F);
             if (gained > 0) {
                 player.displayClientMessage(
@@ -185,20 +182,16 @@ public class VillageBrainNodeBlock extends Block {
     private static String metalTribute(ServerLevel sl, BrainNodeData.Econ econ) {
         if (!com.example.villagefightsback.WorldModeData.isSurvival(sl.getServer())) return "";
         if (econ.isMaxLevel()) return "";
-        int lvl = econ.getLevel();
-        int cu = BrainNodeData.Econ.copperFor(lvl);
-        int au = BrainNodeData.Econ.goldFor(lvl);
-        int li = BrainNodeData.Econ.limboFor(lvl);
-        if (cu + au + li == 0) return "";
+        // Every requirement the stage lists, each as "held / needed". Up to three of them, which is why
+        // the screen is told this as a finished string: it renders whatever arrives without knowing how
+        // many numbers there are.
+        java.util.List<UpgradeTribute.Need> needs = UpgradeTribute.needsFor(econ.getLevel());
+        if (needs.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
-        if (cu > 0) sb.append("§6").append(econ.getCopper()).append(" / ").append(cu).append(" copper");
-        if (au > 0) {
+        for (UpgradeTribute.Need n : needs) {
             if (sb.length() > 0) sb.append("§7   ");
-            sb.append("§e").append(econ.getGold()).append(" / ").append(au).append(" gold");
-        }
-        if (li > 0) {
-            if (sb.length() > 0) sb.append("§7   ");
-            sb.append("§b").append(econ.getLimbo()).append(" / ").append(li).append(" Limbo ingot");
+            sb.append("§6").append(econ.held(n.item())).append(" / ").append(n.count())
+                    .append(" ").append(new ItemStack(n.item()).getHoverName().getString());
         }
         return sb.toString();
     }
@@ -212,15 +205,14 @@ public class VillageBrainNodeBlock extends Block {
         if (!com.example.villagefightsback.WorldModeData.isSurvival(sl.getServer())) return "";
         if (econ.isMaxLevel() || econ.getEmeralds() < econ.costForNext()) return "";
         int lvl = econ.getLevel();
-        int cu = Math.max(0, BrainNodeData.Econ.copperFor(lvl) - econ.getCopper());
-        int au = Math.max(0, BrainNodeData.Econ.goldFor(lvl) - econ.getGold());
-        int li = Math.max(0, BrainNodeData.Econ.limboFor(lvl) - econ.getLimbo());
-        if (cu + au + li == 0) return "";        // nothing missing at all; the stage is about to fire
         StringBuilder sb = new StringBuilder("§e");
-        if (cu > 0) sb.append(cu).append(" copper");
-        if (au > 0) sb.append(sb.length() > 2 ? ", " : "").append(au).append(" gold");
-        if (li > 0) sb.append(sb.length() > 2 ? ", " : "").append(li).append(" Limbo");
-        sb.append(" ingot").append(cu + au + li > 1 ? "s" : "");
+        for (UpgradeTribute.Need n : UpgradeTribute.needsFor(lvl)) {
+            int missing = Math.max(0, n.count() - econ.held(n.item()));
+            if (missing == 0) continue;
+            if (sb.length() > 2) sb.append(", ");
+            sb.append(missing).append(" ").append(new ItemStack(n.item()).getHoverName().getString());
+        }
+        if (sb.length() <= 2) return "";         // nothing missing at all; the stage is about to fire
         sb.append(" to level ").append(lvl + 1);
         return sb.toString();
     }
@@ -231,12 +223,13 @@ public class VillageBrainNodeBlock extends Block {
         int lvl = econ.getLevel();
         StringBuilder sb = new StringBuilder("§7Still needed: ");
         sb.append("§a").append(Math.max(0, econ.costForNext() - econ.getEmeralds())).append(" emerald");
-        int cu = Math.max(0, BrainNodeData.Econ.copperFor(lvl) - econ.getCopper());
-        int au = Math.max(0, BrainNodeData.Econ.goldFor(lvl) - econ.getGold());
-        int li = Math.max(0, BrainNodeData.Econ.limboFor(lvl) - econ.getLimbo());
-        if (cu > 0) sb.append("§7, §6").append(cu).append(" copper");
-        if (au > 0) sb.append("§7, §e").append(au).append(" gold");
-        if (li > 0) sb.append("§7, §b").append(li).append(" Limbo ingot");
+        for (UpgradeTribute.Need n : UpgradeTribute.needsFor(lvl)) {
+            int missing = Math.max(0, n.count() - econ.held(n.item()));
+            if (missing > 0) {
+                sb.append("§7, §6").append(missing).append(" ")
+                        .append(new ItemStack(n.item()).getHoverName().getString());
+            }
+        }
         return Component.literal(sb.toString());
     }
 

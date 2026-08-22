@@ -245,6 +245,20 @@ public final class ModBlocks {
             "purple_tnt", () -> new BlockItem(PURPLE_TNT.get(), new Item.Properties()));
 
     /**
+     * Black TNT: the Darius statue.
+     *
+     * <p>The one structure charge that is not a building. It is placed automatically once General Darius has
+     * taken twenty lives (see {@link DariusStatue}), and is in the creative tab so it can be placed by hand.
+     * See {@code tools/gen_darius_statue.py} for where the statue comes from -- it is his own armour
+     * textures, voxelised, not a drawing of him.
+     */
+    public static final DeferredHolder<Block, Block> BLACK_TNT = BLOCKS.register(
+            "black_tnt",
+            () -> new StructureTntBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.TNT), struct("darius_statue")));
+    public static final DeferredHolder<Item, Item> BLACK_TNT_ITEM = ITEMS.register(
+            "black_tnt", () -> new BlockItem(BLACK_TNT.get(), new Item.Properties()));
+
+    /**
      * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
      * blast resistance 1200, and needs a diamond+ pickaxe to break (see the mineable/pickaxe +
      * needs_diamond_tool tags). {@link ReinforcedGlassBlock} makes it fully light-transparent so a dome
@@ -835,6 +849,7 @@ public final class ModBlocks {
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(CYAN_TNT_ITEM.get());
                 output.accept(PURPLE_TNT_ITEM.get());
+                output.accept(BLACK_TNT_ITEM.get());
 
                 // === Weapons, ammo & mace enchants ===
                 output.accept(ModItems.ALIEN_SLASHER.get());
@@ -953,7 +968,10 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_AXE.get());
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
+                output.accept(ModArmor.GAS_MASK.get());
                 output.accept(ModItems.LIMBO_SCYTHE.get());
+                output.accept(ModItems.LIMBO_SHIELD.get());
+                output.accept(ModItems.PALADIN_SHIELD.get());
                 output.accept(ModItems.REPUTATION_BOOK.get());
                 output.accept(ModItems.LIMBO_BOOK.get());
                 output.accept(ModItems.OBLITERATOR.get());
