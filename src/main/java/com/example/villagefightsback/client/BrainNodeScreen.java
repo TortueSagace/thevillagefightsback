@@ -22,10 +22,23 @@ public class BrainNodeScreen extends Screen {
     /** Extra height the Survival metal row needs, so it never overflows the panel it sits in. */
     private static final int METAL_ROW_H = 12;
     private static final int ROW_H = 28;
-    // emerald progress + defender counts + a 2-line help note. Twelve shorter than it was: the
-    // fertilized-block row was removed but the footnote below it kept its old offset, so the panel
-    // carried an empty row and then overran its own bottom edge by a few pixels.
-    private static final int FOOTER_H = 56;
+    /**
+     * Everything under the upgrade rows EXCEPT the footnote's extra lines.
+     *
+     * <p>Covers the progress line, the reputation row, the defender counts, the gap before the footnote and
+     * the footnote's FIRST line, with a few pixels of bottom padding. The rest is added per wrapped line in
+     * {@link #init}, because guessing at it is what produced both of this panel's layout bugs in a row: a
+     * constant tuned for a row that had been deleted left an empty strip, and shrinking that constant by
+     * hand then pushed the note out through the bottom of the panel. The footnote's height is a thing the
+     * font can be ASKED, so it is asked.
+     */
+    private static final int FOOTER_BASE = 59;
+    /** Spacing between the footnote's wrapped lines, at its reduced scale. */
+    private static final int HELP_LINE_H = 8;
+    /** The footnote itself, hoisted so init() can measure exactly what render() will draw. */
+    private static final String HELP_TEXT =
+            "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!";
+    private static final float HELP_SCALE = 0.72F;
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -89,6 +102,11 @@ public class BrainNodeScreen extends Screen {
         return n;
     }
 
+    /** The wrap width the footnote is split at. Shared, so the measurement and the drawing agree. */
+    private static int helpSplitWidth() {
+        return (int) ((PANEL_W - 16) / HELP_SCALE);   // wider wrap to account for the smaller font
+    }
+
     private static String viewLabel(int v) {
         return v == 0 ? "Upgrades" : v == 1 ? "Reflex log" : v == 2 ? "Organic log" : "Reputation";
     }
@@ -97,7 +115,10 @@ public class BrainNodeScreen extends Screen {
     protected void init() {
         // The metal row only exists in Survival, so the panel only grows there -- a Creative world keeps the
         // exact height it always had rather than carrying a blank strip.
-        this.panelH = HEADER_H + maxLevel * ROW_H + FOOTER_H + (metalLine.isEmpty() ? 0 : METAL_ROW_H);
+        int helpLines = Math.max(1, font.split(Component.literal(HELP_TEXT), helpSplitWidth()).size());
+        this.panelH = HEADER_H + maxLevel * ROW_H
+                + FOOTER_BASE + (helpLines - 1) * HELP_LINE_H
+                + (metalLine.isEmpty() ? 0 : METAL_ROW_H);
         this.leftPos = (this.width - PANEL_W) / 2;
         this.topPos = (this.height - panelH) / 2;
         // A header toggle that cycles Upgrades -> Reflex log -> Organic log (-> Upgrades). The button shows the
@@ -235,11 +256,9 @@ public class BrainNodeScreen extends Screen {
         // panel is a line shorter rather than carrying a gap.
 
         // Small light-gray footnote at the very bottom (rendered at a reduced scale), wrapped to the panel width.
-        float helpScale = 0.72F;
-        Component help = Component.literal(
-                "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!")
-                .withStyle(ChatFormatting.GRAY);
-        int splitW = (int) ((PANEL_W - 16) / helpScale); // wider wrap to account for the smaller font
+        float helpScale = HELP_SCALE;
+        Component help = Component.literal(HELP_TEXT).withStyle(ChatFormatting.GRAY);
+        int splitW = helpSplitWidth();
         int helpY = footerY + 40;   // was + extra, which left the removed row's gap behind
         g.pose().pushPose();
         g.pose().scale(helpScale, helpScale, 1.0F);

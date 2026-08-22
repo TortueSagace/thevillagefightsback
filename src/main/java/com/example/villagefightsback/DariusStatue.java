@@ -39,6 +39,9 @@ public final class DariusStatue {
     /** The bill. */
     public static final int KILLS_REQUIRED = 20;
 
+    /** How near an Arm's kill a Darius has to be to be credited with it. They are leashed to 50. */
+    private static final double ARM_CREDIT_RANGE = 64.0;
+
     /** How far out to look for somewhere to put it, and how coarsely. */
     private static final int MIN_AWAY = 24;
     private static final int MAX_AWAY = 48;
@@ -51,7 +54,8 @@ public final class DariusStatue {
 
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getSource().getEntity() instanceof GeneralDariusEntity darius)) return;
+        GeneralDariusEntity darius = creditFor(event);
+        if (darius == null) return;
         if (!(darius.level() instanceof ServerLevel sl)) return;
         if (event.getEntity() == darius) return;
 
@@ -70,12 +74,18 @@ public final class DariusStatue {
         if (home != null) {
             com.example.villagefightsback.wall.WallPlan plan =
                     BrainNodeData.get(sl.getServer()).getWallPlan(home);
-            ExpansionManager.summonReflexSettler(sl, home, plan, ExpansionManager.TNT_BLACK);
-            sl.players().forEach(p -> p.displayClientMessage(net.minecraft.network.chat.Component.literal(
-                    "§8The village sends someone out to raise a statue to General Darius."), false));
+            if (ExpansionManager.summonReflexSettler(sl, home, plan, ExpansionManager.TNT_BLACK)) {
+                sl.players().forEach(p -> p.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                        "§8The village sends someone out to raise a statue to General Darius."), false));
+                TheVillageFightsBack.LOGGER.info(
+                        "[The Village Fights Back] a settler was dispatched to build General Darius's statue.");
+                return;
+            }
+            // No settler could be put on the ground -- nowhere standable outside the wall, most likely.
+            // Fall through and place it directly rather than swallowing the twentieth kill silently, which
+            // would mean the statue is never built and nothing ever says why.
             TheVillageFightsBack.LOGGER.info(
-                    "[The Village Fights Back] a settler was dispatched to build General Darius's statue.");
-            return;
+                    "[The Village Fights Back] no settler could be dispatched for the statue; placing it directly.");
         }
 
         BlockPos spot = findSpot(sl, darius.blockPosition());
@@ -92,6 +102,39 @@ public final class DariusStatue {
         TheVillageFightsBack.LOGGER.info(
                 "[The Village Fights Back] General Darius reached {} kills; his statue rises at {}.",
                 kills, spot);
+    }
+
+    /**
+     * Which Darius, if any, this death belongs to.
+     *
+     * <p>"Killed by Darius" is a wider thing than "the killing blow's source entity was Darius", and taking
+     * the narrow reading is why the counter read 11 after a battle the player remembers as twenty-odd. He
+     * sets his victims on FIRE -- both his smash and his Fire Aspect Smasher do -- and anything that dies of
+     * that burn a second later dies to an ownerless fire source with no attacker at all. His escort does a
+     * great deal of the killing too, and a monument to the champion that ignores everything his own two
+     * Arms did is measuring the wrong thing.
+     *
+     * <p>So: the blow itself, or the last thing to hurt the victim, or a kill by one of his Arms.
+     */
+    private static GeneralDariusEntity creditFor(LivingDeathEvent event) {
+        if (event.getSource().getEntity() instanceof GeneralDariusEntity d) return d;
+
+        LivingEntity dead = event.getEntity();
+        // Burned, poisoned, bled out: the last thing that actually hurt it is the thing that killed it.
+        if (dead.getLastHurtByMob() instanceof GeneralDariusEntity d) return d;
+
+        // One of the Arms. Only ever asked when a NAMED guard gets a kill, so the box query below is rare.
+        net.minecraft.world.entity.Entity killer = event.getSource().getEntity();
+        if (killer instanceof LivingEntity le && le.hasCustomName()) {
+            String name = le.getCustomName().getString();
+            if (GeneralDariusEntity.ARM_RIGHT.equals(name) || GeneralDariusEntity.ARM_LEFT.equals(name)) {
+                for (GeneralDariusEntity d : le.level().getEntitiesOfClass(GeneralDariusEntity.class,
+                        le.getBoundingBox().inflate(ARM_CREDIT_RANGE), GeneralDariusEntity::isAlive)) {
+                    return d;   // his escort's kills are his
+                }
+            }
+        }
+        return null;
     }
 
     /**
