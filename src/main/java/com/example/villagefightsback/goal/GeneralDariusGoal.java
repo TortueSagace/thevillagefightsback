@@ -98,8 +98,8 @@ public class GeneralDariusGoal extends Goal {
     private static final int IGNORE_TICKS = 600;       // ...then leave it alone for 30s
     private int lockTicks;
     private double lockBestDistSqr = Double.MAX_VALUE;
-    private LivingEntity ignored;
-    private int ignoreTicks;     // re-scan for a wither storm ~1/s (it is the priority)
+    /** The last target announced, so re-locking the same one does not re-broadcast it. */
+    private LivingEntity announced;     // re-scan for a wither storm ~1/s (it is the priority)
     private static final double WITHER_HUNT_RANGE = 160.0;  // hunt a wither storm within this (found even hitbox-off)
 
     private final GeneralDariusEntity darius;
@@ -165,12 +165,16 @@ public class GeneralDariusGoal extends Goal {
         }
 
         // 2) Maintain the lock.
-        if (ignoreTicks > 0 && --ignoreTicks == 0) ignored = null;
         if (locked == null || !locked.isAlive() || !isEnemy(locked)) {
             locked = darius.pickBiggestThreat();
             lockTicks = 0;
             lockBestDistSqr = Double.MAX_VALUE;
-            if (locked != null) announceHunt(sl, locked);
+            // Only when it CHANGES. Re-locking the same creature is bookkeeping, not news, and broadcasting
+            // it every time turned a target he could not reach into a message once per tick for everybody.
+            if (locked != null && locked != announced) {
+                announceHunt(sl, locked);
+                announced = locked;
+            }
             else { walkHomeOrDespawn(sl); return; }
         }
 
@@ -185,8 +189,7 @@ public class GeneralDariusGoal extends Goal {
                     "[The Village Fights Back] General Darius gives up on {} after {}s without closing "
                     + "({} blocks away).", locked.getName().getString(), GIVE_UP_TICKS / 20,
                     (int) Math.sqrt(d2));
-            ignored = locked;
-            ignoreTicks = IGNORE_TICKS;
+            darius.ignoreTarget(locked, IGNORE_TICKS);
             locked = null;
             darius.setTarget(null);
             climbSteps = 0;
@@ -245,13 +248,17 @@ public class GeneralDariusGoal extends Goal {
         // digUp returns false when the way up is already open, so an above-target in open air falls through to the
         // mace jump instead.
         if ((t.getY() - darius.getY()) > 2.0 && digUp(sl)) {
+            lockTicks = 0;      // tunnelling upward IS progress, even though it closes no distance
             return;
         }
 
         // Target in the AIR above him: build up to it. digUp only helps when something is in the way, and
         // a phantom over open ground is exactly the case it declines.
         if ((t.getY() - darius.getY()) > CLIMB_MIN_ABOVE) {
-            if (climbToward(sl, t)) return;
+            if (climbToward(sl, t)) {
+                lockTicks = 0;  // so is building a way up: the give-up clock is for hopeless chases, not slow ones
+                return;
+            }
         } else {
             climbSteps = 0;      // level with it again: the next flier gets a full allowance
         }
@@ -377,8 +384,13 @@ public class GeneralDariusGoal extends Goal {
         if (climbSteps >= CLIMB_MAX_HEIGHT) return false;               // high enough; let something else try
         int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
         int hx = (int) Math.floor(t.getX()) - gx, hz = (int) Math.floor(t.getZ()) - gz;
-        if (Math.abs(hx) > 1 || Math.abs(hz) > 1) {
-            NavThrottle.goTo(darius, t.getX(), darius.getY(), t.getZ(), 1.2);   // get under it first
+        // Normally he walks under the target before going up. But "walk under it" is not always possible --
+        // he may be in a cave with the target on the surface, and no route exists at his level at all. Once
+        // the walk has visibly stopped working, he climbs from where he stands instead: getting out of the
+        // hole first and crossing the ground afterwards is the only order that works from underground.
+        boolean stuck = noProgressTicks >= STUCK_TICKS / 2;
+        if ((Math.abs(hx) > 1 || Math.abs(hz) > 1) && !stuck) {
+            NavThrottle.goTo(darius, t.getX(), darius.getY(), t.getZ(), 1.2);
             return true;
         }
         if (scaffoldCooldown > 0) return true;                         // pacing the climb, not failing it
@@ -482,7 +494,7 @@ public class GeneralDariusGoal extends Goal {
     }
 
     private boolean isEnemy(LivingEntity e) {
-        if (e == ignored && ignoreTicks > 0) return false;   // written off; see GIVE_UP_TICKS
+        if (darius.isIgnoredTarget(e)) return false;   // written off as unreachable; see GIVE_UP_TICKS
         // Emerald units are a separate faction the village never fights, so Darius never locks/retaliates on them.
         // See GeneralDariusEntity.isHuntable: isSparedByVillage covers the emeralds AND the other
         // champions, so one Darius never locks onto another.
