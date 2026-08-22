@@ -11,13 +11,19 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * The village puts up a statue of its champion once he has earned it.
  *
- * <p>Twenty kills, and a Black TNT is placed somewhere clear nearby; it raises a thirty-three block Darius
+ * <p>Twenty kills, and a Black TNT is placed somewhere clear nearby; it raises a thirty-six block Darius
  * in his full Limbo set, built block-by-block by {@link HouseBuildManager} like every other structure the
  * village puts up. The statue itself is generated from his own armour textures rather than drawn -- see
  * {@code tools/gen_darius_statue.py}.
  *
  * <p>Kills are counted here rather than in {@link VillagerKills}, which only counts villagers and guards
  * ({@code isDefender} excludes anything that is not one) and would never have seen him.
+ *
+ * <h2>Who builds it</h2>
+ * The brain node sends a SETTLER, exactly as it does for a barracks or a lure tower: the village raising a
+ * monument to its champion is a village decision, and it should look like one -- somebody walks out past the
+ * wall carrying a black charge. Only when there is no node to ask (a hand-placed Darius has no home brain)
+ * does it fall back to placing the charge itself.
  *
  * <h2>Where it goes</h2>
  * Away from the buildings, which is mostly a matter of asking. {@link HousePlacer} already refuses to place
@@ -38,10 +44,10 @@ public final class DariusStatue {
     private static final int MAX_AWAY = 48;
     private static final int BEARINGS = 8;
 
-    /** The template's footprint, from tools/gen_darius_statue.py: 18 wide, 10 deep, 33 tall. */
+    /** The template's footprint, from tools/gen_darius_statue.py: 18 wide, 10 deep, 36 tall. */
     private static final int HALF_W = 9;
     private static final int HALF_D = 5;
-    private static final int HEIGHT = 33;
+    private static final int HEIGHT = 36;
 
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
@@ -50,7 +56,27 @@ public final class DariusStatue {
         if (event.getEntity() == darius) return;
 
         int kills = darius.recordKill();
+        // Logged every time, because "no statue ever appeared" is otherwise indistinguishable from "he was
+        // never actually credited with the kills" -- and most of what dies around him is killed by his
+        // escort, whose kills are theirs and not his.
+        TheVillageFightsBack.LOGGER.info(
+                "[The Village Fights Back] General Darius has {} kill(s) of the {} his statue costs.",
+                kills, KILLS_REQUIRED);
         if (kills != KILLS_REQUIRED) return;      // exactly once, on the twentieth
+
+        // The village builds it. A settler walks out with the charge, the way every other structure is
+        // raised; the direct placement below is only for a Darius no village ever summoned.
+        net.minecraft.core.GlobalPos home = darius.getHomeBrain();
+        if (home != null) {
+            com.example.villagefightsback.wall.WallPlan plan =
+                    BrainNodeData.get(sl.getServer()).getWallPlan(home);
+            ExpansionManager.summonReflexSettler(sl, home, plan, ExpansionManager.TNT_BLACK);
+            sl.players().forEach(p -> p.displayClientMessage(net.minecraft.network.chat.Component.literal(
+                    "§8The village sends someone out to raise a statue to General Darius."), false));
+            TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] a settler was dispatched to build General Darius's statue.");
+            return;
+        }
 
         BlockPos spot = findSpot(sl, darius.blockPosition());
         if (spot == null) {

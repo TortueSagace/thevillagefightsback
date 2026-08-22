@@ -22,7 +22,10 @@ public class BrainNodeScreen extends Screen {
     /** Extra height the Survival metal row needs, so it never overflows the panel it sits in. */
     private static final int METAL_ROW_H = 12;
     private static final int ROW_H = 28;
-    private static final int FOOTER_H = 68; // emerald progress + defender counts + a 2-line help note
+    // emerald progress + defender counts + a 2-line help note. Twelve shorter than it was: the
+    // fertilized-block row was removed but the footnote below it kept its old offset, so the panel
+    // carried an empty row and then overran its own bottom edge by a few pixels.
+    private static final int FOOTER_H = 56;
     private static final int ICON = 16;
     private static final int ICON_GAP = 8;
     private static final int ICONS_X = 58; // x offset (from panel left) where a row's icons start
@@ -237,7 +240,7 @@ public class BrainNodeScreen extends Screen {
                 "Feed the brain node with emeralds to get Hero of the Village and be allowed to open village chests!")
                 .withStyle(ChatFormatting.GRAY);
         int splitW = (int) ((PANEL_W - 16) / helpScale); // wider wrap to account for the smaller font
-        int helpY = footerY + 40 + extra;
+        int helpY = footerY + 40;   // was + extra, which left the removed row's gap behind
         g.pose().pushPose();
         g.pose().scale(helpScale, helpScale, 1.0F);
         for (net.minecraft.util.FormattedCharSequence line : font.split(help, splitW)) {

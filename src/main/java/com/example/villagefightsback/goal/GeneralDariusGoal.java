@@ -83,7 +83,25 @@ public class GeneralDariusGoal extends Goal {
     private static final int CLIMB_MAX_HEIGHT = 24;
     private int climbSteps;
 
-    private static final int WITHER_SCAN_INTERVAL = 20;     // re-scan for a wither storm ~1/s (it is the priority)
+    private static final int WITHER_SCAN_INTERVAL = 20;
+    /**
+     * How long he will chase one target without getting any closer to it before writing it off.
+     *
+     * <p>A lock was only ever released when its target died. That was survivable while he closed every gap
+     * by leaping; once the leap became a ten-second special he could no longer reach an awkward target at
+     * all, and would stand at the bottom of the world staring up at something 90 blocks away -- beaming it,
+     * pillaring toward it, apparently hallucinating, because whatever he had locked was far past anything
+     * the player could see.
+     *
+     * <p>Progress, not proximity: closing ANY distance resets the clock, so a long legitimate chase is never
+     * interrupted. Only a chase that is getting nowhere is.
+     */
+    private static final int GIVE_UP_TICKS = 300;      // 15s of no progress at all
+    private static final int IGNORE_TICKS = 600;       // ...then leave it alone for 30s
+    private int lockTicks;
+    private double lockBestDistSqr = Double.MAX_VALUE;
+    private LivingEntity ignored;
+    private int ignoreTicks;     // re-scan for a wither storm ~1/s (it is the priority)
     private static final double WITHER_HUNT_RANGE = 160.0;  // hunt a wither storm within this (found even hitbox-off)
 
     private final GeneralDariusEntity darius;
@@ -149,10 +167,32 @@ public class GeneralDariusGoal extends Goal {
         }
 
         // 2) Maintain the lock.
+        if (ignoreTicks > 0 && --ignoreTicks == 0) ignored = null;
         if (locked == null || !locked.isAlive() || !isEnemy(locked)) {
             locked = darius.pickBiggestThreat();
+            lockTicks = 0;
+            lockBestDistSqr = Double.MAX_VALUE;
             if (locked != null) announceHunt(sl, locked);
             else { walkHomeOrDespawn(sl); return; }
+        }
+
+        // Give up on anything he is making no headway against, so a target he cannot physically reach does
+        // not pin him for the rest of the game.
+        double d2 = darius.distanceToSqr(locked);
+        if (d2 < lockBestDistSqr - 1.0) {
+            lockBestDistSqr = d2;
+            lockTicks = 0;
+        } else if (++lockTicks > GIVE_UP_TICKS) {
+            com.example.villagefightsback.TheVillageFightsBack.LOGGER.info(
+                    "[The Village Fights Back] General Darius gives up on {} after {}s without closing "
+                    + "({} blocks away).", locked.getName().getString(), GIVE_UP_TICKS / 20,
+                    (int) Math.sqrt(d2));
+            ignored = locked;
+            ignoreTicks = IGNORE_TICKS;
+            locked = null;
+            darius.setTarget(null);
+            climbSteps = 0;
+            return;
         }
 
         engage(sl, locked);
@@ -454,6 +494,7 @@ public class GeneralDariusGoal extends Goal {
     }
 
     private boolean isEnemy(LivingEntity e) {
+        if (e == ignored && ignoreTicks > 0) return false;   // written off; see GIVE_UP_TICKS
         // Emerald units are a separate faction the village never fights, so Darius never locks/retaliates on them.
         // See GeneralDariusEntity.isHuntable: isSparedByVillage covers the emeralds AND the other
         // champions, so one Darius never locks onto another.

@@ -143,6 +143,8 @@ public final class ExpansionManager {
     public static final int TNT_BLUE = 0, TNT_GREEN = 1, TNT_YELLOW = 2, TNT_ORANGE = 3, TNT_PURPLE = 4;
     /** 5 cyan: the grand house. Blue's stage-2+ replacement, never chosen directly -- see {@link #houseTnt}. */
     public static final int TNT_CYAN = 5;
+    /** 6 black: General Darius's statue. Dispatched once, by his twentieth kill. */
+    public static final int TNT_BLACK = 6;
 
     /**
      * Which house charge a settler working for {@code brainNode} should carry: Cyan once that node has reached
@@ -173,6 +175,8 @@ public final class ExpansionManager {
      * moment it detonated.
      */
     public static int clearanceFor(int color) {
+        // The statue is 18 blocks across and 36 tall, so it needs more room than any house.
+        if (color == TNT_BLACK) return 12;
         return color == TNT_CYAN ? CyanTntBlock.CLEARANCE : 8;
     }
 
@@ -188,6 +192,7 @@ public final class ExpansionManager {
             case TNT_YELLOW -> ModBlocks.YELLOW_TNT.get().defaultBlockState();
             case TNT_ORANGE -> ModBlocks.ORANGE_TNT.get().defaultBlockState();
             case TNT_PURPLE -> ModBlocks.PURPLE_TNT.get().defaultBlockState();
+            case TNT_BLACK  -> ModBlocks.BLACK_TNT.get().defaultBlockState();
             default -> {
                 Direction face = Direction.getNearest(brainNode.getX() - pos.getX(), 0, brainNode.getZ() - pos.getZ());
                 if (face.getAxis().isVertical()) face = Direction.NORTH;

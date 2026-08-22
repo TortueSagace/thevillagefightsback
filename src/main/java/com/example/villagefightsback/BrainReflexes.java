@@ -328,7 +328,7 @@ public final class BrainReflexes {
         // gems (refunded when he returns home); a short cooldown stops re-spawn spam if he is killed.
         boolean witherStorm = Factions.findNearestWitherStorm(level,
                 net.minecraft.world.phys.Vec3.atCenterOf(brain), WITHER_RADIUS) != null;
-        if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusNear(level, brain)
+        if (stage >= 4 && now >= s.cdDarius && econ.getEmeralds() >= 64 && noDariusAlive(level)
                 && (witherStorm || heavyThreatNear(level, brain, gp))) {
             if (econ.spendEmeralds(64)) {
                 spawnDarius(level, data, gp, brain);
@@ -501,9 +501,21 @@ public final class BrainReflexes {
     // --- General Darius (stage-4 reflex) -------------------------------------------------------------
 
     /** True if no General Darius is already serving this brain (at most one per brain, within its RADIUS). */
-    private static boolean noDariusNear(ServerLevel level, BlockPos brain) {
-        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(brain).inflate(RADIUS);
-        return level.getEntitiesOfClass(GeneralDariusEntity.class, box).isEmpty();
+    /**
+     * Is there NO General Darius in this world at all?
+     *
+     * <p>Asked of the whole level rather than of a box around the brain node. He is deliberately allowed to
+     * roam -- {@code general_darius_remains} keeps him in the field, and he hunts out to his full radius --
+     * so a box test only proved that he was not standing nearby, and the village cheerfully paid 64 emeralds
+     * for a second one while the first was three hundred blocks away doing its job.
+     *
+     * <p>This is NOT the world-wide entity query the codebase bans. That rule is about
+     * {@code getEntitiesOfClass} with a huge AABB, whose cost is driven by the box volume. {@code getEntities}
+     * with an entity type reads the level's per-type index, which for a boss that almost never exists is an
+     * empty list lookup.
+     */
+    private static boolean noDariusAlive(ServerLevel level) {
+        return level.getEntities(ModEntities.GENERAL_DARIUS.get(), e -> e.isAlive()).isEmpty();
     }
 
     /** True if a heavy threat is within the brain's RADIUS: an enemy with >= 100 max HP, or a dangerous player. */
