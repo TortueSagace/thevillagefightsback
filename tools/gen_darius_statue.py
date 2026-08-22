@@ -141,8 +141,12 @@ FACE_INSET = 1
 HAND_ROWS = 3
 # How many rows at the bottom of each leg are BOOT rather than legging.
 BOOT_ROWS = 4
-# The three spikes on the Limbo helmet, as (x offset from the head's left, height).
-SPIKES = ((1, 2), (4, 3), (7, 2))
+# The three spikes on the Limbo helmet, as (x offset from the head's left, height). Each is a
+# square column SPIKE_BASE on a side, and they are Forgotten Glowstone, so the statue is lit
+# from the head at night rather than being a silhouette.
+SPIKES = ((0, 2), (3, 3), (6, 2))
+SPIKE_BLOCK = "thevillagefightsback:forgotten_glowstone"
+SPIKE_BASE = 2          # each spike is a SPIKE_BASE x SPIKE_BASE column, not a single stack
 
 
 def sample(img, uv, fw, fh, u, v):
@@ -237,14 +241,6 @@ def build():
                         continue                       # neither the suit nor the man is here
                     voxels[(ox + x, oy + y, oz + z)] = px[:3]
 
-    # The three helmet spikes. They are a render LAYER on the real helmet, so no armour texture carries
-    # them and nothing above could have found them; a statue of Darius without them is not him.
-    head_off = next(o for n, _l, _s, _uv, o in PARTS if n == "head")
-    hx, hy, hz = head_off
-    for (sx, tall) in SPIKES:
-        for t in range(tall):
-            voxels[(hx + sx, hy + 8 + t, hz + 4)] = SPIKE_COLOUR
-
     # Mirrored on Z so he faces whoever set the charge down rather than turning his back on them.
     zs_all = [p[2] for p in voxels]
     zmin, zmax = min(zs_all), max(zs_all)
@@ -253,6 +249,25 @@ def build():
     lit = stretch(set(voxels.values()))
     for k in list(voxels):
         voxels[k] = nearest(lit[voxels[k]])
+
+    # The three helmet spikes, AFTER the palette pass: they are a named block rather than a colour to be
+    # matched, and Forgotten Glowstone is not in the palette (nor should it be -- nothing else on him
+    # should glow). They are a render LAYER on the real helmet, so no armour texture carries them and
+    # nothing sampled above could have found them; a statue of Darius without them is not him.
+    #
+    # Placed off the head's own top face rather than off the PARTS offsets, so the mirror above cannot put
+    # them on the back of his skull.
+    top = max(y for (_x, y, _z) in voxels)
+    crown = [(x, z) for (x, y, z) in voxels if y == top]
+    cx0 = min(x for x, _z in crown)
+    cz0 = min(z for _x, z in crown)
+    cz1 = max(z for _x, z in crown)
+    zmid = (cz0 + cz1) // 2 - (SPIKE_BASE // 2) + 1
+    for (sx, tall) in SPIKES:
+        for t in range(tall):
+            for dx in range(SPIKE_BASE):
+                for dz in range(SPIKE_BASE):
+                    voxels[(cx0 + sx + dx, top + 1 + t, zmid + dz)] = SPIKE_BLOCK
 
     # The footing: a slab of dirt path one block under the whole footprint, as the houses have.
     xs = [p[0] for p in voxels]
