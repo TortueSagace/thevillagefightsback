@@ -49,6 +49,7 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue EMERALDGERS_SIZE_VARIATION;
     public static final ForgeConfigSpec.BooleanValue MEGA_EXPANSION_MODE;
     public static final ForgeConfigSpec.BooleanValue GENERAL_DARIUS_REMAINS;
+    public static final ForgeConfigSpec.BooleanValue DARIUS_CAN_BREAK_BLOCKS;
     public static final ForgeConfigSpec.BooleanValue DARIUS_INFLICTS_OBLITERATION;
     public static final ForgeConfigSpec.BooleanValue REVERSED_GRAVITY_FLIPS_SCREEN;
     public static final ForgeConfigSpec.BooleanValue UNSTICK_TEST_MODE;
@@ -155,6 +156,12 @@ public final class Config {
         GENERAL_DARIUS_REMAINS = b
                 .comment("If true, General Darius never returns to the brain node, even after every 100+ HP enemy is cleared.")
                 .define("general_darius_remains", true);
+        DARIUS_CAN_BREAK_BLOCKS = b
+                .comment("If true, General Darius chews through terrain: he breaks soft blocks on contact, digs down to",
+                        "a target below him and tunnels up to one above him. Turn it off and he leaves the world alone",
+                        "and paths around it like anything else -- his pathfinder is told about the change too, so he",
+                        "does not simply walk into the rock he can no longer break. Default: true.")
+                .define("darius_can_break_blocks", true);
         REVERSED_GRAVITY_FLIPS_SCREEN = b
                 .comment("If true, the five seconds of reversed gravity that follow a Special Sauce holder falling out of",
                         "the world also turn every player's view upside down. The physics are unaffected either way -- this",
@@ -343,6 +350,7 @@ public final class Config {
         INDEX.put("emeraldgers_size_variation", EMERALDGERS_SIZE_VARIATION);
         INDEX.put("mega_expansion_mode", MEGA_EXPANSION_MODE);
         INDEX.put("general_darius_remains", GENERAL_DARIUS_REMAINS);
+        INDEX.put("darius_can_break_blocks", DARIUS_CAN_BREAK_BLOCKS);
         INDEX.put("darius_inflicts_obliteration", DARIUS_INFLICTS_OBLITERATION);
         INDEX.put("mega_brutal_mode", MEGA_BRUTAL_MODE);
         INDEX.put("player_spawn_in_village", PLAYER_SPAWN_IN_VILLAGE);
@@ -465,6 +473,7 @@ public final class Config {
     public static boolean emeraldgerSizeVariation()       { return EMERALDGERS_SIZE_VARIATION.get(); }
     public static boolean megaExpansionMode()             { return MEGA_EXPANSION_MODE.get(); }
     public static boolean generalDariusRemains()          { return GENERAL_DARIUS_REMAINS.get(); }
+    public static boolean dariusCanBreakBlocks()          { return DARIUS_CAN_BREAK_BLOCKS.get(); }
     public static boolean dariusInflictsObliteration()    { return DARIUS_INFLICTS_OBLITERATION.get(); }
     public static boolean megaBrutalMode()                { return MEGA_BRUTAL_MODE.get(); }
     public static boolean playerSpawnInVillage()          { return PLAYER_SPAWN_IN_VILLAGE.get(); }

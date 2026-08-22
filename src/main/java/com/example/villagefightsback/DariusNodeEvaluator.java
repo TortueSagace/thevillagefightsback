@@ -42,6 +42,10 @@ public class DariusNodeEvaluator extends WalkNodeEvaluator {
         }
 
         BlockPathTypes vanilla = super.getBlockPathType(level, x, y, z);
+        // If he cannot break blocks, he must not be TOLD he can. The downgrade below is what lets him path
+        // straight through breakable terrain; leaving it on while the config is off means he walks confidently
+        // into rock he can no longer clear and stands there.
+        if (!com.example.villagefightsback.Config.dariusCanBreakBlocks()) return vanilla;
         // 3) A generic solid obstacle vanilla calls BLOCKED is breakable terrain -> let Darius path through it.
         if (vanilla == BlockPathTypes.BLOCKED && !state.isAir()
                 && !isVillageBlock(state) && !isUnbreakableToDarius(level, pos, state)) {

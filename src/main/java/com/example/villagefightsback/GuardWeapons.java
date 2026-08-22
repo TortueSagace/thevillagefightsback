@@ -81,6 +81,23 @@ public final class GuardWeapons {
     }
 
     /** Dress the guard in emerald armour, each piece force-enchanted with Fire + Blast Protection. */
+    /**
+     * A Limbo Shield in the offhand.
+     *
+     * <p>The Guard Villagers AI already knows when to raise a shield; it looks for one in the offhand and
+     * does not care which mod made it. So the whole integration is putting one there -- and this is the
+     * first offhand equip anywhere in the mod, which is why it gets its own method rather than a line
+     * buried in VillageEvents.
+     *
+     * <p>The plain Limbo Shield, not the Paladin: the reflecting one is General Darius's, and a village
+     * full of guards returning half of every blow would end the difficulty curve on the spot.
+     */
+    public static void equipShield(net.minecraft.world.entity.Mob guard) {
+        guard.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
+                new ItemStack(ModItems.LIMBO_SHIELD.get()));
+        guard.setDropChance(net.minecraft.world.entity.EquipmentSlot.OFFHAND, 0.0F);
+    }
+
     public static void equipEmeraldArmor(Mob guard) {
         equip(guard, EquipmentSlot.HEAD, ModArmor.EMERALD_HELMET.get());
         equip(guard, EquipmentSlot.CHEST, ModArmor.EMERALD_CHESTPLATE.get());

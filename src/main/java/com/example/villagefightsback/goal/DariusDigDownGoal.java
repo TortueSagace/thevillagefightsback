@@ -38,6 +38,7 @@ public class DariusDigDownGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        if (!com.example.villagefightsback.Config.dariusCanBreakBlocks()) return false;
         LivingEntity t = darius.getTarget();
         if (t == null || !t.isAlive() || !darius.onGround()) return false;
         if (t.getY() >= darius.getY() - 1.5) return false;   // only when the target is clearly BELOW
