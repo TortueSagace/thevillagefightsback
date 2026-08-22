@@ -109,6 +109,21 @@ public final class UpgradeTribute {
         return out;
     }
 
+    /**
+     * Is this item any stage's tribute?
+     *
+     * <p>Asked before the node's economy is consulted, so a right-click on the CLIENT can decide whether it
+     * is feeding the node or opening its screen without knowing what stage the node is at.
+     */
+    public static boolean isTributeItem(Item item) {
+        for (int lvl = 1; lvl <= 3; lvl++) {
+            for (Need n : needsFor(lvl)) {
+                if (n.item() == item) return true;
+            }
+        }
+        return false;
+    }
+
     /** The item the dead brain node wants, and anything else the config says also works. */
     public static boolean isRevivingItem(ItemStack stack) {
         for (String s : Config.REVIVING_ITEMS.get()) {
