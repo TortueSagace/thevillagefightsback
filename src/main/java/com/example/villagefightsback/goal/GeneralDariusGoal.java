@@ -71,6 +71,17 @@ public class GeneralDariusGoal extends Goal {
     private static final double HOP_HORIZ = 0.42;
     private int hopCooldown;              // can't progress for this long -> try a scaffold escape
     private static final int SCAFFOLD_INTERVAL = 4;
+    /**
+     * How far above him a target has to be before he starts building up to it, and how high he will go.
+     *
+     * <p>He could always dig UP through a ceiling, but a flier in open air has no ceiling to dig -- digUp
+     * finds the way already open and declines, and with the leap now a ten-second special there was nothing
+     * left to close the gap. So he does what the stage-3 guards do and builds a scaffold column under
+     * himself. The cap stops him towering into the sky after something that simply flew away.
+     */
+    private static final double CLIMB_MIN_ABOVE = 3.0;
+    private static final int CLIMB_MAX_HEIGHT = 24;
+    private int climbSteps;
 
     private static final int WITHER_SCAN_INTERVAL = 20;     // re-scan for a wither storm ~1/s (it is the priority)
     private static final double WITHER_HUNT_RANGE = 160.0;  // hunt a wither storm within this (found even hitbox-off)
@@ -202,6 +213,14 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
+        // Target in the AIR above him: build up to it. digUp only helps when something is in the way, and
+        // a phantom over open ground is exactly the case it declines.
+        if ((t.getY() - darius.getY()) > CLIMB_MIN_ABOVE) {
+            if (climbToward(sl, t)) return;
+        } else {
+            climbSteps = 0;      // level with it again: the next flier gets a full allowance
+        }
+
         // Jump-close when comfortably out of reach and the launch is ready (no ceiling check -- breaks through).
         if (distSqr >= JUMP_MIN_DIST_SQR && darius.smashReady()
                 && (t.getY() - darius.getY()) > -2.0) {
@@ -307,6 +326,39 @@ public class GeneralDariusGoal extends Goal {
         darius.getNavigation().stop();
         darius.setPos(gx + 0.5, gy + 1.0, gz + 0.5);                       // step up into the cleared space
         darius.fallDistance = 0.0F;
+        return true;
+    }
+
+    /**
+     * Walk under the target, then pillar up on cheap scaffolds until he can reach it.
+     *
+     * <p>The same trick {@code StageThreeGuardGoal.climbWithScaffold} uses, and the same blocks: they carry
+     * no support requirement and expire on their own after about thirty seconds, so a chase into the sky
+     * does not leave a tower standing in the village afterwards.
+     *
+     * @return true when it handled the tick, so the caller stops
+     */
+    private boolean climbToward(ServerLevel sl, LivingEntity t) {
+        if (climbSteps >= CLIMB_MAX_HEIGHT) return false;               // high enough; let something else try
+        int gx = darius.getBlockX(), gy = darius.getBlockY(), gz = darius.getBlockZ();
+        int hx = (int) Math.floor(t.getX()) - gx, hz = (int) Math.floor(t.getZ()) - gz;
+        if (Math.abs(hx) > 1 || Math.abs(hz) > 1) {
+            NavThrottle.goTo(darius, t.getX(), darius.getY(), t.getZ(), 1.2);   // get under it first
+            return true;
+        }
+        if (scaffoldCooldown > 0) return true;                         // pacing the climb, not failing it
+
+        BlockPos feet = new BlockPos(gx, gy, gz);
+        if (sl.getBlockState(feet.above()).blocksMotion()) return false;   // capped: digUp's problem, not this
+        if (sl.getBlockState(feet).canBeReplaced()) {
+            sl.setBlock(feet, ModBlocks.CHEAP_SCAFFOLD.get().defaultBlockState(), 3);
+            CheapScaffoldManager.track(sl, feet);
+        }
+        darius.getNavigation().stop();
+        darius.setPos(gx + 0.5, gy + 1.0, gz + 0.5);
+        darius.fallDistance = 0.0F;
+        scaffoldCooldown = SCAFFOLD_INTERVAL;
+        climbSteps++;
         return true;
     }
 
