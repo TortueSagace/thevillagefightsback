@@ -106,6 +106,18 @@ public class GeneralDariusEntity extends Monster {
     private boolean smashSpent;
     /** The one below-{@value #SMASH_RESET_HP} refund, so it cannot be farmed by healing back up. */
     private boolean smashRefunded;
+    /**
+     * A target written off as unreachable, and for how much longer.
+     *
+     * <p>It lives on the ENTITY rather than in the goal because {@link #pickBiggestThreat} is what chooses
+     * the next lock, and a goal-side ignore list the picker cannot see produces a loop rather than a fix:
+     * the goal drops the target, the picker immediately hands the same one straight back, the goal drops it
+     * again -- and since every re-lock announced itself, the whole server got "General Darius hunts X!"
+     * once per tick.
+     */
+    private LivingEntity ignoredTarget;
+    private int ignoreTicks;
+
     /** Lives taken, for {@link DariusStatue}. Counted here because VillagerKills only counts defenders. */
     private int kills;
     /** His two escorts, so exactly one of each stands at a time. */
@@ -196,6 +208,16 @@ public class GeneralDariusEntity extends Monster {
      */
     public void rearmStatue() {
         kills--;
+    }
+
+    /** Write {@code e} off for {@code ticks}: it will not be hunted or re-picked until that runs out. */
+    public void ignoreTarget(LivingEntity e, int ticks) {
+        ignoredTarget = e;
+        ignoreTicks = ticks;
+    }
+
+    public boolean isIgnoredTarget(LivingEntity e) {
+        return e != null && e == ignoredTarget && ignoreTicks > 0;
     }
 
     /** Is the leap available? Read by {@code GeneralDariusGoal} before it commits to one. */
@@ -450,6 +472,7 @@ public class GeneralDariusEntity extends Monster {
         if (smashCooldown > 0) smashCooldown--;
         if (armsCooldown > 0) armsCooldown--;
         if (sauceCooldown > 0) sauceCooldown--;
+        if (ignoreTicks > 0 && --ignoreTicks == 0) ignoredTarget = null;
 
         // Below 50% HP: spontaneously gain Regeneration II (30s) AND Darius' Special Sauce (10s). Granted once on
         // dropping below half, then re-armed if he heals back above half (so a second collapse triggers again).
@@ -574,6 +597,7 @@ public class GeneralDariusEntity extends Monster {
         // "General Darius hunts Darius!" broadcast all still landed. isSparedByVillage is the predicate that
         // already knows the answer; the two huntability tests were simply never asking it.
         if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isSparedByVillage(e)) return false;
+        if (isIgnoredTarget(e)) return false;   // written off as unreachable; see ignoreTarget
         // A player only when the village has actually turned on them. This used to be every player who was not
         // in creative, which meant the village's own champion hunted somebody the village had no quarrel with
         // -- the one hostility path that never consulted their standing at all. StandingEffects would refuse
