@@ -236,7 +236,7 @@ public class LimboBookScreen extends Screen {
                 head("The Limbo Scythe"),
                 BLANK,
                 item(ModItems.LIMBO_SCYTHE.get(),
-                        "Made from a Limbo Hoe, with amethyst, a golden apple, soul sand and a second template."),
+                        "Made from a Limbo Hoe, with amethyst, a totem of undying, soul sand and a second template."),
                 BLANK,
                 body("It collects souls. Kill a creature with 20 hearts or more and the scythe keeps its soul. "
                         + "It holds eight."),

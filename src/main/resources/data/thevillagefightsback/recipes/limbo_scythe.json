@@ -6,11 +6,23 @@
     "ATA"
   ],
   "key": {
-    "A": { "item": "minecraft:amethyst_block" },
-    "G": { "item": "minecraft:golden_apple" },
-    "S": { "item": "minecraft:soul_sand" },
-    "T": { "item": "thevillagefightsback:limbo_smithing_template" },
-    "H": { "item": "thevillagefightsback:limbo_hoe" }
+    "A": {
+      "item": "minecraft:amethyst_block"
+    },
+    "G": {
+      "item": "minecraft:totem_of_undying"
+    },
+    "S": {
+      "item": "minecraft:soul_sand"
+    },
+    "T": {
+      "item": "thevillagefightsback:limbo_smithing_template"
+    },
+    "H": {
+      "item": "thevillagefightsback:limbo_hoe"
+    }
   },
-  "result": { "item": "thevillagefightsback:limbo_scythe" }
+  "result": {
+    "item": "thevillagefightsback:limbo_scythe"
+  }
 }
