@@ -96,6 +96,14 @@ public class GeneralDariusEntity extends Monster {
     private int sauceCooldown;
     /** True while the special is in the air: he is holding the Smasher and owes the world one landing. */
     private boolean smashing;
+    /**
+     * True once this activation's mace blow has landed.
+     *
+     * <p>The Mace bounces its wielder off whatever it hits, and the dive test is only "airborne, falling,
+     * near the target" -- so the bounce put him straight back into a smash, and he pogoed on anything that
+     * survived the first hit. One activation is one blow; the bounce is now just a landing.
+     */
+    private boolean smashSpent;
     /** The one below-{@value #SMASH_RESET_HP} refund, so it cannot be farmed by healing back up. */
     private boolean smashRefunded;
     /** Lives taken, for {@link DariusStatue}. Counted here because VillagerKills only counts defenders. */
@@ -203,6 +211,7 @@ public class GeneralDariusEntity extends Monster {
      */
     public void beginSmash() {
         smashing = true;
+        smashSpent = false;
         smashCooldown = SMASH_COOLDOWN;
         setItemSlot(EquipmentSlot.MAINHAND, GuardWeapons.alienSmasher().copy());
         setDropChance(EquipmentSlot.MAINHAND, 0.0F);
@@ -218,6 +227,17 @@ public class GeneralDariusEntity extends Monster {
 
     public boolean isSmashing() {
         return smashing;
+    }
+
+    /** Has this activation's one mace blow already landed? */
+    public boolean smashSpent() {
+        return smashSpent;
+    }
+
+    /** The blow landed: the Smasher goes away immediately, so the bounce cannot become a second smash. */
+    public void spendSmash() {
+        smashSpent = true;
+        endSmash();
     }
 
     // --- the Right Arm and the Left Arm -----------------------------------------------------------
@@ -278,6 +298,7 @@ public class GeneralDariusEntity extends Monster {
         com.example.villagefightsback.compat.MCACompat.makeGuard(mob);
         // Stage 4 must be stamped BEFORE the join handler reads it, exactly as StagedDefenderEggItem does.
         UpgradeState.setStage4(mob);
+        GuardWeapons.equipShield(mob);      // the escort keeps the shield ordinary guards gave up
         mob.setCustomName(net.minecraft.network.chat.Component.literal(name));
         mob.setCustomNameVisible(true);
         mob.setPersistenceRequired();
@@ -298,9 +319,25 @@ public class GeneralDariusEntity extends Monster {
         for (java.util.UUID id : new java.util.UUID[]{rightArm, leftArm}) {
             if (id == null) continue;
             if (!(sl.getEntity(id) instanceof net.minecraft.world.entity.Mob arm) || !arm.isAlive()) continue;
+            // Left behind -> put them back at his shoulder. A guard's own navigation gives up long
+            // before {@value #ARM_LEASH} blocks, so an Arm that lost a step during a chase over broken
+            // ground never caught up again and the escort quietly stopped existing.
+            if (arm.distanceToSqr(this) > ARM_LEASH * ARM_LEASH) {
+                arm.teleportTo(getX(), getY(), getZ());
+                arm.getNavigation().stop();
+                sl.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
+                        arm.getX(), arm.getY() + 1.0, arm.getZ(), 16, 0.4, 0.6, 0.4, 0.1);
+            }
+
+            // His fight is their fight. Pushed on EVERY call rather than only when it differs: a guard's
+            // own target goals re-pick constantly, so a one-shot assignment is overwritten within the tick
+            // and the escort wanders off after whatever happens to be nearest to itself.
             if (arm.getTarget() != t) arm.setTarget(t);
         }
     }
+
+    /** How far an Arm may drift before it is put back at his shoulder. */
+    private static final double ARM_LEASH = 50.0;
 
     private static final String ARM_RIGHT = "Right Arm";
     private static final String ARM_LEFT = "Left Arm";
@@ -436,7 +473,7 @@ public class GeneralDariusEntity extends Monster {
         }
 
         maybeSummonArms(sl);
-        if ((tickCount % 10) == 0) commandArms(sl);
+        commandArms(sl);
 
         bossBar.setProgress(getHealth() / getMaxHealth());
         // While hunting (a locked target) Darius glows so players can always spot him; off when walking home.

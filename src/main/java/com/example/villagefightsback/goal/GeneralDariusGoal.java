@@ -56,7 +56,20 @@ public class GeneralDariusGoal extends Goal {
     private static final float FALL_CAP = 24.0F;
     private static final int FIRE_ASPECT_SECONDS = 8;
 
-    private static final int STUCK_TICKS = 40;              // can't progress for this long -> try a scaffold escape
+    private static final int STUCK_TICKS = 40;
+    /**
+     * A plain hop over whatever the pathfinder could not get round.
+     *
+     * <p>Until 1.7.2 he closed every gap by leaping, because the leap recharged in 35 ticks. Making that a
+     * ten-second SPECIAL took his mobility away with it, and what was left was a walk on a pathfinder that
+     * had never had to carry him before -- so he stalled on terrain he used to sail over. This is that
+     * mobility back without the damage: no Smasher, no smash, no special spent. It fires only once he has
+     * actually stopped making progress, so it is a recovery rather than a habit.
+     */
+    private static final int HOP_COOLDOWN = 30;
+    private static final double HOP_VY = 0.62;
+    private static final double HOP_HORIZ = 0.42;
+    private int hopCooldown;              // can't progress for this long -> try a scaffold escape
     private static final int SCAFFOLD_INTERVAL = 4;
 
     private static final int WITHER_SCAN_INTERVAL = 20;     // re-scan for a wither storm ~1/s (it is the priority)
@@ -96,6 +109,7 @@ public class GeneralDariusGoal extends Goal {
         if (meleeCooldown > 0) meleeCooldown--;
         if (launchCooldown > 0) launchCooldown--;
         if (scaffoldCooldown > 0) scaffoldCooldown--;
+        if (hopCooldown > 0) hopCooldown--;
         // Back on his feet -> back to the Obliterator, whether or not the smash actually connected. Before
         // ensureWeapon, so the two never disagree about what should be in his hand this tick.
         if (darius.onGround() && darius.isSmashing()) darius.endSmash();
@@ -203,8 +217,13 @@ public class GeneralDariusGoal extends Goal {
             return;
         }
 
-        // Otherwise walk toward the target.
+        // Otherwise walk toward the target -- and hop when the walk is visibly not working.
         NavThrottle.follow(darius, t, 1.2);
+        if (hopCooldown <= 0 && noProgressTicks >= STUCK_TICKS / 2 && darius.onGround()
+                && (t.getY() - darius.getY()) > -2.0) {
+            hop(t);
+            return;
+        }
         trackProgress(sl, distSqr);
     }
 
@@ -291,6 +310,19 @@ public class GeneralDariusGoal extends Goal {
         return true;
     }
 
+    /** A short vault toward the target. Deliberately NOT launchAt: nothing is spent and nothing is armed. */
+    private void hop(LivingEntity t) {
+        Vec3 to = t.position().subtract(darius.position());
+        double hl = Math.sqrt(to.x * to.x + to.z * to.z);
+        double hx = hl > 1.0E-4 ? to.x / hl : 0, hz = hl > 1.0E-4 ? to.z / hl : 0;
+        darius.setDeltaMovement(hx * HOP_HORIZ, HOP_VY, hz * HOP_HORIZ);
+        darius.hasImpulse = true;
+        darius.hurtMarked = true;
+        darius.fallDistance = 0.0F;
+        hopCooldown = HOP_COOLDOWN;
+        noProgressTicks = 0;
+    }
+
     // --- mace jump (double height, no ceiling check) ------------------------------------------------
     /** Jump at {@code t} to close ground: the full horizontal reach. */
     private void launchAt(LivingEntity t) {
@@ -327,6 +359,7 @@ public class GeneralDariusGoal extends Goal {
             Vec3 m = darius.getDeltaMovement();
             darius.setDeltaMovement(m.x + (to.x / hl) * 0.08, m.y, m.z + (to.z / hl) * 0.08);
         }
+        if (!darius.isSmashing() || darius.smashSpent()) return;   // a bounce is not a new special
         boolean descending = darius.getDeltaMovement().y < 0;
         if (descending && darius.distanceToSqr(t) <= SMASH_RANGE_SQR && darius.fallDistance > 0.6F) {
             smash(t);
@@ -342,6 +375,7 @@ public class GeneralDariusGoal extends Goal {
         darius.level().playSound(null, darius.getX(), darius.getY(), darius.getZ(),
                 SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.9F, 1.3F);
         darius.fallDistance = 0.0F;
+        darius.spendSmash();       // one blow; he comes down and goes back to the Obliterator
     }
 
     // --- walk home + despawn (with refund, handled by the entity) -----------------------------------

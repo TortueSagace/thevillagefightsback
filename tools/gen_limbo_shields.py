@@ -2,21 +2,27 @@
 Generates the Limbo Shield and the Paladin Shield item textures: 16x96 SIX-FRAME vertical animation
 strips plus their .png.mcmeta, matching the Limbo gear's breathing-green look (gen_alien_smasher.py).
 
-The SILHOUETTE is traced from a reference heater shield the same mechanical way gen_limbo_scythe.py
-traces its scythe -- key the background out, BOX-resample to 16x16, threshold the alpha -- so the
-outline is the real thing rather than something hand-drawn by eye.
+TWO SHAPES, deliberately:
 
-The CREST is ours. The reference is Nintendo's Hylian Shield and its emblem is theirs, so only the
-shape of the board is taken from it: the crest drawn into the field here is the brain node's eye over
-a pair of folded wings, which is this mod's own motif. Nothing recognisable from the reference art
+  * limbo_shield   -- VANILLA's shield outline. It is a vanilla shield with the Limbo filter applied, so
+                      it should look like one. The silhouette is lifted from the game's own
+                      empty_armor_slot_shield icon -- which is the shield drawn as a one-pixel outline,
+                      the only place the game ships its shape at icon size -- and flood filled.
+  * paladin_shield -- the heater silhouette traced from the supplied reference, the same mechanical way
+                      gen_limbo_scythe.py traces its scythe: key the background out, BOX-resample to
+                      16x16, threshold the alpha. The upgrade should not look like the thing it upgrades.
+
+The CREST is ours on both. The reference is Nintendo's Hylian Shield and its emblem is theirs, so only
+the shape of the board is taken from it: the crest drawn into the field here is the brain node's eye
+over a pair of folded wings, which is this mod's own motif. Nothing recognisable from the reference art
 survives past the outline.
 
-Two shields, one geometry:
-  * limbo_shield   -- dark Limbo green field, pale green metal rim. The base item.
-  * paladin_shield -- the upgrade: violet Obliteration field, gold rim, amethyst crest, brighter pulse.
+Palettes: limbo_shield is the dark Limbo green with a pale green metal rim; paladin_shield is the violet
+Obliteration family with a gold rim and an amethyst crest.
 
 Re-runnable (overwrites). Uses Pillow.
 """
+import io
 import os
 import math
 from PIL import Image
@@ -56,6 +62,68 @@ PALADIN = {
 
 def lerp(a, b, t):
     return tuple(int(round(a[i] + (b[i] - a[i]) * t)) for i in range(4))
+
+
+CLIENT_JAR = os.path.join(
+    os.path.expanduser("~"), "AppData", "Roaming", "ModrinthApp", "meta", "libraries", "net", "minecraft",
+    "client", "1.20.1-20230612.114412", "client-1.20.1-20230612.114412-extra.jar")
+SLOT_ICON = "assets/minecraft/textures/item/empty_armor_slot_shield.png"
+
+
+def vanilla_silhouette():
+    """Vanilla's own shield shape, as a 16x16 mask.
+
+    empty_armor_slot_shield is the shield drawn as a one-pixel OUTLINE -- the only place the game ships
+    its silhouette at icon size. Flooding the OUTSIDE from the corners and keeping everything the flood
+    could not reach turns that outline into the solid shape, which is more reliable than flooding the
+    inside: the outline is one pixel thick and a flood started in the middle leaks through any diagonal.
+
+    Falls back to a hand-drawn approximation when the client jar is not there, so this stays runnable on
+    a machine that has never launched the game.
+    """
+    import zipfile
+    try:
+        z = zipfile.ZipFile(CLIENT_JAR)
+        icon = Image.open(io.BytesIO(z.read(SLOT_ICON))).convert("RGBA")
+    except Exception:
+        print("  (client jar unavailable -- using the built-in shield outline)")
+        return _fallback_silhouette()
+
+    px = icon.load()
+    outline = [[px[x, y][3] >= 40 for x in range(16)] for y in range(16)]
+
+    outside = [[False] * 16 for _ in range(16)]
+    stack = [(0, 0), (15, 0), (0, 15), (15, 15)]
+    while stack:
+        x, y = stack.pop()
+        if x < 0 or x > 15 or y < 0 or y > 15 or outside[y][x] or outline[y][x]:
+            continue
+        outside[y][x] = True
+        stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+    return [[outline[y][x] or not outside[y][x] for x in range(16)] for y in range(16)]
+
+
+def _fallback_silhouette():
+    """The vanilla shape by hand: straight sides, shoulders in, a blunt point at the bottom."""
+    rows = [
+        "................",
+        ".......##.......",
+        "....########....",
+        "..############..",
+        ".##############.",
+        ".##############.",
+        "..############..",
+        "..############..",
+        "..############..",
+        "...##########...",
+        "...##########...",
+        "...##########...",
+        "....########....",
+        ".....######.....",
+        ".......##.......",
+        "................",
+    ]
+    return [[c == "#" for c in row] for row in rows]
 
 
 def silhouette():
@@ -164,6 +232,5 @@ def write(name, pal, mask):
 
 
 if __name__ == "__main__":
-    mask = silhouette()
-    write("limbo_shield", LIMBO, mask)
-    write("paladin_shield", PALADIN, mask)
+    write("limbo_shield", LIMBO, vanilla_silhouette())
+    write("paladin_shield", PALADIN, silhouette())

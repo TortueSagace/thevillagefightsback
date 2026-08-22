@@ -152,6 +152,21 @@ public class LimboBookScreen extends Screen {
                 body("Any bed works here. Trying to sleep is how you go home."))));
 
         out.add(new ArrayList<>(List.of(
+                head("The air is not free"),
+                BLANK,
+                red("Ten seconds here and it starts."),
+                BLANK,
+                body("Slow Annihilation: Wither, and Levitation together. The Wither is what kills you. The "
+                        + "Levitation is what stops you leaving, because you cannot walk to the bed while you "
+                        + "are drifting off the floor."),
+                BLANK,
+                body("CROUCH. You come down exactly as fast as it takes you up. That is the way out."),
+                BLANK,
+                item(ModArmor.GAS_MASK.get(),
+                        "A Gas Mask stops it completely, for as long as you wear it. It cannot be crafted. "
+                        + "Villages keep them in their chests, rarely."))));
+
+        out.add(new ArrayList<>(List.of(
                 head("What this place is"),
                 BLANK,
                 body("A dark world with very little in it. You arrive in a bedrock room at its centre, 22 blocks "
@@ -241,6 +256,24 @@ public class LimboBookScreen extends Screen {
                         + "spawning for as long as the furnace stays lit."))));
 
         out.add(new ArrayList<>(List.of(
+                head("The Paladin Shield"),
+                BLANK,
+                item(ModItems.PALADIN_SHIELD.get(),
+                        "A Limbo Shield in the centre of the Obliterator's frame, with an enchanted golden "
+                        + "apple where the dragon egg goes."),
+                BLANK,
+                body("Both shields throw off whatever swings at them, the way the brain node throws off a "
+                        + "pickaxe. Ten shields' worth of durability, mended with Limbo Membrane."),
+                BLANK,
+                body("The Paladin does more. Half of every blow goes back to whoever threw it -- arrows "
+                        + "included, though an arrow is not shoved back."),
+                BLANK,
+                body("And blocking feeds you: every block grants what an enchanted golden apple grants."),
+                BLANK,
+                red("General Darius carries one."),
+                body("His own shield returns half of what you hit him with. Consider the crossbow."))));
+
+        out.add(new ArrayList<>(List.of(
                 head("What lives here"),
                 BLANK,
                 body("Limbo Phantoms. They are three times the normal size and they fly through bedrock."),
@@ -264,23 +297,6 @@ public class LimboBookScreen extends Screen {
                 BLANK,
                 body("He can defend himself. He throws a Volatile Limbo Potion at anything above 10 hearts."))));
 
-        out.add(new ArrayList<>(List.of(
-                head("The air is not free"),
-                BLANK,
-                red("Ten seconds here and it starts."),
-                BLANK,
-                body("Slow Annihilation: Wither, and Levitation together. The Wither is what kills you. The "
-                        + "Levitation is what stops you leaving, because you cannot walk to the bed while you "
-                        + "are drifting off the floor."),
-                BLANK,
-                body("CROUCH. You come down exactly as fast as it takes you up. That is the way out."),
-                BLANK,
-                item(ModArmor.GAS_MASK.get(),
-                        "A Gas Mask stops it completely, for as long as you wear it. It cannot be crafted. "
-                        + "Villages keep them in their chests, rarely."),
-                BLANK,
-                red("Die with it and you do not simply die."),
-                body("Something of the Limbo's own gets up where you fell."))));
 
         return out;
     }

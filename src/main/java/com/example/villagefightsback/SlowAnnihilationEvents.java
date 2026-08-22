@@ -125,7 +125,10 @@ public final class SlowAnnihilationEvents {
     @SubscribeEvent
     public static void onApplicable(MobEffectEvent.Applicable event) {
         if (event.getEffectInstance().getEffect() != ModEffects.SLOW_ANNIHILATION.get()) return;
-        if (event.getEntity().getItemBySlot(EquipmentSlot.HEAD).is(ModArmor.GAS_MASK.get())) {
+        // The Limbo's own are made of the stuff. Annihilating a Limbo Phantom with Limbo air reads as
+        // the dimension eating itself, and a raid that dissolves before it lands is not a raid.
+        if (Factions.isLimbo(event.getEntity())
+                || event.getEntity().getItemBySlot(EquipmentSlot.HEAD).is(ModArmor.GAS_MASK.get())) {
             event.setResult(Event.Result.DENY);
         }
     }
