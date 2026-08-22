@@ -992,7 +992,10 @@ public final class ModBlocks {
                 output.accept(ModItems.LIMBO_AXE.get());
                 output.accept(ModItems.LIMBO_SHOVEL.get());
                 output.accept(ModItems.LIMBO_HOE.get());
+                output.accept(ModArmor.GAS_MASK.get());
                 output.accept(ModItems.LIMBO_SCYTHE.get());
+                output.accept(ModItems.LIMBO_SHIELD.get());
+                output.accept(ModItems.PALADIN_SHIELD.get());
                 output.accept(ModItems.REPUTATION_BOOK.get());
                 output.accept(ModItems.LIMBO_BOOK.get());
                 output.accept(ModItems.OBLITERATOR.get());

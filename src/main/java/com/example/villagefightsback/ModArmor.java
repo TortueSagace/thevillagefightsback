@@ -41,6 +41,14 @@ public final class ModArmor {
             () -> new LimboElytraChestplateItem(LimboArmorMaterial.INSTANCE, new Item.Properties().fireResistant()));
 
     /** Call from the mod constructor. */
+    /**
+     * The Gas Mask: leather stats, and the only thing that keeps the Limbo's air out of you.
+     *
+     * <p>Deliberately uncraftable -- it is found, at 2% in a village's chests, or not at all.
+     */
+    public static final RegistryObject<Item> GAS_MASK = ITEMS.register("gas_mask",
+            () -> new ArmorItem(GasMaskArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new Item.Properties()));
+
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
     }

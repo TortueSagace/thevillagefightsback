@@ -184,6 +184,14 @@ public final class ModItems {
     public static final RegistryObject<Item> LIMBO_SCYTHE = ITEMS.register("limbo_scythe",
             () -> new LimboScytheItem(new Item.Properties().stacksTo(1).fireResistant()));
 
+    /** A shield that throws back whatever hits it. See {@link LimboShieldItem}. */
+    public static final RegistryObject<Item> LIMBO_SHIELD = ITEMS.register("limbo_shield",
+            () -> new LimboShieldItem(new Item.Properties().fireResistant()));
+
+    /** ...and the upgrade, which also returns half the blow. See {@link PaladinShieldItem}. */
+    public static final RegistryObject<Item> PALADIN_SHIELD = ITEMS.register("paladin_shield",
+            () -> new PaladinShieldItem(new Item.Properties().fireResistant()));
+
     /** Forgotten Powder: dropped by Forgotten Glowstone AND by the Limbo raiders (the Forgotten Dust used to
      *  craft the block back). Foil + an animated icon, matching the Limbo gear's shimmer. */
     public static final RegistryObject<Item> FORGOTTEN_POWDER =

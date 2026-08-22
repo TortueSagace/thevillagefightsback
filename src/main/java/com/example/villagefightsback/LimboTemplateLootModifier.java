@@ -5,7 +5,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
@@ -34,16 +33,12 @@ public class LimboTemplateLootModifier extends LootModifier {
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        ResourceLocation table = context.getQueriedLootTableId();
-        if (table != null && isVillageChest(table) && context.getRandom().nextFloat() < chance) {
+        if (VillageLoot.isVillageChest(context) && context.getRandom().nextFloat() < chance) {
             generatedLoot.add(new ItemStack(ModItems.LIMBO_SMITHING_TEMPLATE.get()));
         }
         return generatedLoot;
     }
 
-    private static boolean isVillageChest(ResourceLocation id) {
-        return "minecraft".equals(id.getNamespace()) && id.getPath().startsWith("chests/village/");
-    }
 
     @Override
     public Codec<? extends IGlobalLootModifier> codec() {

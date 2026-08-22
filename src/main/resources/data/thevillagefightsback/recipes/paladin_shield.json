@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AGA",
+    "SWS",
+    "ATA"
+  ],
+  "key": {
+    "A": { "item": "minecraft:amethyst_block" },
+    "G": { "item": "minecraft:enchanted_golden_apple" },
+    "S": { "item": "minecraft:soul_sand" },
+    "T": { "item": "thevillagefightsback:limbo_smithing_template" },
+    "W": { "item": "thevillagefightsback:limbo_shield" }
+  },
+  "result": { "item": "thevillagefightsback:paladin_shield" }
+}

@@ -57,6 +57,10 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> EMERALD_MARKER =
             EFFECTS.register("emerald_marker", EmeraldMarkerEffect::new);
 
+    /** What the Limbo's air does to anything that stays in it. See {@link SlowAnnihilationEffect}. */
+    public static final RegistryObject<MobEffect> SLOW_ANNIHILATION =
+            EFFECTS.register("slow_annihilation", SlowAnnihilationEffect::new);
+
     public static void register(IEventBus modBus) {
         EFFECTS.register(modBus);
     }

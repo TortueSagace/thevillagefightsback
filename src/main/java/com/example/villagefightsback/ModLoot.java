@@ -21,6 +21,10 @@ public final class ModLoot {
     public static final RegistryObject<Codec<LimboTemplateLootModifier>> LIMBO_SMITHING_TEMPLATE =
             SERIALIZERS.register("limbo_smithing_template", LimboTemplateLootModifier.CODEC);
 
+    /** The Gas Mask, 2% in a village's chests. See {@link GasMaskLootModifier}. */
+    public static final RegistryObject<Codec<GasMaskLootModifier>> GAS_MASK =
+            SERIALIZERS.register("gas_mask", GasMaskLootModifier.CODEC);
+
     public static final RegistryObject<Codec<RickrollLootModifier>> RICKROLL =
             SERIALIZERS.register("rickroll", RickrollLootModifier.CODEC);
 
