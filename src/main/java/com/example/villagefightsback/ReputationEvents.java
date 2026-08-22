@@ -103,6 +103,11 @@ public final class ReputationEvents {
             }
             return;   // a golem or wall defender costs only the blow; it is machinery, not somebody
         }
+        // An emerald unit is a threat the village's OWN brain spawns, on a timer, for nothing. Paying for
+        // one turns the brain into a reputation faucet: a player reported farming exactly that alongside a
+        // mod that makes emerald zombies hunt them. The village still fights them -- it just does not thank
+        // anybody for killing what it produced.
+        if (Factions.isEmerald(dead)) return;
         if (Factions.isVillageThreat(dead)) {
             rep.add(killer, THREAT_KILL, "killed " + shortName(dead));
         }

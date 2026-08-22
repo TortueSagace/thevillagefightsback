@@ -329,7 +329,13 @@ public class GeneralDariusEntity extends Monster {
     private boolean isHuntable(LivingEntity e) {
         // Emerald units are a separate faction the village never fights (see EmeraldConversion faction rules), so
         // Darius -- a village champion -- never hunts or chases them.
-        if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isEmerald(e)) return false;
+        // ...and neither is another champion. GeneralDariusEntity extends Monster, so it IS an Enemy, so
+        // Factions.isVillageThreat answers true for one Darius looking at another -- which is why two of them
+        // placed by a player went straight for each other. VillageEvents cancels the damage and the target
+        // change, so the fight looked harmless, but the banish beam, the Alien Smasher craters and the
+        // "General Darius hunts Darius!" broadcast all still landed. isSparedByVillage is the predicate that
+        // already knows the answer; the two huntability tests were simply never asking it.
+        if (e == this || !e.isAlive() || Factions.isInfected(e) || Factions.isSparedByVillage(e)) return false;
         // A player only when the village has actually turned on them. This used to be every player who was not
         // in creative, which meant the village's own champion hunted somebody the village had no quarrel with
         // -- the one hostility path that never consulted their standing at all. StandingEffects would refuse

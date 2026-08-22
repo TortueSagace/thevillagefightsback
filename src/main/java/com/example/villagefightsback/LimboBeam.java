@@ -51,8 +51,13 @@ public final class LimboBeam {
                 // different questions. Sparing someone from the village's AI is not the same as being immune to
                 // a banish beam, and the bosses should be bannable: the potion always could, so the beam
                 // refusing them was the odd one out.
+                // ...and a Darius never banishes another Darius. The beam is a swept cone, so sparing him
+                // in the TARGETING is not enough -- a second champion merely standing in it was still
+                // being thrown into the Limbo. Everyone else's beam still takes a boss.
                 x -> x != shooter && x.isAlive() && x instanceof Enemy
-                        && !Factions.isLimbo(x) && !Factions.isEmerald(x))) {
+                        && !Factions.isLimbo(x) && !Factions.isEmerald(x)
+                        && !(shooter instanceof GeneralDariusEntity
+                                && x instanceof GeneralDariusEntity))) {
             // whole-hitbox test so big creatures (boss, golems) are caught, not just centre points;
             // contains(origin) also catches point-blank targets (clip() is empty when origin is inside the box).
             AABB box = e.getBoundingBox().inflate(RADIUS);
