@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * 64 gems he cost to that brain's economy ({@link #refundAndDespawn()}).
  */
 public class GeneralDariusEntity extends Monster {
+    private static final String NBT_KILLS = "darius_kills";
     private static final String NBT_RIGHT_ARM = "darius_right_arm";
     private static final String NBT_LEFT_ARM = "darius_left_arm";
     private static final String NBT_HOME_DIM = "darius_home_dim";
@@ -97,6 +98,8 @@ public class GeneralDariusEntity extends Monster {
     private boolean smashing;
     /** The one below-{@value #SMASH_RESET_HP} refund, so it cannot be farmed by healing back up. */
     private boolean smashRefunded;
+    /** Lives taken, for {@link DariusStatue}. Counted here because VillagerKills only counts defenders. */
+    private int kills;
     /** His two escorts, so exactly one of each stands at a time. */
     private java.util.UUID rightArm;
     private java.util.UUID leftArm;
@@ -170,6 +173,22 @@ public class GeneralDariusEntity extends Monster {
     }
 
     // --- the jump-smash special ------------------------------------------------------------------
+
+    /** One more life taken; the running total. */
+    public int recordKill() {
+        return ++kills;
+    }
+
+    /**
+     * Hand back the statue trigger.
+     *
+     * <p>Called when the twentieth kill found nowhere to put it. Rewinding the counter by one means the
+     * NEXT kill is the twentieth again, so the statue is owed rather than lost -- the alternative is a
+     * player who happened to be standing in a forest at the wrong moment never seeing it at all.
+     */
+    public void rearmStatue() {
+        kills--;
+    }
 
     /** Is the leap available? Read by {@code GeneralDariusGoal} before it commits to one. */
     public boolean smashReady() {
@@ -578,6 +597,7 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
+        tag.putInt(NBT_KILLS, kills);
         if (rightArm != null) tag.putUUID(NBT_RIGHT_ARM, rightArm);
         if (leftArm != null) tag.putUUID(NBT_LEFT_ARM, leftArm);
         if (homeBrain != null) {
@@ -589,6 +609,7 @@ public class GeneralDariusEntity extends Monster {
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        kills = tag.getInt(NBT_KILLS);
         rightArm = tag.hasUUID(NBT_RIGHT_ARM) ? tag.getUUID(NBT_RIGHT_ARM) : null;
         leftArm = tag.hasUUID(NBT_LEFT_ARM) ? tag.getUUID(NBT_LEFT_ARM) : null;
         if (tag.contains(NBT_HOME_DIM) && tag.contains(NBT_HOME_POS)) {

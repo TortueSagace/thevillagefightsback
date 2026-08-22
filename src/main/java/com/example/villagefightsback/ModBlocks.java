@@ -295,6 +295,20 @@ public final class ModBlocks {
             "purple_tnt", () -> new BlockItem(PURPLE_TNT.get(), new Item.Properties()));
 
     /**
+     * Black TNT: the Darius statue.
+     *
+     * <p>The one structure charge that is not a building. It is placed automatically once General Darius
+     * has taken twenty lives (see {@code GeneralDariusEntity}), and is in the creative tab so it can be
+     * placed by hand as well. See {@code tools/gen_darius_statue.py} for where the statue comes from --
+     * it is his own armour textures, voxelised, not a drawing of him.
+     */
+    public static final RegistryObject<Block> BLACK_TNT = BLOCKS.register(
+            "black_tnt",
+            () -> new StructureTntBlock(BlockBehaviour.Properties.copy(Blocks.TNT), struct("darius_statue")));
+    public static final RegistryObject<Item> BLACK_TNT_ITEM = ITEMS.register(
+            "black_tnt", () -> new BlockItem(BLACK_TNT.get(), new Item.Properties()));
+
+    /**
      * Reinforced glass: looks like green tinted glass but is as tough as ancient debris -- hardness 30,
      * blast resistance 1200, and needs a diamond+ pickaxe to break (see the mineable/pickaxe +
      * needs_diamond_tool tags). {@link ReinforcedGlassBlock} makes it fully light-transparent so a dome
@@ -880,6 +894,7 @@ public final class ModBlocks {
                 output.accept(BLUE_TNT_ITEM.get());
                 output.accept(CYAN_TNT_ITEM.get());
                 output.accept(PURPLE_TNT_ITEM.get());
+                output.accept(BLACK_TNT_ITEM.get());
 
                 // === Weapons, ammo & mace enchants ===
                 output.accept(ModItems.ALIEN_SLASHER.get());

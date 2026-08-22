@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "thevillagefightsback:block/black_tnt_bottom",
+    "top": "thevillagefightsback:block/black_tnt_top",
+    "side": "thevillagefightsback:block/black_tnt_side"
+  }
+}

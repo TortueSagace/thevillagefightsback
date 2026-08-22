@@ -501,6 +501,8 @@
   "block.thevillagefightsback.memorial": "Village Memorial",
   "block.thevillagefightsback.memorial.desc": "A headstone for a fallen defender. Raise the one buried here with a Limbo Scythe.",
   "item.thevillagefightsback.limbo_scythe": "Limbo Scythe",
+  "block.thevillagefightsback.black_tnt": "Darius Statue TNT",
+  "block.thevillagefightsback.black_tnt.desc": "Raises a statue of General Darius in his full Limbo set. The village builds one itself once he has taken twenty lives.",
   "item.thevillagefightsback.gas_mask": "Gas Mask",
   "item.thevillagefightsback.gas_mask.desc": "A filter, not a helmet. Keeps the Limbo's air out of you for as long as you wear it.",
   "effect.thevillagefightsback.slow_annihilation": "Slow Annihilation",

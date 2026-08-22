@@ -33,6 +33,7 @@ public class TheVillageFightsBack {
         ModParticles.register(modBus);
         ModSounds.register(modBus);
         ModLoot.register(modBus);
+        ModStructures.register(modBus);
         modBus.addListener(this::commonSetup); // brewing recipes (must be added off the main init thread)
         modBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent e) -> {
             if (e.getConfig().getSpec() != Config.SPEC) return;
