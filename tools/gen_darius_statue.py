@@ -16,6 +16,15 @@ base. So Darius's own skin is sampled first and the armour composited over it. T
 forced to stay skin no matter what the armour says, because they are what makes it a statue of somebody
 rather than of a suit: the FACE inside the helmet, and the HANDS at the ends of the sleeves.
 
+BOOTS come off layer 1, not layer 2. Vanilla splits worn armour across two sheets -- helmet, chest and
+BOOTS on layer 1, leggings on layer 2 -- so sampling the legs from layer 2 alone left him barefoot. The
+bottom rows of each leg are taken from layer 1 instead.
+
+SPIKES. The Limbo helmet is drawn with three spikes by a render layer, not by its texture, so nothing in
+the armour sheet knows about them. They are added here as geometry.
+
+FACING. The statue is mirrored on Z so it looks back at whoever set the charge down, rather than away.
+
 Each sampled colour is snapped to the nearest block in a NON-FLAMMABLE palette: concretes, terracottas
 and a few stones. That constraint is the whole reason wool is absent -- a 30-block statue of the village's
 champion that a single flint could burn down would be a monument to the wrong thing.
@@ -73,6 +82,8 @@ PALETTE = {
 PALETTE_ITEMS = list(PALETTE.items())
 
 BASE_BLOCK = "minecraft:dirt_path"
+# The spikes read as the helmet's brightest metal.
+SPIKE_COLOUR = (130, 226, 158)
 
 
 def nearest(rgb):
@@ -128,6 +139,10 @@ SKIN_PARTS = {
 # and how many rows at the bottom of each arm are HAND rather than sleeve.
 FACE_INSET = 1
 HAND_ROWS = 3
+# How many rows at the bottom of each leg are BOOT rather than legging.
+BOOT_ROWS = 4
+# The three spikes on the Limbo helmet, as (x offset from the head's left, height).
+SPIKES = ((1, 2), (4, 3), (7, 2))
 
 
 def sample(img, uv, fw, fh, u, v):
@@ -210,12 +225,30 @@ def build():
                                  and FACE_INSET <= x < w - FACE_INSET and 1 <= (h - 1 - y) < h - 1)
                     show_hand = (name.endswith("_arm") and y < HAND_ROWS)
 
+                    # Boots are on layer 1, not the leggings sheet, so the lower leg comes from there or
+                    # he stands there barefoot.
+                    if name.endswith("_leg") and y < BOOT_ROWS:
+                        over = sample(layer[1], faces(0, 16, w, h, d)[key], fw, fh, u, v)
+
                     px = under if (show_face or show_hand or over[3] < 40) else over
                     if px[3] < 40:
                         px = under
                     if px[3] < 40:
                         continue                       # neither the suit nor the man is here
                     voxels[(ox + x, oy + y, oz + z)] = px[:3]
+
+    # The three helmet spikes. They are a render LAYER on the real helmet, so no armour texture carries
+    # them and nothing above could have found them; a statue of Darius without them is not him.
+    head_off = next(o for n, _l, _s, _uv, o in PARTS if n == "head")
+    hx, hy, hz = head_off
+    for (sx, tall) in SPIKES:
+        for t in range(tall):
+            voxels[(hx + sx, hy + 8 + t, hz + 4)] = SPIKE_COLOUR
+
+    # Mirrored on Z so he faces whoever set the charge down rather than turning his back on them.
+    zs_all = [p[2] for p in voxels]
+    zmin, zmax = min(zs_all), max(zs_all)
+    voxels = {(x, y, zmin + (zmax - z)): c for (x, y, z), c in voxels.items()}
 
     lit = stretch(set(voxels.values()))
     for k in list(voxels):

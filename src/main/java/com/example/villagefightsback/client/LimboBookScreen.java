@@ -259,19 +259,15 @@ public class LimboBookScreen extends Screen {
                 head("The Paladin Shield"),
                 BLANK,
                 item(ModItems.PALADIN_SHIELD.get(),
-                        "A Limbo Shield in the centre of the Obliterator's frame, with an enchanted golden "
-                        + "apple where the dragon egg goes."),
+                        "A Limbo Shield in the Obliterator's frame, with an enchanted golden apple where "
+                        + "the dragon egg goes."),
                 BLANK,
-                body("Both shields throw off whatever swings at them, the way the brain node throws off a "
-                        + "pickaxe. Ten shields' worth of durability, mended with Limbo Membrane."),
+                body("Both shields throw off whatever swings at them."),
                 BLANK,
-                body("The Paladin does more. Half of every blow goes back to whoever threw it -- arrows "
-                        + "included, though an arrow is not shoved back."),
+                body("The Paladin also returns half of every blow, arrows included, and feeds you for "
+                        + "blocking at all."),
                 BLANK,
-                body("And blocking feeds you: every block grants what an enchanted golden apple grants."),
-                BLANK,
-                red("General Darius carries one."),
-                body("His own shield returns half of what you hit him with. Consider the crossbow."))));
+                red("General Darius carries one."))));
 
         out.add(new ArrayList<>(List.of(
                 head("What lives here"),
