@@ -64,6 +64,38 @@ public class LimboPortalStructure extends Structure {
         return ModStructures.LIMBO_PORTAL.get();
     }
 
+    /**
+     * Lay the ring, once, wherever it is asked for.
+     *
+     * <p>Shared so the superflat fallback ({@link LimboPortalFlatgen}) puts down exactly the same portal as
+     * worldgen does, rather than a second implementation that drifts from it.
+     *
+     * <p>Only the frame is written -- the opening is left exactly as it was found, so a portal that
+     * generated across a hillside has the hillside still in it and the player has to clear it before it
+     * will light. That is deliberate: an inert doorway that needs a little work is more interesting than a
+     * clean one, and it costs nothing to do less.
+     */
+    static void layFrame(net.minecraft.world.level.LevelAccessor level, BlockPos base, boolean alongX,
+                         BoundingBox box) {
+        var frame = ModBlocks.FAKE_OBSIDIAN.get().defaultBlockState();
+        for (int u = 0; u < INNER_W + 2; u++) {
+            for (int v = 0; v < INNER_H + 2; v++) {
+                boolean edge = u == 0 || u == INNER_W + 1 || v == 0 || v == INNER_H + 1;
+                if (!edge) continue;                       // the opening stays open
+                BlockPos at = alongX ? base.offset(u - 1, v, 0) : base.offset(0, v, u - 1);
+                // During worldgen the box confines the write to this chunk; the rest of the frame arrives
+                // with its own. Placed at runtime there is no such limit and none is wanted.
+                if (box != null && !box.isInside(at)) continue;
+                level.setBlock(at, frame, 2);
+            }
+        }
+    }
+
+    /** As above, with no chunk to stay inside. */
+    static void layFrame(net.minecraft.world.level.LevelAccessor level, BlockPos base, boolean alongX) {
+        layFrame(level, base, alongX, null);
+    }
+
     /** The frame itself. */
     public static class Piece extends net.minecraft.world.level.levelgen.structure.StructurePiece {
         private final BlockPos base;
@@ -111,18 +143,7 @@ public class LimboPortalStructure extends Structure {
                                 net.minecraft.world.level.chunk.ChunkGenerator generator,
                                 net.minecraft.util.RandomSource random, BoundingBox box,
                                 net.minecraft.world.level.ChunkPos chunk, BlockPos pos) {
-            var frame = ModBlocks.FAKE_OBSIDIAN.get().defaultBlockState();
-            for (int u = 0; u < INNER_W + 2; u++) {
-                for (int v = 0; v < INNER_H + 2; v++) {
-                    boolean edge = u == 0 || u == INNER_W + 1 || v == 0 || v == INNER_H + 1;
-                    if (!edge) continue;                       // the opening stays open
-                    BlockPos at = alongX
-                            ? base.offset(u - 1, v, 0)
-                            : base.offset(0, v, u - 1);
-                    if (!box.isInside(at)) continue;           // this chunk only; the rest arrives with its own
-                    level.setBlock(at, frame, 2);
-                }
-            }
+            layFrame(level, base, alongX, box);
         }
     }
 }
