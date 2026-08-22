@@ -355,8 +355,8 @@ public class GeneralDariusEntity extends Monster {
     /** How far an Arm may drift before it is put back at his shoulder. */
     private static final double ARM_LEASH = 50.0;
 
-    private static final String ARM_RIGHT = "Right Arm";
-    private static final String ARM_LEFT = "Left Arm";
+    public static final String ARM_RIGHT = "Right Arm";
+    public static final String ARM_LEFT = "Left Arm";
 
     /** How long Darius's mark lasts. The same minute the Obliterator gives, so one rule covers both. */
     private static final int OBLITERATION_TICKS = 20 * 60;

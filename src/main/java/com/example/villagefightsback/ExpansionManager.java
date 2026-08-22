@@ -206,21 +206,24 @@ public final class ExpansionManager {
      *  {@code tntColor} (golem factory / barracks / lure tower / house). Reuses the full expansion machinery
      *  (clear-spot seeking, no bulldozing, death fallback). No-op if no spot just outside the wall is found. */
     /** The free form: the stage-3 wave and mega-expansion, which cost the node nothing. */
-    public static void summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor) {
-        summonReflexSettler(level, brainNode, plan, tntColor, 0);
+    public static boolean summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor) {
+        return summonReflexSettler(level, brainNode, plan, tntColor, 0);
     }
 
     /** {@code cost} gems were debited for this settler; it hands them back if it never manages to build. */
-    public static void summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor,
-                                           int cost) {
+    /** @return false when there was nowhere to put the settler, so a caller can fall back rather than
+     *          quietly lose whatever it was paying for. */
+    public static boolean summonReflexSettler(ServerLevel level, GlobalPos brainNode, WallPlan plan, int tntColor,
+                                              int cost) {
         BlockPos gm = brainNode.pos();
         double wallRadius = wallRadius(plan, gm);
         double angle = level.random.nextDouble() * 2.0 * Math.PI;
         BlockPos aim = columnAt(gm, angle, wallRadius + SPAWN_OFFSET);
         BlockPos spot = surfaceStandable(level, aim, SPAWN_SEARCH);
-        if (spot == null) return;
+        if (spot == null) return false;
         int delay = STAGGER_BASE + level.random.nextInt(STAGGER_RAND);
         spawnSettler(level, spot, gm, angle, wallRadius, tntColor, delay, cost);
+        return true;
     }
 
     /**
