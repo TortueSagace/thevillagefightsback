@@ -1,10 +1,6 @@
 ## After years of being destroyed by your infection mods, the villagers decided to build their own.
 
-[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback)
-
-**CurseForge**: https://www.curseforge.com/minecraft/mc-mods/the-village-fights-back
-
-**Modrinth**: https://modrinth.com/mod/the-village-fights-back
+[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback) [![CurseForge](https://img.shields.io/badge/CurseForge-thevillagefightsback-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/the-village-fights-back) [![Modrinth](https://img.shields.io/badge/Modrinth-thevillagefightsback-00AF5C?logo=modrinth&logoColor=white)](https://modrinth.com/mod/the-village-fights-back)
 
 <div style="background-color:#ff8c00;color:#1a1a1a;text-align:center;font-size:1.25em;font-weight:bold">Now compatible with MCA Reborn!</div>
 
@@ -226,4 +222,4 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   **Author:** Alexandre Le Mercier (LexNoWolf)
 *   **License:** MIT
 
-[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback)
+[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback) [![CurseForge](https://img.shields.io/badge/CurseForge-thevillagefightsback-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/the-village-fights-back) [![Modrinth](https://img.shields.io/badge/Modrinth-thevillagefightsback-00AF5C?logo=modrinth&logoColor=white)](https://modrinth.com/mod/the-village-fights-back)
