@@ -225,4 +225,4 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   **Author:** Alexandre Le Mercier (LexNoWolf)
 *   **License:** MIT
 
-[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R)
+[![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback)
