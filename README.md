@@ -1,52 +1,77 @@
 # The Village Fights Back
 
-A Minecraft **Forge 1.20.1** mod that arms villagers and iron golems with guns from
-[Just Enough Guns](https://www.curseforge.com/minecraft/mc-mods/just-enough-guns) (JEG) so they fight
-back against any hostile mob -- including infection-style invaders such as *From Another World* -- and
-tell them to *go back to their world*.
+![The Village Fights Back](promo/cover.png)
 
-> The name is a deliberate counter to the **From Another World** infection mod.
+**After years of being destroyed by your infection mods, the villagers decided to build their own.**
 
-## What it does
+The Village Fights Back is a Minecraft mod that turns ordinary villages into self-organizing strongholds.
+At the heart of every village sits the **Village Brain Node**, an AI that spends the village's emeralds to
+arm its people, raise walls, and evolve its defenders across **4 stages**, until the village can strike
+back at whatever threatens it, players included.
 
-- **Every villager** is armed. When it sees a hostile mob (within **30 blocks** and with a direct
-  line of sight) it shoots it with a **revolver**; if the mob is within **5 blocks** it switches to a
-  **flamethrower**. Villagers hold their ground and fight instead of fleeing, and **wear iron boots**.
-- **Village iron golems** carry a **rocket launcher**. They hold at range and fire only when **no
-  villager or other iron golem is within 5 blocks of the target** (so the splash never hits allies),
-  backing away to keep a safe standoff. Player-built golems are left alone.
-- **"Hostile" is mod-agnostic** -- anything implementing Minecraft's `Enemy` interface is a target, so
-  modded monsters are covered automatically with no per-mod code.
-- **Retaliation:** hit a villager and it turns hostile toward you for a few seconds, then reverts.
-- Mobs aim with perfect precision and fire via JEG's own projectile API; the guns shown in their
-  hands are a decorative client-side render layer (the mobs don't actually hold the item, which keeps
-  JEG from hijacking their AI).
+Playtested against the Sculk Horde, Spore Fungal Infection, The Flesh That Hates, Phayriosis,
+Abominations, and Prion.
 
-## Dependencies (required at runtime)
+## Features
 
-This mod integrates with JEG and its own dependencies. Install alongside:
+- **The Village Brain Node** replaces the village bell and runs the whole defense: a per-village emerald
+  economy, 4 evolution stages, settlers, walls and purpose-built structures (golem factories, barracks,
+  lure towers), sunset reinforcements, and an immunity aura. Right-click it to see the stage, emeralds,
+  unit counts, and logs.
+- **Armed defenders.** Every villager fights, guards carry heavier weapons, and iron golems wield rocket
+  launchers. Any mob tagged hostile is a target, so monsters from other mods are handled automatically.
+- **12 weapons**, including infecting blades, a Mace with its enchantments, a rocket launcher, wind
+  charges, fire grenades, and full Emerald and Limbo gear lines.
+- **Walls and defenses** traced around the village's real footprint, with loopholes, Wall Defender
+  turrets, reinforced and protecting glass, and smart gates that only let allies through.
+- **A counter-infection.** Fertile and Rich blocks slowly spread from the Brain Node, light up the
+  caves beneath the village, and feed its economy.
+- **The Emerald Virus** and the **Emerald faction**, a contagion and a mob infection allied with the
+  village.
+- **2 bosses:** the Vindictive Village Spirit, born when a village falls, and General Darius, the
+  village's living champion.
+- **The Limbo**, a new dimension with its own portal, creatures, ores, gear, villager profession, and
+  raid.
+- **Reputation.** The village scores you, from Hero of the Village V down to Nightmare of the Village.
+- **17 new creatures**, **3 potions**, **17 structures**, and a full set of advancements.
+- **Optional MCA Reborn compatibility**: with it installed, the whole village becomes MCA humans.
+- **Configurable.** Every setting lives in `config/thevillagefightsback-common.toml` and can be changed
+  in-game with `/thevillagefightsback config <name> [value]`.
 
-- Just Enough Guns `0.13.2` (`jeg`)
-- MrCrayfish's Framework `0.8.0+` (`framework`)
-- GeckoLib `4.8.3+` (`geckolib`)
+## Versions and branches
+
+| Minecraft | Loader   | Branch             | Java |
+|-----------|----------|--------------------|------|
+| 1.20.1    | Forge    | `main`             | 17   |
+| 1.20.1    | Fabric   | `fabric-1.20.1`    | 17   |
+| 1.21.1    | NeoForge | `port-1.21.1-v150` | 21   |
+| 1.19.2    | Forge    | `1.19.2`           | 17   |
+
+The `neoforge-1.21.1`, `port-1.21.1-v130` and `port-1.19.2-v130` branches are older ports.
+
+## Requirements
+
+- **Guard Villagers**: required on Forge (the village's guards are built on it). Optional on NeoForge,
+  and not declared on Fabric.
+- **MCA Reborn**: optional.
 
 ## Building
 
-ForgeGradle 6 / Gradle 8.8 / **JDK 17** (the build is pinned to JDK 17 in `gradle.properties`).
-
-The three dependency jars above are **not** committed (they aren't ours to redistribute). Drop them
-into `libs/` before building:
-
-```
-libs/JustEnoughGuns-0.13.2-1.20.1.jar
-libs/framework-forge-1.20.1-0.8.0.jar
-libs/geckolib-forge-1.20.1-4.8.3.jar
-```
-
-Then:
+Check out the branch for the version you want, then run:
 
 ```
 ./gradlew build
 ```
 
-The mod jar is produced at `build/libs/thevillagefightsback-1.0.0.jar`.
+The jar is written to `build/libs/`, named after the Minecraft version
+(e.g. `thevillagefightsback-1.20.1-<version>.jar`, or `thevillagefightsback-fabric-1.20.1-<version>.jar`
+on Fabric).
+
+You need JDK 17 (JDK 21 for the 1.21.1 branches). If `gradle.properties` sets `org.gradle.java.home`,
+point it at your own JDK or remove that line.
+
+## License
+
+All Rights Reserved.
+
+Author: LexNoWolf
