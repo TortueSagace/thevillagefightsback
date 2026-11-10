@@ -14,5 +14,5 @@ Contains **1 new dimension, 2 new bosses, 17 new structures**, and many other su
 
 - **Loader:** Forge
 - **Minecraft:** 1.20.1
-- **Author:** LexNoWolf
-- **License:** All Rights Reserved
+- **Author:** Alexandre Le Mercier (LexNoWolf)
+- **License:** MIT
