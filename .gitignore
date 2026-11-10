@@ -35,3 +35,11 @@ scratch_*.txt
 # Python bytecode cache (texture/asset gen tools)
 __pycache__/
 *.pyc
+
+# Local tooling files (never commit)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+.vscode/
+bughunt.json
