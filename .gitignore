@@ -39,3 +39,11 @@ __pycache__/
 build/
 run/
 remappedSrc/
+
+# Local tooling files (never commit)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+.vscode/
+bughunt.json
