@@ -3,6 +3,7 @@
 [![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R) [![GitHub](https://img.shields.io/badge/GitHub-thevillagefightsback-181717?logo=github&logoColor=white)](https://github.com/TortueSagace/thevillagefightsback)
 
 **CurseForge**: https://www.curseforge.com/minecraft/mc-mods/the-village-fights-back
+
 **Modrinth**: https://modrinth.com/mod/the-village-fights-back
 
 <div style="background-color:#ff8c00;color:#1a1a1a;text-align:center;font-size:1.25em;font-weight:bold">Now compatible with MCA Reborn!</div>
