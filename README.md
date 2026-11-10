@@ -2,6 +2,9 @@
 
 [![Discord](https://img.shields.io/discord/1538899878397087897?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Hefhkqx32R)
 
+**CurseForge**: https://www.curseforge.com/minecraft/mc-mods/the-village-fights-back
+**Modrinth**: https://modrinth.com/mod/the-village-fights-back
+
 <div style="background-color:#ff8c00;color:#1a1a1a;text-align:center;font-size:1.25em;font-weight:bold">Now compatible with MCA Reborn!</div>
 
 ![An evolved village](https://cdn.modrinth.com/data/cached_images/c16a1b7b8633f040fcd7736850605403fe79edf0.jpeg)
