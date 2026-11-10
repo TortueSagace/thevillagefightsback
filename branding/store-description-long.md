@@ -209,5 +209,5 @@ Tune the village to taste. Every setting lives in a single commented file (`conf
 *   **Minecraft:** 1.20.1 (original), 1.19.2, or 1.21.1
 *   **Mod loader:** Forge
 *   **Required dependency:** **Guard Villagers** (the village's guards are built on it). Playtested with guardvillagers-1.20.1-1.6.17.
-*   **Author:** LexNoWolf
-*   **License:** All Rights Reserved
+*   **Author:** Alexandre Le Mercier (LexNoWolf)
+*   **License:** MIT
