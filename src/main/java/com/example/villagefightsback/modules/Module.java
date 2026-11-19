@@ -10,9 +10,14 @@ import com.example.villagefightsback.Config;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
- * One toggleable slice of the mod, in the shape of Quark's {@code Module}: an id, a category, a default state, an
- * optional {@code enabled} line in the config, and the event-handler classes that belong to it. A disabled module
- * registers nothing -- no content (see {@link ModuleRegistry}) and no handlers -- so it costs zero at runtime.
+ * One slice of the mod, in the shape of Quark's {@code Module}: an id, a category, and the event-handler classes
+ * that belong to it. A disabled module registers nothing -- no content (see {@link ModuleRegistry}) and no
+ * handlers -- so it costs zero at runtime.
+ *
+ * <p><b>Every module is always on.</b> The table is a map of what the mod is made of, not a set of switches: no
+ * module generates an {@code enabled} line, and {@link #isEnabled()} answers true for all of them. The switch
+ * machinery is still here and still runs, so a module could be made optional again by declaring it with
+ * {@code alwaysOn = false}.
  *
  * <p><b>Why the enable state is read from the file, not from {@link ModConfigSpec}.</b> NeoForge loads configs
  * <em>after</em> the registry events (see {@code CommonModLoader.begin()}: mod construct, then
@@ -32,7 +37,7 @@ public abstract class Module {
     /** One-line description, used as the config comment and in the command listing. */
     public final String description;
     public final boolean enabledByDefault;
-    /** The core module is never written to the config and never turns off. */
+    /** Modules with this set are never written to the config and never turn off. Every module of the mod is. */
     public final boolean alwaysOn;
     /** Modules this one is meaningless without; disabling a requirement disables this module too. */
     public final List<String> requires = new ArrayList<>();
@@ -47,8 +52,9 @@ public abstract class Module {
     private boolean resolved;
     private ModConfigSpec.BooleanValue toggle;
 
+    /** The ordinary declaration: on, and with no switch -- which is what every module of this mod is. */
     protected Module(String id, String name, ModuleCategory category, String description) {
-        this(id, name, category, description, true, false);
+        this(id, name, category, description, true, true);
     }
 
     protected Module(String id, String name, ModuleCategory category, String description,
@@ -99,7 +105,7 @@ public abstract class Module {
         return resolved;
     }
 
-    /** The config entry backing this module, or null for the always-on core module. */
+    /** The config entry backing this module, or null when it has no switch (that is, every module of the mod). */
     public final ModConfigSpec.BooleanValue toggle() {
         return toggle;
     }
@@ -130,7 +136,7 @@ public abstract class Module {
         this.resolved = true;
     }
 
-    /** Writes {@code [modules.<id>] enabled = <default>} into the shared config spec. */
+    /** Writes {@code [modules.<id>] enabled = <default>} into the shared config spec, for a module that has one. */
     final void defineConfig(ModConfigSpec.Builder b) {
         if (alwaysOn) return;
         b.push(id);

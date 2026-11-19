@@ -53,22 +53,18 @@ The mod jar is produced at `build/libs/thevillagefightsback-1.0.0.jar`.
 
 ## Modules
 
-The mod is split into independent modules, in the same spirit as Quark: each module owns a slice of the mod's
-content *and* the event handlers that drive it. Turning a module off removes both, so it costs nothing at runtime
-rather than running and returning early. There is no loader-side "Half A" trick and no soft dependency: the
-switches are plain config.
+The mod is split into modules, in the same spirit as Quark: each module owns a slice of the mod's content *and*
+the event handlers that drive it, so nothing is fused and no handler has to wake up only to return early. There
+is no loader-side "Half A" trick and no soft dependency.
 
-The switches sit at the top of `config/thevillagefightsback-common.toml`:
-
-```toml
-[modules.limbo]
-    # Limbo: the dimension, its portals, drift, raids, the sage, limbo gear and books.
-    enabled = true
-```
+**Every module is always on.** No module generates an `enabled` line, so `[modules]` in
+`config/thevillagefightsback-common.toml` holds no entries and the table below is a map of what the mod is made
+of rather than a set of switches. The machinery is still there: the config screen lists every module with its
+state locked on, and a module declared with `alwaysOn = false` would get its switch back.
 
 | Module | Category | Owns |
 | --- | --- | --- |
-| `core` | Management | Config, commands, capabilities, entity attribute plumbing, profiler. **Always on.** |
+| `core` | Management | Config, commands, capabilities, entity attribute plumbing, profiler. |
 | `brain_node` | Management | The Village Brain Node: four stages, upgrades, node blocks (factory, barracks, lure tower, dead node), its guards, bounty, spawns, achievements. |
 | `village_defense` | Defense | Guard weapons and kill effects, defenders, walls and wall repair, house building, founding, expansion, chest protection, graves, raids. |
 | `emerald_army` | Creatures | Emerald creatures and conversion, population, the emerald virus, block/mob infection, organic mass. |
@@ -79,21 +75,9 @@ The switches sit at the top of `config/thevillagefightsback-common.toml`:
 | `world_mode` | Management | Reputation and hero/enemy standing, difficulty and brutal modes, spawn rules, starting kit, survival aids. |
 | `client` | Client | HUD, discovery ticker, key binds, limbo sky and bedrock phase, reversed-gravity flip, screen shake, tooltips. |
 
-Some modules declare a requirement -- `village_defense`, `emerald_army`, `darius` and `village_spirit` all need
-`brain_node`. Turning a requirement off turns its dependents off too, and says so in the log.
-
-### Changing a module
-
-Either edit the file, use the in-game config screen, or use commands:
-
-```
-/thevillagefightsback modules                     # list every module, grouped by category, with its state
-/thevillagefightsback config module_limbo false   # write the toggle (op only)
-```
-
-**A restart is required.** Content is registered while the game loads, long before a world exists, so a mid-session
-toggle writes the file, logs a warning, and leaves the running session on the state it booted with. The config
-screen marks a module whose file value is waiting for that restart with a `*`.
+`village_defense`, `emerald_army`, `darius` and `village_spirit` declare that they need `brain_node`. With every
+module on that has no effect; it is written down so the dependency is on the record, and
+`/thevillagefightsback modules` still lists every module grouped by category.
 
 ### Config screen
 
@@ -106,11 +90,11 @@ is written once, when the screen closes.
 
 ### How it works
 
-- `modules/Module` -- one module: id, category, default state, its config line, and the handler classes it owns.
-- `modules/ModuleManager` -- resolves the state at load, registers only the enabled modules' handlers, and warns on
-  reload that a restart is needed. It reads `[modules.*]` straight out of the TOML, because NeoForge fires the
-  registry events *before* it loads configs (`CommonModLoader.begin()`), so a `ModConfigSpec` value cannot answer
-  "is this module on?" during registration.
+- `modules/Module` -- one module: id, category, and the handler classes it owns. `alwaysOn` is what keeps an
+  `enabled` line for it out of the config.
+- `modules/ModuleManager` -- resolves the state at load and registers the enabled modules' handlers. It reads
+  `[modules.*]` straight out of the TOML, because NeoForge fires the registry events *before* it loads configs
+  (`CommonModLoader.begin()`), so a `ModConfigSpec` value cannot answer "is this module on?" during registration.
 - `modules/Modules` -- the module table, plus content ownership: `ownerOf(name)` maps a registry entry to its
   module by name, so `limbo_*` belongs to `limbo` and so on. Unclaimed names stay with `core` (always on), which
   means a missed rule leaves content in place rather than deleting it.

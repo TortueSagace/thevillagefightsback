@@ -93,9 +93,9 @@ public final class ModuleManager {
 
     /** Adds the {@code [modules]} section to the shared spec. Called from {@code Config}'s static block. */
     public static void buildConfig(ModConfigSpec.Builder b) {
-        b.comment("Module switches: the mod's features are split into independently enableable modules, each",
-                        "registering its own content and its own event handlers. Disabling one removes it entirely.",
-                        "Every module needs a game restart; a server and its clients must agree.")
+        b.comment("Module switches. Every module of this mod is always on, so this section has no entries: the")
+                .comment("mod's features are not split into optional switches. The machinery is kept for a module")
+                .comment("declared with alwaysOn = false, which would get its own 'enabled' line here.")
                 .push("modules");
         for (Module m : Modules.ALL) {
             m.defineConfig(b);

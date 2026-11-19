@@ -164,7 +164,7 @@ public class ConfigScreen extends Screen {
                 Button locked = Button.builder(Component.literal("ON"), b -> { })
                         .bounds(0, 0, BOOL_W, WIDGET_H).build();
                 locked.active = false;
-                locked.setTooltip(Tooltip.create(Component.literal("The core module is always on.")));
+                locked.setTooltip(Tooltip.create(Component.literal("This module is always on.")));
                 return locked;
             }
             Button button = Button.builder(moduleLabel(module), b -> {
