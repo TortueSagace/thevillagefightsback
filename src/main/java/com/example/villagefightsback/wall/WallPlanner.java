@@ -361,13 +361,20 @@ public final class WallPlanner {
         Direction in = o.getOpposite();          // toward the village interior
 
         if (isDoor) {
-            // A 3-high fake-gate (courses 0..2) with a solid cap above (course 3) -- the opening stays a clean
-            // 2-wide x 3-high passage for an iron golem. The only thing ON the column is a standing torch atop
+            // A 3-high fake-gate (courses 0..2) with a cap above (course 3) -- the opening stays a clean
+            // x 3-high passage for an iron golem. The only thing ON the column is a standing torch atop
             // the cap (the 4th block above the door), to light the gate. No loophole/ladder.
+            //
+            // The cap is where the gate is READABLE from outside. Solid cobblestone above the passage made the
+            // whole wall look sealed -- a player standing at their own gate saw a wall of cobblestone with no
+            // door in it, since the fake-gate blocks wear the same skin as the wall. Iron bars say "this is the
+            // way in" from both sides and still cap it. Off: the plain solid cap, exactly as before.
             out.add(fakeGate(col.x, base, col.z, 0, obsidian));
             out.add(fakeGate(col.x, base + 1, col.z, 1, obsidian));
             out.add(fakeGate(col.x, base + 2, col.z, 2, obsidian));
-            out.add(solid(col.x, base + 3, col.z, 3, obsidian));
+            out.add(com.example.villagefightsback.modules.Modules.WALL_GATES.isEnabled()
+                    ? new WallBlock(new BlockPos(col.x, base + 3, col.z), WallBlock.BlockType.BARS, null, false, 3)
+                    : solid(col.x, base + 3, col.z, 3, obsidian));
             // Standing torch on top of the cap (course 3 so it's placed last, after the cap is up).
             out.add(new WallBlock(new BlockPos(col.x, base + 4, col.z),
                     WallBlock.BlockType.STANDING_TORCH, null, false, 3));
@@ -653,10 +660,16 @@ public final class WallPlanner {
     private static void markDoor(java.util.Set<Long> doors, java.util.Map<Long, Col> byPos, Col c) {
         if (c == null) return;
         doors.add(pack(c.x, c.z));
-        int nx = c.x, nz = c.z;
-        if (c.outward == Direction.NORTH || c.outward == Direction.SOUTH) nx++; else nz++;
-        Col nb = byPos.get(pack(nx, nz));
-        if (nb != null && nb.outward == c.outward) doors.add(pack(nx, nz)); // 2-wide if the neighbour matches
+        // A 2-wide passage, or 3-wide when the refit is on and the column on the other side is flat too. Two
+        // wide is enough for a golem on paper and tight for everything else -- a guard, a player on a horse, a
+        // pair of villagers walking abreast -- so the gate is widened along the wall, never at a corner.
+        boolean wide = com.example.villagefightsback.modules.Modules.WALL_GATES.isEnabled();
+        for (int step : wide ? new int[] {1, -1} : new int[] {1}) {
+            int nx = c.x, nz = c.z;
+            if (c.outward == Direction.NORTH || c.outward == Direction.SOUTH) nx += step; else nz += step;
+            Col nb = byPos.get(pack(nx, nz));
+            if (nb != null && nb.outward == c.outward) doors.add(pack(nx, nz));
+        }
     }
 
     private static long pack(int x, int z) {

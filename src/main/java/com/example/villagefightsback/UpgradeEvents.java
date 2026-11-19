@@ -10,7 +10,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
@@ -20,7 +19,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * and forever (the flag never clears). Cheap: gated by the level check, throttled, only loaded brainNodes,
  * and already-upgraded defenders are filtered out of the query.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class UpgradeEvents {
     private UpgradeEvents() {}
 

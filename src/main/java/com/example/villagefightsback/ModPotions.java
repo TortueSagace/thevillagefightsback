@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -12,8 +13,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModPotions {
     private ModPotions() {}
 
-    public static final DeferredRegister<Potion> POTIONS =
-            DeferredRegister.create(BuiltInRegistries.POTION, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<Potion> POTIONS =
+            ModuleRegistry.create(BuiltInRegistries.POTION, TheVillageFightsBack.MODID);
 
     public static final int IMMUNITY_POTION_TICKS = 3 * 60 * 20; // 3 minutes
 

@@ -10,7 +10,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-side green-tint for Emerald-Virus hosts. Progress (0..1) per entity id arrives via
@@ -18,7 +17,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * by multiplying the entity shader colour. The tint never reverts (the server keeps progress forever), so a
  * fully-infected creature stays green even after the timed effect ends.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class EmeraldTintClient {
     private EmeraldTintClient() {}
 

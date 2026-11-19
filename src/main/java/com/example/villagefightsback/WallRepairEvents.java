@@ -7,7 +7,6 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -20,7 +19,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * block. There is NO periodic scanning of the wall: work happens only on an actual break, and only for
  * brainNodes within wall range of the break.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class WallRepairEvents {
     private WallRepairEvents() {}
 

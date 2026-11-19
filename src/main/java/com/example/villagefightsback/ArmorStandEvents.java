@@ -9,7 +9,6 @@ import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -19,7 +18,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * still does the item placement and inventory handling. Armless stands stay armless for armor / display use;
  * only handing one a weapon grows the arms. Purely cosmetic.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ArmorStandEvents {
     private ArmorStandEvents() {}
 

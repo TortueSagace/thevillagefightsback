@@ -11,7 +11,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  *   the End                                      ->  death (the only fatal world-fall)
  * So a careless step into the void becomes a long plunge: world -> Limbo -> End -> oblivion.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VoidFallEvents {
     private VoidFallEvents() {}
 

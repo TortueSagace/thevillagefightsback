@@ -6,7 +6,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -15,7 +14,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * handling (see {@link LimboBedBlock}); this covers every other bed, and -- by cancelling the click before the
  * vanilla bed logic runs -- also stops a normal bed from exploding in a dimension where beds don't work.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboSleepEvents {
     private LimboSleepEvents() {}
 

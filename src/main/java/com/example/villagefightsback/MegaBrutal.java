@@ -16,7 +16,6 @@ import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -30,7 +29,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * it covers units that already exist and cleanly stops when the switch is turned off (the short-duration effects
  * simply lapse). Off by default; the scan only runs while the switch is on.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class MegaBrutal {
     private MegaBrutal() {}
 

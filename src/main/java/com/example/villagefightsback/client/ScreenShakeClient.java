@@ -6,14 +6,12 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-only camera shake. The boss sends {@link com.example.villagefightsback.network.ScreenShakePacket}s;
  * {@link #add} starts/refreshes a decaying jitter that is applied to the camera angles each frame and counts
  * down each client tick. Pure cosmetic; no gameplay effect.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class ScreenShakeClient {
     private ScreenShakeClient() {}
 

@@ -9,7 +9,6 @@ import java.util.WeakHashMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
  * (highest max health) takes the slot, and a stronger newcomer evicts a weaker holder. This is independent of
  * the {@code OrganicMass} scent (which marks distant prey); both feed the same marker registry.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class KillstreakMarker {
     private KillstreakMarker() {}
 

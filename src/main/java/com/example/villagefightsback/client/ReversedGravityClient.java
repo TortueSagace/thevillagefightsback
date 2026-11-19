@@ -4,7 +4,6 @@ import com.example.villagefightsback.TheVillageFightsBack;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
@@ -23,7 +22,6 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * <p>The HUD is not rotated, because it is drawn in a separate orthographic pass after the world. That is
  * wanted -- an upside-down hotbar is unusable. The held item does rotate with the world.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class ReversedGravityClient {
     private ReversedGravityClient() {}
 

@@ -6,7 +6,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * The village puts up a statue of its champion once he has earned it.
@@ -32,7 +31,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * let those two refusals do the judging. If nothing within reach is clear the statue simply waits for the
  * next kill, which is the right outcome: a monument is not worth flattening a house for.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class DariusStatue {
     private DariusStatue() {}
 

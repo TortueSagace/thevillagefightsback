@@ -9,7 +9,6 @@ import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -19,7 +18,6 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
  * melee, crossbow bolts, evoker fangs, vex charges), a Limbo Evoker's summoned vexes are swapped for
  * {@link LimboVexEntity Limbo Vexes}, and the raiders smash through weak blocks that wall them off from prey.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboRaidEvents {
     private LimboRaidEvents() {}
 

@@ -6,7 +6,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
@@ -21,9 +20,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
  * <p>The tally lives in the villager's persistent data and is mirrored to a scoreboard tag, so it survives the
  * villager being replaced by MCA Reborn's spawn queue (which copies tags but not persistent data).
  */
-// GAME bus (NeoForge's rename of Forge's FORGE bus): onKill below is a gameplay event, and 1.21 refuses to load
-// an @EventBusSubscriber class that carries no @SubscribeEvent method at all.
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
+// GAME bus (NeoForge's rename of Forge's FORGE bus): onKill below is a gameplay event.
 public final class VillagerKills {
     private VillagerKills() {}
 

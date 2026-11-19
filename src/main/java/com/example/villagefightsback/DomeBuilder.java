@@ -57,8 +57,23 @@ public final class DomeBuilder {
 
         List<HouseBuildManager.Placement> order = new ArrayList<>();
 
+        // The gate columns keep a doorway: glass their rim up to H and the village is a sealed box whose only
+        // way in is a passage the dome roofs over. With the refit on, the curtain simply does not rise over a
+        // gate column, so each gate opens through the dome as well as through the wall. Everything else --
+        // safety, air strikes, reinforcements -- is unchanged, and off it is the sealing dome exactly as before.
+        Set<Long> gateColumns = new HashSet<>();
+        if (com.example.villagefightsback.modules.Modules.WALL_GATES.isEnabled()) {
+            for (WallBlock wb : plan.blocks()) {
+                if (wb.course() != 0) continue;
+                if (wb.type() != WallBlock.BlockType.FAKE_COBBLE
+                        && wb.type() != WallBlock.BlockType.FAKE_OBSIDIAN) continue;
+                gateColumns.add(key(wb.pos().getX(), wb.pos().getZ()));
+            }
+        }
+
         // 2. Raise each wall column to the common top plane H (vertical glass).
         for (Map.Entry<Long, Integer> e : wallTop.entrySet()) {
+            if (gateColumns.contains(e.getKey())) continue; // the way in stays open
             int x = kx(e.getKey()), z = kz(e.getKey());
             for (int y = e.getValue() + 1; y <= H; y++) order.add(place(x, y, z, glass));
         }

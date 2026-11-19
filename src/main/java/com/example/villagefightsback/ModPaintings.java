@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.decoration.PaintingVariant;
@@ -10,8 +11,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModPaintings {
     private ModPaintings() {}
 
-    public static final DeferredRegister<PaintingVariant> PAINTINGS =
-            DeferredRegister.create(Registries.PAINTING_VARIANT, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<PaintingVariant> PAINTINGS =
+            ModuleRegistry.create(Registries.PAINTING_VARIANT, TheVillageFightsBack.MODID);
 
     /**
      * "Rickroll": a 1x1 animated painting, and a joke, and nothing else.

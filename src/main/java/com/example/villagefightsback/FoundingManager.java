@@ -25,7 +25,6 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * "Founding" a village from an empty brainNode. When the brain node is about to mark out its wall but no
@@ -38,7 +37,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * Wall-planning is GATED via {@link #gate} (called from BrainNodeEvents.driveWalls) so the wall isn't
  * marked out until founding completes.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class FoundingManager {
     private FoundingManager() {}
 

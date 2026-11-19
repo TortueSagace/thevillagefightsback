@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.effect.MobEffect;
@@ -10,8 +11,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModEffects {
     private ModEffects() {}
 
-    public static final DeferredRegister<MobEffect> EFFECTS =
-            DeferredRegister.create(BuiltInRegistries.MOB_EFFECT, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<MobEffect> EFFECTS =
+            ModuleRegistry.create(BuiltInRegistries.MOB_EFFECT, TheVillageFightsBack.MODID);
 
     /** The contagious, irreversible "Emerald Virus" -- see {@link EmeraldVirusEffect} / {@link EmeraldVirus}. */
     public static final DeferredHolder<MobEffect, MobEffect> EMERALD_VIRUS =

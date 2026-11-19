@@ -10,7 +10,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Draws the banish-ability cooldown indicator (a small green square that fills as it recharges, with the
@@ -20,7 +19,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * <p>The right rather than the left because the left is where the offhand slot sits, and a shield in the
  * offhand put the two squares side by side arguing over the same corner.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class LimboAbilityHud {
     private LimboAbilityHud() {}
 

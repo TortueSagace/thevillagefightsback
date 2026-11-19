@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -38,7 +37,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  * virus spawns a mite (Virus I) or an Emeraldger (Virus II) instead of converting -- handled in
  * {@link EmeraldVirusEvents}, which also banks organic mass and plays the green death swirl.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class EmeraldConversion {
     private EmeraldConversion() {}
 

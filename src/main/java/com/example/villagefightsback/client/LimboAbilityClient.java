@@ -9,13 +9,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client side of the Limbo banish ability: on the keybind, asks the server to fire (the server gates it); and
  * keeps a local copy of the cooldown (server-synced on each use) for the HUD to draw down smoothly.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class LimboAbilityClient {
     private LimboAbilityClient() {}
 

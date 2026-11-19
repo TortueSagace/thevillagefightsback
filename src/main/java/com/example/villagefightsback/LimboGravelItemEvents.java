@@ -13,7 +13,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * The "freed soul gravel" rule (R3). A {@link LimboSoulGravelItem} loose in the world frees its banished
@@ -23,7 +22,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * just sleeping) and the item being PICKED UP / stored (then the creature stays banished). It distinguishes
  * destruction from a pickup/store by the removal reason plus whether the same soul gravel is now carried.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboGravelItemEvents {
     private LimboGravelItemEvents() {}
 

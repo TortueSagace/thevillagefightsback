@@ -30,7 +30,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
@@ -44,7 +43,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * carried item is the only stable hold); and Silk Touch converts a gravel into a carried soul-gravel item that
  * keeps the creature banished until it is freed.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboManager {
     private LimboManager() {}
 

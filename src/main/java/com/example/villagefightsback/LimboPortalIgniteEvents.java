@@ -10,14 +10,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Lights Limbo portals: right-clicking a {@link ModBlocks#FAKE_OBSIDIAN} frame with flint &amp; steel (or a fire
  * charge) tries to build a green Limbo portal in the enclosed opening ({@link LimboPortalShape}). On success
  * the flame is consumed but no fire is placed -- the portal blocks fill the frame directly.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPortalIgniteEvents {
     private LimboPortalIgniteEvents() {}
 

@@ -8,7 +8,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 /**
@@ -17,7 +16,6 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
  * skipped (by request), and items that already render their own description ({@link TooltipBlockItem},
  * {@link LimboPickaxeItem}) are left alone so the line never doubles up.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class ModTooltips {
     private ModTooltips() {}
 

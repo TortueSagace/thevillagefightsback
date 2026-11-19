@@ -22,7 +22,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -51,7 +50,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * <p>There is no soft landing when it ends. That is on purpose -- the drop is the joke. Villagers and
  * guards are the exception, and they save themselves: see {@link WaterClutchEvents}.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ReversedGravity {
     private ReversedGravity() {}
 

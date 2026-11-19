@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
@@ -20,7 +19,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * earns the Settlement/Fertilization/Expansion/Culmination advancement the first time they are near a village
  * that has reached the matching stage -- however the village got there.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainNodeAchievementEvents {
     private BrainNodeAchievementEvents() {}
 

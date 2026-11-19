@@ -18,7 +18,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
@@ -35,7 +34,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
  * plain green swirl; the live see-through Limbo view is a later phase. Mob cross-IN by walking a wall is also a
  * later phase (mobs only come out via the emergence below); only players walk through.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ChunkPortalManager {
     private ChunkPortalManager() {}
 

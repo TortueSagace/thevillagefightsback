@@ -10,7 +10,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -18,7 +17,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * never drops) can never be broken by the normal mining loop, so we intercept the left-click and shatter them
  * outright -- consuming a point of durability per block. Every other block is left to vanilla mining.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPickaxeEvents {
     private LimboPickaxeEvents() {}
 

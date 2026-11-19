@@ -18,7 +18,6 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.core.HolderLookup;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -39,7 +38,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  * say anything. The action bar can: it costs no inventory slot, survives death, and answers the only question
  * the player actually has, which is how much further.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class SurvivalCache extends SavedData {
     private static final String NAME = "thevillagefightsback_survival_cache";
 

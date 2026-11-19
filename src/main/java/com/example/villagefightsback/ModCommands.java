@@ -13,7 +13,6 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -28,7 +27,6 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  *   <li>{@code tp_to_nearest_node} -- teleport just above the nearest brain node.</li>
  * </ul>
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ModCommands {
     private ModCommands() {}
 
@@ -48,6 +46,9 @@ public final class ModCommands {
         config.then(Commands.literal("reset_default_configs").requires(s -> s.hasPermission(OP))
                 .executes(c -> resetConfigs(c.getSource())));
         root.then(config);
+
+        // --- modules: what the mod is made of, and what is on right now (read-only; toggle via `config`) ---
+        root.then(Commands.literal("modules").executes(c -> { listModules(c.getSource()); return 1; }));
 
         // --- brain_stage_get / brain_stage_set <1-4> ---
         root.then(Commands.literal("brain_stage_get").executes(c -> brainStageGet(c.getSource())));
@@ -200,6 +201,28 @@ public final class ModCommands {
         try { Config.SPEC.save(); } catch (Exception ignored) {} // persist to the .toml if it is loaded
         src.sendSuccess(() -> Component.literal("§a" + key + " §7set to §e" + newValue), true);
         return 1;
+    }
+
+    /** The module table: category by category, with the state the game loaded with. */
+    private static void listModules(CommandSourceStack src) {
+        src.sendSuccess(() -> Component.literal("§6=== The Village Fights Back -- modules ==="), false);
+        com.example.villagefightsback.modules.ModuleCategory last = null;
+        for (com.example.villagefightsback.modules.Module m
+                : com.example.villagefightsback.modules.Modules.sortedByCategory()) {
+            if (m.category != last) {
+                last = m.category;
+                String heading = last.displayName;
+                src.sendSuccess(() -> Component.literal("§e" + heading), false);
+            }
+            String id = m.id;
+            String name = m.name;
+            boolean on = m.isEnabled();
+            boolean fixed = m.alwaysOn;
+            src.sendSuccess(() -> Component.literal("  " + (fixed ? "§8[core]" : on ? "§a[on]" : "§c[off]")
+                    + " §f" + id + " §7-- " + name), false);
+        }
+        src.sendSuccess(() -> Component.literal(
+                "§8Toggle with /thevillagefightsback config module_<id> <true|false> (needs a restart)."), false);
     }
 
     private static void listConfig(CommandSourceStack src) {

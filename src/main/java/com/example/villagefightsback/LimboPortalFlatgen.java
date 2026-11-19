@@ -8,7 +8,6 @@ import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Limbo portals in a SUPERFLAT world, where the real structure cannot reach.
@@ -38,7 +37,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * nothing has to be remembered and nothing can drift. One cheap block read then stops a portal being laid
  * twice over the same spot.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPortalFlatgen {
     private LimboPortalFlatgen() {}
 

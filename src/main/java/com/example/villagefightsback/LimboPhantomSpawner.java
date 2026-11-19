@@ -9,7 +9,6 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
@@ -18,7 +17,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * are NOT persistence-required, so they despawn once the player moves away (egg-hatched phantoms, which ARE
  * persistent, stay in their cubes).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboPhantomSpawner {
     private LimboPhantomSpawner() {}
 

@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ArmorItem;
@@ -12,12 +13,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModArmor {
     private ModArmor() {}
 
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<Item> ITEMS =
+            ModuleRegistry.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
 
     // --- Armour materials: in 1.21 ArmorMaterial is a registered record exposed as a Holder. ---
-    public static final DeferredRegister<ArmorMaterial> ARMOR_MATERIALS =
-            DeferredRegister.create(BuiltInRegistries.ARMOR_MATERIAL, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<ArmorMaterial> ARMOR_MATERIALS =
+            ModuleRegistry.create(BuiltInRegistries.ARMOR_MATERIAL, TheVillageFightsBack.MODID);
 
     public static final DeferredHolder<ArmorMaterial, ArmorMaterial> EMERALD_MATERIAL =
             ARMOR_MATERIALS.register("emerald", EmeraldArmorMaterial::create);

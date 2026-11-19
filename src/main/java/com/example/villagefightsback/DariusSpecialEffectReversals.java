@@ -17,7 +17,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
@@ -35,7 +34,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  * otherwise consume the same event (notably {@link VoidFallEvents}, which relays a void fall into the next
  * dimension down).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class DariusSpecialEffectReversals {
     private DariusSpecialEffectReversals() {}
 

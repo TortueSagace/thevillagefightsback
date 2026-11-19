@@ -10,7 +10,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
  * attacker up if Wind Burst is present, and shoves nearby living entities outward. Breach reduces the target's
  * effective armour. An IDENTICAL clone of the vanilla mace behaviour (a fallback sound is used for the smash).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class MaceCombatEvents {
     private MaceCombatEvents() {}
 

@@ -18,7 +18,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -33,7 +32,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * <p>ONE player per node per sunset, the nearest to it. A raid split between two players is two half raids, and
  * the point of the roster sizes below is that the village arrives in force.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class NightmareRaid {
     private NightmareRaid() {}
 

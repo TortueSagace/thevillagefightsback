@@ -3,7 +3,6 @@ package com.example.villagefightsback;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -27,7 +26,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *       player is an Enemy of the Village. See {@link #onVillageTargetsPlayer}.</li>
  * </ol>
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class StandingEffects {
     private StandingEffects() {}
 

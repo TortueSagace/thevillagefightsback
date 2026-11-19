@@ -9,7 +9,6 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
  * each producing a {@link MerchantOffer} of "N emeralds -> item". They are added to the per-tier lists from the
  * {@link VillagerTradesEvent} only when the traded profession is the Limbo Sage.</p>
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboSageTrades {
     private LimboSageTrades() {}
 

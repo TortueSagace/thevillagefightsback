@@ -13,7 +13,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
  * spread reuses {@link BlockMatcher#isCandidate} so it respects the same preserved blocks as the infection
  * (walls, chests, beds, job sites, bookshelves, food, ...).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class SculkCatalystEvents {
     private SculkCatalystEvents() {}
 

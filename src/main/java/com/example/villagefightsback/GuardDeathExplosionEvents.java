@@ -11,7 +11,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
@@ -29,7 +28,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
  * causes raises another one. Even with a hostile somehow credited for the kill, a line of guards
  * cannot detonate down its own length.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class GuardDeathExplosionEvents {
     private GuardDeathExplosionEvents() {}
 

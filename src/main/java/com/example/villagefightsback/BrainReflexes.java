@@ -23,7 +23,6 @@ import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -38,7 +37,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
  * in the UI's Logs tab via {@link #logFor}). Spawned reinforcements never land on the stage-4 glass dome:
  * inside-wall spawns search around the brain node's own Y (under the dome) and settlers walk out past the wall.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainReflexes {
     private BrainReflexes() {}
 

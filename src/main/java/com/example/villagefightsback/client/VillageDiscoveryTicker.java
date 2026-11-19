@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Ticks down the {@link VillageDiscoveryHud} timers once per client tick, so a message always expires.
@@ -16,7 +15,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * they cover the screen with full-bleed art, so without this a message spent its whole life hidden behind them
  * and was gone by the time the player reached the world. That is exactly what happened to the starter-bell hint.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class VillageDiscoveryTicker {
     private VillageDiscoveryTicker() {}
 

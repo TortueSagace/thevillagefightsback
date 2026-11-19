@@ -12,7 +12,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -35,10 +34,9 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * {@code net.neoforged.neoforge.event.*} instead of {@code net.minecraftforge.event.*}, with the same names
  * and the same accessors -- {@code TradeWithVillagerEvent}, {@code BlockEvent.BreakEvent},
  * {@code PlayerInteractEvent.LeftClickBlock} and {@code PlayerEvent.Clone} with {@code isWasDeath()} are all
- * still there. The bus annotation is the one real change: {@code Mod.EventBusSubscriber.Bus.FORGE} is now
- * {@code EventBusSubscriber.Bus.GAME}.
+ * still there. The bus is the one real change: they fire on NeoForge's game bus (its rename of Forge's FORGE
+ * bus), so the owning module registers this class there.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ReputationEvents {
     private ReputationEvents() {}
 
