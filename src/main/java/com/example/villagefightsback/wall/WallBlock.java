@@ -24,7 +24,7 @@ import net.minecraft.world.level.block.state.properties.StairsShape;
 public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean topHalf, int course) {
 
     // New types appended at the END so existing saved plans' ordinals stay stable.
-    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE, STANDING_TORCH, OBSIDIAN, FAKE_OBSIDIAN, OBSIDIAN_STAIR }
+    public enum BlockType { COBBLE, STAIR, LADDER, TORCH, FAKE_COBBLE, STANDING_TORCH, OBSIDIAN, FAKE_OBSIDIAN, OBSIDIAN_STAIR, BARS }
 
     /** The concrete block state this placement should produce. */
     public BlockState toState() {
@@ -46,6 +46,7 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
             case STANDING_TORCH -> Blocks.TORCH.defaultBlockState();
             case OBSIDIAN -> Blocks.OBSIDIAN.defaultBlockState();
             case FAKE_OBSIDIAN -> com.example.villagefightsback.ModBlocks.FAKE_OBSIDIAN.get().defaultBlockState();
+            case BARS -> Blocks.IRON_BARS.defaultBlockState();
         };
     }
 
@@ -70,6 +71,7 @@ public record WallBlock(BlockPos pos, BlockType type, Direction facing, boolean 
             case STANDING_TORCH -> world.is(Blocks.TORCH);
             case OBSIDIAN -> world.is(Blocks.OBSIDIAN);
             case FAKE_OBSIDIAN -> world.is(com.example.villagefightsback.ModBlocks.FAKE_OBSIDIAN.get());
+            case BARS -> world.is(Blocks.IRON_BARS);
         };
     }
 }

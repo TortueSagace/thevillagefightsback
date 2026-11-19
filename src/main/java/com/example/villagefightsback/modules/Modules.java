@@ -24,6 +24,8 @@ import com.example.villagefightsback.ExpansionManager;
 import com.example.villagefightsback.FoundingManager;
 import com.example.villagefightsback.Graves;
 import com.example.villagefightsback.GuardDeathExplosionEvents;
+import com.example.villagefightsback.GuardHook;
+import com.example.villagefightsback.GuardSwimming;
 import com.example.villagefightsback.GuardWeapons;
 import com.example.villagefightsback.HostileStart;
 import com.example.villagefightsback.HouseBuildManager;
@@ -57,6 +59,7 @@ import com.example.villagefightsback.ModProfiler;
 import com.example.villagefightsback.ModTooltips;
 import com.example.villagefightsback.NightmareRaid;
 import com.example.villagefightsback.NodeBounty;
+import com.example.villagefightsback.NodeChunkLoading;
 import com.example.villagefightsback.NodeGuard;
 import com.example.villagefightsback.NodeSpawnScheduler;
 import com.example.villagefightsback.ObliterationEvents;
@@ -76,6 +79,7 @@ import com.example.villagefightsback.VillageChestProtection;
 import com.example.villagefightsback.VillageEvents;
 import com.example.villagefightsback.VillageStatusCommand;
 import com.example.villagefightsback.VillagerKills;
+import com.example.villagefightsback.VillagerLogging;
 import com.example.villagefightsback.VoidFallEvents;
 import com.example.villagefightsback.WallRepairEvents;
 import com.example.villagefightsback.WaterClutchEvents;
@@ -131,8 +135,26 @@ public final class Modules {
     /** HUD, key binds, sky, tint and screen shake: client-side only, but still a module. */
     public static final Module CLIENT = new Client();
 
+    // --- the optional five ---------------------------------------------------------------------------------
+    //
+    // These are the only modules with a switch. Each one is an ADDITION on top of the mod as it shipped, which
+    // is why it can be turned off without taking anything away: the base ten above are always on, and turning
+    // any of these off leaves exactly the behaviour the mod had before it existed.
+
+    /** Villages keep ticking while nobody is near: the node's chunks stay loaded. */
+    public static final Module NODE_CHUNK_LOADING = new NodeChunkLoadingModule();
+    /** Villagers fell natural trees near the node and bank the timber as emeralds. */
+    public static final Module VILLAGER_LOGGING = new VillagerLoggingModule();
+    /** Guards path through water, stay afloat, and do not drown. */
+    public static final Module GUARD_SWIMMING = new GuardSwimmingModule();
+    /** Guards hook a distant enemy and drag it into reach. */
+    public static final Module GUARD_HOOK = new GuardHookModule();
+    /** Gates you can see and walk through: barred, three wide, and open through the stage-4 dome. */
+    public static final Module WALL_GATES = new WallGatesModule();
+
     public static final List<Module> ALL = List.of(
-            CORE, BRAIN_NODE, VILLAGE_DEFENSE, EMERALD_ARMY, WEAPONS, LIMBO, DARIUS, VILLAGE_SPIRIT, WORLD_MODE, CLIENT);
+            CORE, BRAIN_NODE, VILLAGE_DEFENSE, EMERALD_ARMY, WEAPONS, LIMBO, DARIUS, VILLAGE_SPIRIT, WORLD_MODE, CLIENT,
+            NODE_CHUNK_LOADING, VILLAGER_LOGGING, GUARD_SWIMMING, GUARD_HOOK, WALL_GATES);
 
     private static final Map<String, Module> BY_ID = index();
 
@@ -333,6 +355,53 @@ public final class Modules {
                     VillageDiscoveryTicker.class, ModTooltips.class);
             clientModHandlers(LimboAbilityHud.class, LimboAbilityKeybinds.class, VillageDiscoveryHud.class,
                     TheVillageFightsBackClient.class);
+        }
+    }
+
+    private static final class NodeChunkLoadingModule extends Module {
+        NodeChunkLoadingModule() {
+            super("node_chunk_loading", "Node Chunk Loading", ModuleCategory.MANAGEMENT,
+                    "Keeps the chunks around a brain node loaded while no player is near, so an abandoned village"
+                            + " keeps earning, spawning and building instead of freezing until someone returns. Up"
+                            + " to 8 villages at a time, nearest to a player first.", true, false);
+            handlers(NodeChunkLoading.class);
+        }
+    }
+
+    private static final class VillagerLoggingModule extends Module {
+        VillagerLoggingModule() {
+            super("villager_logging", "Villager Logging", ModuleCategory.MANAGEMENT,
+                    "Villagers fell natural trees near their node and bank the timber as emeralds, so a village in"
+                            + " a forest reaches its stages faster. Only real trees are cut -- never a build -- and at"
+                            + " most one tree per village per 10 seconds.", true, false);
+            handlers(VillagerLogging.class);
+        }
+    }
+
+    private static final class GuardSwimmingModule extends Module {
+        GuardSwimmingModule() {
+            super("guard_swimming", "Guard Swimming", ModuleCategory.COMBAT,
+                    "Guards path through water, float instead of sinking, keep their air and swim at their target,"
+                            + " so a river is no longer a wall against the village's guards.", true, false);
+            handlers(GuardSwimming.class);
+        }
+    }
+
+    private static final class GuardHookModule extends Module {
+        GuardHookModule() {
+            super("guard_hook", "Guard Hook", ModuleCategory.COMBAT,
+                    "A guard whose target stands 5-18 blocks away hooks it and drags it into melee range, once"
+                            + " every 6 seconds. The pull does no damage; it ends a standoff.", true, false);
+            handlers(GuardHook.class);
+        }
+    }
+
+    private static final class WallGatesModule extends Module {
+        WallGatesModule() {
+            super("wall_gates", "Wall Gates", ModuleCategory.DEFENSE,
+                    "Gates you can see: barred and three wide instead of a hidden two-wide hole, and the stage-4"
+                            + " glass dome leaves a doorway over every gate instead of sealing the village shut.",
+                    true, false);
         }
     }
 

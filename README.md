@@ -57,10 +57,11 @@ The mod is split into modules, in the same spirit as Quark: each module owns a s
 the event handlers that drive it, so nothing is fused and no handler has to wake up only to return early. There
 is no loader-side "Half A" trick and no soft dependency.
 
-**Every module is always on.** No module generates an `enabled` line, so `[modules]` in
-`config/thevillagefightsback-common.toml` holds no entries and the table below is a map of what the mod is made
-of rather than a set of switches. The machinery is still there: the config screen lists every module with its
-state locked on, and a module declared with `alwaysOn = false` would get its switch back.
+**The mod's own ten are always on.** None of them generates an `enabled` line, so the table below is a map of
+what the mod is made of rather than a set of switches, and the config screen lists them with their state locked
+on. The five marked **Optional** at the end are the exception: each is an addition on top of the mod rather than
+part of it, so each has a real switch under `[modules.<id>]`, on by default, and turning it off restores exactly
+the behaviour the mod had before it existed.
 
 | Module | Category | Owns |
 | --- | --- | --- |
@@ -74,6 +75,11 @@ state locked on, and a module declared with `alwaysOn = false` would get its swi
 | `village_spirit` | Combat | The Vindictive Village Spirit and the memorial scythe that calls it. |
 | `world_mode` | Management | Reputation and hero/enemy standing, difficulty and brutal modes, spawn rules, starting kit, survival aids. |
 | `client` | Client | HUD, discovery ticker, key binds, limbo sky and bedrock phase, reversed-gravity flip, screen shake, tooltips. |
+| `node_chunk_loading` | Management | **Optional.** Holds a 3x3 chunk island around a brain node while no player is near (up to 8 villages, nearest to a player first), so an abandoned village keeps earning, spawning and building. |
+| `villager_logging` | Management | **Optional.** Villagers fell natural trees near the node and bank the timber as emeralds, so a village in a forest stages up faster. |
+| `guard_swimming` | Combat | **Optional.** Guards path through water, float instead of sinking, keep their air and swim at their target. |
+| `guard_hook` | Combat | **Optional.** A guard whose target stands 5-18 blocks away hooks it and drags it into melee range, once every 6s. |
+| `wall_gates` | Defense | **Optional.** Gates are barred and three wide instead of a hidden two-wide hole, and the stage-4 glass dome leaves a doorway over every gate instead of sealing the village. |
 
 `village_defense`, `emerald_army`, `darius` and `village_spirit` declare that they need `brain_node`. With every
 module on that has no effect; it is written down so the dependency is on the record, and
