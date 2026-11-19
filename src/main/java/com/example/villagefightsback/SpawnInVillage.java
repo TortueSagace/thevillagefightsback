@@ -5,7 +5,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 
 /**
@@ -18,7 +17,6 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
  * unaffected (a bed overrides the world spawn per-player). It re-runs each start, but the village
  * position is deterministic, so once spawn sits on the village this is a no-op.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class SpawnInVillage {
     private SpawnInVillage() {}
 

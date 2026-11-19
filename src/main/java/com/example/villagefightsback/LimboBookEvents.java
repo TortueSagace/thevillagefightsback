@@ -5,7 +5,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * the worst possible thing to lose that way. If the inventory is full the flag is deliberately NOT set, so the
  * next visit tries again.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboBookEvents {
     private LimboBookEvents() {}
 

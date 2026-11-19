@@ -25,7 +25,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -41,7 +40,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  *  - infected faction never harm/target each other; they absorb 90% of explosion damage;
  *  - a creature slain by a DIRECT boss hit becomes a vindictive guard instead of dying.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class UnleashedManager {
     private UnleashedManager() {}
 

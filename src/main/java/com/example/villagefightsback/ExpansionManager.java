@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * STAGE-3 "EXPANSION": when a village's brainNode first reaches level 3, it dispatches a wave of settlers
@@ -36,7 +35,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * lives in {@link ExpansionSettlerGoal}; this class handles the trigger, spawning, build-spot claims, and
  * the death fallback.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ExpansionManager {
     private ExpansionManager() {}
 

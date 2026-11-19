@@ -53,14 +53,12 @@ import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.village.VillagerTradesEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Arms villagers, iron golems, and Guard Villagers guards, and wires the combat behaviour to them. As the
  * village evolves, defenders are upgraded (stage-3 villagers get the Alien Slasher, guards become emerald
  * knights, golems become gigachad golems) and the mod's ally-immunity keeps them from harming one another.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillageEvents {
     private VillageEvents() {}
 

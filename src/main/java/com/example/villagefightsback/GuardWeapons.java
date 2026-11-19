@@ -8,7 +8,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /**
@@ -30,7 +29,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
  * FoundingManager, NodeBounty, ReversedGravity, AirStrikeManager, NodeSpawnScheduler,
  * ChunkPortalManager); this class was the one that did not, which is why it alone went stale.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class GuardWeapons {
     private GuardWeapons() {}
 

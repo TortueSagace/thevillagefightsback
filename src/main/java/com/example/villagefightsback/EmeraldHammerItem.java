@@ -21,7 +21,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
@@ -120,7 +119,6 @@ public class EmeraldHammerItem extends PickaxeItem {
      * mined face instead of the coarser view axis), and drives the 3x3 in CREATIVE (where vanilla never calls
      * {@link #mineBlock}). Survival is handled by {@code mineBlock}; this only does the creative fan-out.
      */
-    @EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
     public static final class FaceTracker {
         private static final double REACH = 6.0; // a touch beyond survival reach (4.5), covers creative too
 

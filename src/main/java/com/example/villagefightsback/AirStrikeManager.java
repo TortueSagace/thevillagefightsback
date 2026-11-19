@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
@@ -24,7 +23,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * down (literally from the sky -- not from a fixed height above the target, which would embed them in a cave
  * ceiling), with the exact same blast as a gigachad golem's rocket.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class AirStrikeManager {
     private AirStrikeManager() {}
 

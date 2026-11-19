@@ -1,5 +1,8 @@
 package com.example.villagefightsback;
 
+import com.example.villagefightsback.modules.ModuleManager;
+import com.example.villagefightsback.modules.Modules;
+
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
@@ -25,6 +28,9 @@ public class TheVillageFightsBack {
     }
 
     public TheVillageFightsBack(IEventBus modBus, ModContainer modContainer) {
+        // Module state first: registries below consult it, and NeoForge has not loaded the config yet, so
+        // ModuleManager reads the module section straight from the file (see Module / ModuleManager).
+        ModuleManager.init();
         ModPathTypes.init(); // register the custom BlockPathTypes during mod construction
         ModBlocks.register(modBus);
         ModItems.register(modBus);
@@ -43,12 +49,22 @@ public class TheVillageFightsBack {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRegisterBrewingRecipes);
         modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent e) -> {
             if (e.getConfig().getSpec() != Config.SPEC) return;
+            ModuleManager.onConfigReload();           // module toggles cannot change at runtime: say so
             Config.apply();                          // push drift chances into LimboDrift
             WorldModeEvents.reapplyToRunningServer(); // a .toml reload must not drop the loaded world's mode
         });
         com.example.villagefightsback.network.ModNetwork.register(modBus); // brainNode UI packet channel
+        // Attach only the enabled modules' event handlers. This replaces @EventBusSubscriber on the mod's
+        // handler classes, so a disabled module costs nothing rather than waking on every event.
+        ModuleManager.registerHandlers(modBus);
         modContainer.registerConfig(
                 net.neoforged.fml.config.ModConfig.Type.COMMON, Config.SPEC); // config/thevillagefightsback-common.toml
+        // The config GUI: a button on the title screen and one in the Mods list. Client only, and registered
+        // outside the module table on purpose -- turning modules off must never remove the way to turn them
+        // back on.
+        if (net.neoforged.fml.loading.FMLEnvironment.dist == net.neoforged.api.distmarker.Dist.CLIENT) {
+            com.example.villagefightsback.client.ClientConfigUi.register(modContainer);
+        }
         LOGGER.info("[The Village Fights Back] loaded.");
     }
 
@@ -60,17 +76,21 @@ public class TheVillageFightsBack {
      */
     private void onRegisterBrewingRecipes(net.neoforged.neoforge.event.brewing.RegisterBrewingRecipesEvent event) {
         net.minecraft.world.item.alchemy.PotionBrewing.Builder builder = event.getBuilder();
-        // Emerald Apple brews the Potion of Emerald Virus (awkward base); glowstone dust strengthens it to Virus II.
-        // The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe), so we
-        // deliberately do NOT add a lingering/tipped-arrow path of our own.
-        builder.addMix(net.minecraft.world.item.alchemy.Potions.AWKWARD,
-                ModItems.EMERALD_APPLE.get(), ModPotions.EMERALD_VIRUS);
-        builder.addMix(ModPotions.EMERALD_VIRUS,
-                net.minecraft.world.item.Items.GLOWSTONE_DUST, ModPotions.EMERALD_VIRUS_STRONG);
-
-        // Darius' Special Sauce: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, redstone
-        // brews the "long" variant; the splash/lingering forms follow from vanilla's generic container recipes.
-        builder.addMix(ModPotions.DARIUS_SPECIAL_EFFECT,
-                net.minecraft.world.item.Items.REDSTONE, ModPotions.DARIUS_SPECIAL_EFFECT_LONG);
+        // These mixes read module-owned items and potions, so each block belongs to the module that owns it.
+        if (Modules.EMERALD_ARMY.isEnabled()) {
+            // Emerald Apple brews the Potion of Emerald Virus (awkward base); glowstone dust strengthens it to Virus II.
+            // The Emerald Virus arrow is crafted cheaply from that potion + 8 arrows (see its recipe), so we
+            // deliberately do NOT add a lingering/tipped-arrow path of our own.
+            builder.addMix(net.minecraft.world.item.alchemy.Potions.AWKWARD,
+                    ModItems.EMERALD_APPLE.get(), ModPotions.EMERALD_VIRUS);
+            builder.addMix(ModPotions.EMERALD_VIRUS,
+                    net.minecraft.world.item.Items.GLOWSTONE_DUST, ModPotions.EMERALD_VIRUS_STRONG);
+        }
+        if (Modules.DARIUS.isEnabled()) {
+            // Darius' Special Sauce: the BASE potion is loot-only (no awkward -> base recipe). From the looted base, redstone
+            // brews the "long" variant; the splash/lingering forms follow from vanilla's generic container recipes.
+            builder.addMix(ModPotions.DARIUS_SPECIAL_EFFECT,
+                    net.minecraft.world.item.Items.REDSTONE, ModPotions.DARIUS_SPECIAL_EFFECT_LONG);
+        }
     }
 }

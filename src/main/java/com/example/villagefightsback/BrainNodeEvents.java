@@ -35,7 +35,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -44,7 +43,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * Drives the Village Brain Node: spawns one at the centre of each loaded village, grants sunset emerald
  * income, and keeps every brain node's visual level in sync with the global {@link BrainNodeData}.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class BrainNodeEvents {
     private BrainNodeEvents() {}
 

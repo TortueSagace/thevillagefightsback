@@ -8,7 +8,6 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Draws this mod's bottom-of-screen messages (above the hotbar, NOT in chat): the two-line "village discovered"
@@ -23,7 +22,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * client-tick timer ({@link VillageDiscoveryTicker} decrements it each unpaused tick) so it ALWAYS expires,
  * independent of world/dimension game-time.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class VillageDiscoveryHud {
     private VillageDiscoveryHud() {}
 

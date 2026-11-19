@@ -8,7 +8,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -27,7 +26,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * in the trade, which is the honest outcome -- Peaceful means the village will not hurt you, not that it owns
  * an indestructible block.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class NodeGuard {
     private NodeGuard() {}
 

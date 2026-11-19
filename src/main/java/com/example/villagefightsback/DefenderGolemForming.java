@@ -8,7 +8,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
@@ -21,7 +20,6 @@ import net.neoforged.neoforge.event.level.BlockEvent;
  * an iron block is placed last (a wall defender is already hovering above the now-complete T). The
  * village-spawned wall defenders sit on protecting glass / nodes, never on an iron T, so they never trip this.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class DefenderGolemForming {
     private DefenderGolemForming() {}
 

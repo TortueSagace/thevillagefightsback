@@ -1,7 +1,6 @@
 package com.example.villagefightsback;
 
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -16,7 +15,6 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
  * emeralds may be pushed in from any face, since the block has no orientation-dependent inventory to speak
  * of and refusing a face would only be a puzzle with no answer.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public final class ModCapabilities {
     private ModCapabilities() {}
 

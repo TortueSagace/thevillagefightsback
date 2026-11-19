@@ -5,7 +5,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 /**
@@ -15,7 +14,6 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
  * persistent-data marker records which mobs WE froze, so we never clear someone else's NoAI and we tidy up
  * even across a world reload.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ElegantStandEvents {
     private ElegantStandEvents() {}
 

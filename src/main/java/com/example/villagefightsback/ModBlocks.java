@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -27,14 +28,14 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 public final class ModBlocks {
     private ModBlocks() {}
 
-    public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(BuiltInRegistries.BLOCK, TheVillageFightsBack.MODID);
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
-    public static final DeferredRegister<CreativeModeTab> TABS =
-            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
-    public static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
-            DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<Block> BLOCKS =
+            ModuleRegistry.create(BuiltInRegistries.BLOCK, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<Item> ITEMS =
+            ModuleRegistry.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<CreativeModeTab> TABS =
+            ModuleRegistry.create(Registries.CREATIVE_MODE_TAB, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
+            ModuleRegistry.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, TheVillageFightsBack.MODID);
 
     /**
      * The Village Brain Node: a recolored respawn-anchor look-alike that drives the village's global
@@ -819,7 +820,9 @@ public final class ModBlocks {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = TABS.register("main", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID))
             .icon(() -> new ItemStack(VILLAGE_BRAIN_NODE_ITEM.get()))
-            .displayItems((params, output) -> {
+            .displayItems((params, tabOutput) -> {
+                // One line of module gating for the whole tab: a disabled module's stacks never reach the sink.
+                CreativeModeTab.Output output = com.example.villagefightsback.modules.Modules.gate(tabOutput);
                 // === Village brain & node blocks (the brain node leads the whole tab) ===
                 output.accept(VILLAGE_BRAIN_NODE_ITEM.get());
                 output.accept(GOLEM_FACTORY_NODE_ITEM.get());
@@ -996,7 +999,8 @@ public final class ModBlocks {
                     .title(Component.translatable("itemGroup." + TheVillageFightsBack.MODID + ".blocks"))
                     .icon(() -> new ItemStack(INFESTED_PATH_ITEM.get()))
                     .withTabsBefore(TAB.getKey())
-                    .displayItems((params, output) -> {
+                    .displayItems((params, tabOutput) -> {
+                        CreativeModeTab.Output output = com.example.villagefightsback.modules.Modules.gate(tabOutput);
                         // --- green: the original set, in its long-standing order ---
                         for (DeferredHolder<Item, Item> it : FERTILE_RICH_ITEMS) output.accept(it.get());
                         output.accept(FERTILE_STAIRS_ITEM.get());

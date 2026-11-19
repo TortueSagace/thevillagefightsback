@@ -16,7 +16,6 @@ import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.village.VillagerTradesEvent;
@@ -32,7 +31,6 @@ import net.neoforged.neoforge.event.village.VillagerTradesEvent;
  *
  * <p>Everything the WORLD does to the holder is reversed too, in {@link DariusSpecialEffectReversals}.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class DariusSpecialEffectEvents {
     private DariusSpecialEffectEvents() {}
 

@@ -8,7 +8,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -23,7 +22,6 @@ import com.example.villagefightsback.network.ModNetwork;
  * marked as an Enemy of the Village and can never hold Hero of the Village -- re-applied on login and policed by
  * a cheap once-a-second sweep (so milk, expiry or a donation can never lift it).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class StartingItems {
     private StartingItems() {}
 

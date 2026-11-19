@@ -10,7 +10,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -24,8 +23,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  *
  * <p>Matched by registry id, so MCA stays a soft dep and this is dead weight in a pack without it.
  */
-// GAME bus: a player interaction. (1.21 throws for an @EventBusSubscriber class with no handler at all.)
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
+// GAME bus: a player interaction, so the owning module registers this class on the game bus.
 public final class MemorialScytheEvents {
     private MemorialScytheEvents() {}
 

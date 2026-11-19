@@ -20,7 +20,6 @@ import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * The Limbo kills what stays in it, and keeps what it kills.
@@ -46,7 +45,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * Dying with it turns you into one of the Limbo's own: the black banish swirl, then a random member of the
  * roster where you fell. A player still respawns normally -- the unit is what is left of them, not them.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class SlowAnnihilationEvents {
     private SlowAnnihilationEvents() {}
 

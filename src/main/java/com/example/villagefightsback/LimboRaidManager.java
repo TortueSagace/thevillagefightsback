@@ -33,7 +33,6 @@ import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -46,7 +45,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * horn, village AI and victory/loss) -- the only change is that every illager vanilla spawns is immediately
  * swapped for its ghostly Limbo counterpart, and each wave is reinforced with a few Limbo Phantoms.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboRaidManager {
     private LimboRaidManager() {}
 

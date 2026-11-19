@@ -6,7 +6,6 @@ import com.example.villagefightsback.network.OpenModeSelectPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -29,7 +28,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  */
 // GAME bus: every handler here is a level/server-lifecycle or player event, all of which fire on NeoForge's game
 // bus (its rename of Forge's FORGE bus). Server-lifecycle events in particular are NOT mod-bus events in 1.21.
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class WorldModeEvents {
     private WorldModeEvents() {}
 

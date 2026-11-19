@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 /**
@@ -30,7 +29,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * enough to put ground between you and where it will stand -- and it stands where you WERE when the count
  * began, not where you end up, or running would achieve nothing.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class HostileStart {
     private HostileStart() {}
 

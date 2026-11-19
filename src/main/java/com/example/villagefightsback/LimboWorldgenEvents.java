@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -15,7 +14,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * Chunks load only when a player is near, so -- apart from the always-loaded central cube -- the Limbo costs
  * nothing while empty.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboWorldgenEvents {
     private LimboWorldgenEvents() {}
 

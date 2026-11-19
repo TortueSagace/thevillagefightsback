@@ -5,7 +5,6 @@ import com.example.villagefightsback.goal.SageVolatileThrowGoal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 
 /**
@@ -14,7 +13,6 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
  * (mirroring {@code VillageEvents.hasGoal}). The throw goal also self-scans for a target, so the sage acquires
  * one without a separate target goal -- and it never targets village allies (see the goal's filter).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboSageEvents {
     private LimboSageEvents() {}
 

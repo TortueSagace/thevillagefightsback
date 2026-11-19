@@ -12,7 +12,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * What the two Limbo shields do when they actually stop something.
@@ -26,7 +25,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * <p>The event is deliberately NOT cancelled. Cancelling it means "the shield failed", which would undo the
  * damage reduction the player raised it for.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ShieldBashEvents {
     private ShieldBashEvents() {}
 

@@ -15,7 +15,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -27,7 +26,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  *  - FULL SET bonuses: fire immunity, fall immunity, no harmful status effects, Limbo Phantoms turn neutral,
  *    and the keybound green banish beam (every 30s) with its HUD cooldown ({@link LimboAbility}).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class LimboGearEvents {
     private LimboGearEvents() {}
 

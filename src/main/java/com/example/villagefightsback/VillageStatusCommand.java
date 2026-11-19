@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
@@ -22,7 +21,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * it (within its income/defender radius). Exposed as {@code /thevillagefightsback village_status_report}
  * ({@link ModCommands}); this class also runs the 10s node-highlight glow.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class VillageStatusCommand {
     private VillageStatusCommand() {}
 

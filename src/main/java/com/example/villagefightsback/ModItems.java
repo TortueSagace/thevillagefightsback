@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -10,8 +11,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 public final class ModItems {
     private ModItems() {}
 
-    public static final DeferredRegister<Item> ITEMS =
-            DeferredRegister.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<Item> ITEMS =
+            ModuleRegistry.create(BuiltInRegistries.ITEM, TheVillageFightsBack.MODID);
 
     /** The Alien Slasher melee weapon -- a fancier, virus-spreading netherite axe ({@link AlienSlasherItem}).
      *  Its on-hit payload (applied in {@link EmeraldVirusEvents}) always inflicts Emerald Virus I. */

@@ -38,7 +38,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -48,7 +47,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * gravity-sensitive blocks (torches, lanterns, ladders, beds, doors, ...) LAST, so their support always
  * exists before they appear. All placements use no-neighbour-update flags, so nothing ever pops off.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class HouseBuildManager {
     private HouseBuildManager() {}
 

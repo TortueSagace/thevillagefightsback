@@ -50,3 +50,78 @@ Then:
 ```
 
 The mod jar is produced at `build/libs/thevillagefightsback-1.0.0.jar`.
+
+## Modules
+
+The mod is split into independent modules, in the same spirit as Quark: each module owns a slice of the mod's
+content *and* the event handlers that drive it. Turning a module off removes both, so it costs nothing at runtime
+rather than running and returning early. There is no loader-side "Half A" trick and no soft dependency: the
+switches are plain config.
+
+The switches sit at the top of `config/thevillagefightsback-common.toml`:
+
+```toml
+[modules.limbo]
+    # Limbo: the dimension, its portals, drift, raids, the sage, limbo gear and books.
+    enabled = true
+```
+
+| Module | Category | Owns |
+| --- | --- | --- |
+| `core` | Management | Config, commands, capabilities, entity attribute plumbing, profiler. **Always on.** |
+| `brain_node` | Management | The Village Brain Node: four stages, upgrades, node blocks (factory, barracks, lure tower, dead node), its guards, bounty, spawns, achievements. |
+| `village_defense` | Defense | Guard weapons and kill effects, defenders, walls and wall repair, house building, founding, expansion, chest protection, graves, raids. |
+| `emerald_army` | Creatures | Emerald creatures and conversion, population, the emerald virus, block/mob infection, organic mass. |
+| `weapons` | Combat | Alien gear, maces, rockets and launcher, wind charges, fire grenades, shields, the obliterator, air strikes. |
+| `limbo` | World | The Limbo dimension, portals and chunk portals, drift, limbo raids and the sage, limbo gear, books, beds, gravel. |
+| `darius` | Combat | General Darius, his squad, his special effect and reversals, the statue. |
+| `village_spirit` | Combat | The Vindictive Village Spirit and the memorial scythe that calls it. |
+| `world_mode` | Management | Reputation and hero/enemy standing, difficulty and brutal modes, spawn rules, starting kit, survival aids. |
+| `client` | Client | HUD, discovery ticker, key binds, limbo sky and bedrock phase, reversed-gravity flip, screen shake, tooltips. |
+
+Some modules declare a requirement -- `village_defense`, `emerald_army`, `darius` and `village_spirit` all need
+`brain_node`. Turning a requirement off turns its dependents off too, and says so in the log.
+
+### Changing a module
+
+Either edit the file, use the in-game config screen, or use commands:
+
+```
+/thevillagefightsback modules                     # list every module, grouped by category, with its state
+/thevillagefightsback config module_limbo false   # write the toggle (op only)
+```
+
+**A restart is required.** Content is registered while the game loads, long before a world exists, so a mid-session
+toggle writes the file, logs a warning, and leaves the running session on the state it booted with. The config
+screen marks a module whose file value is waiting for that restart with a `*`.
+
+### Config screen
+
+The gear button on the title screen (left of the language button, where Quark keeps its own) opens the mod's
+config GUI; the Mods list also offers it under "Config". Categories are the TOML sections -- Modules first, then
+`limbo`, `explosions`, `features`, `multipliers`, `values` -- and every entry is the same value
+`/thevillagefightsback config` reads and writes, so the two can never drift apart. Booleans are toggle buttons,
+numbers and lists are text fields (lists comma-separated). Changes apply to the running game immediately; the file
+is written once, when the screen closes.
+
+### How it works
+
+- `modules/Module` -- one module: id, category, default state, its config line, and the handler classes it owns.
+- `modules/ModuleManager` -- resolves the state at load, registers only the enabled modules' handlers, and warns on
+  reload that a restart is needed. It reads `[modules.*]` straight out of the TOML, because NeoForge fires the
+  registry events *before* it loads configs (`CommonModLoader.begin()`), so a `ModConfigSpec` value cannot answer
+  "is this module on?" during registration.
+- `modules/Modules` -- the module table, plus content ownership: `ownerOf(name)` maps a registry entry to its
+  module by name, so `limbo_*` belongs to `limbo` and so on. Unclaimed names stay with `core` (always on), which
+  means a missed rule leaves content in place rather than deleting it.
+- `modules/ModuleRegistry` -- a `DeferredRegister` that skips entries owned by a disabled module. Registration
+  sites just use it instead of `DeferredRegister.create(...)`.
+
+### Adding a module
+
+1. Write a nested `Module` subclass in `Modules` and declare its handlers with `handlers(...)` (game bus),
+   `modHandlers(...)`, or the `client*` variants for client-only classes.
+2. Add it to `Modules.ALL`, and to `ownerOf(...)` if it owns content whose names do not already imply it.
+3. Register its handler classes there instead of annotating them: `@EventBusSubscriber` is deliberately gone from
+   this mod, because the loader's annotation scan cannot be made conditional and would re-register a disabled
+   module's handlers.

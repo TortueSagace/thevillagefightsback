@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * A tiny built-in profiler for THIS mod's own work, so we can see which of our subsystems costs the most
@@ -25,7 +24,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * In-game: {@code /gbtyw profile} prints a sorted breakdown, {@code /gbtyw profile reset} clears it,
  * {@code /gbtyw profile on|off} toggles measuring (overhead is a couple of nanoTime calls per section).
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class ModProfiler {
     private ModProfiler() {}
 

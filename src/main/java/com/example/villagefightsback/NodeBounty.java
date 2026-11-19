@@ -15,7 +15,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 /**
@@ -37,7 +36,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
  * sent its champion is not also shopping the job out to a freelancer. It would also read as the village
  * paying you for a kill its own general was about to make.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class NodeBounty {
     private NodeBounty() {}
 

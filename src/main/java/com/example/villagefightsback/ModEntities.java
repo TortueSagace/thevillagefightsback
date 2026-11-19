@@ -1,4 +1,6 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
+import com.example.villagefightsback.modules.Modules;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
@@ -8,17 +10,15 @@ import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 /** Entity-type registration + attributes. */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public final class ModEntities {
     private ModEntities() {}
 
-    public static final DeferredRegister<EntityType<?>> ENTITIES =
-            DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<EntityType<?>> ENTITIES =
+            ModuleRegistry.create(BuiltInRegistries.ENTITY_TYPE, TheVillageFightsBack.MODID);
 
     public static final DeferredHolder<EntityType<?>, EntityType<WallDefenderEntity>> WALL_DEFENDER = ENTITIES.register(
             "wall_defender",
@@ -290,47 +290,59 @@ public final class ModEntities {
         ENTITIES.register(modBus);
     }
 
+    /**
+     * Registers attributes only for entity types whose module is enabled: a disabled module's holder is unbound
+     * on purpose, and reading it here would be the one place a "removed" creature still crashed the game.
+     */
+    private static void putIfEnabled(EntityAttributeCreationEvent event,
+            net.neoforged.neoforge.registries.DeferredHolder<EntityType<?>, ? extends EntityType<? extends net.minecraft.world.entity.LivingEntity>> holder,
+            net.minecraft.world.entity.ai.attributes.AttributeSupplier attributes) {
+        if (Modules.contentEnabled("entity_type", holder.getKey().location().getPath())) {
+            event.put(holder.get(), attributes);
+        }
+    }
+
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
-        event.put(WALL_DEFENDER.get(), WallDefenderEntity.createAttributes().build());
-        event.put(WALL_DEFENDER_STAGE4.get(), WallDefenderEntity.createAttributes().build());
-        event.put(EMERALDGER.get(), Villager.createAttributes().build());
-        event.put(BRAIN_NODE_WARDEN.get(), Warden.createAttributes().build());
-        event.put(VILLAGE_SPIRIT.get(), VillageSpiritEntity.createAttributes().build());
-        event.put(UNLEASHED_BRAIN_NODE.get(), UnleashedBrainNodeEntity.createAttributes().build());
-        event.put(VINDICTIVE_GUARD.get(), VindictiveGuardEntity.createAttributes().build());
-        event.put(GENERAL_DARIUS.get(), GeneralDariusEntity.createAttributes().build());
-        event.put(GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
-        event.put(DEFENDER_GOLEM.get(), DefenderGolemEntity.createAttributes().build());
-        event.put(VINDICTIVE_GIGACHAD.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
-        event.put(LIMBO_PHANTOM.get(), LimboPhantomEntity.createAttributes().build());
-        event.put(LIMBO_PILLAGER.get(), LimboPillagerEntity.createAttributes().build());
-        event.put(LIMBO_VINDICATOR.get(), LimboVindicatorEntity.createAttributes().build());
-        event.put(LIMBO_EVOKER.get(), LimboEvokerEntity.createAttributes().build());
-        event.put(LIMBO_RAVAGER.get(), LimboRavagerEntity.createAttributes().build());
-        event.put(LIMBO_VEX.get(), LimboVexEntity.createAttributes().build());
-        event.put(LIMBO_WITCH.get(), LimboWitchEntity.createAttributes().build());
-        event.put(RICH_SHEEP.get(), RichSheepEntity.createAttributes().build());
+        putIfEnabled(event, WALL_DEFENDER, WallDefenderEntity.createAttributes().build());
+        putIfEnabled(event, WALL_DEFENDER_STAGE4, WallDefenderEntity.createAttributes().build());
+        putIfEnabled(event, EMERALDGER, Villager.createAttributes().build());
+        putIfEnabled(event, BRAIN_NODE_WARDEN, Warden.createAttributes().build());
+        putIfEnabled(event, VILLAGE_SPIRIT, VillageSpiritEntity.createAttributes().build());
+        putIfEnabled(event, UNLEASHED_BRAIN_NODE, UnleashedBrainNodeEntity.createAttributes().build());
+        putIfEnabled(event, VINDICTIVE_GUARD, VindictiveGuardEntity.createAttributes().build());
+        putIfEnabled(event, GENERAL_DARIUS, GeneralDariusEntity.createAttributes().build());
+        putIfEnabled(event, GIGACHAD_GOLEM, net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
+        putIfEnabled(event, DEFENDER_GOLEM, DefenderGolemEntity.createAttributes().build());
+        putIfEnabled(event, VINDICTIVE_GIGACHAD, net.minecraft.world.entity.animal.IronGolem.createAttributes().build());
+        putIfEnabled(event, LIMBO_PHANTOM, LimboPhantomEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_PILLAGER, LimboPillagerEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_VINDICATOR, LimboVindicatorEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_EVOKER, LimboEvokerEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_RAVAGER, LimboRavagerEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_VEX, LimboVexEntity.createAttributes().build());
+        putIfEnabled(event, LIMBO_WITCH, LimboWitchEntity.createAttributes().build());
+        putIfEnabled(event, RICH_SHEEP, RichSheepEntity.createAttributes().build());
         // --- emerald faction ---
-        event.put(EMERALD_COW.get(), EmeraldCow.createAttributes().build());
-        event.put(EMERALD_CHICKEN.get(), EmeraldChicken.createAttributes().build());
-        event.put(EMERALD_CAT.get(), EmeraldCat.createAttributes().build());
-        event.put(EMERALD_ENDERMITE.get(), EmeraldEndermite.createAttributes().build());
-        event.put(EMERALD_WOLF.get(), EmeraldWolf.createAttributes().build());
-        event.put(EMERALD_HORSE.get(), EmeraldHorse.createAttributes().build());
-        event.put(EMERALD_PIG.get(), EmeraldPig.createAttributes().build());
-        event.put(EMERALD_SALMON.get(), EmeraldSalmon.createAttributes().build());
-        event.put(EMERALD_BAT.get(), EmeraldBat.createAttributes().build());
-        event.put(EMERALD_ZOMBIE.get(), EmeraldZombie.createAttributes().build());
-        event.put(EMERALD_SKELETON.get(), EmeraldSkeleton.createAttributes().build());
-        event.put(EMERALD_CREEPER.get(), EmeraldCreeper.createAttributes().build());
-        event.put(EMERALD_ENDERMAN.get(), EmeraldEnderman.createAttributes().build());
-        event.put(EMERALD_IRON_GOLEM.get(), EmeraldIronGolem.createAttributes().build());
-        event.put(EMERALD_DEFENDER_GOLEM.get(), DefenderGolemEntity.createAttributes().build());      // 150 HP + turret
-        event.put(EMERALD_GIGACHAD_GOLEM.get(), net.minecraft.world.entity.animal.IronGolem.createAttributes().build()); // 200 HP applied at spawn (armGolemFull)
-        event.put(EMERALD_PHANTOM.get(), EmeraldPhantom.createAttributes().build());
-        event.put(EMERALD_WITHER.get(), EmeraldWither.createAttributes().build());
-        event.put(EMERALD_GUARDIAN.get(), EmeraldGuardian.createAttributes().build());
-        event.put(EMERALD_ELDER_GUARDIAN.get(), EmeraldElderGuardian.createAttributes().build());
+        putIfEnabled(event, EMERALD_COW, EmeraldCow.createAttributes().build());
+        putIfEnabled(event, EMERALD_CHICKEN, EmeraldChicken.createAttributes().build());
+        putIfEnabled(event, EMERALD_CAT, EmeraldCat.createAttributes().build());
+        putIfEnabled(event, EMERALD_ENDERMITE, EmeraldEndermite.createAttributes().build());
+        putIfEnabled(event, EMERALD_WOLF, EmeraldWolf.createAttributes().build());
+        putIfEnabled(event, EMERALD_HORSE, EmeraldHorse.createAttributes().build());
+        putIfEnabled(event, EMERALD_PIG, EmeraldPig.createAttributes().build());
+        putIfEnabled(event, EMERALD_SALMON, EmeraldSalmon.createAttributes().build());
+        putIfEnabled(event, EMERALD_BAT, EmeraldBat.createAttributes().build());
+        putIfEnabled(event, EMERALD_ZOMBIE, EmeraldZombie.createAttributes().build());
+        putIfEnabled(event, EMERALD_SKELETON, EmeraldSkeleton.createAttributes().build());
+        putIfEnabled(event, EMERALD_CREEPER, EmeraldCreeper.createAttributes().build());
+        putIfEnabled(event, EMERALD_ENDERMAN, EmeraldEnderman.createAttributes().build());
+        putIfEnabled(event, EMERALD_IRON_GOLEM, EmeraldIronGolem.createAttributes().build());
+        putIfEnabled(event, EMERALD_DEFENDER_GOLEM, DefenderGolemEntity.createAttributes().build());      // 150 HP + turret
+        putIfEnabled(event, EMERALD_GIGACHAD_GOLEM, net.minecraft.world.entity.animal.IronGolem.createAttributes().build()); // 200 HP applied at spawn (armGolemFull)
+        putIfEnabled(event, EMERALD_PHANTOM, EmeraldPhantom.createAttributes().build());
+        putIfEnabled(event, EMERALD_WITHER, EmeraldWither.createAttributes().build());
+        putIfEnabled(event, EMERALD_GUARDIAN, EmeraldGuardian.createAttributes().build());
+        putIfEnabled(event, EMERALD_ELDER_GUARDIAN, EmeraldElderGuardian.createAttributes().build());
     }
 }

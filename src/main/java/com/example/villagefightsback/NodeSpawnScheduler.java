@@ -7,12 +7,10 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /** Staggers the Barracks Node's guard spawns: the requested guards appear one per second, so they don't all
  *  pop in on the same tick (see {@link BarracksNodeBlock}). */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class NodeSpawnScheduler {
     private NodeSpawnScheduler() {}
 

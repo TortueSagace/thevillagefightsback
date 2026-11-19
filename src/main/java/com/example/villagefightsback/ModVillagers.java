@@ -1,4 +1,5 @@
 package com.example.villagefightsback;
+import com.example.villagefightsback.modules.ModuleRegistry;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -24,10 +25,10 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModVillagers {
     private ModVillagers() {}
 
-    public static final DeferredRegister<PoiType> POI_TYPES =
-            DeferredRegister.create(BuiltInRegistries.POINT_OF_INTEREST_TYPE, TheVillageFightsBack.MODID);
-    public static final DeferredRegister<VillagerProfession> PROFESSIONS =
-            DeferredRegister.create(BuiltInRegistries.VILLAGER_PROFESSION, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<PoiType> POI_TYPES =
+            ModuleRegistry.create(BuiltInRegistries.POINT_OF_INTEREST_TYPE, TheVillageFightsBack.MODID);
+    public static final ModuleRegistry<VillagerProfession> PROFESSIONS =
+            ModuleRegistry.create(BuiltInRegistries.VILLAGER_PROFESSION, TheVillageFightsBack.MODID);
 
     /** The POI's registry key, used by the profession predicates (a sage works/acquires only at this POI). */
     public static final ResourceKey<PoiType> LIMBO_SAGE_POI_KEY = ResourceKey.create(
@@ -55,6 +56,11 @@ public final class ModVillagers {
 
     /** Every blockstate of the Village Brain Node, so the POI matches the node in any of its charge levels. */
     private static ImmutableSet<BlockState> brainNodeStates() {
+        // The POI is the node block: with the brain_node module off there is no block to match, and reading the
+        // holder would throw. An empty POI type is harmless; the sage simply has no job site.
+        if (!com.example.villagefightsback.modules.Modules.BRAIN_NODE.isEnabled()) {
+            return ImmutableSet.of();
+        }
         return ImmutableSet.copyOf(
                 ModBlocks.VILLAGE_BRAIN_NODE.get().getStateDefinition().getPossibleStates());
     }

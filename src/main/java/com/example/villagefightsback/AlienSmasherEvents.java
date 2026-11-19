@@ -14,7 +14,6 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
@@ -32,7 +31,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * The guard-mace baseline itself (Density >= 3, Wind Burst launch >= level-3, Fire Aspect 2 burn) lives in
  * {@link MaceCombatEvents}, applied as a floor whenever the weapon is an Alien Smasher.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class AlienSmasherEvents {
     private AlienSmasherEvents() {}
 

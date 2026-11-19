@@ -96,6 +96,8 @@ public final class Config {
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
+        // [modules] goes first: it is the first thing a pack author should see (see ModuleManager/Modules).
+        com.example.villagefightsback.modules.ModuleManager.buildConfig(b);
 
         b.push("limbo");
         DRIFT_OVERWORLD_CHANCE = b
@@ -461,6 +463,41 @@ public final class Config {
         if (difficultySnapshot != null) {
             DIFFICULTY.set(difficultySnapshot);
             difficultySnapshot = null;
+        }
+    }
+
+    /**
+     * Writes the live values back to the .toml (the config GUI's Done button).
+     *
+     * <p>A loaded world overrides the three infection flags and the difficulty IN MEMORY, so while one is
+     * running those four are put back to the file's own values for the write and the world's values restored
+     * afterwards: opening the config GUI in a world must not let that world re-configure the file for the next
+     * one. Everything else is written as it stands.
+     */
+    public static void saveSettings() {
+        if (!SPEC.isLoaded()) return;
+        boolean[] worldFlags = null;
+        Integer worldDifficulty = null;
+        if (infectionSnapshot != null) {
+            worldFlags = new boolean[] {
+                    ENABLE_BLOCK_INFECTION.get(), ENABLE_MOB_INFECTION.get(), ENABLE_EMERALD_INFESTATION.get() };
+            ENABLE_BLOCK_INFECTION.set(infectionSnapshot[0]);
+            ENABLE_MOB_INFECTION.set(infectionSnapshot[1]);
+            ENABLE_EMERALD_INFESTATION.set(infectionSnapshot[2]);
+        }
+        if (difficultySnapshot != null) {
+            worldDifficulty = DIFFICULTY.get();
+            DIFFICULTY.set(difficultySnapshot);
+        }
+        try {
+            SPEC.save();
+        } finally {
+            if (worldFlags != null) {
+                ENABLE_BLOCK_INFECTION.set(worldFlags[0]);
+                ENABLE_MOB_INFECTION.set(worldFlags[1]);
+                ENABLE_EMERALD_INFESTATION.set(worldFlags[2]);
+            }
+            if (worldDifficulty != null) DIFFICULTY.set(worldDifficulty);
         }
     }
 

@@ -30,14 +30,12 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * All Emerald-Virus behaviour: the Alien Slasher's on-hit payload, the virus's contagion / ground-rot /
  * green-tint sync while active, and the post-death TNT explosion + emerald loot. Immunity and the
  * one-shot infection rule live in {@link EmeraldVirus}.
  */
-@EventBusSubscriber(modid = TheVillageFightsBack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public final class EmeraldVirusEvents {
     private EmeraldVirusEvents() {}
 
